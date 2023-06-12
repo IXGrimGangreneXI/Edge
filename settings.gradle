@@ -1,0 +1,6 @@
+rootProject.name = 'Edge'
+include("src:common")
+include("src:modulemanager")
+include("src:contentserver")
+include("src:globalserver")
+include("deps:connective-http")

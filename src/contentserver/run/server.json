@@ -1,0 +1,18 @@
+{
+
+    "listenAddress": "0.0.0.0",
+    "listenPort": 5319,
+    "contentRequestListenPath": "/EdgeContentServer/",
+    "contentDataPath": "./asset-data",
+    "allowIndexingAssets": true,
+
+    "https": false,
+    "tlsKeystore": null,
+    "tlsKeystorePassword": null,
+    
+    "clientXmlEncryptionSecret": "C92EC1AA-54CD-4D0C-A8D5-403FCCF1C0BD",
+
+    "modules": {
+    }
+
+}

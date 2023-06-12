@@ -1,0 +1,8 @@
+*.reg -crlf
+*.bat -crlf
+*.sh -lf
+*.bash -lf
+gradlew -lf
+
+edge -lf
+edge-contentserver -lf
