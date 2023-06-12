@@ -56,9 +56,25 @@ public class EdgeContentServerDumper {
 		Files.writeString(new File(output, "versionxmlsecret.conf").toPath(),
 				versionSecretFile.replace("%secret%", args[3]).replace("%plat%", args[2]).replace("%ver%", args[1]));
 
+		// Download serverdown
+		File serverDown = new File(args[4], "ServerDown.xml");
+		if (!serverDown.exists()) {
+			// Build url
+			String url = args[0] + "ServerDown.xml";
+			File outputFile = serverDown;
+			outputFile.getParentFile().mkdirs();
+			System.out.println("Downloading: " + url + " -> " + outputFile.getPath());
+
+			// Open output
+			InputStream strm = new URL(url).openStream();
+			FileOutputStream fO = new FileOutputStream(outputFile);
+			strm.transferTo(fO);
+			fO.close();
+		}
+
 		// Download manifest
 		System.out.println("Downloading manifest...");
-		downloadFile(args[0], args[1], args[2], args[3], output, "DWADragonsMain.xml");
+		downloadFile(args[0], args[1], args[2], args[3], output, "DWADragonsMain.xml", "");
 
 		// Parse manifest
 		XmlMapper mapper = new XmlMapper();
@@ -68,12 +84,14 @@ public class EdgeContentServerDumper {
 
 		// Download main asset
 		System.out.println("Downloading main assets...");
-		downloadFileEachQuality(args[0], args[1], args[2], args[3], output, "dwadragonsmain");
+		downloadFileEachQuality(args[0], args[1], args[2], args[3], output, "dwadragonsmain",
+				"?v=00000000000000000000000000000000");
 		for (String man : conf.manifests)
-			downloadFileEachQuality(args[0], args[1], args[2], args[3], output, man);
+			downloadFileEachQuality(args[0], args[1], args[2], args[3], output, man,
+					"?v=00000000000000000000000000000000");
 
 		// Download asset version list
-		downloadFileEachQuality(args[0], args[1], args[2], args[3], output, "data/AssetVersionsDO.xml");
+		downloadFileEachQuality(args[0], args[1], args[2], args[3], output, "data/AssetVersionsDO.xml", "");
 
 		// Download assets
 		downloadAssetsForEachQuality(args[0], args[1], args[2], args[3], output, mapper, "AssetVersionsDO.xml", conf,
@@ -172,7 +190,8 @@ public class EdgeContentServerDumper {
 							File outputFile = new File(outputRoot, path2 + ".tmp");
 
 							// Download image
-							System.out.println("Downloading: " + promoUrl + " -> " + outputFile.getPath());
+							System.out.println(
+									"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
 							outputFile.getParentFile().mkdirs();
 							InputStream strmI = new URL(promoUrl).openStream();
 							FileOutputStream fO = new FileOutputStream(outputFile);
@@ -199,7 +218,8 @@ public class EdgeContentServerDumper {
 							File outputFile = new File(outputRoot, path2 + ".tmp");
 
 							// Download image
-							System.out.println("Downloading: " + promoUrl + " -> " + outputFile.getPath());
+							System.out.println(
+									"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
 							outputFile.getParentFile().mkdirs();
 							InputStream strmI = new URL(promoUrl).openStream();
 							FileOutputStream fO = new FileOutputStream(outputFile);
@@ -226,7 +246,8 @@ public class EdgeContentServerDumper {
 							File outputFile = new File(outputRoot, path2 + ".tmp");
 
 							// Download image
-							System.out.println("Downloading: " + promoUrl + " -> " + outputFile.getPath());
+							System.out.println(
+									"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
 							outputFile.getParentFile().mkdirs();
 							InputStream strmI = new URL(promoUrl).openStream();
 							FileOutputStream fO = new FileOutputStream(outputFile);
@@ -257,7 +278,7 @@ public class EdgeContentServerDumper {
 						File outputFile = new File(outputRoot, path2 + ".tmp");
 
 						// Download image
-						System.out.println("Downloading: " + screenU + " -> " + outputFile.getPath());
+						System.out.println("Downloading: " + screenU + " -> " + new File(outputRoot, path2).getPath());
 						outputFile.getParentFile().mkdirs();
 						InputStream strmI = screenU.openStream();
 						FileOutputStream fO = new FileOutputStream(outputFile);
@@ -310,6 +331,8 @@ public class EdgeContentServerDumper {
 						}
 					}
 				}
+				if (!url.endsWith(".xml"))
+					url += "?v=" + variant.version;
 
 				// Compute output
 				File outputFile = new File(output, path);
@@ -364,16 +387,16 @@ public class EdgeContentServerDumper {
 	}
 
 	private static void downloadFileEachQuality(String server, String version, String platform, String key, File output,
-			String file) throws MalformedURLException, IOException {
-		downloadFile(server, version, platform, key, output, "Low/" + file);
-		downloadFile(server, version, platform, key, output, "Mid/" + file);
-		downloadFile(server, version, platform, key, output, "High/" + file);
+			String file, String query) throws MalformedURLException, IOException {
+		downloadFile(server, version, platform, key, output, "Low/" + file, query);
+		downloadFile(server, version, platform, key, output, "Mid/" + file, query);
+		downloadFile(server, version, platform, key, output, "High/" + file, query);
 	}
 
 	private static void downloadFile(String server, String version, String platform, String key, File output,
-			String file) throws MalformedURLException, IOException {
+			String file, String query) throws MalformedURLException, IOException {
 		// Build url
-		String url = server + "DWADragonsUnity/" + platform + "/" + version + "/" + file;
+		String url = server + "DWADragonsUnity/" + platform + "/" + version + "/" + file + query;
 		File outputFile = new File(output, file);
 		outputFile.getParentFile().mkdirs();
 		System.out.println("Downloading: " + url + " -> " + outputFile.getPath());

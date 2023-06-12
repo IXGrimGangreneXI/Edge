@@ -31,7 +31,7 @@ public class ApplicationManifestPreProcessor implements IPreProcessor {
 
 		// Find version-specific secret
 		File verSpecificSecret = new File(sourceDir,
-				path.split("/")[1] + "/" + path.split("/")[2] + "/versionxmlsecret.conf");
+				path.split("/")[1] + "/" + path.split("/")[2] + "/" + path.split("/")[3] + "/versionxmlsecret.conf");
 		if (verSpecificSecret.exists()) {
 			// Read
 			for (String line : Files.readAllLines(verSpecificSecret.toPath())) {
