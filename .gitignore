@@ -18,7 +18,7 @@ bin/
 out/
 
 # Run files
-run/*
+**/run/*
 saves/
 
 # Research (due to copyright we cant share this)

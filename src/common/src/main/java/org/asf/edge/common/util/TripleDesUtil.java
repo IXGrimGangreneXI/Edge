@@ -61,7 +61,15 @@ public class TripleDesUtil {
 			return cipher.doFinal(data);
 		} catch (NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException | InvalidKeyException
 				| IllegalBlockSizeException | BadPaddingException e) {
-			throw new IOException("Decryption failure", e);
+			// Try without padding
+			try {
+				Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding", "BC");
+				cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "DESede"));
+				return cipher.doFinal(data);
+			} catch (NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException | InvalidKeyException
+					| IllegalBlockSizeException | BadPaddingException e3) {
+				throw new IOException("Decryption failure", e3);
+			}
 		}
 	}
 
