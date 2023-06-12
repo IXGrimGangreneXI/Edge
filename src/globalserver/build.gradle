@@ -61,6 +61,7 @@ dependencies {
 	
 	implementation project(":src:common")
 	implementation project(":src:contentserver")
+	implementation project(":src:modulemanager")
 }
 
 project.configurations.implementation.canBeResolved = true
