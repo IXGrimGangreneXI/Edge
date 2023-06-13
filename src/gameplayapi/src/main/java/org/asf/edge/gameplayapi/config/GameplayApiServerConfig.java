@@ -1,15 +1,15 @@
-package org.asf.edge.contentserver.config;
+package org.asf.edge.gameplayapi.config;
 
 import org.asf.connective.ConnectiveHttpServer;
 
 /**
  * 
- * Content server configuration
+ * Gameplay API server configuration
  * 
  * @author Sky Swimmer
  *
  */
-public class ContentServerConfig {
+public class GameplayApiServerConfig {
 
 	/**
 	 * True to use HTTPS, false to use HTTP
@@ -39,21 +39,11 @@ public class ContentServerConfig {
 	/**
 	 * Listen port
 	 */
-	public int listenPort = 5319;
+	public int listenPort = 5320;
 
 	/**
-	 * Path to register the asset request handler on
+	 * Path to register the API request handler on
 	 */
-	public String contentRequestListenPath = "/";
-
-	/**
-	 * Content data path containing all game assets
-	 */
-	public String contentDataPath = "content-server/asset-data";
-
-	/**
-	 * Defines if indexing of assets should be allowed
-	 */
-	public boolean allowIndexingAssets = true;
+	public String apiRequestListenPath = "/";
 
 }

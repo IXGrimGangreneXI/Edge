@@ -1,6 +1,5 @@
-package org.asf.edge.contentserver;
+package org.asf.edge.gameplayapi;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -8,24 +7,25 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.ConnectiveHttpServer;
 
-import org.asf.edge.contentserver.http.*;
-import org.asf.edge.contentserver.http.ContentServerRequestHandler.IPreProcessor;
-import org.asf.edge.contentserver.http.postprocessors.ApplicationManifestPreProcessor;
+import org.asf.edge.gameplayapi.http.*;
+import org.asf.edge.gameplayapi.http.handlers.gameplayapi.*;
+import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
+import org.asf.edge.gameplayapi.http.handlers.achievements.*;
 import org.asf.edge.common.IBaseServer;
-import org.asf.edge.contentserver.config.ContentServerConfig;
+import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
 
 /**
  * 
- * EDGE Content and Assets Server
+ * EDGE Gameplay API server (content api)
  * 
  * @author Sky Swimmer
  *
  */
-public class EdgeContentServer implements IBaseServer {
-	public static final String CONTENT_SERVER_VERSION = "1.0.0.A1";
+public class EdgeGameplayApiServer implements IBaseServer {
+	public static final String GAMEPLAY_API_VERSION = "1.0.0.A1";
 
 	private Logger logger;
-	private ContentServerConfig config;
+	private GameplayApiServerConfig config;
 
 	private ConnectiveHttpServer server;
 
@@ -33,22 +33,24 @@ public class EdgeContentServer implements IBaseServer {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
 		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
-		System.out.println("               Content Server Version 1.0.0.A1               ");
+		System.out.println("            Gameplay API Server Version: 1.0.0.A1            ");
 		System.out.println("                                                             ");
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("");
 		System.out.println("This server implements the following endpoints:");
-		System.out.println(" - media.schoolofdragons.com");
+		System.out.println(" - contentserver.api.jumpstart.com");
+		System.out.println(" - itemstoremission.api.jumpstart.com");
+		System.out.println(" - achievement.api.jumpstart.com");
 		System.out.println("");
 	}
 
-	public EdgeContentServer(ContentServerConfig config) {
+	public EdgeGameplayApiServer(GameplayApiServerConfig config) {
 		this.config = config;
-		logger = LogManager.getLogger("CONTENTSERVER");
+		logger = LogManager.getLogger("GAMEPLAYAPI");
 	}
 
 	/**
-	 * Retrieves the logger of the content server
+	 * Retrieves the logger of the gameplay api server
 	 * 
 	 * @return Logger instance
 	 */
@@ -57,11 +59,11 @@ public class EdgeContentServer implements IBaseServer {
 	}
 
 	/**
-	 * Retrieves the content server configuration
+	 * Retrieves the gameplay api server configuration
 	 * 
-	 * @return ContentServerConfig instance
+	 * @return GameplayApiServerConfig instance
 	 */
-	public ContentServerConfig getConfiguration() {
+	public GameplayApiServerConfig getConfiguration() {
 		return config;
 	}
 
@@ -81,14 +83,14 @@ public class EdgeContentServer implements IBaseServer {
 				props.put("keystore", config.tlsKeystore);
 				props.put("keystore-password", config.tlsKeystorePassword);
 				config.server = ConnectiveHttpServer.createNetworked("HTTPS/1.1", props);
-				logger.info("Edge content HTTPS server created with listen address " + config.listenAddress
+				logger.info("Edge gameplay api HTTPS server created with listen address " + config.listenAddress
 						+ " and port " + config.listenPort);
 			} else {
 				HashMap<String, String> props = new HashMap<String, String>();
 				props.put("address", config.listenAddress);
 				props.put("port", Integer.toString(config.listenPort));
 				config.server = ConnectiveHttpServer.createNetworked("HTTP/1.1", props);
-				logger.info("Edge content HTTP server created with listen address " + config.listenAddress
+				logger.info("Edge gameplay api HTTP server created with listen address " + config.listenAddress
 						+ " and port " + config.listenPort);
 			}
 		}
@@ -96,18 +98,28 @@ public class EdgeContentServer implements IBaseServer {
 		// Assign server
 		server = config.server;
 
-		// Prepare data folder
-		File dataPath = new File(config.contentDataPath);
-		if (!dataPath.exists()) {
-			logger.debug("Creating data folder...");
-			if (!dataPath.mkdirs())
-				throw new IOException("Failed to create directory: " + dataPath);
-		}
+		// Register content source
+		logger.debug("Adding case-insensitive content source...");
+		server.setContentSource(new CaseInsensitiveContentSource());
 
 		// Register handlers
 		logger.debug("Configuring server request handlers...");
-		server.registerProcessor(new ContentServerRequestHandler(dataPath, config.contentRequestListenPath,
-				new IPreProcessor[] { new ApplicationManifestPreProcessor() }, this));
+		server.registerProcessor(new ContentWebServiceV1Processor(this));
+		server.registerProcessor(new ContentWebServiceV2Processor(this));
+		server.registerProcessor(new ContentWebServiceV3Processor(this));
+		server.registerProcessor(new ContentWebServiceV4Processor(this));
+		server.registerProcessor(new RatingWebServiceV1Processor(this));
+		server.registerProcessor(new RatingWebServiceV2Processor(this));
+		server.registerProcessor(new ChallengeWebServiceProcessor(this));
+		server.registerProcessor(new InviteFriendWebServiceProcessor(this));
+		server.registerProcessor(new MobileStoreWebServiceProcessor(this));
+		server.registerProcessor(new PaymentWebServiceV1Processor(this));
+		server.registerProcessor(new PaymentWebServiceV2Processor(this));
+		server.registerProcessor(new ScoreWebServiceProcessor(this));
+		server.registerProcessor(new ItemStoreWebServiceProcessor(this));
+		server.registerProcessor(new MissionWebServiceProcessor(this));
+		server.registerProcessor(new AchievementWebServiceV1Processor(this));
+		server.registerProcessor(new AchievementWebServiceV2Processor(this));
 	}
 
 	/**
@@ -120,9 +132,9 @@ public class EdgeContentServer implements IBaseServer {
 			throw new IllegalArgumentException("Server is already running");
 
 		// Start server
-		logger.info("Starting the content delivery server...");
+		logger.info("Starting the Gameplay API server...");
 		server.start();
-		logger.info("Content delivery server started successfully!");
+		logger.info("Gameplay API server started successfully!");
 	}
 
 	/**
@@ -135,12 +147,12 @@ public class EdgeContentServer implements IBaseServer {
 			throw new IllegalArgumentException("Server is not running");
 
 		// Stop the server
-		logger.info("Shutting down the content delivery server...");
+		logger.info("Shutting down the Gameplay API server...");
 		try {
 			server.stop();
 		} catch (IOException e) {
 		}
-		logger.info("Content delivery server stopped successfully!");
+		logger.info("Gameplay API server stopped successfully!");
 	}
 
 	/**
@@ -153,12 +165,12 @@ public class EdgeContentServer implements IBaseServer {
 			throw new IllegalArgumentException("Server is not running");
 
 		// Kill the server
-		logger.info("Forcefully shutting down the content delivery server!");
+		logger.info("Forcefully shutting down the Gameplay API server!");
 		try {
 			server.stopForced();
 		} catch (IOException e) {
 		}
-		logger.info("Content delivery server stopped successfully!");
+		logger.info("Gameplay API server stopped successfully!");
 	}
 
 	/**

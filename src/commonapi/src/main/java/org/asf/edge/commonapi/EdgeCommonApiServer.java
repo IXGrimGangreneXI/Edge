@@ -1,0 +1,240 @@
+package org.asf.edge.commonapi;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.asf.connective.ConnectiveHttpServer;
+
+import org.asf.edge.commonapi.http.*;
+import org.asf.edge.commonapi.http.handlers.api.core.*;
+import org.asf.edge.commonapi.http.handlers.api.accounts.*;
+import org.asf.edge.commonapi.http.handlers.api.avatars.*;
+import org.asf.edge.commonapi.http.handlers.api.messaging.*;
+import org.asf.edge.common.IBaseServer;
+import org.asf.edge.commonapi.config.CommonApiServerConfig;
+
+/**
+ * 
+ * EDGE Common API server
+ * 
+ * @author Sky Swimmer
+ *
+ */
+public class EdgeCommonApiServer implements IBaseServer {
+	public static final String COMMON_API_VERSION = "1.0.0.A1";
+
+	private Logger logger;
+	private CommonApiServerConfig config;
+
+	private ConnectiveHttpServer server;
+	private ConnectiveHttpServer internalServer;
+
+	static void printSplash() {
+		System.out.println("-------------------------------------------------------------");
+		System.out.println("                                                             ");
+		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
+		System.out.println("             Common API Server Version: 1.0.0.A1             ");
+		System.out.println("                                                             ");
+		System.out.println("-------------------------------------------------------------");
+		System.out.println("");
+		System.out.println("This server implements the following endpoints:");
+		System.out.println(" - common.api.jumpstart.com");
+		System.out.println("");
+	}
+
+	public EdgeCommonApiServer(CommonApiServerConfig config) {
+		this.config = config;
+		logger = LogManager.getLogger("COMMONAPI");
+	}
+
+	/**
+	 * Retrieves the logger of the common api server
+	 * 
+	 * @return Logger instance
+	 */
+	public Logger getLogger() {
+		return logger;
+	}
+
+	/**
+	 * Retrieves the common api server configuration
+	 * 
+	 * @return CommonApiServerConfig instance
+	 */
+	public CommonApiServerConfig getConfiguration() {
+		return config;
+	}
+
+	/**
+	 * Called to set up the server
+	 * 
+	 * @throws IOException If setup fails
+	 */
+	public void setupServer() throws IOException {
+		// Set up the servers
+		if (config.server == null) {
+			// Create adapter
+			if (config.https) {
+				HashMap<String, String> props = new HashMap<String, String>();
+				props.put("address", config.listenAddress);
+				props.put("port", Integer.toString(config.listenPort));
+				props.put("keystore", config.tlsKeystore);
+				props.put("keystore-password", config.tlsKeystorePassword);
+				config.server = ConnectiveHttpServer.createNetworked("HTTPS/1.1", props);
+				logger.info("Edge common api HTTPS server created with listen address " + config.listenAddress
+						+ " and port " + config.listenPort);
+			} else {
+				HashMap<String, String> props = new HashMap<String, String>();
+				props.put("address", config.listenAddress);
+				props.put("port", Integer.toString(config.listenPort));
+				config.server = ConnectiveHttpServer.createNetworked("HTTP/1.1", props);
+				logger.info("Edge common api HTTP server created with listen address " + config.listenAddress
+						+ " and port " + config.listenPort);
+			}
+		}
+		if (config.internalServer == null) {
+			// Create adapter
+			if (config.httpsInternal) {
+				HashMap<String, String> props = new HashMap<String, String>();
+				props.put("address", config.internalListenAddress);
+				props.put("port", Integer.toString(config.internalListenPort));
+				props.put("keystore", config.tlsKeystoreInternal);
+				props.put("keystore-password", config.tlsKeystorePasswordInternal);
+				config.internalServer = ConnectiveHttpServer.createNetworked("HTTPS/1.1", props);
+				logger.info("Edge common api internal HTTPS server created with listen address "
+						+ config.internalListenAddress + " and port " + config.internalListenPort);
+			} else {
+				HashMap<String, String> props = new HashMap<String, String>();
+				props.put("address", config.internalListenAddress);
+				props.put("port", Integer.toString(config.internalListenPort));
+				config.internalServer = ConnectiveHttpServer.createNetworked("HTTP/1.1", props);
+				logger.info("Edge common api internal HTTP server created with listen address "
+						+ config.internalListenAddress + " and port " + config.internalListenPort);
+			}
+		}
+
+		// Assign servers
+		server = config.server;
+		internalServer = config.internalServer;
+
+		// Prepare data folder
+		File dataPath = new File(config.accountDatabaseDir);
+		if (!dataPath.exists()) {
+			logger.debug("Creating account database folder...");
+			if (!dataPath.mkdirs())
+				throw new IOException("Failed to create directory: " + dataPath);
+		}
+
+		// Register content source
+		logger.debug("Adding case-insensitive content sources...");
+		server.setContentSource(new CaseInsensitiveContentSource());
+		internalServer.setContentSource(new CaseInsensitiveContentSource());
+
+		// Register handlers: api
+		logger.debug("Configuring api server request handlers...");
+		server.registerProcessor(new ChatWebServiceProcessor(this));
+		server.registerProcessor(new MessagingWebServiceProcessor(this));
+		server.registerProcessor(new MembershipWebServiceProcessor(this));
+		server.registerProcessor(new ConfigurationWebServiceProcessor(this));
+		server.registerProcessor(new AuthenticationWebServiceV1Processor(this));
+		server.registerProcessor(new AuthenticationWebServiceV3Processor(this));
+		server.registerProcessor(new AvatarWebServiceProcessor(this));
+		server.registerProcessor(new SubscriptionWebServiceProcessor(this));
+		server.registerProcessor(new RegistrationWebServiceV3Processor(this));
+		server.registerProcessor(new RegistrationWebServiceV4Processor(this));
+
+		// Register handlers: internal
+		logger.debug("Configuring internal server request handlers...");
+		// TODO: internal request handlers
+	}
+
+	/**
+	 * Starts the server
+	 */
+	public void startServer() throws IOException {
+		if (server == null)
+			throw new IllegalArgumentException("Server has not been set up");
+		if (server.isRunning())
+			throw new IllegalArgumentException("Server is already running");
+
+		// Start server
+		logger.info("Starting the Common API server...");
+		server.start();
+		logger.info("Common API server started successfully!");
+		logger.info("Starting the Common API internal server...");
+		internalServer.start();
+		logger.info("Common API internal server started successfully!");
+	}
+
+	/**
+	 * Stops the server
+	 */
+	public void stopServer() {
+		if (server == null)
+			throw new IllegalArgumentException("Server has not been set up");
+		if (!server.isRunning())
+			throw new IllegalArgumentException("Server is not running");
+
+		// Stop the server
+		logger.info("Shutting down the Common API server...");
+		try {
+			server.stop();
+		} catch (IOException e) {
+		}
+		logger.info("Common API server stopped successfully!");
+		logger.info("Shutting down the Common API internal server...");
+		try {
+			internalServer.stop();
+		} catch (IOException e) {
+		}
+		logger.info("Common API internal server stopped successfully!");
+	}
+
+	/**
+	 * Stops the server forcefully
+	 */
+	public void killServer() {
+		if (server == null)
+			throw new IllegalArgumentException("Server has not been set up");
+		if (!server.isRunning())
+			throw new IllegalArgumentException("Server is not running");
+
+		// Kill the server
+		logger.info("Forcefully shutting down the Common API server!");
+		try {
+			server.stopForced();
+		} catch (IOException e) {
+		}
+		logger.info("Common API server stopped successfully!");
+		logger.info("Forcefully shutting down the Common API internal server!");
+		try {
+			internalServer.stopForced();
+		} catch (IOException e) {
+		}
+		logger.info("Common API internal server stopped successfully!");
+	}
+
+	/**
+	 * Checks if the server is running
+	 * 
+	 * @return True if running, false otherwise
+	 */
+	public boolean isRunning() {
+		if (server == null)
+			return false;
+		return server.isRunning();
+	}
+
+	/**
+	 * Waits for the server to quit
+	 */
+	public void waitForExit() {
+		// Wait for server to stop
+		server.waitForExit();
+		internalServer.waitForExit();
+	}
+
+}

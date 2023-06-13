@@ -12,6 +12,14 @@ import org.asf.edge.contentserver.EdgeContentServer;
 import org.asf.edge.contentserver.config.ContentServerConfig;
 import org.asf.edge.contentserver.events.config.ContentServerConfigLoadedEvent;
 import org.asf.edge.contentserver.events.config.ContentServerConfigPresetupEvent;
+import org.asf.edge.gameplayapi.events.config.GameplayApiServerConfigLoadedEvent;
+import org.asf.edge.gameplayapi.events.config.GameplayApiServerConfigPresetupEvent;
+import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
+import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
+import org.asf.edge.commonapi.events.config.CommonApiServerConfigLoadedEvent;
+import org.asf.edge.commonapi.events.config.CommonApiServerConfigPresetupEvent;
+import org.asf.edge.commonapi.EdgeCommonApiServer;
+import org.asf.edge.commonapi.config.CommonApiServerConfig;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
 
@@ -38,6 +46,8 @@ public class EdgeGlobalServerMain {
 		Logger logger = LogManager.getLogger("FULLSERVER");
 		logger.info("EDGE Global (full) server is starting!");
 		logger.info("Content server version: " + EdgeContentServer.CONTENT_SERVER_VERSION);
+		logger.info("Common API version: " + EdgeCommonApiServer.COMMON_API_VERSION);
+		logger.info("Gameplay API server version: " + EdgeGameplayApiServer.GAMEPLAY_API_VERSION);
 		logger.info("Global server version: " + GLOBAL_SERVER_VERSION);
 		logger.info("Preparing to start...");
 
@@ -47,6 +57,10 @@ public class EdgeGlobalServerMain {
 		// Create config objects
 		ContentServerConfig contentSrvConfig = new ContentServerConfig();
 		EventBus.getInstance().dispatchEvent(new ContentServerConfigPresetupEvent(contentSrvConfig));
+		GameplayApiServerConfig gpApiConfig = new GameplayApiServerConfig();
+		EventBus.getInstance().dispatchEvent(new GameplayApiServerConfigPresetupEvent(gpApiConfig));
+		CommonApiServerConfig cApiConfig = new CommonApiServerConfig();
+		EventBus.getInstance().dispatchEvent(new CommonApiServerConfigPresetupEvent(cApiConfig));
 
 		// Load configuration
 		logger.info("Loading server configuration...");
@@ -66,6 +80,34 @@ public class EdgeGlobalServerMain {
 					+ "        \"https\": false,\n" // use https?
 					+ "        \"tlsKeystore\": null,\n" // keystore file
 					+ "        \"tlsKeystorePassword\": null\n" // keystore password
+					+ "    },\n" //
+					+ "\n" //
+					+ "    \"gameplayApiServer\": {\n" //
+					+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
+					+ "        \"listenPort\": 5320,\n" // port to listen on
+					+ "        \"apiRequestListenPath\": \"/\",\n" // URI to listen on
+					+ "\n" //
+					+ "        \"https\": false,\n" // use https?
+					+ "        \"tlsKeystore\": null,\n" // keystore file
+					+ "        \"tlsKeystorePassword\": null\n" // keystore password
+					+ "    },\n" //
+					+ "\n" //
+					+ "    \"commonApiServer\": {\n" //
+					+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
+					+ "        \"listenPort\": 5321,\n" // port to listen on
+					+ "        \"apiRequestListenPath\": \"/\",\n" // URI to listen on
+					+ "\n" //
+					+ "        \"https\": false,\n" // use https?
+					+ "        \"tlsKeystore\": null,\n" // keystore file
+					+ "        \"tlsKeystorePassword\": null,\n" // keystore password
+					+ "\n" //
+					+ "        \"internalListenAddress\": \"127.0.0.1\",\n" // listen address
+					+ "        \"internalListenPort\": 5324,\n" // port to listen on
+					+ "        \"accountDatabaseDir\": \"./data/accounts\",\n" // URI to listen on
+					+ "\n" //
+					+ "        \"httpsInternal\": false,\n" // use https?
+					+ "        \"tlsKeystoreInternal\": null,\n" // keystore file
+					+ "        \"tlsKeystorePasswordInternal\": null\n" // keystore password
 					+ "    },\n" //
 					+ "\n" //
 					+ "    \"modules\": {\n" //
@@ -99,6 +141,59 @@ public class EdgeGlobalServerMain {
 			contentSrvConfig.tlsKeystorePassword = contentSrvJson.get("tlsKeystorePassword").getAsString();
 		}
 
+		// Common api server
+		logger.debug("Configuring Common API server settings...");
+		JsonObject cApiJson = configData.get("commonApiServer").getAsJsonObject();
+		if (cApiConfig.server == null) {
+			logger.debug("Loading listening settings...");
+			cApiConfig.listenAddress = cApiJson.get("listenAddress").getAsString();
+			cApiConfig.listenPort = cApiJson.get("listenPort").getAsInt();
+		}
+		logger.debug("Loading IO settings...");
+		cApiConfig.apiRequestListenPath = cApiJson.get("apiRequestListenPath").getAsString();
+		if (cApiConfig.server == null) {
+			logger.debug("Loading encryption settings...");
+			cApiConfig.https = cApiJson.get("https").getAsBoolean();
+			if (cApiConfig.https) {
+				cApiConfig.tlsKeystore = cApiJson.get("tlsKeystore").getAsString();
+				cApiConfig.tlsKeystorePassword = cApiJson.get("tlsKeystorePassword").getAsString();
+			}
+		}
+		logger.debug("Loading internal server settings...");
+		if (cApiConfig.internalServer == null) {
+			logger.debug("Loading listening settings...");
+			cApiConfig.internalListenAddress = cApiJson.get("internalListenAddress").getAsString();
+			cApiConfig.internalListenPort = cApiJson.get("internalListenPort").getAsInt();
+		}
+		cApiConfig.accountDatabaseDir = cApiJson.get("accountDatabaseDir").getAsString();
+		if (cApiConfig.internalServer == null) {
+			logger.debug("Loading encryption settings...");
+			cApiConfig.httpsInternal = cApiJson.get("httpsInternal").getAsBoolean();
+			if (cApiConfig.httpsInternal) {
+				cApiConfig.tlsKeystoreInternal = cApiJson.get("tlsKeystoreInternal").getAsString();
+				cApiConfig.tlsKeystorePasswordInternal = cApiJson.get("tlsKeystorePasswordInternal").getAsString();
+			}
+		}
+
+		// Gameplay api server
+		logger.debug("Configuring Gameplay API server settings...");
+		JsonObject gpApiJson = configData.get("gameplayApiServer").getAsJsonObject();
+		if (gpApiConfig.server == null) {
+			logger.debug("Loading listening settings...");
+			gpApiConfig.listenAddress = gpApiJson.get("listenAddress").getAsString();
+			gpApiConfig.listenPort = gpApiJson.get("listenPort").getAsInt();
+		}
+		logger.debug("Loading IO settings...");
+		gpApiConfig.apiRequestListenPath = gpApiJson.get("apiRequestListenPath").getAsString();
+		if (gpApiConfig.server == null) {
+			logger.debug("Loading encryption settings...");
+			gpApiConfig.https = gpApiJson.get("https").getAsBoolean();
+			if (gpApiConfig.https) {
+				gpApiConfig.tlsKeystore = gpApiJson.get("tlsKeystore").getAsString();
+				gpApiConfig.tlsKeystorePassword = gpApiJson.get("tlsKeystorePassword").getAsString();
+			}
+		}
+
 		// Load module settings
 		if (configData.has("modules")) {
 			logger.debug("Loading module configurations...");
@@ -117,6 +212,8 @@ public class EdgeGlobalServerMain {
 
 		// Dispatch event
 		EventBus.getInstance().dispatchEvent(new ContentServerConfigLoadedEvent(contentSrvConfig));
+		EventBus.getInstance().dispatchEvent(new GameplayApiServerConfigLoadedEvent(gpApiConfig));
+		EventBus.getInstance().dispatchEvent(new CommonApiServerConfigLoadedEvent(cApiConfig));
 
 		// Setup servers
 		logger.info("Setting up servers...");
@@ -126,8 +223,20 @@ public class EdgeGlobalServerMain {
 		EdgeContentServer contSrv = new EdgeContentServer(contentSrvConfig);
 		contSrv.setupServer();
 
+		// Common server
+		logger.info("Setting up the Common API server...");
+		EdgeCommonApiServer cApiSrv = new EdgeCommonApiServer(cApiConfig);
+		cApiSrv.setupServer();
+
+		// Gameplay server
+		logger.info("Setting up the Gameplay API server...");
+		EdgeGameplayApiServer gpApiSrv = new EdgeGameplayApiServer(gpApiConfig);
+		gpApiSrv.setupServer();
+
 		// Start servers
 		contSrv.startServer();
+		cApiSrv.startServer();
+		gpApiSrv.startServer();
 
 		// Call post-init
 		ModuleManager.runModulePostInit();
@@ -135,6 +244,8 @@ public class EdgeGlobalServerMain {
 		// Wait for exit
 		logger.info("EDGE servers are running!");
 		contSrv.waitForExit();
+		cApiSrv.waitForExit();
+		gpApiSrv.waitForExit();
 	}
 
 }
