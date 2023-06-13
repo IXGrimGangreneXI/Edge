@@ -79,7 +79,7 @@ public class EdgeContentServerMain {
 		JsonObject configData = JsonParser.parseString(Files.readString(configFile.toPath())).getAsJsonObject();
 
 		// Load server settings
-		if (config.server != null) {
+		if (config.server == null) {
 			logger.debug("Loading listening settings...");
 			config.listenAddress = configData.get("listenAddress").getAsString();
 			config.listenPort = configData.get("listenPort").getAsInt();
@@ -88,7 +88,7 @@ public class EdgeContentServerMain {
 		config.contentRequestListenPath = configData.get("contentRequestListenPath").getAsString();
 		config.contentDataPath = configData.get("contentDataPath").getAsString();
 		config.allowIndexingAssets = configData.get("allowIndexingAssets").getAsBoolean();
-		if (config.server != null) {
+		if (config.server == null) {
 			logger.debug("Loading encryption settings...");
 			config.https = configData.get("https").getAsBoolean();
 			config.tlsKeystore = configData.get("tlsKeystore").getAsString();
