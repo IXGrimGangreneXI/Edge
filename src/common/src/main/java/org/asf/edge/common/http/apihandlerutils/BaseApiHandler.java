@@ -43,7 +43,7 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 
 	/**
 	 * Defines API encryption secrets by API key, default will use the windows key
-	 * of version 3.31.0
+	 * of version 3.31.0, keys MUST be upper-case
 	 */
 	public static HashMap<String, String> API_SECRET_MAP = new HashMap<String, String>();
 
@@ -450,8 +450,8 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 		 */
 		public String getSecretFromKey(String apiKey, Logger logger) {
 			String secret = "56BB211B-CF06-48E1-9C1D-E40B5173D759";
-			if (API_SECRET_MAP.containsKey(apiKey))
-				secret = API_SECRET_MAP.get(apiKey);
+			if (API_SECRET_MAP.containsKey(apiKey.toUpperCase()))
+				secret = API_SECRET_MAP.get(apiKey.toUpperCase());
 			else {
 				// Warn
 				logger.warn("No secret for API key " + apiKey + ", using default!");
