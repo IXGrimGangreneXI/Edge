@@ -126,17 +126,23 @@ public class EdgeContentServerDumper {
 				String url = asset.name;
 				url = asset.name;
 				if (url.startsWith("RS_CONTENT/"))
-					url = conf.contentDataURL[0].replace("{Version}", version) + url.substring("RS_CONTENT".length());
+					url = conf.contentDataURL[0].replace("/Mid/", "/" + level + "/").replace("{Version}", version)
+							+ url.substring("RS_CONTENT".length());
 				else if (url.startsWith("RS_DATA/"))
-					url = conf.dataURL[0].replace("{Version}", version) + url.substring("RS_DATA".length());
+					url = conf.dataURL[0].replace("/Mid/", "/" + level + "/").replace("{Version}", version)
+							+ url.substring("RS_DATA".length());
 				else if (url.startsWith("RS_SCENE/"))
-					url = conf.sceneURL[0].replace("{Version}", version) + url.substring("RS_SCENE".length());
+					url = conf.sceneURL[0].replace("/Mid/", "/" + level + "/").replace("{Version}", version)
+							+ url.substring("RS_SCENE".length());
 				else if (url.startsWith("RS_SHARED/"))
-					url = conf.sharedDataURL[0].replace("{Version}", version) + url.substring("RS_SHARED".length());
+					url = conf.sharedDataURL[0].replace("/Mid/", "/" + level + "/").replace("{Version}", version)
+							+ url.substring("RS_SHARED".length());
 				else if (url.startsWith("RS_SOUND/"))
-					url = conf.soundURL[0].replace("{Version}", version) + url.substring("RS_SOUND".length());
+					url = conf.soundURL[0].replace("/Mid/", "/" + level + "/").replace("{Version}", version)
+							+ url.substring("RS_SOUND".length());
 				else if (url.startsWith("RS_MOVIES/"))
-					url = conf.moviesURL[0].replace("{Version}", version) + url.substring("RS_MOVIES".length());
+					url = conf.moviesURL[0].replace("/Mid/", "/" + level + "/").replace("{Version}", version)
+							+ url.substring("RS_MOVIES".length());
 				else
 					throw new IOException("Unable to translate path: " + url); // ?
 				URL u = new URL(url);
