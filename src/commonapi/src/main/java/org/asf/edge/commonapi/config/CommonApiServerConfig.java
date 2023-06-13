@@ -75,7 +75,7 @@ public class CommonApiServerConfig {
 	/**
 	 * Account database folder
 	 */
-	public String accountDatabaseDir = "./account-data";
+	public String accountDataDir = "./account-data";
 
 	/**
 	 * Path to register the API request handler on

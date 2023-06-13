@@ -24,11 +24,6 @@ public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeComm
 	}
 
 	@Override
-	public String[] allowedMethods() {
-		return new String[] { "GET", "POST" }; // FIXME: verify allowed methods
-	}
-
-	@Override
 	public void fallbackRequestProcessor(String path, String method, RemoteClient client, String contentType) throws IOException {
 		// Handle request
 		path = path;

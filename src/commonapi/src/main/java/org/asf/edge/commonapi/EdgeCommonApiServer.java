@@ -121,9 +121,9 @@ public class EdgeCommonApiServer implements IBaseServer {
 		internalServer = config.internalServer;
 
 		// Prepare data folder
-		File dataPath = new File(config.accountDatabaseDir);
+		File dataPath = new File(config.accountDataDir);
 		if (!dataPath.exists()) {
-			logger.debug("Creating account database folder...");
+			logger.debug("Creating account data folder...");
 			if (!dataPath.mkdirs())
 				throw new IOException("Failed to create directory: " + dataPath);
 		}

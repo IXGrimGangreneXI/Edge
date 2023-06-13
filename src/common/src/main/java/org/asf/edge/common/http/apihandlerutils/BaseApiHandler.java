@@ -118,13 +118,6 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 	}
 
 	/**
-	 * Retrieves the list of allowed methods
-	 * 
-	 * @return Array of allowed method strings
-	 */
-	public abstract String[] allowedMethods();
-
-	/**
 	 * Retrieves the server instance
 	 */
 	protected T getServerInstance() {
@@ -159,23 +152,24 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 			return;
 		}
 
-		// Check method
-		boolean allowed = false;
-		for (String mth : allowedMethods()) {
-			if (mth.equalsIgnoreCase(method)) {
-				allowed = true;
-				break;
-			}
-		}
-		if (!allowed) {
-			setResponseStatus(405, "Method not allowed");
-			return;
-		}
-
 		// Find function
 		if (functions.containsKey(path.toLowerCase())) {
 			// Get function
 			Method mth = functions.get(path.toLowerCase());
+			Function anno = mth.getAnnotation(Function.class);
+
+			// Check method
+			boolean allowed = false;
+			for (String meth : anno.allowedMethods()) {
+				if (meth.equalsIgnoreCase(method)) {
+					allowed = true;
+					break;
+				}
+			}
+			if (!allowed) {
+				setResponseStatus(405, "Method not allowed");
+				return;
+			}
 
 			// Run function
 			try {
@@ -292,9 +286,18 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 		 */
 		public String getEncryptedValue(String key) throws IOException {
 			String encrypted = payload.get(key);
+			return decryptString(encrypted);
+		}
 
-			// Decode
-			byte[] enc = Base64.getDecoder().decode(encrypted);
+		/**
+		 * Decrypts a string
+		 * 
+		 * @param data String to decrypt
+		 * @return Decrypted value string
+		 * @throws IOException If decrypting fails
+		 */
+		public String decryptString(String data) throws IOException {
+			byte[] enc = Base64.getDecoder().decode(data);
 
 			// Decrypt
 			byte[] dec = TripleDesUtil.decrypt(enc, desKey);

@@ -8,6 +8,10 @@ import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.xmls.ProductRuleData;
+import org.asf.edge.commonapi.xmls.auth.GuestLoginData;
+import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
+import org.asf.edge.commonapi.xmls.auth.ParentLoginData;
+import org.asf.edge.commonapi.xmls.auth.ParentLoginResponseData;
 
 public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeCommonApiServer> {
 
@@ -26,11 +30,6 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 	}
 
 	@Override
-	public String[] allowedMethods() {
-		return new String[] { "GET", "POST" }; // FIXME: verify allowed methods
-	}
-
-	@Override
 	public void fallbackRequestProcessor(String path, String method, RemoteClient client, String contentType)
 			throws IOException {
 		// Handle request
@@ -38,20 +37,7 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function
-	public void loginParent(FunctionInfo func) throws IOException {
-		// Handle login request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return;
-
-		// User/password initial login
-		String parentLoginData = req.getEncryptedValue("parentLoginData");
-		req = req;
-		setResponseStatus(404, "Not found");
-	}
-
-	@Function
+	@Function(allowedMethods = { "POST" })
 	public void getRules(FunctionInfo func) throws IOException {
 		// Handle rules request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
@@ -71,6 +57,36 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 
 		// Set response
 		setResponseContent("text/xml", encrypted);
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void loginGuest(FunctionInfo func) throws IOException {
+		// Handle login request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+
+		// Guest login
+		String guestLoginData = req.getEncryptedValue("guestLoginData");
+		GuestLoginData login = req.parseXmlValue(guestLoginData, GuestLoginData.class);
+
+		// Find account
+
+		setResponseStatus(404, "Not found");
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void loginParent(FunctionInfo func) throws IOException {
+		// Handle login request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+
+		// User/password initial login
+		String parentLoginData = req.getEncryptedValue("parentLoginData");
+		ParentLoginData login = req.parseXmlValue(parentLoginData, ParentLoginData.class);
+		req = req;
+		setResponseStatus(404, "Not found");
 	}
 
 }

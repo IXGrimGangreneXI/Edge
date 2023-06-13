@@ -24,12 +24,8 @@ public class MembershipWebServiceProcessor extends BaseApiHandler<EdgeCommonApiS
 	}
 
 	@Override
-	public String[] allowedMethods() {
-		return new String[] { "GET", "POST" }; // FIXME: verify allowed methods
-	}
-
-	@Override
-	public void fallbackRequestProcessor(String path, String method, RemoteClient client, String contentType) throws IOException {
+	public void fallbackRequestProcessor(String path, String method, RemoteClient client, String contentType)
+			throws IOException {
 		// Handle request
 		path = path;
 		setResponseStatus(404, "Not found");

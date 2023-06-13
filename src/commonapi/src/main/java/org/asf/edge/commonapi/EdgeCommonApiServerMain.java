@@ -54,7 +54,7 @@ public class EdgeCommonApiServerMain {
 					+ "\n" //
 					+ "    \"internalListenAddress\": \"0.0.0.0\",\n" // listen address
 					+ "    \"internalListenPort\": 5324,\n" // port to listen on
-					+ "    \"accountDatabaseDir\": \"./account-data\",\n" // URI to listen on
+					+ "    \"accountDataDir\": \"./account-data\",\n" // URI to listen on
 					+ "\n" //
 					+ "    \"httpsInternal\": false,\n" // use https?
 					+ "    \"tlsKeystoreInternal\": null,\n" // keystore file
@@ -92,7 +92,7 @@ public class EdgeCommonApiServerMain {
 			config.internalListenAddress = configData.get("internalListenAddress").getAsString();
 			config.internalListenPort = configData.get("internalListenPort").getAsInt();
 		}
-		config.accountDatabaseDir = configData.get("accountDatabaseDir").getAsString();
+		config.accountDataDir = configData.get("accountDataDir").getAsString();
 		if (config.internalServer == null) {
 			logger.debug("Loading encryption settings...");
 			config.httpsInternal = configData.get("httpsInternal").getAsBoolean();

@@ -21,4 +21,6 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 public @interface Function {
 	public String value() default ("<auto>");
+
+	public String[] allowedMethods() default { "GET", "POST" };
 }
