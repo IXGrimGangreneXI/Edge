@@ -91,8 +91,10 @@ public class EdgeContentServerMain {
 		if (config.server == null) {
 			logger.debug("Loading encryption settings...");
 			config.https = configData.get("https").getAsBoolean();
-			config.tlsKeystore = configData.get("tlsKeystore").getAsString();
-			config.tlsKeystorePassword = configData.get("tlsKeystorePassword").getAsString();
+			if (config.https) {
+				config.tlsKeystore = configData.get("tlsKeystore").getAsString();
+				config.tlsKeystorePassword = configData.get("tlsKeystorePassword").getAsString();
+			}
 		}
 
 		// Load module settings
