@@ -45,21 +45,10 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		if (req == null)
 			return;
 
-		// Verify login
-		if (req.payload.containsKey("childUserID")) {
-			// ?????
-			long ticks = Long.parseLong(req.payload.get("ticks"));
-			String parentApiToken = req.payload.get("parentApiToken");
-			String childUserID = req.getEncryptedValue("childUserID");
-			String locale = req.payload.get("locale");
-			req = req;
-			setResponseStatus(404, "Not found");
-		} else {
-			// User/password initial login
-			String parentLoginData = req.getEncryptedValue("parentLoginData");
-			req = req;
-			setResponseStatus(404, "Not found");
-		}
+		// User/password initial login
+		String parentLoginData = req.getEncryptedValue("parentLoginData");
+		req = req;
+		setResponseStatus(404, "Not found");
 	}
 
 	@Function
