@@ -174,8 +174,9 @@ public class SnifferMain {
 				}
 
 				// Check path
-				if (path.equalsIgnoreCase("/v3/AuthenticationWebService.asmx/LoginParent")
-						|| path.equalsIgnoreCase("/AuthenticationWebService.asmx/LoginChild")) {
+				if (!disableCredentialSafeties
+						&& (path.equalsIgnoreCase("/v3/AuthenticationWebService.asmx/LoginParent")
+								|| path.equalsIgnoreCase("/AuthenticationWebService.asmx/LoginChild"))) {
 					LogManager.getLogger("Sniffer").warn("Skipped logging " + url + " to prevent credential leak");
 					return;
 				}
@@ -194,8 +195,9 @@ public class SnifferMain {
 				logRequest(requestInfo, respInfo);
 
 				// Check path
-				if (path.equalsIgnoreCase("/v3/AuthenticationWebService.asmx/LoginParent")
-						|| path.equalsIgnoreCase("/AuthenticationWebService.asmx/LoginChild")) {
+				if (!disableCredentialSafeties
+						&& (path.equalsIgnoreCase("/v3/AuthenticationWebService.asmx/LoginParent")
+								|| path.equalsIgnoreCase("/AuthenticationWebService.asmx/LoginChild"))) {
 					LogManager.getLogger("Sniffer").warn("Skipped logging " + url + " to prevent credential leak");
 					return;
 				}
@@ -250,6 +252,7 @@ public class SnifferMain {
 	}
 
 	private static String encryptedManifest;
+	private static boolean disableCredentialSafeties;
 
 	public static void main(String[] args) throws IOException {
 		// Init common
@@ -262,6 +265,20 @@ public class SnifferMain {
 		// Load config
 		log.info("Loading configuration...");
 		JsonObject config = JsonParser.parseString(Files.readString(Path.of("sniffer.json"))).getAsJsonObject();
+		if (config.has("disableCredentialSafeties"))
+			disableCredentialSafeties = config.get("disableCredentialSafeties").getAsBoolean();
+		if (disableCredentialSafeties) {
+			log.warn("!!! WARNING !!!");
+			log.warn("");
+			log.warn("Credential filtering has been disabled!");
+			log.warn(
+					"If you do not wish filtering to be disabled, edit config.json and set 'disableCredentialSafeties' to false!");
+			log.warn("");
+			log.warn("DO NOT SEND THIS SNIFF TO ANYONE YOU DO NOT PERSONALLY TRUST IF THIS OPTION IS ENABLED");
+			log.warn("OTHERWISE THEY WILL RECEIVE YOUR LOGIN CREDENTIALS");
+			log.warn("");
+			log.warn("!!! WARNING !!!");
+		}
 
 		// Download manifest
 		log.info("Downloading application manifest...");
