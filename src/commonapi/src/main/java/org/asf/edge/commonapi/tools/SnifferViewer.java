@@ -598,7 +598,7 @@ public class SnifferViewer {
 						if (headers.has("Content-Type") && headers.get("Content-Type").getAsString()
 								.equalsIgnoreCase("application/x-www-form-urlencoded")) {
 							// Decode form
-							Map<String, String> form = parseForm(body);
+							Map<String, String> form = parseForm(body.replace("\r", "\n"));
 							body = "";
 							for (String key : form.keySet()) {
 								if (!body.isEmpty())
