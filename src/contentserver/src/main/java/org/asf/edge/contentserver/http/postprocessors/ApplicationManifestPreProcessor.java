@@ -48,7 +48,7 @@ public class ApplicationManifestPreProcessor implements IPreProcessor {
 		byte[] key;
 		try {
 			MessageDigest digest = MessageDigest.getInstance("MD5");
-			key = digest.digest(secret.getBytes("UTF-8"));
+			key = digest.digest(secret.getBytes("ASCII"));
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
 		}
@@ -63,7 +63,7 @@ public class ApplicationManifestPreProcessor implements IPreProcessor {
 		// Convert to base64
 		String base64Manifest = Base64.getEncoder().encodeToString(manifest);
 
-		return new ByteArrayInputStream(base64Manifest.getBytes("UTF-8"));
+		return new ByteArrayInputStream(base64Manifest.getBytes("ASCII"));
 	}
 
 }
