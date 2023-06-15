@@ -132,7 +132,7 @@ public class ServiceManager {
 			EventBus.getInstance().addEventReceiver(i[0].implementation);
 			services.put(service.getTypeName(), i[0].implementation);
 			logger.debug("Service implementation selected for " + service.getTypeName() + ": "
-					+ i[0].getClass().getTypeName());
+					+ i[0].implementation.getClass().getTypeName());
 			return (T) i[0].implementation;
 		}
 		throw new IllegalArgumentException("No service implementations for " + service.getTypeName());

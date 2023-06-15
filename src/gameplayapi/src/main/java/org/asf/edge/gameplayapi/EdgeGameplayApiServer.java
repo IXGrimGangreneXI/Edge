@@ -13,6 +13,9 @@ import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.gameplayapi.http.handlers.achievements.*;
 import org.asf.edge.common.IBaseServer;
+import org.asf.edge.common.account.AccountManager;
+import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
+import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.gameplayapi.events.server.GameplayApiServerSetupEvent;
 import org.asf.edge.gameplayapi.events.server.GameplayApiServerStartupEvent;
 import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
@@ -109,6 +112,15 @@ public class EdgeGameplayApiServer implements IBaseServer {
 
 		// Assign server
 		server = config.server;
+
+		// Prepare service
+		logger.debug("Loading account manager implementations...");
+		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.NORMAL,
+				ServiceImplementationPriorityLevels.DEFAULT);
+		logger.debug("Selecting account manager implementation...");
+		ServiceManager.selectServiceImplementation(AccountManager.class);
+		logger.debug("Loading account manager...");
+		AccountManager.getInstance().loadManager();
 
 		// Register content source
 		logger.debug("Adding case-insensitive content source...");

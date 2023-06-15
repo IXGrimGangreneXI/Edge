@@ -2,6 +2,8 @@ package org.asf.edge.common.account.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 
 import org.apache.logging.log4j.LogManager;
@@ -49,7 +51,8 @@ public class RemoteHttpAccountManager extends AccountManager {
 				logger.error("Failed to write the account manager configuration!", e);
 				return;
 			}
-		}
+		} else
+			config = accountManagerConfig.get("remoteHttpManager").getAsJsonObject();
 
 		// Load url
 		urlBase = config.get("url").getAsString();
@@ -60,22 +63,76 @@ public class RemoteHttpAccountManager extends AccountManager {
 		logger.warn("Warning: its highly recommened to use a different implementation, such as a database server.");
 	}
 
+	private JsonObject accountManagerRequest(String function, JsonObject payload) throws IOException {
+		// Build url
+		String url = urlBase;
+		url += function;
+
+		// Open connection
+		HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+		conn.setRequestMethod("POST");
+		conn.setDoOutput(true);
+
+		// Write request
+		conn.getOutputStream().write(payload.toString().getBytes("UTF-8"));
+
+		// Check response
+		if (conn.getResponseCode() != 200)
+			throw new IOException("Server returned HTTP " + conn.getResponseCode() + " " + conn.getResponseMessage());
+
+		// Read response
+		try {
+			return JsonParser.parseString(new String(conn.getInputStream().readAllBytes(), "UTF-8")).getAsJsonObject();
+		} catch (Exception e) {
+			throw new IOException("Server returned a non-json response");
+		}
+	}
+
 	@Override
 	public boolean isValidUsername(String username) {
-		// TODO Auto-generated method stub
-		return false;
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("username", username);
+			JsonObject response = accountManagerRequest("isValidUsername", payload);
+			return response.get("result").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in isValidUsername!", e);
+			return false;
+		}
 	}
 
 	@Override
 	public boolean isUsernameTaken(String username) {
-		// TODO Auto-generated method stub
-		return false;
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("username", username);
+			JsonObject response = accountManagerRequest("isUsernameTaken", payload);
+			return response.get("result").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in isUsernameTaken!", e);
+			return false;
+		}
 	}
 
 	@Override
 	public String getAccountID(String username) {
-		// TODO Auto-generated method stub
-		return null;
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("username", username);
+			JsonObject response = accountManagerRequest("getAccountID", payload);
+			if (!response.get("success").getAsBoolean())
+				return null;
+			return response.get("id").getAsString();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getAccountID!", e);
+			return null;
+		}
 	}
 
 }

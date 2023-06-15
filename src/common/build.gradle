@@ -60,6 +60,7 @@ dependencies {
 	
 	implementation group: 'javax.activation', name: 'activation', version: '1.1.1'
 	
+	implementation group: 'org.apache.derby', name: 'derbytools', version: '10.16.1.1'
 	implementation group: 'org.apache.derby', name: 'derby', version: '10.16.1.1'
 	implementation group: 'com.mysql', name: 'mysql-connector-j', version: '8.0.33'
 	
