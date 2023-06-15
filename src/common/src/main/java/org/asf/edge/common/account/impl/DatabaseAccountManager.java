@@ -77,9 +77,9 @@ public class DatabaseAccountManager extends AccountManager {
 
 			// Create tables
 			Statement statement = conn.createStatement();
-			statement.executeUpdate("CREATE TABLE IF NOT EXISTS PLAYERDATA (PATH varchar(292), DATA LONGBLOB)");
 			statement.executeUpdate(
-					"CREATE TABLE IF NOT EXISTS ACCOUNTMAP (USERNAME varchar(100), ID CHAR(36), CREDS varchar(200))");
+					"CREATE TABLE IF NOT EXISTS ACCOUNTMAP (USERNAME varchar(100), ID CHAR(36), CREDS BLOB(48))");
+			statement.executeUpdate("CREATE TABLE IF NOT EXISTS PLAYERDATA (PATH varchar(292), DATA LONGTEXT)");
 		} catch (SQLException | ClassNotFoundException e) {
 			logger.error("Failed to connect to database!", e);
 			System.exit(1);
@@ -88,7 +88,8 @@ public class DatabaseAccountManager extends AccountManager {
 
 	@Override
 	public boolean isValidUsername(String username) {
-		// TODO Auto-generated method stub
+		if (username.replace(" ", "").equals("") || username.length() < 5 || !username.matches("^[A-Za-z].*"))
+			return false;
 		return false;
 	}
 
