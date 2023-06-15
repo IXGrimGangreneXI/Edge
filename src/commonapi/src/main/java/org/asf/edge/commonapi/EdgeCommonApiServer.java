@@ -12,6 +12,7 @@ import org.asf.edge.commonapi.http.handlers.api.core.*;
 import org.asf.edge.commonapi.http.handlers.api.accounts.*;
 import org.asf.edge.commonapi.http.handlers.api.avatars.*;
 import org.asf.edge.commonapi.http.handlers.api.messaging.*;
+import org.asf.edge.commonapi.http.handlers.internal.*;
 import org.asf.edge.commonapi.events.server.*;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.common.IBaseServer;
@@ -178,7 +179,7 @@ public class EdgeCommonApiServer implements IBaseServer {
 
 		// Register handlers: internal
 		logger.debug("Configuring internal server request handlers...");
-		// TODO: internal request handlers
+		internalServer.registerProcessor(new AccountManagerAPI(this));
 	}
 
 	/**
