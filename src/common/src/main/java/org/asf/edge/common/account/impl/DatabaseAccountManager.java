@@ -89,10 +89,10 @@ public class DatabaseAccountManager extends AccountManager {
 			// Create data map if needed
 			set = conn.getMetaData().getTables(null, null, "PLAYERDATA", null);
 			if (!set.next())
-				statement.executeUpdate("CREATE TABLE PLAYERDATA (PATH varchar(292), DATA CLOB)");
+				statement.executeUpdate("CREATE TABLE PLAYERDATA (PATH varchar(292), DATA BLOB)");
 		} catch (SQLException | ClassNotFoundException e) {
 			logger.error("Failed to connect to database!", e);
-			return;
+			System.exit(1);
 		}
 	}
 
