@@ -103,7 +103,6 @@ public class EdgeGlobalServerMain {
 					+ "\n" //
 					+ "        \"internalListenAddress\": \"127.0.0.1\",\n" // listen address
 					+ "        \"internalListenPort\": 5324,\n" // port to listen on
-					+ "        \"accountDataDir\": \"./data/accounts\",\n" // URI to listen on
 					+ "\n" //
 					+ "        \"httpsInternal\": false,\n" // use https?
 					+ "        \"tlsKeystoreInternal\": null,\n" // keystore file
@@ -165,7 +164,6 @@ public class EdgeGlobalServerMain {
 			cApiConfig.internalListenAddress = cApiJson.get("internalListenAddress").getAsString();
 			cApiConfig.internalListenPort = cApiJson.get("internalListenPort").getAsInt();
 		}
-		cApiConfig.accountDataDir = cApiJson.get("accountDataDir").getAsString();
 		if (cApiConfig.internalServer == null) {
 			logger.debug("Loading encryption settings...");
 			cApiConfig.httpsInternal = cApiJson.get("httpsInternal").getAsBoolean();

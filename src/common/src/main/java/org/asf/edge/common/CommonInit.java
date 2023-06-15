@@ -1,5 +1,9 @@
 package org.asf.edge.common;
 
+import org.asf.edge.common.account.AccountManager;
+import org.asf.edge.common.account.impl.RemoteHttpAccountManager;
+import org.asf.edge.common.services.ServiceManager;
+
 /**
  * 
  * Called to initialize common code of Edge
@@ -9,6 +13,7 @@ package org.asf.edge.common;
  */
 public class CommonInit {
 	private static boolean logInited;
+	private static boolean defaultServicesInited;
 	private static boolean debugMode;
 
 	/**
@@ -16,6 +21,19 @@ public class CommonInit {
 	 */
 	public static void initAll() {
 		initLogging();
+		initDefaultServices();
+	}
+
+	/**
+	 * Registers default services
+	 */
+	public static void initDefaultServices() {
+		if (defaultServicesInited)
+			return;
+		defaultServicesInited = true;
+
+		// Register default account manager
+		ServiceManager.registerServiceImplementation(AccountManager.class, new RemoteHttpAccountManager());
 	}
 
 	/**

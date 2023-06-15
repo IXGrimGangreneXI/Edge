@@ -1,6 +1,5 @@
 package org.asf.edge.commonapi;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -16,6 +15,8 @@ import org.asf.edge.commonapi.http.handlers.api.messaging.*;
 import org.asf.edge.commonapi.events.server.*;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.common.IBaseServer;
+import org.asf.edge.common.account.AccountManager;
+import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.commonapi.config.CommonApiServerConfig;
 
 /**
@@ -140,13 +141,14 @@ public class EdgeCommonApiServer implements IBaseServer {
 		server = config.server;
 		internalServer = config.internalServer;
 
-		// Prepare data folder
-		File dataPath = new File(config.accountDataDir);
-		if (!dataPath.exists()) {
-			logger.debug("Creating account data folder...");
-			if (!dataPath.mkdirs())
-				throw new IOException("Failed to create directory: " + dataPath);
-		}
+		// Add account manager service implementation for databases
+		// TODO
+
+		// Prepare service
+		logger.debug("Selecting account manager implementation...");
+		ServiceManager.selectServiceImplementation(AccountManager.class);
+		logger.debug("Loading account manager...");
+		AccountManager.getInstance().loadManager();
 
 		// Register content source
 		logger.debug("Adding case-insensitive content sources...");

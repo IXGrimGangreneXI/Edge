@@ -73,11 +73,6 @@ public class CommonApiServerConfig {
 	public int internalListenPort = 5324;
 
 	/**
-	 * Account database folder
-	 */
-	public String accountDataDir = "./account-data";
-
-	/**
 	 * Path to register the API request handler on
 	 */
 	public String apiRequestListenPath = "/";
