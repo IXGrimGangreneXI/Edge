@@ -11,6 +11,8 @@ import org.asf.edge.modules.eventbus.IEventReceiver;
  */
 public abstract class AbstractService implements IEventReceiver {
 
+	boolean inited;
+
 	/**
 	 * Called to initialize the service
 	 */
