@@ -16,9 +16,6 @@ import org.asf.edge.commonapi.http.handlers.internal.*;
 import org.asf.edge.commonapi.events.server.*;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.common.IBaseServer;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
-import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.commonapi.config.CommonApiServerConfig;
 
 /**
@@ -142,18 +139,6 @@ public class EdgeCommonApiServer implements IBaseServer {
 		// Assign servers
 		server = config.server;
 		internalServer = config.internalServer;
-
-		// Add account manager service implementation for databases
-		// TODO
-
-		// Prepare service
-		logger.debug("Loading account manager implementations...");
-		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.DEFAULT,
-				ServiceImplementationPriorityLevels.NORMAL);
-		logger.debug("Selecting account manager implementation...");
-		ServiceManager.selectServiceImplementation(AccountManager.class);
-		logger.debug("Loading account manager...");
-		AccountManager.getInstance().loadManager();
 
 		// Register content source
 		logger.debug("Adding case-insensitive content sources...");

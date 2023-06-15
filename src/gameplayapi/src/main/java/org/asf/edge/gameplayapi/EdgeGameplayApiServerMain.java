@@ -8,6 +8,9 @@ import java.util.LinkedHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.account.AccountManager;
+import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
+import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
 
@@ -110,8 +113,17 @@ public class EdgeGameplayApiServerMain {
 		// Dispatch event
 		EventBus.getInstance().dispatchEvent(new GameplayApiServerConfigLoadedEvent(config));
 
-		// Setup server
+		// Prepare service
 		logger.info("Setting up the server...");
+		logger.debug("Loading account manager implementations...");
+		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.NORMAL,
+				ServiceImplementationPriorityLevels.DEFAULT);
+		logger.debug("Selecting account manager implementation...");
+		ServiceManager.selectServiceImplementation(AccountManager.class);
+		logger.debug("Loading account manager...");
+		AccountManager.getInstance().loadManager();
+
+		// Setup server
 		EdgeGameplayApiServer server = new EdgeGameplayApiServer(config);
 		server.setupServer();
 

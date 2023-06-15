@@ -104,6 +104,21 @@ public class RemoteHttpAccountManager extends AccountManager {
 	}
 
 	@Override
+	public boolean isValidPassword(String password) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("password", password);
+			JsonObject response = accountManagerRequest("isValidPassword", payload);
+			return response.get("result").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in isValidUsername!", e);
+			return false;
+		}
+	}
+
+	@Override
 	public boolean isUsernameTaken(String username) {
 		// Request
 		try {

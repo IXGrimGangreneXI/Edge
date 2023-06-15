@@ -8,6 +8,9 @@ import java.util.LinkedHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.account.AccountManager;
+import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
+import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.contentserver.EdgeContentServer;
 import org.asf.edge.contentserver.config.ContentServerConfig;
 import org.asf.edge.contentserver.events.config.ContentServerConfigLoadedEvent;
@@ -215,6 +218,13 @@ public class EdgeGlobalServerMain {
 
 		// Setup servers
 		logger.info("Setting up servers...");
+		logger.debug("Loading account manager implementations...");
+		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.DEFAULT,
+				ServiceImplementationPriorityLevels.NORMAL);
+		logger.debug("Selecting account manager implementation...");
+		ServiceManager.selectServiceImplementation(AccountManager.class);
+		logger.debug("Loading account manager...");
+		AccountManager.getInstance().loadManager();
 
 		// Content server
 		logger.info("Setting up the content server...");

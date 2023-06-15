@@ -54,4 +54,76 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
+	@Function(allowedMethods = { "POST" })
+	public void isValidPassword(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("password")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		JsonObject resp = new JsonObject();
+		resp.addProperty("result", manager.isValidPassword(payload.get("password").getAsString()));
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void isUsernameTaken(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("username")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		JsonObject resp = new JsonObject();
+		resp.addProperty("result", manager.isUsernameTaken(payload.get("username").getAsString()));
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getAccountID(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("username")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		JsonObject resp = new JsonObject();
+		String id = manager.getAccountID(payload.get("username").getAsString());
+		resp.addProperty("success", id != null);
+		if (id != null)
+			resp.addProperty("id", id);
+		setResponseContent("text/json", resp.toString());
+	}
+
 }

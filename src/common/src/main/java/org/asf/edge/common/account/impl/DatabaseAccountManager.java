@@ -78,7 +78,7 @@ public class DatabaseAccountManager extends AccountManager {
 			// Create tables
 			Statement statement = conn.createStatement();
 			statement.executeUpdate(
-					"CREATE TABLE IF NOT EXISTS ACCOUNTMAP (USERNAME varchar(100), ID CHAR(36), CREDS BLOB(48))");
+					"CREATE TABLE IF NOT EXISTS ACCOUNTMAP (USERNAME TEXT, ID CHAR(36), CREDS BLOB(48))");
 			statement.executeUpdate("CREATE TABLE IF NOT EXISTS PLAYERDATA (PATH varchar(292), DATA LONGTEXT)");
 		} catch (SQLException | ClassNotFoundException e) {
 			logger.error("Failed to connect to database!", e);
@@ -88,21 +88,45 @@ public class DatabaseAccountManager extends AccountManager {
 
 	@Override
 	public boolean isValidUsername(String username) {
-		if (username.replace(" ", "").equals("") || username.length() < 5 || !username.matches("^[A-Za-z].*"))
+		if (username.replace(" ", "").equals("") || username.length() < 2 || username.length() > 100
+				|| !username.matches("^[A-Za-z].*$") || !username.matches("^[A-Za-z0-9@._#]+$"))
 			return false;
-		return false;
+		return true;
+	}
+
+	@Override
+	public boolean isValidPassword(String password) {
+		return password.replaceAll("[^A-Za-z0-9]", "").length() >= 6;
 	}
 
 	@Override
 	public boolean isUsernameTaken(String username) {
-		// TODO Auto-generated method stub
-		return false;
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("SELECT COUNT(ID) FROM ACCOUNTMAP WHERE USERNAME = ?");
+			statement.setString(1, username);
+			ResultSet res = statement.executeQuery();
+			return res.getInt(1) != 0;
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to check if username '" + username
+					+ "' is taken", e);
+			return false;
+		}
 	}
 
 	@Override
 	public String getAccountID(String username) {
-		// TODO Auto-generated method stub
-		return null;
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("SELECT ID FROM ACCOUNTMAP WHERE USERNAME = ?");
+			statement.setString(1, username);
+			ResultSet res = statement.executeQuery();
+			return res.getString("ID");
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to pull user ID of username '"
+					+ username + "'", e);
+			return null;
+		}
 	}
 
 }

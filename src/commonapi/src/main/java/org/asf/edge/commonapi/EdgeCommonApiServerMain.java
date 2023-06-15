@@ -8,6 +8,9 @@ import java.util.LinkedHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.account.AccountManager;
+import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
+import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
 
@@ -119,8 +122,17 @@ public class EdgeCommonApiServerMain {
 		// Dispatch event
 		EventBus.getInstance().dispatchEvent(new CommonApiServerConfigLoadedEvent(config));
 
-		// Setup server
+		// Prepare service
 		logger.info("Setting up the server...");
+		logger.debug("Loading account manager implementations...");
+		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.DEFAULT,
+				ServiceImplementationPriorityLevels.NORMAL);
+		logger.debug("Selecting account manager implementation...");
+		ServiceManager.selectServiceImplementation(AccountManager.class);
+		logger.debug("Loading account manager...");
+		AccountManager.getInstance().loadManager();
+
+		// Setup server
 		EdgeCommonApiServer server = new EdgeCommonApiServer(config);
 		server.setupServer();
 

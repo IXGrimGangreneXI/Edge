@@ -95,12 +95,20 @@ public abstract class AccountManager extends AbstractService {
 	}
 
 	/**
-	 * Checks if a username is valid
+	 * Checks if a username is of valid format
 	 * 
 	 * @param username Username to check
 	 * @return True if valid, false if it contains invalid characters
 	 */
 	public abstract boolean isValidUsername(String username);
+
+	/**
+	 * Checks if a password is of valid format
+	 * 
+	 * @param password Password to check
+	 * @return True if valid, false if it is too short
+	 */
+	public abstract boolean isValidPassword(String password);
 
 	/**
 	 * Checks if a username is in use

@@ -13,9 +13,6 @@ import org.asf.edge.contentserver.http.ContentServerRequestHandler.IPreProcessor
 import org.asf.edge.contentserver.http.postprocessors.ApplicationManifestPreProcessor;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.common.IBaseServer;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
-import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.contentserver.events.server.ContentServerSetupEvent;
 import org.asf.edge.contentserver.events.server.ContentServerStartupEvent;
 import org.asf.edge.contentserver.config.ContentServerConfig;
@@ -118,15 +115,6 @@ public class EdgeContentServer implements IBaseServer {
 			if (!dataPath.mkdirs())
 				throw new IOException("Failed to create directory: " + dataPath);
 		}
-
-		// Prepare service
-		logger.debug("Loading account manager implementations...");
-		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.NORMAL,
-				ServiceImplementationPriorityLevels.DEFAULT);
-		logger.debug("Selecting account manager implementation...");
-		ServiceManager.selectServiceImplementation(AccountManager.class);
-		logger.debug("Loading account manager...");
-		AccountManager.getInstance().loadManager();
 
 		// Call event
 		logger.debug("Dispatching event...");
