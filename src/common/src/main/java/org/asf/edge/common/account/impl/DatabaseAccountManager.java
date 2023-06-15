@@ -43,9 +43,8 @@ public class DatabaseAccountManager extends AccountManager {
 		}
 		JsonObject databaseManagerConfig = new JsonObject();
 		if (!accountManagerConfig.has("databaseManager")) {
-			databaseManagerConfig.addProperty("url", "jdbc:derby:account-data");
+			databaseManagerConfig.addProperty("url", "jdbc:sqlite:account-data.db");
 			JsonObject props = new JsonObject();
-			props.addProperty("create", true);
 			databaseManagerConfig.add("properties", props);
 			accountManagerConfig.add("databaseManager", databaseManagerConfig);
 
@@ -71,25 +70,16 @@ public class DatabaseAccountManager extends AccountManager {
 
 		try {
 			// Load drivers
-			Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
 			Class.forName("com.mysql.cj.jdbc.Driver");
 
 			// Connect
 			conn = DriverManager.getConnection(url, props);
 
-			// Check tables
+			// Create tables
 			Statement statement = conn.createStatement();
-
-			// Create account table if needed
-			ResultSet set = conn.getMetaData().getTables(null, null, "ACCOUNTMAP", null);
-			if (!set.next())
-				statement.executeUpdate(
-						"CREATE TABLE ACCOUNTMAP (USERNAME varchar(100), ID CHAR(36), CREDS varchar(200))");
-
-			// Create data map if needed
-			set = conn.getMetaData().getTables(null, null, "PLAYERDATA", null);
-			if (!set.next())
-				statement.executeUpdate("CREATE TABLE PLAYERDATA (PATH varchar(292), DATA BLOB)");
+			statement.executeUpdate("CREATE TABLE IF NOT EXISTS PLAYERDATA (PATH varchar(292), DATA LONGBLOB)");
+			statement.executeUpdate(
+					"CREATE TABLE IF NOT EXISTS ACCOUNTMAP (USERNAME varchar(100), ID CHAR(36), CREDS varchar(200))");
 		} catch (SQLException | ClassNotFoundException e) {
 			logger.error("Failed to connect to database!", e);
 			System.exit(1);
