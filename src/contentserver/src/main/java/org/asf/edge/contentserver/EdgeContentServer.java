@@ -11,7 +11,10 @@ import org.asf.connective.ConnectiveHttpServer;
 import org.asf.edge.contentserver.http.*;
 import org.asf.edge.contentserver.http.ContentServerRequestHandler.IPreProcessor;
 import org.asf.edge.contentserver.http.postprocessors.ApplicationManifestPreProcessor;
+import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.common.IBaseServer;
+import org.asf.edge.contentserver.events.server.ContentServerSetupEvent;
+import org.asf.edge.contentserver.events.server.ContentServerStartupEvent;
 import org.asf.edge.contentserver.config.ContentServerConfig;
 
 /**
@@ -45,6 +48,15 @@ public class EdgeContentServer implements IBaseServer {
 	public EdgeContentServer(ContentServerConfig config) {
 		this.config = config;
 		logger = LogManager.getLogger("CONTENTSERVER");
+	}
+
+	/**
+	 * Retrieves the HTTP server instance
+	 * 
+	 * @return ConnectiveHttpServer instance
+	 */
+	public ConnectiveHttpServer getServer() {
+		return server;
 	}
 
 	/**
@@ -104,6 +116,10 @@ public class EdgeContentServer implements IBaseServer {
 				throw new IOException("Failed to create directory: " + dataPath);
 		}
 
+		// Call event
+		logger.debug("Dispatching event...");
+		EventBus.getInstance().dispatchEvent(new ContentServerSetupEvent(config, this));
+
 		// Register handlers
 		logger.debug("Configuring server request handlers...");
 		server.registerProcessor(new ContentServerRequestHandler(dataPath, config.contentRequestListenPath,
@@ -122,6 +138,11 @@ public class EdgeContentServer implements IBaseServer {
 		// Start server
 		logger.info("Starting the content delivery server...");
 		server.start();
+
+		// Call event
+		EventBus.getInstance().dispatchEvent(new ContentServerStartupEvent(config, this));
+
+		// Log
 		logger.info("Content delivery server started successfully!");
 	}
 

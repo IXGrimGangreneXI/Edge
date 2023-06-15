@@ -13,6 +13,8 @@ import org.asf.edge.commonapi.http.handlers.api.core.*;
 import org.asf.edge.commonapi.http.handlers.api.accounts.*;
 import org.asf.edge.commonapi.http.handlers.api.avatars.*;
 import org.asf.edge.commonapi.http.handlers.api.messaging.*;
+import org.asf.edge.commonapi.events.server.*;
+import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.common.IBaseServer;
 import org.asf.edge.commonapi.config.CommonApiServerConfig;
 
@@ -48,6 +50,24 @@ public class EdgeCommonApiServer implements IBaseServer {
 	public EdgeCommonApiServer(CommonApiServerConfig config) {
 		this.config = config;
 		logger = LogManager.getLogger("COMMONAPI");
+	}
+
+	/**
+	 * Retrieves the HTTP server instance
+	 * 
+	 * @return ConnectiveHttpServer instance
+	 */
+	public ConnectiveHttpServer getServer() {
+		return server;
+	}
+
+	/**
+	 * Retrieves the internal HTTP server instance
+	 * 
+	 * @return ConnectiveHttpServer instance
+	 */
+	public ConnectiveHttpServer getInternalServer() {
+		return internalServer;
 	}
 
 	/**
@@ -133,6 +153,10 @@ public class EdgeCommonApiServer implements IBaseServer {
 		server.setContentSource(new CaseInsensitiveContentSource());
 		internalServer.setContentSource(new CaseInsensitiveContentSource());
 
+		// Call event
+		logger.debug("Dispatching event...");
+		EventBus.getInstance().dispatchEvent(new CommonApiServerSetupEvent(config, this));
+
 		// Register handlers: api
 		logger.debug("Configuring api server request handlers...");
 		server.registerProcessor(new ChatWebServiceProcessor(this));
@@ -160,12 +184,19 @@ public class EdgeCommonApiServer implements IBaseServer {
 		if (server.isRunning())
 			throw new IllegalArgumentException("Server is already running");
 
-		// Start server
+		// Log
 		logger.info("Starting the Common API server...");
+
+		// Start
 		server.start();
 		logger.info("Common API server started successfully!");
 		logger.info("Starting the Common API internal server...");
 		internalServer.start();
+
+		// Call event
+		EventBus.getInstance().dispatchEvent(new CommonApiServerStartupEvent(config, this));
+
+		// Log
 		logger.info("Common API internal server started successfully!");
 	}
 

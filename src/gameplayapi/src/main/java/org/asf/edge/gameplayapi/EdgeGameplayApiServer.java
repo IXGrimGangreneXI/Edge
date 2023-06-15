@@ -10,8 +10,11 @@ import org.asf.connective.ConnectiveHttpServer;
 import org.asf.edge.gameplayapi.http.*;
 import org.asf.edge.gameplayapi.http.handlers.gameplayapi.*;
 import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
+import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.gameplayapi.http.handlers.achievements.*;
 import org.asf.edge.common.IBaseServer;
+import org.asf.edge.gameplayapi.events.server.GameplayApiServerSetupEvent;
+import org.asf.edge.gameplayapi.events.server.GameplayApiServerStartupEvent;
 import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
 
 /**
@@ -47,6 +50,15 @@ public class EdgeGameplayApiServer implements IBaseServer {
 	public EdgeGameplayApiServer(GameplayApiServerConfig config) {
 		this.config = config;
 		logger = LogManager.getLogger("GAMEPLAYAPI");
+	}
+
+	/**
+	 * Retrieves the HTTP server instance
+	 * 
+	 * @return ConnectiveHttpServer instance
+	 */
+	public ConnectiveHttpServer getServer() {
+		return server;
 	}
 
 	/**
@@ -102,6 +114,10 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		logger.debug("Adding case-insensitive content source...");
 		server.setContentSource(new CaseInsensitiveContentSource());
 
+		// Call event
+		logger.debug("Dispatching event...");
+		EventBus.getInstance().dispatchEvent(new GameplayApiServerSetupEvent(config, this));
+
 		// Register handlers
 		logger.debug("Configuring server request handlers...");
 		server.registerProcessor(new ContentWebServiceV1Processor(this));
@@ -134,6 +150,11 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		// Start server
 		logger.info("Starting the Gameplay API server...");
 		server.start();
+
+		// Call event
+		EventBus.getInstance().dispatchEvent(new GameplayApiServerStartupEvent(config, this));
+
+		// Log
 		logger.info("Gameplay API server started successfully!");
 	}
 
