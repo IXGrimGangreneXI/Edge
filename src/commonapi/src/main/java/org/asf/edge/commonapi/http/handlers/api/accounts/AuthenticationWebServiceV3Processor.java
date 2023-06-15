@@ -1,8 +1,12 @@
 package org.asf.edge.commonapi.http.handlers.api.accounts;
 
 import java.io.IOException;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
+
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
+import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -14,6 +18,40 @@ import org.asf.edge.commonapi.xmls.auth.ParentLoginData;
 import org.asf.edge.commonapi.xmls.auth.ParentLoginResponseData;
 
 public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeCommonApiServer> {
+
+	private AccountManager manager;
+	private static HashMap<String, Integer> usernameLock = new HashMap<String, Integer>();
+
+	static {
+		Thread th = new Thread(() -> {
+			while (true) {
+				HashMap<String, Integer> passswordLock;
+				while (true) {
+					try {
+						passswordLock = new HashMap<String, Integer>(AuthenticationWebServiceV3Processor.usernameLock);
+						break;
+					} catch (ConcurrentModificationException e) {
+					}
+				}
+
+				for (String pwd : passswordLock.keySet()) {
+					if (passswordLock.get(pwd) - 1 <= 0) {
+						AuthenticationWebServiceV3Processor.usernameLock.remove(pwd);
+					} else {
+						AuthenticationWebServiceV3Processor.usernameLock.put(pwd, passswordLock.get(pwd) - 1);
+					}
+				}
+
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+		});
+		th.setDaemon(true);
+		th.start();
+	}
 
 	public AuthenticationWebServiceV3Processor(EdgeCommonApiServer server) {
 		super(server);
@@ -61,6 +99,9 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 
 	@Function(allowedMethods = { "POST" })
 	public void loginGuest(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
 		// Handle login request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
@@ -77,6 +118,9 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 
 	@Function(allowedMethods = { "POST" })
 	public void loginParent(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
 		// Handle login request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
@@ -85,8 +129,68 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		// User/password initial login
 		String parentLoginData = req.getEncryptedValue("parentLoginData");
 		ParentLoginData login = req.parseXmlValue(parentLoginData, ParentLoginData.class);
-		req = req;
-		setResponseStatus(404, "Not found");
+
+		// Return null if the username is on cooldown
+		if (usernameLock.containsKey(login.username.toLowerCase())) {
+			// Account not found
+			ParentLoginResponseData resp = new ParentLoginResponseData();
+			resp.status = LoginStatusType.InvalidUserName;
+			setResponseContent("text/xml",
+					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
+			return;
+		}
+
+		// Find account
+		if (!manager.isValidUsername(login.username)) {
+			// Invalid username
+			ParentLoginResponseData resp = new ParentLoginResponseData();
+			resp.status = LoginStatusType.InvalidUserName;
+			setResponseContent("text/xml",
+					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
+
+			usernameLock.put(login.username.toLowerCase(), 8);
+			try {
+				Thread.sleep(8000);
+			} catch (InterruptedException e) {
+			}
+			return;
+		}
+		if (!manager.isUsernameTaken(login.username)) {
+			// Account not found
+			ParentLoginResponseData resp = new ParentLoginResponseData();
+			resp.status = LoginStatusType.InvalidUserName;
+			setResponseContent("text/xml",
+					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
+
+			usernameLock.put(login.username.toLowerCase(), 8);
+			try {
+				Thread.sleep(8000);
+			} catch (InterruptedException e) {
+			}
+			return;
+		}
+
+		// Retrieve ID
+		String id = manager.getAccountID(login.username);
+
+		// Password check
+		if (!manager.verifyPassword(id, login.password)) {
+			// Password incorrect
+			ParentLoginResponseData resp = new ParentLoginResponseData();
+			resp.status = LoginStatusType.InvalidUserName; // Lie to the client, it uses the same message but dont want
+															// hackers finding usernames
+			setResponseContent("text/xml",
+					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
+
+			usernameLock.put(login.username.toLowerCase(), 8);
+			try {
+				Thread.sleep(8000);
+			} catch (InterruptedException e) {
+			}
+			return;
+		}
+
+		// TODO
 	}
 
 }

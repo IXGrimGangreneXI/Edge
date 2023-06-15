@@ -127,6 +127,15 @@ public abstract class AccountManager extends AbstractService {
 	public abstract String getAccountID(String username);
 
 	/**
+	 * Called to verify passwords
+	 * 
+	 * @param id       Account ID
+	 * @param password Account password
+	 * @return True if valid, false otherwise
+	 */
+	public abstract boolean verifyPassword(String id, String password);
+
+	/**
 	 * Called to initialize the account manager
 	 */
 	public abstract void loadManager();

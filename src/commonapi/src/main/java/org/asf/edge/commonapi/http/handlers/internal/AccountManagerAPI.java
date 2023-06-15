@@ -126,4 +126,28 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
+	@Function(allowedMethods = { "POST" })
+	public void verifyPassword(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("password")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		JsonObject resp = new JsonObject();
+		resp.addProperty("result",
+				manager.verifyPassword(payload.get("id").getAsString(), payload.get("password").getAsString()));
+		setResponseContent("text/json", resp.toString());
+	}
+
 }

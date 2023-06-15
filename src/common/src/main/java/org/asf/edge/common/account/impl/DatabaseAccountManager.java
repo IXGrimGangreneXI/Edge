@@ -3,12 +3,20 @@ package org.asf.edge.common.account.impl;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Properties;
+
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,6 +31,7 @@ public class DatabaseAccountManager extends AccountManager {
 
 	private Connection conn;
 	private Logger logger = LogManager.getLogger("AccountManager");
+	private static SecureRandom rnd = new SecureRandom();
 
 	@Override
 	public void initService() {
@@ -77,9 +86,13 @@ public class DatabaseAccountManager extends AccountManager {
 
 			// Create tables
 			Statement statement = conn.createStatement();
+			statement
+					.executeUpdate("CREATE TABLE IF NOT EXISTS USERMAP (USERNAME TEXT, ID CHAR(36), CREDS BINARY(48))");
+			statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEMAP (ACCID CHAR(36), SAVES LONGTEXT)");
 			statement.executeUpdate(
-					"CREATE TABLE IF NOT EXISTS ACCOUNTMAP (USERNAME TEXT, ID CHAR(36), CREDS BLOB(48))");
-			statement.executeUpdate("CREATE TABLE IF NOT EXISTS PLAYERDATA (PATH varchar(292), DATA LONGTEXT)");
+					"CREATE TABLE IF NOT EXISTS ACCOUNTWIDEPLAYERDATA (PATH varchar(294), DATA LONGTEXT)");
+			statement.executeUpdate(
+					"CREATE TABLE IF NOT EXISTS SAVESPECIFICPLAYERDATA (PATH varchar(294), DATA LONGTEXT)");
 		} catch (SQLException | ClassNotFoundException e) {
 			logger.error("Failed to connect to database!", e);
 			System.exit(1);
@@ -103,7 +116,7 @@ public class DatabaseAccountManager extends AccountManager {
 	public boolean isUsernameTaken(String username) {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT COUNT(ID) FROM ACCOUNTMAP WHERE USERNAME = ?");
+			var statement = conn.prepareStatement("SELECT COUNT(ID) FROM USERMAP WHERE USERNAME = ?");
 			statement.setString(1, username);
 			ResultSet res = statement.executeQuery();
 			return res.getInt(1) != 0;
@@ -118,13 +131,68 @@ public class DatabaseAccountManager extends AccountManager {
 	public String getAccountID(String username) {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT ID FROM ACCOUNTMAP WHERE USERNAME = ?");
+			var statement = conn.prepareStatement("SELECT ID FROM USERMAP WHERE USERNAME = ?");
 			statement.setString(1, username);
 			ResultSet res = statement.executeQuery();
 			return res.getString("ID");
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to pull user ID of username '"
 					+ username + "'", e);
+			return null;
+		}
+	}
+
+	@Override
+	public boolean verifyPassword(String id, String password) {
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("SELECT CREDS FROM USERMAP WHERE ID = ?");
+			statement.setString(1, id);
+			ResultSet res = statement.executeQuery();
+			byte[] data = res.getBytes("CREDS");
+
+			// Check data
+			if (data == null)
+				return false;
+			if (data.length != 48) {
+				logger.error("Detected corrupted credentials for ID '" + id + "' during password verification.");
+				return false;
+			}
+
+			// Get salt and hash from data
+			byte[] salt = Arrays.copyOfRange(data, 0, 32);
+			byte[] hash = Arrays.copyOfRange(data, 32, 48);
+
+			// Get current password
+			byte[] current = getHash(salt, password.toCharArray());
+
+			// Verify
+			for (int i = 0; i < hash.length; i++) {
+				if (hash[i] != current[i]) {
+					return false;
+				}
+			}
+			return true;
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to verify password for ID '" + id + "'",
+					e);
+			return false;
+		}
+	}
+
+	// Salt and hash
+	private static byte[] salt() {
+		byte[] salt = new byte[32];
+		rnd.nextBytes(salt);
+		return salt;
+	}
+
+	public static byte[] getHash(byte[] salt, char[] password) {
+		KeySpec spec = new PBEKeySpec(password, salt, 65536, 128);
+		try {
+			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
+			return factory.generateSecret(spec).getEncoded();
+		} catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
 			return null;
 		}
 	}
