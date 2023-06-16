@@ -132,7 +132,7 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 
 		// Return null if the username is on cooldown
 		if (usernameLock.containsKey(login.username.toLowerCase())) {
-			// Account not found
+			// Locked
 			ParentLoginResponseData resp = new ParentLoginResponseData();
 			resp.status = LoginStatusType.InvalidUserName;
 			setResponseContent("text/xml",
@@ -143,54 +143,42 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		// Find account
 		if (!manager.isValidUsername(login.username)) {
 			// Invalid username
-			ParentLoginResponseData resp = new ParentLoginResponseData();
-			resp.status = LoginStatusType.InvalidUserName;
-			setResponseContent("text/xml",
-					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
-
-			usernameLock.put(login.username.toLowerCase(), 8);
-			try {
-				Thread.sleep(8000);
-			} catch (InterruptedException e) {
-			}
+			invalidUserCallback(login.username, req);
 			return;
 		}
 		if (!manager.isUsernameTaken(login.username)) {
 			// Account not found
-			ParentLoginResponseData resp = new ParentLoginResponseData();
-			resp.status = LoginStatusType.InvalidUserName;
-			setResponseContent("text/xml",
-					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
-
-			usernameLock.put(login.username.toLowerCase(), 8);
-			try {
-				Thread.sleep(8000);
-			} catch (InterruptedException e) {
-			}
+			invalidUserCallback(login.username, req);
 			return;
 		}
 
 		// Retrieve ID
 		String id = manager.getAccountID(login.username);
+		if (!manager.accountExists(id)) {
+			// ID does not exist
+			invalidUserCallback(login.username, req);
+			return;
+		}
 
 		// Password check
 		if (!manager.verifyPassword(id, login.password)) {
 			// Password incorrect
-			ParentLoginResponseData resp = new ParentLoginResponseData();
-			resp.status = LoginStatusType.InvalidUserName; // Lie to the client, it uses the same message but dont want
-															// hackers finding usernames
-			setResponseContent("text/xml",
-					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
-
-			usernameLock.put(login.username.toLowerCase(), 8);
-			try {
-				Thread.sleep(8000);
-			} catch (InterruptedException e) {
-			}
+			invalidUserCallback(login.username, req);
 			return;
 		}
 
 		// TODO
+	}
+
+	private void invalidUserCallback(String username, ServiceRequestInfo req) throws IOException {
+		ParentLoginResponseData resp = new ParentLoginResponseData();
+		resp.status = LoginStatusType.InvalidUserName;
+		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
+		usernameLock.put(username.toLowerCase(), 8);
+		try {
+			Thread.sleep(8000);
+		} catch (InterruptedException e) {
+		}
 	}
 
 }
