@@ -180,6 +180,20 @@ public class DatabaseAccountManager extends AccountManager {
 		}
 	}
 
+	@Override
+	public boolean accountExists(String id) {
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("SELECT COUNT(USERNAME) FROM USERMAP WHERE ID = ?");
+			statement.setString(1, id);
+			ResultSet res = statement.executeQuery();
+			return res.getInt(1) != 0;
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to check if ID '" + id + "' exists", e);
+			return false;
+		}
+	}
+
 	// Salt and hash
 	private static byte[] salt() {
 		byte[] salt = new byte[32];

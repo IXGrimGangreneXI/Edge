@@ -166,4 +166,19 @@ public class RemoteHttpAccountManager extends AccountManager {
 		}
 	}
 
+	@Override
+	public boolean accountExists(String id) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = accountManagerRequest("accountExists", payload);
+			return response.get("result").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in accountExists!", e);
+			return false;
+		}
+	}
+
 }

@@ -161,6 +161,7 @@ public class EdgeCommonApiServer implements IBaseServer {
 		server.registerProcessor(new SubscriptionWebServiceProcessor(this));
 		server.registerProcessor(new RegistrationWebServiceV3Processor(this));
 		server.registerProcessor(new RegistrationWebServiceV4Processor(this));
+		server.registerProcessor(new ProfileWebServiceProcessor(this));
 
 		// Register handlers: internal
 		logger.debug("Configuring internal server request handlers...");

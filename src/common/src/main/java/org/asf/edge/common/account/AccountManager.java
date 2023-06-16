@@ -127,6 +127,14 @@ public abstract class AccountManager extends AbstractService {
 	public abstract String getAccountID(String username);
 
 	/**
+	 * Checks if an account ID exists
+	 * 
+	 * @param id Account ID
+	 * @return True if the account exists, false otherwise
+	 */
+	public abstract boolean accountExists(String id);
+
+	/**
 	 * Called to verify passwords
 	 * 
 	 * @param id       Account ID
