@@ -1,0 +1,261 @@
+package org.asf.edge.common.account.impl.accounts;
+
+import java.io.IOException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.account.AccountDataContainer;
+import org.asf.edge.common.account.AccountObject;
+import org.asf.edge.common.account.impl.RemoteHttpAccountManager;
+
+import com.google.gson.JsonObject;
+
+public class RemoteHttpAccountObject extends AccountObject {
+
+	private String id;
+	private String username;
+	private RemoteHttpAccountManager mgr;
+
+	private Logger logger = LogManager.getLogger("AccountManager");
+
+	public RemoteHttpAccountObject(String id, String username, RemoteHttpAccountManager mgr) {
+		this.id = id;
+		this.username = username;
+		this.mgr = mgr;
+	}
+
+	@Override
+	public String getUsername() {
+		return username;
+	}
+
+	@Override
+	public String getAccountID() {
+		return id;
+	}
+
+	@Override
+	public long getLastLoginTime() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/getLastLoginTime", payload);
+			return response.get("time").getAsLong();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getLastLoginTime!", e);
+			return -1;
+		}
+	}
+
+	@Override
+	public long getRegistrationTimestamp() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/getRegistrationTimestamp", payload);
+			return response.get("time").getAsLong();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getRegistrationTimestamp!", e);
+			return -1;
+		}
+	}
+
+	@Override
+	public boolean updateUsername(String name) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("newName", name);
+			JsonObject response = mgr.accountManagerRequest("accounts/updateUsername", payload);
+			boolean res = response.get("success").getAsBoolean();
+			if (res)
+				username = name;
+			return res;
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in updateUsername!", e);
+			return false;
+		}
+	}
+
+	@Override
+	public boolean updatePassword(char[] newPassword) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("newPassword", new String(newPassword));
+			JsonObject response = mgr.accountManagerRequest("accounts/updatePassword", payload);
+			return response.get("success").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in updatePassword!", e);
+			return false;
+		}
+	}
+
+	@Override
+	public boolean migrateToNormalAccountFromGuest(String newName, char[] password) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("newName", newName);
+			payload.addProperty("password", new String(password));
+			JsonObject response = mgr.accountManagerRequest("accounts/migrateToNormalAccountFromGuest", payload);
+			return response.get("success").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in migrateToNormalAccountFromGuest!", e);
+			return false;
+		}
+	}
+
+	@Override
+	public boolean isGuestAccount() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/isGuestAccount", payload);
+			return response.get("result").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in isGuestAccount!", e);
+			return false;
+		}
+	}
+
+	@Override
+	public boolean isMultiplayerEnabled() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/isMultiplayerEnabled", payload);
+			return response.get("result").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in isMultiplayerEnabled!", e);
+			return false;
+		}
+	}
+
+	@Override
+	public boolean isChatEnabled() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/isChatEnabled", payload);
+			return response.get("result").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in isChatEnabled!", e);
+			return false;
+		}
+	}
+
+	@Override
+	public boolean isStrictChatFilterEnabled() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/isStrictChatFilterEnabled", payload);
+			return response.get("result").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in isStrictChatFilterEnabled!", e);
+			return false;
+		}
+	}
+
+	@Override
+	public void setMultiplayerEnabled(boolean state) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("state", state);
+			JsonObject response = mgr.accountManagerRequest("accounts/setMultiplayerEnabled", payload);
+			if (!response.get("success").getAsBoolean())
+				throw new IOException("Server returned success=false");
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in setMultiplayerEnabled!", e);
+		}
+	}
+
+	@Override
+	public void setChatEnabled(boolean state) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("state", state);
+			JsonObject response = mgr.accountManagerRequest("accounts/setChatEnabled", payload);
+			if (!response.get("success").getAsBoolean())
+				throw new IOException("Server returned success=false");
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in setChatEnabled!", e);
+		}
+	}
+
+	@Override
+	public void setStrictChatFilterEnabled(boolean state) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("state", state);
+			JsonObject response = mgr.accountManagerRequest("accounts/setStrictChatFilterEnabled", payload);
+			if (!response.get("success").getAsBoolean())
+				throw new IOException("Server returned success=false");
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in setStrictChatFilterEnabled!", e);
+		}
+	}
+
+	@Override
+	public void updateLastLoginTime() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/updateLastLoginTime", payload);
+			if (!response.get("success").getAsBoolean())
+				throw new IOException("Server returned success=false");
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in updateLastLoginTime!", e);
+		}
+	}
+
+	@Override
+	public void deleteAccount() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/deleteAccount", payload);
+			if (!response.get("success").getAsBoolean())
+				throw new IOException("Server returned success=false");
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in deleteAccount!", e);
+		}
+	}
+
+	@Override
+	public AccountDataContainer getAccountData() {
+		return new RemoteHttpDataContainer(id, mgr);
+	}
+
+}

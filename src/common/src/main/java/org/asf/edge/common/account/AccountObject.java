@@ -1,5 +1,7 @@
 package org.asf.edge.common.account;
 
+import java.io.IOException;
+
 /**
  * 
  * Account object abstract
@@ -119,10 +121,20 @@ public abstract class AccountObject {
 	public abstract void updateLastLoginTime();
 
 	/**
-	 * Deletes the account
+	 * Retrieves the account data container
+	 * 
+	 * @return AccountDataContainer instance
 	 */
-	public abstract void deleteAccount();
+	public abstract AccountDataContainer getAccountData();
+
+	/**
+	 * Deletes the account
+	 * 
+	 * @throws IOException If deletion errors
+	 */
+	public abstract void deleteAccount() throws IOException;
 
 	// TODO
+	// Among other things i still need to do save management
 
 }

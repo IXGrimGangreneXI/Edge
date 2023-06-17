@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.account.AccountManager;
+import org.asf.edge.common.account.AccountObject;
+import org.asf.edge.common.account.impl.accounts.RemoteHttpAccountObject;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -63,7 +65,15 @@ public class RemoteHttpAccountManager extends AccountManager {
 		logger.warn("Warning: its highly recommened to use a different implementation, such as a database server.");
 	}
 
-	private JsonObject accountManagerRequest(String function, JsonObject payload) throws IOException {
+	/**
+	 * Creates account manager requests
+	 * 
+	 * @param function Function name
+	 * @param payload  Payload json
+	 * @return Response object
+	 * @throws IOException If contacting the server fails
+	 */
+	public JsonObject accountManagerRequest(String function, JsonObject payload) throws IOException {
 		// Build url
 		String url = urlBase;
 		url += function;
@@ -178,6 +188,45 @@ public class RemoteHttpAccountManager extends AccountManager {
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in accountExists!", e);
 			return false;
+		}
+	}
+
+	@Override
+	public AccountObject getAccount(String id) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = accountManagerRequest("getAccount", payload);
+			if (!response.get("success").getAsBoolean())
+				return null;
+
+			// Return remote account object
+			return new RemoteHttpAccountObject(id, response.get("username").getAsString(), this);
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getAccount!", e);
+			return null;
+		}
+	}
+
+	@Override
+	public AccountObject getGuestAccount(String guestID) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("guestID", guestID);
+			JsonObject response = accountManagerRequest("getGuestAccount", payload);
+			if (!response.get("success").getAsBoolean())
+				return null;
+
+			// Return remote account object
+			return new RemoteHttpAccountObject(response.get("id").getAsString(), response.get("username").getAsString(),
+					this);
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getAccount!", e);
+			return null;
 		}
 	}
 

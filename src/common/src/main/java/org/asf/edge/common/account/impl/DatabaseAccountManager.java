@@ -21,6 +21,8 @@ import javax.crypto.spec.PBEKeySpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.account.AccountManager;
+import org.asf.edge.common.account.AccountObject;
+import org.asf.edge.common.account.impl.accounts.DatabaseAccountObject;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -191,6 +193,43 @@ public class DatabaseAccountManager extends AccountManager {
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to check if ID '" + id + "' exists", e);
 			return false;
+		}
+	}
+
+	@Override
+	public AccountObject getAccount(String id) {
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("SELECT USERNAME FROM USERMAP WHERE ID = ?");
+			statement.setString(1, id);
+			ResultSet res = statement.executeQuery();
+			String username = res.getString("USERNAME");
+			if (username == null)
+				return null;
+			return new DatabaseAccountObject(id, username, conn, this);
+		} catch (SQLException e) {
+			logger.error(
+					"Failed to execute database query request while trying to pull account object of ID '" + id + "'",
+					e);
+			return null;
+		}
+	}
+
+	@Override
+	public AccountObject getGuestAccount(String guestID) {
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("SELECT ID FROM USERMAP WHERE USERNAME = ?");
+			statement.setString(1, "g/" + guestID);
+			ResultSet res = statement.executeQuery();
+			String id = res.getString("USERNAME");
+			if (id == null)
+				return null;
+			return new DatabaseAccountObject(id, "g/" + guestID, conn, this);
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to pull account object of guest ID '"
+					+ guestID + "'", e);
+			return null;
 		}
 	}
 

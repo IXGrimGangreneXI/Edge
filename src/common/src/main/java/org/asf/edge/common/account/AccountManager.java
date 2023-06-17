@@ -144,6 +144,22 @@ public abstract class AccountManager extends AbstractService {
 	public abstract boolean verifyPassword(String id, String password);
 
 	/**
+	 * Retrieves account objects
+	 * 
+	 * @param id Account ID
+	 * @return AccountObject instance or null if not found
+	 */
+	public abstract AccountObject getAccount(String id);
+
+	/**
+	 * Retrieves guest account objects
+	 * 
+	 * @param guestID Guest ID (not a account ID)
+	 * @return AccountObject instance or null if not found
+	 */
+	public abstract AccountObject getGuestAccount(String guestID);
+
+	/**
 	 * Called to initialize the account manager
 	 */
 	public abstract void loadManager();

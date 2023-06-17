@@ -111,6 +111,9 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		String guestLoginData = req.getEncryptedValue("guestLoginData");
 		GuestLoginData login = req.parseXmlValue(guestLoginData, GuestLoginData.class);
 
+		// Decrypt guest ID
+		login.username = req.decryptString(login.username);
+
 		// Find account
 
 		setResponseStatus(404, "Not found");

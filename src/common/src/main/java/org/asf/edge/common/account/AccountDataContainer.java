@@ -25,6 +25,10 @@ public abstract class AccountDataContainer {
 			AccountDataContainer.this.set(key, value);
 		}
 
+		public void create(String key, JsonElement value) throws IOException {
+			AccountDataContainer.this.create(key, value);
+		}
+
 		public boolean exists(String key) throws IOException {
 			return AccountDataContainer.this.exists(key);
 		}
@@ -68,6 +72,15 @@ public abstract class AccountDataContainer {
 	 * @throws IOException If the entry cannot be assigned
 	 */
 	protected abstract void set(String key, JsonElement value) throws IOException;
+
+	/**
+	 * Called to create elements
+	 * 
+	 * @param key   Element key
+	 * @param value Value to assign
+	 * @throws IOException If the entry cannot be assigned
+	 */
+	protected abstract void create(String key, JsonElement value) throws IOException;
 
 	/**
 	 * Called to check if keys exist
@@ -144,7 +157,10 @@ public abstract class AccountDataContainer {
 		boolean existed = exists(key);
 
 		// Set
-		set(key, value);
+		if (existed)
+			set(key, value);
+		else
+			create(key, value);
 
 		// Add to registry table if new
 		if (!existed) {
@@ -180,6 +196,13 @@ public abstract class AccountDataContainer {
 		}
 	}
 
+	/**
+	 * Retrieves child data containers
+	 * 
+	 * @param key Container key
+	 * @return AccountDataContainer instance
+	 * @throws IOException If loading the container fails
+	 */
 	public AccountDataContainer getChildContainer(String key) throws IOException {
 		// Verify name
 		if (!validName(key))
@@ -242,15 +265,21 @@ public abstract class AccountDataContainer {
 		delete("datamap");
 
 		// Delete entries
-		for (JsonElement elem : dataMap)
+		for (JsonElement elem : dataMap) {
+			if (elem.getAsString().endsWith("/")) {
+				// Child container
+				getChildContainer(elem.getAsString().substring(0, elem.getAsString().length() - 1)).deleteContainer();
+				continue;
+			}
 			delete(elem.getAsString());
+		}
 	}
 
 	protected JsonArray retrieveRegistry() throws IOException {
 		JsonElement ele = get("datamap");
 		if (ele == null) {
 			ele = new JsonArray();
-			set("datamap", ele);
+			create("datamap", ele);
 		}
 		return ele.getAsJsonArray();
 	}
@@ -276,6 +305,11 @@ public abstract class AccountDataContainer {
 		@Override
 		protected void set(String key, JsonElement value) throws IOException {
 			parent.set(path + key, value);
+		}
+
+		@Override
+		protected void create(String key, JsonElement value) throws IOException {
+			parent.create(path + key, value);
 		}
 
 		@Override
