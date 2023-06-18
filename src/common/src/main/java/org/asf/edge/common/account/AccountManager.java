@@ -12,6 +12,7 @@ import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.impl.DatabaseAccountManager;
 import org.asf.edge.common.account.impl.RemoteHttpAccountManager;
 import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.tokens.TokenParseResult;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -119,6 +120,14 @@ public abstract class AccountManager extends AbstractService {
 	public abstract boolean isUsernameTaken(String username);
 
 	/**
+	 * Retrieves account IDs by email
+	 * 
+	 * @param email Email to retrieve the account ID for
+	 * @return Account ID string or null
+	 */
+	public abstract String getAccountIDByEmail(String email);
+
+	/**
 	 * Retrieves account IDs by username
 	 * 
 	 * @param username Username to retrieve the account ID for
@@ -158,6 +167,40 @@ public abstract class AccountManager extends AbstractService {
 	 * @return AccountObject instance or null if not found
 	 */
 	public abstract AccountObject getGuestAccount(String guestID);
+
+	/**
+	 * Called to verify JWT tokens
+	 * 
+	 * @param token Token string to verify
+	 * @return TokenParseResult value
+	 */
+	public abstract TokenParseResult verifyToken(String token);
+
+	/**
+	 * Called to sign JWT tokens
+	 * 
+	 * @param token Token string to sign (header + payload)
+	 * @return SHA-256 signature
+	 */
+	public abstract byte[] signToken(String token);
+
+	/**
+	 * Registers a guest account
+	 * 
+	 * @param guestID Guest account ID
+	 * @return AccountObject instance or null
+	 */
+	public abstract AccountObject registerGuestAccount(String guestID);
+
+	/**
+	 * Registers accounts
+	 * 
+	 * @param username Username to use
+	 * @param email    Email to use
+	 * @param password Password to use
+	 * @return AccountObject instance or null
+	 */
+	public abstract AccountObject registerAccount(String username, String email, char[] password);
 
 	/**
 	 * Called to initialize the account manager

@@ -3,15 +3,19 @@ package org.asf.edge.commonapi.http.handlers.api.accounts;
 import java.io.IOException;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
+import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.account.AccountManager;
+import org.asf.edge.common.account.AccountObject;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.xmls.ProductRuleData;
+import org.asf.edge.commonapi.xmls.auth.CommonLoginInfo;
 import org.asf.edge.commonapi.xmls.auth.GuestLoginData;
 import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
 import org.asf.edge.commonapi.xmls.auth.ParentLoginData;
@@ -98,6 +102,37 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 	}
 
 	@Function(allowedMethods = { "POST" })
+	public void authenticateUser(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Handle login request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String password = req.getEncryptedValue("password");
+		String username = req.getEncryptedValue("username");
+
+		// Authenticate
+		String id = manager.getAccountID(username);
+		if (id == null) {
+			// Return failure
+			setResponseContent(req.generateXmlValue("boolean", false));
+			return;
+		}
+
+		// Check password
+		if (!manager.verifyPassword(id, password)) {
+			// Return failure
+			setResponseContent(req.generateXmlValue("boolean", false));
+			return;
+		}
+
+		// Return success
+		setResponseContent(req.generateXmlValue("boolean", true));
+	}
+
+	@Function(allowedMethods = { "POST" })
 	public void loginGuest(FunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -114,9 +149,81 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		// Decrypt guest ID
 		login.username = req.decryptString(login.username);
 
-		// Find account
+		// Verify guest id
+		if (login.username.length() != 72 || !login.username.matches("^[A-Za-z0-9\\-]+")) {
+			// Error
+			ParentLoginResponseData resp = new ParentLoginResponseData();
+			resp.status = LoginStatusType.GuestAccountNotFound;
+			setResponseContent("text/xml",
+					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
+			return;
+		}
 
-		setResponseStatus(404, "Not found");
+		// Find account
+		AccountObject guestAcc;
+		if (manager.getGuestAccount(login.username) == null) {
+			// Check terms
+			if (login.userPolicy == null || !login.userPolicy.termsAndConditions || !login.userPolicy.privacyPolicy) {
+				// Error
+				ParentLoginResponseData resp = new ParentLoginResponseData();
+				resp.status = LoginStatusType.UserPolicyNotAccepted;
+				setResponseContent("text/xml",
+						req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
+				return;
+			}
+
+			// Register guest account
+			guestAcc = manager.registerGuestAccount(login.username);
+
+			// Create default save
+			if (guestAcc != null)
+				guestAcc.createSave("guest_" + System.currentTimeMillis());
+		} else
+			guestAcc = manager.getGuestAccount(login.username);
+
+		// Check guest acc
+		if (guestAcc == null) {
+			// Error
+			ParentLoginResponseData resp = new ParentLoginResponseData();
+			resp.status = LoginStatusType.GuestAccountNotFound;
+			setResponseContent("text/xml",
+					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
+			return;
+		}
+
+		// Check if its really a guest account
+		if (!guestAcc.isGuestAccount()) {
+			// Error
+			ParentLoginResponseData resp = new ParentLoginResponseData();
+			resp.status = LoginStatusType.GuestAccountNotFound;
+			setResponseContent("text/xml",
+					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
+			return;
+		}
+
+		// Update login time
+		guestAcc.updateLastLoginTime();
+
+		// Create session token
+		SessionToken tkn = new SessionToken();
+		tkn.accountID = guestAcc.getAccountID();
+		tkn.lastLoginTime = guestAcc.getLastLoginTime();
+		tkn.capabilities = new String[] { "api" };
+
+		// Create response
+		ParentLoginResponseData resp = new ParentLoginResponseData();
+		resp.status = LoginStatusType.Success;
+		resp.username = guestAcc.getUsername();
+		resp.apiToken = getUtilities().encodeToken(tkn.toTokenString());
+		resp.email = guestAcc.getAccountEmail();
+		resp.sendActivationReminder = false;
+		resp.childList = Stream.of(guestAcc.getSaveIDs()).map(t -> guestAcc.getSave(t)).map(t -> {
+			CommonLoginInfo ch = new CommonLoginInfo();
+			ch.userID = t.getSaveID();
+			ch.username = t.getUsername();
+			return ch;
+		}).toArray(t -> new CommonLoginInfo[t]);
+		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -170,7 +277,37 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 			return;
 		}
 
-		// TODO
+		// Find account
+		AccountObject acc = manager.getAccount(id);
+		if (acc.isGuestAccount()) {
+			// NO
+			invalidUserCallback(login.username, req);
+			return;
+		}
+
+		// Update login time
+		acc.updateLastLoginTime();
+
+		// Create session token
+		SessionToken tkn = new SessionToken();
+		tkn.accountID = acc.getAccountID();
+		tkn.lastLoginTime = acc.getLastLoginTime();
+		tkn.capabilities = new String[] { "api" };
+
+		// Create response
+		ParentLoginResponseData resp = new ParentLoginResponseData();
+		resp.status = LoginStatusType.Success;
+		resp.username = acc.getUsername();
+		resp.apiToken = getUtilities().encodeToken(tkn.toTokenString());
+		resp.email = acc.getAccountEmail();
+		resp.sendActivationReminder = false; // TODO
+		resp.childList = Stream.of(acc.getSaveIDs()).map(t -> acc.getSave(t)).map(t -> {
+			CommonLoginInfo ch = new CommonLoginInfo();
+			ch.userID = t.getSaveID();
+			ch.username = t.getUsername();
+			return ch;
+		}).toArray(t -> new CommonLoginInfo[t]);
+		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
 	}
 
 	private void invalidUserCallback(String username, ServiceRequestInfo req) throws IOException {

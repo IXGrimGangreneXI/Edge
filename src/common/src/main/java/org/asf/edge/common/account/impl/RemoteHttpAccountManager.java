@@ -5,12 +5,14 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.Base64;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.AccountObject;
 import org.asf.edge.common.account.impl.accounts.RemoteHttpAccountObject;
+import org.asf.edge.common.tokens.TokenParseResult;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -225,7 +227,96 @@ public class RemoteHttpAccountManager extends AccountManager {
 			return new RemoteHttpAccountObject(response.get("id").getAsString(), response.get("username").getAsString(),
 					this);
 		} catch (IOException e) {
-			logger.error("Account server query failure occurred in getAccount!", e);
+			logger.error("Account server query failure occurred in getGuestAccount!", e);
+			return null;
+		}
+	}
+
+	@Override
+	public String getAccountIDByEmail(String email) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("email", email);
+			JsonObject response = accountManagerRequest("getAccountIDByEmail", payload);
+			if (!response.get("success").getAsBoolean())
+				return null;
+			return response.get("id").getAsString();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getAccountIDByEmail!", e);
+			return null;
+		}
+	}
+
+	@Override
+	public TokenParseResult verifyToken(String token) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("token", token);
+			JsonObject response = accountManagerRequest("verifyToken", payload);
+			return TokenParseResult.values()[response.get("result").getAsInt()];
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in verifyToken!", e);
+			return null;
+		}
+	}
+
+	@Override
+	public byte[] signToken(String token) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("token", token);
+			JsonObject response = accountManagerRequest("signToken", payload);
+			return Base64.getDecoder().decode(response.get("result").getAsString());
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in signToken!", e);
+			return null;
+		}
+	}
+
+	@Override
+	public AccountObject registerGuestAccount(String guestID) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("guestID", guestID);
+			JsonObject response = accountManagerRequest("registerGuestAccount", payload);
+			if (!response.get("success").getAsBoolean())
+				return null;
+
+			// Return remote account object
+			return new RemoteHttpAccountObject(response.get("id").getAsString(), response.get("username").getAsString(),
+					this);
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in registerGuestAccount!", e);
+			return null;
+		}
+	}
+
+	@Override
+	public AccountObject registerAccount(String username, String email, char[] password) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("username", username);
+			payload.addProperty("email", email);
+			payload.addProperty("password", new String(password));
+			JsonObject response = accountManagerRequest("registerAccount", payload);
+			if (!response.get("success").getAsBoolean())
+				return null;
+
+			// Return remote account object
+			return new RemoteHttpAccountObject(response.get("id").getAsString(), response.get("username").getAsString(),
+					this);
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in registerAccount!", e);
 			return null;
 		}
 	}

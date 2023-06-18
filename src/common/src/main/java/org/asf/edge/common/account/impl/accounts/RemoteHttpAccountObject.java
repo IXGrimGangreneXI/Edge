@@ -5,9 +5,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.account.AccountDataContainer;
 import org.asf.edge.common.account.AccountObject;
+import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.account.impl.RemoteHttpAccountManager;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 
 public class RemoteHttpAccountObject extends AccountObject {
 
@@ -49,6 +52,21 @@ public class RemoteHttpAccountObject extends AccountObject {
 	}
 
 	@Override
+	public String getAccountEmail() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/getAccountEmail", payload);
+			return response.get("email").getAsString();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getAccountEmail!", e);
+			return null;
+		}
+	}
+
+	@Override
 	public long getRegistrationTimestamp() {
 		// Request
 		try {
@@ -83,6 +101,22 @@ public class RemoteHttpAccountObject extends AccountObject {
 	}
 
 	@Override
+	public boolean updateEmail(String email) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("email", email);
+			JsonObject response = mgr.accountManagerRequest("accounts/updateEmail", payload);
+			return response.get("success").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in updateEmail!", e);
+			return false;
+		}
+	}
+
+	@Override
 	public boolean updatePassword(char[] newPassword) {
 		// Request
 		try {
@@ -99,13 +133,14 @@ public class RemoteHttpAccountObject extends AccountObject {
 	}
 
 	@Override
-	public boolean migrateToNormalAccountFromGuest(String newName, char[] password) {
+	public boolean migrateToNormalAccountFromGuest(String newName, String email, char[] password) {
 		// Request
 		try {
 			// Build payload
 			JsonObject payload = new JsonObject();
 			payload.addProperty("id", id);
 			payload.addProperty("newName", newName);
+			payload.addProperty("email", email);
 			payload.addProperty("password", new String(password));
 			JsonObject response = mgr.accountManagerRequest("accounts/migrateToNormalAccountFromGuest", payload);
 			return response.get("success").getAsBoolean();
@@ -256,6 +291,64 @@ public class RemoteHttpAccountObject extends AccountObject {
 	@Override
 	public AccountDataContainer getAccountData() {
 		return new RemoteHttpDataContainer(id, mgr);
+	}
+
+	@Override
+	public String[] getSaveIDs() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/getSaveIDs", payload);
+			JsonArray arr = response.get("saves").getAsJsonArray();
+			String[] saves = new String[arr.size()];
+			int i = 0;
+			for (JsonElement ele : arr)
+				saves[i++] = ele.getAsString();
+			return saves;
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getSaveIDs!", e);
+			return new String[0];
+		}
+	}
+
+	@Override
+	public AccountSaveContainer createSave(String username) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("username", username);
+			JsonObject response = mgr.accountManagerRequest("accounts/createSave", payload);
+			if (!response.get("success").getAsBoolean())
+				return null;
+			String id = response.get("id").getAsString();
+			return new RemoteHttpSaveContainer(id, response.get("time").getAsLong(), username, this.id, mgr);
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in createSave!", e);
+			return null;
+		}
+	}
+
+	@Override
+	public AccountSaveContainer getSave(String id) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", this.id);
+			payload.addProperty("save", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/getSave", payload);
+			if (!response.get("success").getAsBoolean())
+				return null;
+			String username = response.get("id").getAsString();
+			return new RemoteHttpSaveContainer(id, response.get("time").getAsLong(), username, this.id, mgr);
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in createSave!", e);
+			return null;
+		}
 	}
 
 }

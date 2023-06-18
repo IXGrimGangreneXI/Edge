@@ -19,6 +19,13 @@ public abstract class AccountObject {
 	public abstract String getUsername();
 
 	/**
+	 * Retrieves the account email
+	 * 
+	 * @return Account email string
+	 */
+	public abstract String getAccountEmail();
+
+	/**
 	 * Retrieves the account ID
 	 * 
 	 * @return Account ID string
@@ -48,6 +55,14 @@ public abstract class AccountObject {
 	public abstract boolean updateUsername(String name);
 
 	/**
+	 * Changes the email
+	 * 
+	 * @param name New account email
+	 * @return True if successful, false otherwise
+	 */
+	public abstract boolean updateEmail(String name);
+
+	/**
 	 * Changes the password
 	 * 
 	 * @param newPassword New acccount password
@@ -60,10 +75,11 @@ public abstract class AccountObject {
 	 * guest account
 	 * 
 	 * @param newName  New account name
+	 * @param email    New account email
 	 * @param password New account password
 	 * @return True if successful, false otherwise
 	 */
-	public abstract boolean migrateToNormalAccountFromGuest(String newName, char[] password);
+	public abstract boolean migrateToNormalAccountFromGuest(String newName, String email, char[] password);
 
 	/**
 	 * Checks if the account is a guest account
@@ -126,6 +142,29 @@ public abstract class AccountObject {
 	 * @return AccountDataContainer instance
 	 */
 	public abstract AccountDataContainer getAccountData();
+
+	/**
+	 * Retrieves all save IDs for this account
+	 * 
+	 * @return Array of save ID strings
+	 */
+	public abstract String[] getSaveIDs();
+
+	/**
+	 * Creates save data
+	 * 
+	 * @param username Save username
+	 * @return AccountSaveContainer instance or null
+	 */
+	public abstract AccountSaveContainer createSave(String username);
+
+	/**
+	 * Retrieves save data
+	 * 
+	 * @param id Save data ID
+	 * @return AccountSaveContainer instance or null
+	 */
+	public abstract AccountSaveContainer getSave(String id);
 
 	/**
 	 * Deletes the account

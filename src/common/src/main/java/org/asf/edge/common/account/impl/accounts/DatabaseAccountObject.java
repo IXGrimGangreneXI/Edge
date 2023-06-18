@@ -8,6 +8,7 @@ import java.security.spec.KeySpec;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.UUID;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -17,6 +18,7 @@ import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.account.AccountDataContainer;
 import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.AccountObject;
+import org.asf.edge.common.account.AccountSaveContainer;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -48,6 +50,22 @@ public class DatabaseAccountObject extends AccountObject {
 	@Override
 	public String getAccountID() {
 		return id;
+	}
+
+	@Override
+	public String getAccountEmail() {
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("SELECT EMAIL FROM EMAILMAP WHERE ID = ?");
+			statement.setString(1, id);
+			ResultSet res = statement.executeQuery();
+			return res.getString("EMAIL");
+		} catch (SQLException e) {
+			logger.error(
+					"Failed to execute database query request while trying to pull account email of ID '" + id + "'",
+					e);
+			return null;
+		}
 	}
 
 	@Override
@@ -116,6 +134,21 @@ public class DatabaseAccountObject extends AccountObject {
 	}
 
 	@Override
+	public boolean updateEmail(String email) {
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("UPDATE EMAILMAP SET EMAIL = ? WHERE ID = ?");
+			statement.setString(1, email);
+			statement.setString(2, id);
+			statement.execute();
+			return true;
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to update email of ID '" + id + "'", e);
+			return false;
+		}
+	}
+
+	@Override
 	public boolean updatePassword(char[] newPassword) {
 		// Check validity
 		if (!manager.isValidPassword(new String(newPassword)))
@@ -145,9 +178,64 @@ public class DatabaseAccountObject extends AccountObject {
 	}
 
 	@Override
-	public boolean migrateToNormalAccountFromGuest(String newName, char[] password) {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean migrateToNormalAccountFromGuest(String newName, String email, char[] password) {
+		// Check guest
+		if (!isGuestAccount())
+			return false;
+
+		// Check username validity
+		if (!manager.isValidUsername(newName))
+			return false;
+
+		// Check username
+		if (manager.isUsernameTaken(newName))
+			return false;
+
+		// Check password
+		if (!manager.isValidPassword(new String(password)))
+			return false;
+
+		// Check email
+		if (manager.getAccountIDByEmail(email) != null)
+			return false;
+
+		// Check filters
+		// FIXME: IMPLEMENT THIS
+
+		// Update username
+		if (!updateUsername(newName))
+			return false;
+
+		// Update password
+		if (!updatePassword(password))
+			return false;
+
+		// Insert information
+		try {
+			// Insert email
+			var statement = conn.prepareStatement("INSERT INTO EMAILMAP VALUES(?, ?)");
+			statement.setString(1, email);
+			statement.setString(2, id);
+			statement.execute();
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to migrate guest account with  ID '"
+					+ id + "' to a normal account", e);
+			return false;
+		}
+
+		// Disable guest mode
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("UPDATE ACCOUNTWIDEPLAYERDATA SET DATA = ? WHERE PATH = ?");
+			statement.setString(1, "false");
+			statement.setString(2, id + "//accountdata/isguestaccount");
+			statement.execute();
+			return true;
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to migrate guest account with  ID '"
+					+ id + "' to a normal account", e);
+			return false;
+		}
 	}
 
 	@Override
@@ -300,6 +388,17 @@ public class DatabaseAccountObject extends AccountObject {
 			throw new IOException("SQL error", e);
 		}
 
+		// Delete from email map
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("DELETE FROM EMAILMAP WHERE ID = ?");
+			statement.setString(1, id);
+			statement.execute();
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to delete account '" + id + "'", e);
+			throw new IOException("SQL error", e);
+		}
+
 		// Delete save list
 		try {
 			// Pull list
@@ -311,6 +410,11 @@ public class DatabaseAccountObject extends AccountObject {
 			// Delete each save
 			for (JsonElement saveEle : saves) {
 				JsonObject saveObj = saveEle.getAsJsonObject();
+
+				// Delete name lock
+				statement = conn.prepareStatement("DELETE FROM SAVEUSERNAMEMAP WHERE ID = ?");
+				statement.setString(1, saveObj.get("id").getAsString());
+				statement.execute();
 
 				// Delete save
 				new DatabaseSaveDataContainer(saveObj.get("id").getAsString(), conn).deleteContainer();
@@ -333,12 +437,133 @@ public class DatabaseAccountObject extends AccountObject {
 		return salt;
 	}
 
-	public static byte[] getHash(byte[] salt, char[] password) {
+	private static byte[] getHash(byte[] salt, char[] password) {
 		KeySpec spec = new PBEKeySpec(password, salt, 65536, 128);
 		try {
 			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
 			return factory.generateSecret(spec).getEncoded();
 		} catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+			return null;
+		}
+	}
+
+	@Override
+	public String[] getSaveIDs() {
+		try {
+			// Pull list
+			var statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP WHERE ACCID = ?");
+			statement.setString(1, id);
+			ResultSet res = statement.executeQuery();
+			JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
+			String[] ids = new String[saves.size()];
+			int i = 0;
+			for (JsonElement ele : saves) {
+				JsonObject saveObj = ele.getAsJsonObject();
+				ids[i++] = saveObj.get("id").getAsString();
+			}
+			return ids;
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to pull save list of ID '" + id + "'",
+					e);
+			return new String[0];
+		}
+	}
+
+	@Override
+	public AccountSaveContainer createSave(String username) {
+		// Check username
+		if (!manager.isValidUsername(username))
+			return null;
+
+		// Check if taken
+		if (!username.equalsIgnoreCase(this.username) && manager.isUsernameTaken(username))
+			return null;
+
+		// Check filters
+		// FIXME: IMPLEMENT THIS
+
+		// Generate save ID
+		String saveID = UUID.randomUUID().toString();
+		while (true) {
+			// Check if the ID isnt in use
+			try {
+				// Create prepared statement
+				var statement = conn.prepareStatement("SELECT COUNT(USERNAME) FROM SAVEUSERNAMEMAP WHERE ID = ?");
+				statement.setString(1, saveID);
+				ResultSet res = statement.executeQuery();
+				if (res.getInt(1) == 0)
+					break; // Not taken
+			} catch (SQLException e) {
+				logger.error("Failed to execute database query request while trying to check if save ID '" + saveID
+						+ "' is taken", e);
+				return null;
+			}
+		}
+
+		// Create save
+		try {
+			// Pull list
+			var statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP WHERE ACCID = ?");
+			statement.setString(1, id);
+			ResultSet res = statement.executeQuery();
+			JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
+			for (JsonElement ele : saves) {
+				JsonObject saveObj = ele.getAsJsonObject();
+				if (saveObj.get("username").getAsString().equals(username))
+					return null;
+			}
+
+			// Add object
+			JsonObject saveObj = new JsonObject();
+			saveObj.addProperty("id", saveID);
+			saveObj.addProperty("username", username);
+			saveObj.addProperty("creationTime", System.currentTimeMillis());
+			saves.add(saveObj);
+
+			// Write to db
+			statement = conn.prepareStatement("UPDATE SAVEMAP SET SAVES = ? WHERE ACCID = ?");
+			statement.setString(1, saves.toString());
+			statement.setString(2, id);
+			statement.execute();
+
+			// Write username to db
+			statement = conn.prepareStatement("INSERT INTO SAVEUSERNAMEMAP VALUES (?, ?)");
+			statement.setString(1, username);
+			statement.setString(2, saveID);
+			statement.execute();
+
+			// Return
+			return new DatabaseSaveContainer(saveID, saveObj.get("creationTime").getAsLong(), username, this.id, conn,
+					manager);
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to create save '" + saveID
+					+ "' for ID '" + id + "'", e);
+			return null;
+		}
+
+	}
+
+	@Override
+	public AccountSaveContainer getSave(String id) {
+		try {
+			// Pull list
+			var statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP WHERE ACCID = ?");
+			statement.setString(1, this.id);
+			ResultSet res = statement.executeQuery();
+			JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
+			for (JsonElement ele : saves) {
+				JsonObject saveObj = ele.getAsJsonObject();
+				if (saveObj.get("id").getAsString().equals(id)) {
+					// Found it
+					String username = saveObj.get("username").getAsString();
+					return new DatabaseSaveContainer(id, saveObj.get("creationTime").getAsLong(), username, this.id,
+							conn, manager);
+				}
+			}
+			return null;
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to pull save '" + id + "' of ID '"
+					+ this.id + "'", e);
 			return null;
 		}
 	}

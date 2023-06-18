@@ -1,15 +1,18 @@
 package org.asf.edge.commonapi.http.handlers.internal;
 
 import java.io.IOException;
+import java.util.Base64;
 
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.AccountObject;
+import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -31,6 +34,53 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 	@Override
 	public String path() {
 		return "/accountmanager";
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void verifyToken(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("token")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		JsonObject resp = new JsonObject();
+		resp.addProperty("result", manager.verifyToken(payload.get("token").getAsString()).ordinal());
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void signToken(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("token")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		JsonObject resp = new JsonObject();
+		resp.addProperty("result",
+				Base64.getEncoder().encodeToString(manager.signToken(payload.get("token").getAsString())));
+		setResponseContent("text/json", resp.toString());
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -122,6 +172,32 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		// Send response
 		JsonObject resp = new JsonObject();
 		String id = manager.getAccountID(payload.get("username").getAsString());
+		resp.addProperty("success", id != null);
+		if (id != null)
+			resp.addProperty("id", id);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getAccountIDByEmail(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("email")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		JsonObject resp = new JsonObject();
+		String id = manager.getAccountIDByEmail(payload.get("email").getAsString());
 		resp.addProperty("success", id != null);
 		if (id != null)
 			resp.addProperty("id", id);
@@ -630,7 +706,7 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 			return;
 		}
 		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
-		if (!payload.has("id") || !payload.has("newName") || !payload.has("password")) {
+		if (!payload.has("id") || !payload.has("newName") || !payload.has("email") || !payload.has("password")) {
 			getResponse().setResponseStatus(400, "Bad request");
 			return;
 		}
@@ -640,7 +716,7 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		JsonObject resp = new JsonObject();
 		if (acc != null) {
 			resp.addProperty("success", acc.migrateToNormalAccountFromGuest(payload.get("newName").getAsString(),
-					payload.get("password").getAsString().toCharArray()));
+					payload.get("email").getAsString(), payload.get("password").getAsString().toCharArray()));
 		} else
 			resp.addProperty("success", false);
 		setResponseContent("text/json", resp.toString());
@@ -700,6 +776,33 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
+	@Function(allowedMethods = { "POST" }, value = "accounts/updateEmail")
+	public void updateEmail(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("email")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			resp.addProperty("success", acc.updateEmail(payload.get("email").getAsString()));
+		} else
+			resp.addProperty("success", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
 	@Function(allowedMethods = { "POST" }, value = "accounts/getRegistrationTimestamp")
 	public void getRegistrationTimestamp(FunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
@@ -751,6 +854,416 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 			resp.addProperty("time", acc.getLastLoginTime());
 		} else
 			resp.addProperty("time", -1);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/getSaveIDs")
+	public void getSaveIDs(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			JsonArray saveLst = new JsonArray();
+			for (String save : acc.getSaveIDs())
+				saveLst.add(save);
+			resp.add("saves", saveLst);
+		} else
+			resp.add("saves", new JsonArray());
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/createSave")
+	public void createSave(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("username")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.createSave(payload.get("username").getAsString());
+			if (cont != null) {
+				resp.addProperty("success", true);
+				resp.addProperty("id", cont.getSaveID());
+				resp.addProperty("time", cont.getCreationTime());
+			} else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/getSave")
+	public void getSave(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+			if (cont != null) {
+				resp.addProperty("success", true);
+				resp.addProperty("username", cont.getSaveID());
+				resp.addProperty("time", cont.getCreationTime());
+			} else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/updateSaveUsername")
+	public void updateSaveUsername(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save") || !payload.has("newName")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+			if (cont != null)
+				resp.addProperty("success", cont.updateUsername(payload.get("newName").getAsString()));
+			else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/deleteSave")
+	public void deleteSave(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+			if (cont != null) {
+				cont.deleteSave();
+				resp.addProperty("success", true);
+			} else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/getSaveDataEntry")
+	public void getSaveDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save") || !payload.has("key")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+			if (cont != null) {
+				JsonElement val = cont.getSaveData().unsafeAccessor().get(payload.get("key").getAsString());
+				resp.addProperty("success", val != null);
+				if (val != null)
+					resp.add("entryValue", val);
+			} else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/setSaveDataEntry")
+	public void setSaveDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save") || !payload.has("key") || !payload.has("value")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+			if (cont != null) {
+				cont.getSaveData().unsafeAccessor().set(payload.get("key").getAsString(), payload.get("value"));
+				resp.addProperty("success", true);
+			} else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/createSaveDataEntry")
+	public void createSaveDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load createSaveDataEntry
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save") || !payload.has("key") || !payload.has("value")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+			if (cont != null) {
+				cont.getSaveData().unsafeAccessor().create(payload.get("key").getAsString(), payload.get("value"));
+				resp.addProperty("success", true);
+			} else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/saveDataEntryExists")
+	public void saveDataEntryExists(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save") || !payload.has("key")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+			if (cont != null) {
+				resp.addProperty("result",
+						cont.getSaveData().unsafeAccessor().exists(payload.get("key").getAsString()));
+			} else
+				resp.addProperty("result", false);
+		} else
+			resp.addProperty("result", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/deleteSaveDataEntry")
+	public void deleteSaveDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save") || !payload.has("key")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+			if (cont != null) {
+				cont.getSaveData().unsafeAccessor().delete(payload.get("key").getAsString());
+				resp.addProperty("success", true);
+			} else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void registerGuestAccount(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("guestID")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.registerGuestAccount(payload.get("guestID").getAsString());
+		JsonObject resp = new JsonObject();
+		resp.addProperty("success", acc != null);
+		if (acc != null) {
+			resp.addProperty("id", acc.getAccountID());
+			resp.addProperty("username", acc.getUsername());
+		}
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void registerAccount(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("username") || !payload.has("email") || !payload.has("password")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.registerAccount(payload.get("username").getAsString(),
+				payload.get("email").getAsString(), payload.get("password").getAsString().toCharArray());
+		JsonObject resp = new JsonObject();
+		resp.addProperty("success", acc != null);
+		if (acc != null) {
+			resp.addProperty("id", acc.getAccountID());
+			resp.addProperty("username", acc.getUsername());
+		}
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/getAccountEmail")
+	public void getAccountEmail(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			String email = acc.getAccountEmail();
+			if (email != null) {
+				resp.addProperty("success", true);
+				resp.addProperty("email", email);
+			} else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
 		setResponseContent("text/json", resp.toString());
 	}
 

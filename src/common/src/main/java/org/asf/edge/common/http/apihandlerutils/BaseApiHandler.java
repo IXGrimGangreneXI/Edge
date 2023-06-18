@@ -21,6 +21,7 @@ import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.common.http.cookies.CookieContext;
 import org.asf.edge.common.http.cookies.CookieManager;
 import org.asf.edge.common.util.TripleDesUtil;
+import org.bouncycastle.util.encoders.Base32;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -182,6 +183,7 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 		}
 
 		// Run processor
+		setResponseStatus(404, "Not found");
 		fallbackRequestProcessor(path, method, client, contentType);
 	}
 
@@ -478,6 +480,26 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 				throw new RuntimeException(e);
 			}
 			return key;
+		}
+
+		/**
+		 * Decodes a token string from base32 to preserve casing
+		 * 
+		 * @param token Token to decode
+		 * @return Decoded token
+		 */
+		public String decodeToken(String token) throws IOException {
+			return new String(Base32.decode(token), "UTF-8");
+		}
+
+		/**
+		 * Encodes a token string to base32 to preserve casing
+		 * 
+		 * @param token Token to encode
+		 * @return Encoded token
+		 */
+		public String encodeToken(String token) throws IOException {
+			return Base32.toBase32String(token.getBytes("UTF-8"));
 		}
 
 	}

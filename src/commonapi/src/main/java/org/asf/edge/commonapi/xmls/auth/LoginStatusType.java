@@ -6,12 +6,17 @@ public enum LoginStatusType
 	InvalidUserName,
 	InvalidPassword,
 	InvalidEmail,
+	
+	NoChildData,
+	
+	GuestAccountNotFound,
+	InvalidGuestChildUserName,
 
 	UserIsBanned,
 	IPAddressBlocked,
 
-	UserNameDoesNotExists,
-	UserNameLengthMismatch,
+	DuplicateUserName,
+	DuplicateEmail,
 
 	UserPolicyNotAccepted
 }

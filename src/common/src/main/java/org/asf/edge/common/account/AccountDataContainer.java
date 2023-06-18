@@ -261,9 +261,6 @@ public abstract class AccountDataContainer {
 		// Load data array
 		JsonArray dataMap = ele.getAsJsonArray();
 
-		// Drop data map
-		delete("datamap");
-
 		// Delete entries
 		for (JsonElement elem : dataMap) {
 			if (elem.getAsString().endsWith("/")) {
@@ -273,6 +270,9 @@ public abstract class AccountDataContainer {
 			}
 			delete(elem.getAsString());
 		}
+
+		// Delete data map
+		delete("datamap");
 	}
 
 	protected JsonArray retrieveRegistry() throws IOException {

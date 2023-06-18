@@ -10,9 +10,13 @@ import org.asf.connective.ConnectiveHttpServer;
 import org.asf.edge.gameplayapi.http.*;
 import org.asf.edge.gameplayapi.http.handlers.gameplayapi.*;
 import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
+import org.asf.edge.gameplayapi.services.ItemManager;
+import org.asf.edge.gameplayapi.services.impl.ItemManagerImpl;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.gameplayapi.http.handlers.achievements.*;
 import org.asf.edge.common.IBaseServer;
+import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
+import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.gameplayapi.events.server.GameplayApiServerSetupEvent;
 import org.asf.edge.gameplayapi.events.server.GameplayApiServerStartupEvent;
 import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
@@ -136,6 +140,12 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		server.registerProcessor(new MissionWebServiceProcessor(this));
 		server.registerProcessor(new AchievementWebServiceV1Processor(this));
 		server.registerProcessor(new AchievementWebServiceV2Processor(this));
+
+		// Select item manager
+		logger.info("Setting up item manager...");
+		ServiceManager.registerServiceImplementation(ItemManager.class, new ItemManagerImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(ItemManager.class);
 	}
 
 	/**

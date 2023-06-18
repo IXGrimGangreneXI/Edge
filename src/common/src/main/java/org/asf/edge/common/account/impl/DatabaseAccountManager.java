@@ -2,31 +2,45 @@ package org.asf.edge.common.account.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Properties;
+import java.util.UUID;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.account.AccountDataContainer;
 import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.AccountObject;
 import org.asf.edge.common.account.impl.accounts.DatabaseAccountObject;
+import org.asf.edge.common.tokens.SessionToken;
+import org.asf.edge.common.tokens.TokenParseResult;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 
 public class DatabaseAccountManager extends AccountManager {
@@ -34,6 +48,9 @@ public class DatabaseAccountManager extends AccountManager {
 	private Connection conn;
 	private Logger logger = LogManager.getLogger("AccountManager");
 	private static SecureRandom rnd = new SecureRandom();
+
+	private PublicKey publicKey;
+	private PrivateKey privateKey;
 
 	@Override
 	public void initService() {
@@ -88,8 +105,10 @@ public class DatabaseAccountManager extends AccountManager {
 
 			// Create tables
 			Statement statement = conn.createStatement();
+			statement.executeUpdate("CREATE TABLE IF NOT EXISTS EMAILMAP (EMAIL TEXT, ID CHAR(36))");
 			statement
 					.executeUpdate("CREATE TABLE IF NOT EXISTS USERMAP (USERNAME TEXT, ID CHAR(36), CREDS BINARY(48))");
+			statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEUSERNAMEMAP (USERNAME TEXT, ID CHAR(36))");
 			statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEMAP (ACCID CHAR(36), SAVES LONGTEXT)");
 			statement.executeUpdate(
 					"CREATE TABLE IF NOT EXISTS ACCOUNTWIDEPLAYERDATA (PATH varchar(294), DATA LONGTEXT)");
@@ -121,7 +140,19 @@ public class DatabaseAccountManager extends AccountManager {
 			var statement = conn.prepareStatement("SELECT COUNT(ID) FROM USERMAP WHERE USERNAME = ?");
 			statement.setString(1, username);
 			ResultSet res = statement.executeQuery();
-			return res.getInt(1) != 0;
+			if (res.getInt(1) != 0)
+				return true;
+			try {
+				// Create prepared statement
+				statement = conn.prepareStatement("SELECT COUNT(ID) FROM SAVEUSERNAMEMAP WHERE USERNAME = ?");
+				statement.setString(1, username);
+				res = statement.executeQuery();
+				return res.getInt(1) != 0;
+			} catch (SQLException e) {
+				logger.error("Failed to execute database query request while trying to check if username '" + username
+						+ "' is taken", e);
+				return false;
+			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to check if username '" + username
 					+ "' is taken", e);
@@ -222,7 +253,7 @@ public class DatabaseAccountManager extends AccountManager {
 			var statement = conn.prepareStatement("SELECT ID FROM USERMAP WHERE USERNAME = ?");
 			statement.setString(1, "g/" + guestID);
 			ResultSet res = statement.executeQuery();
-			String id = res.getString("USERNAME");
+			String id = res.getString("ID");
 			if (id == null)
 				return null;
 			return new DatabaseAccountObject(id, "g/" + guestID, conn, this);
@@ -233,6 +264,185 @@ public class DatabaseAccountManager extends AccountManager {
 		}
 	}
 
+	@Override
+	public String getAccountIDByEmail(String email) {
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("SELECT ID FROM EMAILMAP WHERE EMAIL = ?");
+			statement.setString(1, email);
+			ResultSet res = statement.executeQuery();
+			return res.getString("ID");
+		} catch (SQLException e) {
+			logger.error(
+					"Failed to execute database query request while trying to pull user ID of email '" + email + "'",
+					e);
+			return null;
+		}
+	}
+
+	@Override
+	public TokenParseResult verifyToken(String token) {
+		// Init if needed
+		keyInit();
+
+		// Parse token
+		try {
+			// Verify signature
+			String verifyD = token.split("\\.")[0] + "." + token.split("\\.")[1];
+			String sig = token.split("\\.")[2];
+			if (!SessionToken.verify(verifyD.getBytes("UTF-8"), Base64.getUrlDecoder().decode(sig), publicKey)) {
+				return TokenParseResult.INVALID_DATA;
+			}
+			return TokenParseResult.SUCCESS; // Rest is handled by the token API
+		} catch (Exception e) {
+			return TokenParseResult.INVALID_DATA;
+		}
+	}
+
+	@Override
+	public byte[] signToken(String token) {
+		// Init if needed
+		keyInit();
+
+		// Sign
+		try {
+			return SessionToken.sign(token.getBytes("UTF-8"), privateKey);
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public AccountObject registerGuestAccount(String guestID) {
+		// Check if guest ID exists
+		if (getGuestAccount(guestID) != null)
+			return null;
+
+		// Generate account ID
+		String id = UUID.randomUUID().toString();
+		while (accountExists(id))
+			id = UUID.randomUUID().toString();
+
+		// Register account
+		DatabaseAccountObject obj = new DatabaseAccountObject(id, "g/" + guestID, conn, this);
+
+		// Insert information
+		try {
+			// Insert user
+			var statement = conn.prepareStatement("INSERT INTO USERMAP VALUES(?, ?, ?)");
+			statement.setString(1, "g/" + guestID);
+			statement.setString(2, id);
+			statement.setBytes(3, new byte[0]);
+			statement.execute();
+
+			// Insert save
+			statement = conn.prepareStatement("INSERT INTO SAVEMAP VALUES(?, ?)");
+			statement.setString(1, id);
+			statement.setString(2, "[]");
+			statement.execute();
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to register account '" + id + "'", e);
+			return null;
+		}
+
+		try {
+			// Set account data
+			AccountDataContainer settings = obj.getAccountData().getChildContainer("accountdata");
+			settings.setEntry("lastlogintime", new JsonPrimitive(System.currentTimeMillis()));
+			settings.setEntry("registrationtimestamp", new JsonPrimitive(System.currentTimeMillis()));
+			settings.setEntry("isguestaccount", new JsonPrimitive(true));
+			settings.setEntry("ismultiplayerenabled", new JsonPrimitive(true));
+			settings.setEntry("ischatenabled", new JsonPrimitive(true));
+			settings.setEntry("isstrictchatfilterenabled", new JsonPrimitive(false));
+		} catch (IOException e) {
+			logger.error("Failed to execute database query request while trying to update account settings of ID '" + id
+					+ "'", e);
+			return null;
+		}
+
+		// Return
+		return obj;
+	}
+
+	@Override
+	public AccountObject registerAccount(String username, String email, char[] password) {
+		// Check username validity
+		if (!isValidUsername(username))
+			return null;
+
+		// Check username
+		if (isUsernameTaken(username))
+			return null;
+
+		// Check password
+		if (!isValidPassword(new String(password)))
+			return null;
+
+		// Check email
+		if (getAccountIDByEmail(email) != null)
+			return null;
+
+		// Generate account ID
+		String id = UUID.randomUUID().toString();
+		while (accountExists(id))
+			id = UUID.randomUUID().toString();
+
+		// Register account
+		DatabaseAccountObject obj = new DatabaseAccountObject(id, username, conn, this);
+
+		// Insert information
+		try {
+			// Create salt and compute password
+			byte[] salt = salt();
+			byte[] hash = getHash(salt, password);
+			byte[] cred = new byte[48];
+			for (int i = 0; i < 32; i++)
+				cred[i] = salt[i];
+			for (int i = 32; i < 48; i++)
+				cred[i] = hash[i - 32];
+
+			// Insert email
+			var statement = conn.prepareStatement("INSERT INTO EMAILMAP VALUES(?, ?)");
+			statement.setString(1, email);
+			statement.setString(2, id);
+			statement.execute();
+
+			// Insert user
+			statement = conn.prepareStatement("INSERT INTO USERMAP VALUES(?, ?, ?)");
+			statement.setString(1, username);
+			statement.setString(2, id);
+			statement.setBytes(3, cred);
+			statement.execute();
+
+			// Insert save
+			statement = conn.prepareStatement("INSERT INTO SAVEMAP VALUES(?, ?)");
+			statement.setString(1, id);
+			statement.setString(2, "[]");
+			statement.execute();
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to register account '" + id + "'", e);
+			return null;
+		}
+
+		try {
+			// Set account data
+			AccountDataContainer settings = obj.getAccountData().getChildContainer("accountdata");
+			settings.setEntry("lastlogintime", new JsonPrimitive(System.currentTimeMillis()));
+			settings.setEntry("registrationtimestamp", new JsonPrimitive(System.currentTimeMillis()));
+			settings.setEntry("isguestaccount", new JsonPrimitive(false));
+			settings.setEntry("ismultiplayerenabled", new JsonPrimitive(true));
+			settings.setEntry("ischatenabled", new JsonPrimitive(true));
+			settings.setEntry("isstrictchatfilterenabled", new JsonPrimitive(false));
+		} catch (IOException e) {
+			logger.error("Failed to execute database query request while trying to update account settings of ID '" + id
+					+ "'", e);
+			return null;
+		}
+
+		// Return
+		return obj;
+	}
+
 	// Salt and hash
 	private static byte[] salt() {
 		byte[] salt = new byte[32];
@@ -240,13 +450,41 @@ public class DatabaseAccountManager extends AccountManager {
 		return salt;
 	}
 
-	public static byte[] getHash(byte[] salt, char[] password) {
+	private static byte[] getHash(byte[] salt, char[] password) {
 		KeySpec spec = new PBEKeySpec(password, salt, 65536, 128);
 		try {
 			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
 			return factory.generateSecret(spec).getEncoded();
 		} catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
 			return null;
+		}
+	}
+
+	private void keyInit() {
+		if (publicKey == null || privateKey == null) {
+			try {
+				// Load or generate keys for JWT signatures
+				File publicKey = new File("publickey.pem");
+				File privateKey = new File("privatekey.pem");
+				if (!publicKey.exists() || !privateKey.exists()) {
+					// Generate new keys
+					KeyPair pair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+
+					// Save keys
+					Files.writeString(publicKey.toPath(),
+							SessionToken.pemEncode(pair.getPublic().getEncoded(), "PUBLIC"));
+					Files.writeString(privateKey.toPath(),
+							SessionToken.pemEncode(pair.getPrivate().getEncoded(), "PRIVATE"));
+				}
+				// Load keys
+				KeyFactory fac = KeyFactory.getInstance("RSA");
+				this.privateKey = fac.generatePrivate(
+						new PKCS8EncodedKeySpec(SessionToken.pemDecode(Files.readString(privateKey.toPath()))));
+				this.publicKey = fac.generatePublic(
+						new X509EncodedKeySpec(SessionToken.pemDecode(Files.readString(publicKey.toPath()))));
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
