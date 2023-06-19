@@ -11,14 +11,14 @@ import org.asf.edge.common.account.AccountDataContainer;
 import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.AccountObject;
 import org.asf.edge.common.account.AccountSaveContainer;
+import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
-import org.asf.edge.gameplayapi.entities.ItemInfo;
-import org.asf.edge.gameplayapi.services.ItemManager;
 import org.asf.edge.gameplayapi.xmls.avatars.SetAvatarResultData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
@@ -65,6 +65,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 	public void setAvatar(FunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
 
 		// Handle avatar change request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
@@ -161,6 +163,14 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 
 		// Update avatar
 		save.getSaveData().setEntry("avatar", new JsonPrimitive(req.payload.get("contentXML")));
+
+		// Add default items if needed
+		if (!save.getSaveData().entryExists("received_default_items")
+				|| !save.getSaveData().getEntry("received_default_items").getAsBoolean()) {
+			// Give default items
+			save.getInventory().giveDefaultItems();
+			save.getSaveData().setEntry("received_default_items", new JsonPrimitive(true));
+		}
 
 		// Send response
 		SetAvatarResultData resp = new SetAvatarResultData();
@@ -280,20 +290,20 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		}
 		ArrayList<ItemBlock> items = new ArrayList<ItemBlock>();
 		for (JsonElement itemDefEle : e.getAsJsonArray()) {
-			int id = itemDefEle.getAsInt();
+			int uniqueID = itemDefEle.getAsInt();
 
 			// Locate item
-			JsonObject itm = data.getEntry("item-" + id).getAsJsonObject();
+			JsonObject itm = data.getEntry("item-" + uniqueID).getAsJsonObject();
 
 			// Add item
 			ItemBlock block = new ItemBlock();
-			block.itemID = id;
+			block.itemID = itm.get("id").getAsInt();
 			block.quantity = itm.get("quantity").getAsInt();
 			block.uses = itm.get("uses").getAsInt();
-			block.userInventoryID = itm.get("userInventoryID").getAsInt();
+			block.uniqueItemID = uniqueID;
 
 			// Add data info from item manager
-			ItemInfo def = ItemManager.getInstance().getItemDefinition(id);
+			ItemInfo def = ItemManager.getInstance().getItemDefinition(block.itemID);
 			if (def != null)
 				block.data = def.getRawObject();
 			items.add(block);
@@ -354,9 +364,12 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			}
 
 			// Set response
-			DragonListData ls = new DragonListData();
-			ls.dragons = dragons.toArray(t -> new ObjectNode[t]);
-			setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", ls));
+			if (dragons.size() != 0) {
+				DragonListData ls = new DragonListData();
+				ls.dragons = dragons.toArray(t -> new ObjectNode[t]);
+				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", ls));
+			} else
+				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", null));
 		} else {
 			// ???
 			setResponseStatus(403, "Forbidden, attempted to interact with other user's data (devs please inspect)");

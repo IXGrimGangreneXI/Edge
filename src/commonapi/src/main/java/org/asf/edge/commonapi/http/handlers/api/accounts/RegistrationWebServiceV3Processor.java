@@ -95,6 +95,10 @@ public class RegistrationWebServiceV3Processor extends BaseApiHandler<EdgeCommon
 			return;
 		}
 
+		// Remove gems
+		current -= COST_DELETE_PROFILE;
+		currencyAccWide.setEntry("gems", new JsonPrimitive(current));
+
 		// Delete save
 		save.deleteSave();
 

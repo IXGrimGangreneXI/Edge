@@ -10,14 +10,14 @@ import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.account.AccountDataContainer;
 import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.AccountObject;
+import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
-import org.asf.edge.gameplayapi.entities.ItemInfo;
-import org.asf.edge.gameplayapi.services.ItemManager;
 import org.asf.edge.gameplayapi.xmls.data.KeyValuePairData;
 import org.asf.edge.gameplayapi.xmls.data.KeyValuePairSetData;
 import org.asf.edge.gameplayapi.xmls.data.EmptyKeyValuePairSetData;
@@ -125,20 +125,20 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		}
 		ArrayList<ItemBlock> items = new ArrayList<ItemBlock>();
 		for (JsonElement itemDefEle : e.getAsJsonArray()) {
-			int id = itemDefEle.getAsInt();
+			int uniqueID = itemDefEle.getAsInt();
 
 			// Locate item
-			JsonObject itm = data.getEntry("item-" + id).getAsJsonObject();
+			JsonObject itm = data.getEntry("item-" + uniqueID).getAsJsonObject();
 
 			// Add item
 			ItemBlock block = new ItemBlock();
-			block.itemID = id;
+			block.itemID = itm.get("id").getAsInt();
 			block.quantity = itm.get("quantity").getAsInt();
 			block.uses = itm.get("uses").getAsInt();
-			block.userInventoryID = itm.get("userInventoryID").getAsInt();
+			block.uniqueItemID = uniqueID;
 
 			// Add data info from item manager
-			ItemInfo def = ItemManager.getInstance().getItemDefinition(id);
+			ItemInfo def = ItemManager.getInstance().getItemDefinition(block.itemID);
 			if (def != null)
 				block.data = def.getRawObject();
 			items.add(block);

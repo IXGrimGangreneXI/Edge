@@ -3,20 +3,16 @@ package org.asf.edge.commonapi.xmls.data;
 import org.asf.edge.commonapi.xmls.auth.UserInfoData;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 
-@JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class ProfileData {
 
-	@JsonInclude(Include.NON_NULL)
 	public AvatarBlock avatar;
 
 	@JsonProperty("ID")
@@ -52,13 +48,14 @@ public class ProfileData {
 	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 	public static class AvatarBlock {
 
-		@JsonInclude(Include.NON_NULL)
 		public ObjectNode avatarData;
 
 		public UserInfoData userInfo;
 
 		@JsonProperty("UserSubscriptionInfo")
 		public SubscriptionBlock subscription;
+
+		public AchievementBlock achievementInfo;
 
 		@JacksonXmlElementWrapper(useWrapping = false)
 		public AchievementBlock[] achievements;
@@ -119,7 +116,6 @@ public class ProfileData {
 
 			public String subscriptionDisplayName = "NonMember";
 
-			@JsonInclude(Include.NON_NULL)
 			public String lastBillDate;
 
 			public boolean isActive;

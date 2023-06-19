@@ -1,5 +1,7 @@
 package org.asf.edge.gameplayapi.xmls.items;
 
+import org.asf.edge.common.xmls.items.ItemStoreDefinitionData;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;

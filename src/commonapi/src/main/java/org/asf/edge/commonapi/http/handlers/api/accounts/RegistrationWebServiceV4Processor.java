@@ -9,6 +9,7 @@ import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.AccountObject;
+import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -51,7 +52,7 @@ public class RegistrationWebServiceV4Processor extends BaseApiHandler<EdgeCommon
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
-		// Handle name validation request
+		// Create save
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
@@ -71,12 +72,16 @@ public class RegistrationWebServiceV4Processor extends BaseApiHandler<EdgeCommon
 		ChildAvatarRegistrationData reg = req.parseXmlValue(req.getEncryptedValue("childRegistrationData"),
 				ChildAvatarRegistrationData.class);
 
+		// Check if the save slot count has one or more slots without profile
+		// If not, its a hack, so block it
+		// FIXME: implement this
+
 		// Check validity
 		if (!manager.isValidUsername(reg.name)) {
 			// Invalid name
 			RegistrationResultData resp = new RegistrationResultData();
 			resp.suggestions = null;
-			resp.status = LoginStatusType.InvalidUserName;
+			resp.status = LoginStatusType.InvalidChildUserName;
 			setResponseContent("text/xml",
 					req.generateEncryptedResponse(req.generateXmlValue("RegistrationResult", resp)));
 			return;
@@ -105,7 +110,7 @@ public class RegistrationWebServiceV4Processor extends BaseApiHandler<EdgeCommon
 			// Taken
 			RegistrationResultData resp = new RegistrationResultData();
 			resp.suggestions = null;
-			resp.status = LoginStatusType.InvalidUserName;
+			resp.status = LoginStatusType.InvalidChildUserName;
 			resp.suggestions = new SuggestionResultBlock();
 
 			// Generate suggestions
@@ -126,7 +131,22 @@ public class RegistrationWebServiceV4Processor extends BaseApiHandler<EdgeCommon
 			return;
 		}
 
-		// Validation success
-		setResponseStatus(404, "Not found");
+		// Try to create save
+		AccountSaveContainer save = account.createSave(reg.name);
+		if (save == null) {
+			// Invalid
+			RegistrationResultData resp = new RegistrationResultData();
+			resp.suggestions = null;
+			resp.status = LoginStatusType.InvalidChildUserName;
+			setResponseContent("text/xml",
+					req.generateEncryptedResponse(req.generateXmlValue("RegistrationResult", resp)));
+			return;
+		}
+
+		// Return success
+		RegistrationResultData resp = new RegistrationResultData();
+		resp.userID = save.getSaveID();
+		resp.status = LoginStatusType.Success;
+		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("RegistrationResult", resp)));
 	}
 }

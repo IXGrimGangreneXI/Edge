@@ -2,6 +2,9 @@ package org.asf.edge.common.account;
 
 import java.io.IOException;
 
+import org.asf.edge.common.entities.items.PlayerInventory;
+import org.asf.edge.common.services.items.ItemManager;
+
 /**
  * 
  * Account object abstract
@@ -167,6 +170,15 @@ public abstract class AccountObject {
 	public abstract AccountSaveContainer getSave(String id);
 
 	/**
+	 * Retrieves the account-wide player inventory
+	 * 
+	 * @return PlayerInventory instance
+	 */
+	public PlayerInventory getInventory() {
+		return ItemManager.getInstance().getCommonInventory(getAccountData());
+	}
+
+	/**
 	 * Deletes the account
 	 * 
 	 * @throws IOException If deletion errors
@@ -174,6 +186,5 @@ public abstract class AccountObject {
 	public abstract void deleteAccount() throws IOException;
 
 	// TODO
-	// Among other things i still need to do save management
 
 }

@@ -16,6 +16,10 @@ import org.asf.edge.commonapi.http.handlers.internal.*;
 import org.asf.edge.commonapi.events.server.*;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.common.IBaseServer;
+import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.services.items.impl.ItemManagerImpl;
+import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
+import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.commonapi.config.CommonApiServerConfig;
 
 /**
@@ -166,6 +170,12 @@ public class EdgeCommonApiServer implements IBaseServer {
 		// Register handlers: internal
 		logger.debug("Configuring internal server request handlers...");
 		internalServer.registerProcessor(new AccountManagerAPI(this));
+
+		// Select item manager
+		logger.info("Setting up item manager...");
+		ServiceManager.registerServiceImplementation(ItemManager.class, new ItemManagerImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(ItemManager.class);
 	}
 
 	/**

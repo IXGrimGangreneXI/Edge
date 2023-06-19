@@ -11,6 +11,8 @@ public enum LoginStatusType
 	
 	GuestAccountNotFound,
 	InvalidGuestChildUserName,
+	
+	InvalidChildUserName,
 
 	UserIsBanned,
 	IPAddressBlocked,

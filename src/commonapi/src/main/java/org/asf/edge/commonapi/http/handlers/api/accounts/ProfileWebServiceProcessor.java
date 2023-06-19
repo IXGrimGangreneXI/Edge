@@ -135,6 +135,40 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 	}
 
 	@Function(allowedMethods = { "POST" })
+	public void getUserProfileByUserID(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Handle user profile request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Find save
+		AccountSaveContainer save = account.getSave(req.payload.get("userId"));
+		if (save == null) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Set response
+		setResponseContent("text/xml",
+				req.generateXmlValue("UserProfileDisplayData", getProfile(save.getSaveID(), account, req)));
+	}
+
+	@Function(allowedMethods = { "POST" })
 	public void getDetailedChildList(FunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -243,6 +277,10 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 		profile.avatar.achievements[0].saveID = save.getSaveID();
 		profile.avatar.achievements[0].rankID = 1;
 		profile.avatar.achievements[0].pointTypeID = 1;
+		profile.avatar.achievementInfo = new AchievementBlock();
+		profile.avatar.achievementInfo.saveID = save.getSaveID();
+		profile.avatar.achievementInfo.rankID = 1;
+		profile.avatar.achievementInfo.pointTypeID = 1;
 
 		// Create answer data
 		profile.answerData = new AnswerBlock();

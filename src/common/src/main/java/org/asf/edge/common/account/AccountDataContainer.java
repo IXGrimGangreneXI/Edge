@@ -294,27 +294,27 @@ public abstract class AccountDataContainer {
 
 		@Override
 		protected JsonElement get(String key) throws IOException {
-			return parent.get(path + key);
+			return parent.get(name + "/" + key);
 		}
 
 		@Override
 		protected boolean exists(String key) throws IOException {
-			return parent.exists(path + key);
+			return parent.exists(name + "/" + key);
 		}
 
 		@Override
 		protected void set(String key, JsonElement value) throws IOException {
-			parent.set(path + key, value);
+			parent.set(name + "/" + key, value);
 		}
 
 		@Override
 		protected void create(String key, JsonElement value) throws IOException {
-			parent.create(path + key, value);
+			parent.create(name + "/" + key, value);
 		}
 
 		@Override
 		protected void delete(String key) throws IOException {
-			parent.delete(path + key);
+			parent.delete(name + "/" + key);
 		}
 
 	}

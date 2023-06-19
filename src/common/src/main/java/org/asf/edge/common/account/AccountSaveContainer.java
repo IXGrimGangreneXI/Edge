@@ -1,5 +1,8 @@
 package org.asf.edge.common.account;
 
+import org.asf.edge.common.entities.items.PlayerInventory;
+import org.asf.edge.common.services.items.ItemManager;
+
 /**
  * 
  * Account Save Container
@@ -44,6 +47,15 @@ public abstract class AccountSaveContainer {
 	 * @return AccountDataContainer instance
 	 */
 	public abstract AccountDataContainer getSaveData();
+
+	/**
+	 * Retrieves the save inventory
+	 * 
+	 * @return PlayerInventory instance
+	 */
+	public PlayerInventory getInventory() {
+		return ItemManager.getInstance().getCommonInventory(getSaveData());
+	}
 
 	/**
 	 * Deletes this save

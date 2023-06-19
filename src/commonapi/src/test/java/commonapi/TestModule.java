@@ -1,7 +1,6 @@
 package commonapi;
 
 import org.asf.edge.modules.IEdgeModule;
-import org.asf.edge.modules.eventbus.EventListener;
 
 public class TestModule implements IEdgeModule {
 
@@ -18,4 +17,5 @@ public class TestModule implements IEdgeModule {
 	@Override
 	public void init() {
 	}
+
 }

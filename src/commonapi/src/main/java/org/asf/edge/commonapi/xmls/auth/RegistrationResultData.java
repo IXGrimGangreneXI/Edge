@@ -18,7 +18,7 @@ public class RegistrationResultData {
 
 	public String parentLoginInfo;
 
-	@JsonProperty("suggestions")
+	@JsonProperty("Suggestions")
 	public SuggestionResultBlock suggestions;
 
 	@JsonIgnoreProperties(ignoreUnknown = true)

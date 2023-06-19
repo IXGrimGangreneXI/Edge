@@ -1,5 +1,7 @@
 package org.asf.edge.gameplayapi.xmls.inventories;
 
+import org.asf.edge.gameplayapi.xmls.data.KeyValuePairSetData;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -23,7 +25,7 @@ public class CommonInventoryData {
 	public static class ItemBlock {
 
 		@JsonProperty("uiid")
-		public int userInventoryID;
+		public int uniqueItemID;
 
 		@JsonProperty("iid")
 		public int itemID;
@@ -36,6 +38,34 @@ public class CommonInventoryData {
 
 		@JsonProperty("i")
 		public ObjectNode data;
+
+		@JsonProperty("IT")
+		public String tier;
+
+		@JsonProperty("uia")
+		public KeyValuePairSetData itemAttributes;
+
+		@JsonProperty("iss")
+		@JacksonXmlElementWrapper(useWrapping = false)
+		public ItemStatBlock[] stats;
+
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+		public static class ItemStatBlock {
+
+			@JsonProperty("ID")
+			public int itemStatID;
+
+			@JsonProperty("N")
+			public String statName;
+
+			@JsonProperty("V")
+			public String statValue;
+
+			@JsonProperty("DTI")
+			public int statType;
+
+		}
 
 	}
 
