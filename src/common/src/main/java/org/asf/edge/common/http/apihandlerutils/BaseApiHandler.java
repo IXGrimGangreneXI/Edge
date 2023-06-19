@@ -273,7 +273,8 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 		 */
 		public String generateXmlValue(String rootElementName, Object data) throws IOException {
 			try {
-				return mapper.writer().withRootName(rootElementName).writeValueAsString(data);
+				return mapper.writer().withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL)
+						.withRootName(rootElementName).writeValueAsString(data);
 			} catch (JsonProcessingException e) {
 				throw new IOException("Encoding failure", e);
 			}

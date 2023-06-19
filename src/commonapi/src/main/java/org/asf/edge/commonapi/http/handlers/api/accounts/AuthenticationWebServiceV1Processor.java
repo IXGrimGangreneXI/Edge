@@ -62,6 +62,8 @@ public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeComm
 		switch (res) {
 
 		case SUCCESS:
+			// Update token
+			tkn.updateSessionTime();
 			setResponseContent("text/xml", req.generateXmlValue("ApiTokenStatus", 1));
 			break;
 
@@ -122,7 +124,7 @@ public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeComm
 		tkn.capabilities = new String[] { "api", "gp" };
 
 		// Set response
-		setResponseContent("text/xml", req.generateEncryptedResponse(tkn.toTokenString()));
+		setResponseContent("text/xml", req.generateEncryptedResponse(getUtilities().encodeToken(tkn.toTokenString())));
 	}
 
 	@Function(allowedMethods = { "POST" })

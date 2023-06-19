@@ -3,8 +3,11 @@ package org.asf.edge.gameplayapi.services.impl;
 import org.asf.edge.gameplayapi.entities.ItemInfo;
 import org.asf.edge.gameplayapi.entities.ItemStoreInfo;
 import org.asf.edge.gameplayapi.services.ItemManager;
-import org.asf.edge.gameplayapi.xmls.stores.ItemStoreDefinitionData;
+import org.asf.edge.gameplayapi.xmls.items.ItemStoreDefinitionData;
+import org.asf.edge.gameplayapi.xmls.items.edgespecific.ItemRegistryManifest;
+import org.asf.edge.gameplayapi.xmls.items.edgespecific.ItemRegistryManifest.DefaultItemBlock;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 import java.io.IOException;
@@ -20,6 +23,8 @@ public class ItemManagerImpl extends ItemManager {
 	private HashMap<Integer, ItemInfo> itemDefs = new HashMap<Integer, ItemInfo>();
 	private HashMap<Integer, ItemStoreInfo> storeDefs = new HashMap<Integer, ItemStoreInfo>();
 
+	private DefaultItemBlock[] defaultItems;
+
 	@Override
 	public void initService() {
 		logger = LogManager.getLogger("ItemManager");
@@ -28,13 +33,13 @@ public class ItemManagerImpl extends ItemManager {
 		logger.info("Loading item store data...");
 		try {
 			// Load XML
-			InputStream strm = getClass().getClassLoader().getResourceAsStream("itemstores.xml");
+			InputStream strm = getClass().getClassLoader().getResourceAsStream("itemdata/itemstores.xml");
 			String data = new String(strm.readAllBytes(), "UTF-8");
 			strm.close();
 
 			// Load into map
 			XmlMapper mapper = new XmlMapper();
-			ItemStoreDefinitionData[] stores = mapper.readValue(data, ItemStoreDefinitionData[].class);
+			ItemStoreDefinitionData[] stores = mapper.reader().readValue(data, ItemStoreDefinitionData[].class);
 
 			// Load stores
 			for (ItemStoreDefinitionData store : stores) {
@@ -50,6 +55,32 @@ public class ItemManagerImpl extends ItemManager {
 				}
 				storeDefs.put(store.storeID,
 						new ItemStoreInfo(store.storeID, store.storeName, store.storeDescription, items));
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		// Load item defs
+		logger.info("Loading item defs...");
+		try {
+			// Load XML
+			InputStream strm = getClass().getClassLoader().getResourceAsStream("itemdata/itemdefs.xml");
+			String data = new String(strm.readAllBytes(), "UTF-8");
+			strm.close();
+
+			// Load object
+			XmlMapper mapper = new XmlMapper();
+			ItemRegistryManifest reg = mapper.reader().readValue(data, ItemRegistryManifest.class);
+
+			// Load default items
+			defaultItems = reg.defaultItems.defaultItems;
+
+			// Load items
+			for (ObjectNode def : reg.itemDefs) {
+				// Register item
+				ItemInfo itm = new ItemInfo(def.get("id").asInt(), def.get("itn").asText(), def.get("d").asText(), def);
+				itemDefs.put(itm.getID(), itm);
+				logger.debug("Registered item: " + itm.getID() + ": " + itm.getName());
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);

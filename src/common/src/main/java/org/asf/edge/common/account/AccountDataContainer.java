@@ -105,11 +105,11 @@ public abstract class AccountDataContainer {
 			return false;
 
 		// Check validity
-		else if (key.replace(" ", "").trim().isEmpty())
+		if (key.replace(" ", "").trim().isEmpty())
 			return false;
 
 		// Check length
-		if (key.length() > 32)
+		if (key.length() > 64)
 			return false;
 
 		// Valid
@@ -209,7 +209,7 @@ public abstract class AccountDataContainer {
 			throw new IOException("Invalid key");
 
 		// Verify path length limit
-		if ((path + key + "/").length() + 32 > 256)
+		if ((path + key + "/").length() + 64 > 256)
 			throw new IOException("Invalid key: key name too long, path length limit would be hit");
 
 		// Verify existence, and if needed, create the container

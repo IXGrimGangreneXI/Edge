@@ -8,10 +8,12 @@ import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.account.AccountDataContainer;
 import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.AccountObject;
+import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.common.tokens.SessionToken;
+import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.xmls.auth.CommonLoginInfo;
 import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
@@ -24,6 +26,7 @@ import com.google.gson.JsonPrimitive;
 public class RegistrationWebServiceV3Processor extends BaseApiHandler<EdgeCommonApiServer> {
 
 	private AccountManager manager;
+	public static final int COST_DELETE_PROFILE = 50;
 
 	public RegistrationWebServiceV3Processor(EdgeCommonApiServer server) {
 		super(server);
@@ -45,6 +48,58 @@ public class RegistrationWebServiceV3Processor extends BaseApiHandler<EdgeCommon
 		// Handle request
 		path = path;
 		setResponseStatus(404, "Not found");
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void deleteProfile(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Handle deletion request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+		String userID = req.payload.get("userID");
+
+		// Find save
+		AccountSaveContainer save = account.getSave(userID);
+		if (save == null) {
+			// Error, set response
+
+			// Status PROFILE_NOT_FOUND = not found
+			setResponseContent("text/xml", req.generateXmlValue("DeleteProfileStatus", "PROFILE_NOT_FOUND"));
+			return;
+		}
+
+		// Check currency
+		AccountDataContainer currencyAccWide = account.getAccountData().getChildContainer("currency");
+		int current = 0;
+		if (currencyAccWide.entryExists("gems"))
+			current = currencyAccWide.getEntry("gems").getAsInt();
+		if (current < COST_DELETE_PROFILE) {
+			// Error, set response
+
+			// Status IN_SUFFICIENT_VCASH_FUNDS = not enough gems
+			setResponseContent("text/xml", req.generateXmlValue("DeleteProfileStatus", "IN_SUFFICIENT_VCASH_FUNDS"));
+			return;
+		}
+
+		// Delete save
+		save.deleteSave();
+
+		// Set response
+		setResponseContent("text/xml", req.generateXmlValue("DeleteProfileStatus", "SUCCESS"));
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -219,15 +274,19 @@ public class RegistrationWebServiceV3Processor extends BaseApiHandler<EdgeCommon
 			cont.setEntry("isunderage", new JsonPrimitive(registration.childList[0].age < 13));
 			if (registration.childList[0].age < 13)
 				acc.setStrictChatFilterEnabled(true);
-
-			// Create default save
-			acc.createSave(acc.getUsername());
 		}
 
 		// Build response
 		RegistrationResultData resp = new RegistrationResultData();
 		resp.status = LoginStatusType.Success;
 		resp.userID = acc.getAccountID();
+
+		// Add gems
+		AccountDataContainer currencyAccWide = acc.getAccountData().getChildContainer("currency");
+		int current = 0;
+		if (currencyAccWide.entryExists("gems"))
+			current = currencyAccWide.getEntry("gems").getAsInt();
+		currencyAccWide.setEntry("gems", new JsonPrimitive(current + 75));
 
 		// Build token
 		SessionToken tkn = new SessionToken();

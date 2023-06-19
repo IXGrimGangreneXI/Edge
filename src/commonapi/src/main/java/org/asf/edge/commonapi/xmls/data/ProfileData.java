@@ -3,16 +3,20 @@ package org.asf.edge.commonapi.xmls.data;
 import org.asf.edge.commonapi.xmls.auth.UserInfoData;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 
+@JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class ProfileData {
 
+	@JsonInclude(Include.NON_NULL)
 	public AvatarBlock avatar;
 
 	@JsonProperty("ID")
@@ -34,14 +38,21 @@ public class ProfileData {
 
 	public int activityCount;
 
+	public int rankID = 0;
+
 	@JsonProperty("Groups")
 	@JacksonXmlElementWrapper(useWrapping = false)
 	public GroupBlock[] groups;
+
+	@JsonProperty("Answer")
+	@JacksonXmlElementWrapper(useWrapping = false)
+	public AnswerBlock answerData;
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 	public static class AvatarBlock {
 
+		@JsonInclude(Include.NON_NULL)
 		public ObjectNode avatarData;
 
 		public UserInfoData userInfo;
@@ -61,9 +72,6 @@ public class ProfileData {
 
 			@JsonProperty("u")
 			public String saveID;
-
-			@JsonProperty("n")
-			public String saveName;
 
 			@JsonProperty("a")
 			public int pointsTotal;
@@ -111,6 +119,7 @@ public class ProfileData {
 
 			public String subscriptionDisplayName = "NonMember";
 
+			@JsonInclude(Include.NON_NULL)
 			public String lastBillDate;
 
 			public boolean isActive;

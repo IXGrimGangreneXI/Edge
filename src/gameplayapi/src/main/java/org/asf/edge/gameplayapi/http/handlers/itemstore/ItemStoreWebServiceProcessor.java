@@ -1,6 +1,7 @@
 package org.asf.edge.gameplayapi.http.handlers.itemstore;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
@@ -11,9 +12,9 @@ import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.ItemStoreInfo;
 import org.asf.edge.gameplayapi.services.ItemManager;
-import org.asf.edge.gameplayapi.xmls.stores.GetStoreRequestData;
-import org.asf.edge.gameplayapi.xmls.stores.GetStoreResponseData;
-import org.asf.edge.gameplayapi.xmls.stores.ItemStoreDefinitionData;
+import org.asf.edge.gameplayapi.xmls.items.GetStoreRequestData;
+import org.asf.edge.gameplayapi.xmls.items.GetStoreResponseData;
+import org.asf.edge.gameplayapi.xmls.items.ItemStoreDefinitionData;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -41,6 +42,20 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 		// Handle request
 		path = path;
 		setResponseStatus(404, "Not found");
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getRankAttributeData(FunctionInfo info) throws IOException {
+		// Handle request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+
+		// Load XML
+		InputStream strm = getClass().getClassLoader().getResourceAsStream("rankattrs.xml");
+		String data = new String(strm.readAllBytes(), "UTF-8");
+		strm.close();
+		setResponseContent("text/xml", data);
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -74,7 +89,7 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 		}
 
 		// Set response
-		setResponseContent("text/xml", req.generateXmlValue("RegistrationResult", resp));
+		setResponseContent("text/xml", req.generateXmlValue("GetStoreResponse", resp));
 	}
 
 }
