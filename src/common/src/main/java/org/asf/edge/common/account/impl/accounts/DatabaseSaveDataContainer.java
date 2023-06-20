@@ -31,6 +31,8 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 			var statement = conn.prepareStatement("SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
 			statement.setString(1, id + "//" + key);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return null;
 			String data = res.getString("DATA");
 			if (data == null)
 				return null;
@@ -79,6 +81,8 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 			var statement = conn.prepareStatement("SELECT COUNT(DATA) FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
 			statement.setString(1, id + "//" + key);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return false;
 			return res.getInt(1) != 0;
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to check data entry '" + key

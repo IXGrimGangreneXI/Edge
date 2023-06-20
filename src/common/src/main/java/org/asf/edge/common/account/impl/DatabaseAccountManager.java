@@ -140,6 +140,8 @@ public class DatabaseAccountManager extends AccountManager {
 			var statement = conn.prepareStatement("SELECT COUNT(ID) FROM USERMAP WHERE USERNAME = ?");
 			statement.setString(1, username);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return false;
 			if (res.getInt(1) != 0)
 				return true;
 			try {
@@ -167,6 +169,8 @@ public class DatabaseAccountManager extends AccountManager {
 			var statement = conn.prepareStatement("SELECT ID FROM USERMAP WHERE USERNAME = ?");
 			statement.setString(1, username);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return null;
 			return res.getString("ID");
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to pull user ID of username '"
@@ -182,6 +186,8 @@ public class DatabaseAccountManager extends AccountManager {
 			var statement = conn.prepareStatement("SELECT CREDS FROM USERMAP WHERE ID = ?");
 			statement.setString(1, id);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return false;
 			byte[] data = res.getBytes("CREDS");
 
 			// Check data
@@ -220,6 +226,8 @@ public class DatabaseAccountManager extends AccountManager {
 			var statement = conn.prepareStatement("SELECT COUNT(USERNAME) FROM USERMAP WHERE ID = ?");
 			statement.setString(1, id);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return false;
 			return res.getInt(1) != 0;
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to check if ID '" + id + "' exists", e);
@@ -234,6 +242,8 @@ public class DatabaseAccountManager extends AccountManager {
 			var statement = conn.prepareStatement("SELECT USERNAME FROM USERMAP WHERE ID = ?");
 			statement.setString(1, id);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return null;
 			String username = res.getString("USERNAME");
 			if (username == null)
 				return null;
@@ -253,6 +263,8 @@ public class DatabaseAccountManager extends AccountManager {
 			var statement = conn.prepareStatement("SELECT ID FROM USERMAP WHERE USERNAME = ?");
 			statement.setString(1, "g/" + guestID);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return null;
 			String id = res.getString("ID");
 			if (id == null)
 				return null;
@@ -271,6 +283,8 @@ public class DatabaseAccountManager extends AccountManager {
 			var statement = conn.prepareStatement("SELECT ID FROM EMAILMAP WHERE EMAIL = ?");
 			statement.setString(1, email);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return null;
 			return res.getString("ID");
 		} catch (SQLException e) {
 			logger.error(

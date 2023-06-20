@@ -59,6 +59,8 @@ public class DatabaseAccountObject extends AccountObject {
 			var statement = conn.prepareStatement("SELECT EMAIL FROM EMAILMAP WHERE ID = ?");
 			statement.setString(1, id);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return null;
 			return res.getString("EMAIL");
 		} catch (SQLException e) {
 			logger.error(
@@ -75,6 +77,8 @@ public class DatabaseAccountObject extends AccountObject {
 			var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
 			statement.setString(1, id + "//accountdata/lastlogintime");
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return -1;
 			String data = res.getString("DATA");
 			if (data == null)
 				return -1;
@@ -93,6 +97,8 @@ public class DatabaseAccountObject extends AccountObject {
 			var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
 			statement.setString(1, id + "//accountdata/registrationtimestamp");
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return -1;
 			String data = res.getString("DATA");
 			if (data == null)
 				return -1;
@@ -245,6 +251,8 @@ public class DatabaseAccountObject extends AccountObject {
 			var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
 			statement.setString(1, id + "//accountdata/isguestaccount");
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return false;
 			String data = res.getString("DATA");
 			if (data == null)
 				return false;
@@ -264,6 +272,8 @@ public class DatabaseAccountObject extends AccountObject {
 			var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
 			statement.setString(1, id + "//accountdata/ismultiplayerenabled");
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return false;
 			String data = res.getString("DATA");
 			if (data == null)
 				return false;
@@ -282,6 +292,8 @@ public class DatabaseAccountObject extends AccountObject {
 			var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
 			statement.setString(1, id + "//accountdata/ischatenabled");
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return false;
 			String data = res.getString("DATA");
 			if (data == null)
 				return false;
@@ -300,6 +312,8 @@ public class DatabaseAccountObject extends AccountObject {
 			var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
 			statement.setString(1, id + "//accountdata/isstrictchatfilterenabled");
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return false;
 			String data = res.getString("DATA");
 			if (data == null)
 				return false;
@@ -405,6 +419,8 @@ public class DatabaseAccountObject extends AccountObject {
 			var statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP WHERE ACCID = ?");
 			statement.setString(1, id);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return;
 			JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
 
 			// Delete each save
@@ -454,6 +470,8 @@ public class DatabaseAccountObject extends AccountObject {
 			var statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP WHERE ACCID = ?");
 			statement.setString(1, id);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return new String[0];
 			JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
 			String[] ids = new String[saves.size()];
 			int i = 0;
@@ -491,6 +509,8 @@ public class DatabaseAccountObject extends AccountObject {
 				var statement = conn.prepareStatement("SELECT COUNT(USERNAME) FROM SAVEUSERNAMEMAP WHERE ID = ?");
 				statement.setString(1, saveID);
 				ResultSet res = statement.executeQuery();
+				if (!res.next())
+					break;
 				if (res.getInt(1) == 0)
 					break; // Not taken
 			} catch (SQLException e) {
@@ -506,6 +526,8 @@ public class DatabaseAccountObject extends AccountObject {
 			var statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP WHERE ACCID = ?");
 			statement.setString(1, id);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return null;
 			JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
 			for (JsonElement ele : saves) {
 				JsonObject saveObj = ele.getAsJsonObject();
@@ -550,6 +572,8 @@ public class DatabaseAccountObject extends AccountObject {
 			var statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP WHERE ACCID = ?");
 			statement.setString(1, this.id);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return null;
 			JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
 			for (JsonElement ele : saves) {
 				JsonObject saveObj = ele.getAsJsonObject();

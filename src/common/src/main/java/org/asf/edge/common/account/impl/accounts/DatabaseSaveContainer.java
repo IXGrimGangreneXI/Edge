@@ -70,6 +70,8 @@ public class DatabaseSaveContainer extends AccountSaveContainer {
 			var statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP WHERE ACCID = ?");
 			statement.setString(1, id);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return false;
 			JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
 			for (JsonElement ele : saves) {
 				JsonObject saveObj = ele.getAsJsonObject();
@@ -121,6 +123,8 @@ public class DatabaseSaveContainer extends AccountSaveContainer {
 			statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP WHERE ACCID = ?");
 			statement.setString(1, id);
 			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return;
 			JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
 			for (JsonElement ele : saves) {
 				JsonObject saveObj = ele.getAsJsonObject();
