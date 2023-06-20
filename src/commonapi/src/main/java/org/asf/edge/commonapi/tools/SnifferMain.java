@@ -7,13 +7,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
@@ -21,28 +28,273 @@ import org.apache.logging.log4j.Logger;
 import org.asf.connective.ConnectiveHttpServer;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
+import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.CommonInit;
 import org.asf.edge.common.util.TripleDesUtil;
+import org.bouncycastle.util.Arrays;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class SnifferMain {
 
+	private static OutputStream fOut;
+	private static Object writeLock = new Object();
+
+	static {
+		new File("sniffs").mkdirs();
+		try {
+			fOut = new FileOutputStream("sniffs/sniff-" + System.currentTimeMillis() + ".log");
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static int currentPort = 9933;
+	private static HashMap<String, Integer> binaryProxies = new HashMap<String, Integer>();
+
+	private static class BinaryProxy {
+		private ServerSocket srvTcp;
+		private DatagramSocket srvUdp;
+
+		private HashMap<String, DatagramSocket> clients = new HashMap<String, DatagramSocket>();
+
+		public void start(int localPort, String remoteHost, int remotePort) throws UnknownHostException, IOException {
+			// Start tcp proxy
+			srvTcp = new ServerSocket(localPort, 0, InetAddress.getLoopbackAddress());
+			AsyncTaskManager.runAsync(() -> {
+				while (true) {
+					try {
+						Socket client = srvTcp.accept();
+
+						// Connection accepted
+						AsyncTaskManager.runAsync(() -> {
+							// Attempt connection with remote
+							try {
+								Socket remoteConn = new Socket(InetAddress.getByName(remoteHost), remotePort);
+
+								// Connection established with remote
+
+								// Start sniffer
+								AsyncTaskManager.runAsync(() -> {
+									// Reader
+									while (client.isConnected()) {
+										try {
+											// Read single packet
+											byte[] data = new byte[20480000];
+											int read = client.getInputStream().read(data, 0, data.length);
+											if (read < 0) {
+												throw new IOException("Stream closed");
+											}
+
+											// Write
+											synchronized (writeLock) {
+												// Build output
+												JsonObject itm = new JsonObject();
+												itm.addProperty("time", System.currentTimeMillis());
+												itm.addProperty("type", "tcp");
+												itm.addProperty("host", remoteHost);
+												itm.addProperty("port", remotePort);
+												itm.addProperty("side", "C->S");
+												itm.addProperty("data",
+														Base64.getEncoder().encodeToString(Arrays.copyOf(data, read)));
+
+												// Write
+												fOut.write((itm.toString() + "\n\n").getBytes("UTF-8"));
+												fOut.flush();
+											}
+
+											// Write data
+											remoteConn.getOutputStream().write(Arrays.copyOf(data, read));
+										} catch (IOException e) {
+											try {
+												client.close();
+											} catch (IOException e1) {
+											}
+											try {
+												remoteConn.close();
+											} catch (IOException e1) {
+											}
+											break;
+										}
+									}
+								});
+								AsyncTaskManager.runAsync(() -> {
+									// Writer
+									while (remoteConn.isConnected()) {
+										try {
+											// Read single packet
+											byte[] data = new byte[20480000];
+											int read = remoteConn.getInputStream().read(data, 0, data.length);
+											if (read < 0) {
+												throw new IOException("Stream closed");
+											}
+
+											// Write
+											synchronized (writeLock) {
+												// Build output
+												JsonObject itm = new JsonObject();
+												itm.addProperty("time", System.currentTimeMillis());
+												itm.addProperty("type", "tcp");
+												itm.addProperty("host", remoteHost);
+												itm.addProperty("port", remotePort);
+												itm.addProperty("side", "S->C");
+												itm.addProperty("data",
+														Base64.getEncoder().encodeToString(Arrays.copyOf(data, read)));
+
+												// Write
+												fOut.write((itm.toString() + "\n\n").getBytes("UTF-8"));
+												fOut.flush();
+											}
+
+											// Write data
+											client.getOutputStream().write(Arrays.copyOf(data, read));
+										} catch (IOException e) {
+											try {
+												client.close();
+											} catch (IOException e1) {
+											}
+											try {
+												remoteConn.close();
+											} catch (IOException e1) {
+											}
+											break;
+										}
+									}
+								});
+							} catch (IOException e) {
+								// Failed to connect
+								try {
+									client.close();
+								} catch (IOException e1) {
+								}
+							}
+						});
+					} catch (IOException e) {
+						break;
+					}
+				}
+			});
+
+			// Start udp proxy
+			srvUdp = new DatagramSocket(localPort);
+			AsyncTaskManager.runAsync(() -> {
+				while (true) {
+					// Read
+					try {
+						byte[] buf = new byte[20480000];
+						DatagramPacket packet = new DatagramPacket(buf, buf.length);
+						srvUdp.receive(packet);
+						int read = packet.getLength();
+
+						// Log
+						byte[] data = packet.getData();
+
+						// Write
+						synchronized (writeLock) {
+							// Build output
+							JsonObject itm = new JsonObject();
+							itm.addProperty("time", System.currentTimeMillis());
+							itm.addProperty("type", "udp");
+							itm.addProperty("host", remoteHost);
+							itm.addProperty("port", remotePort);
+							itm.addProperty("side", "C->S");
+							itm.addProperty("data", Base64.getEncoder().encodeToString(Arrays.copyOf(data, read)));
+
+							// Write
+							fOut.write((itm.toString() + "\n\n").getBytes("UTF-8"));
+							fOut.flush();
+						}
+
+						// Find address
+						DatagramSocket client;
+						synchronized (clients) {
+							client = clients.get((packet.getAddress().toString() + "///" + packet.getPort()));
+						}
+						if (client == null) {
+							// Connect
+							client = new DatagramSocket();
+							client.connect(InetAddress.getByName(remoteHost), remotePort);
+							synchronized (clients) {
+								clients.put((packet.getAddress().toString() + "///" + packet.getPort()), client);
+							}
+
+							// Start reader
+							DatagramSocket cF = client;
+							AsyncTaskManager.runAsync(() -> {
+								while (true) {
+									// Read
+									try {
+										// Read from client
+										byte[] buf2 = new byte[20480000];
+										DatagramPacket packet2 = new DatagramPacket(buf2, buf2.length);
+										cF.receive(packet);
+										int read2 = packet.getLength();
+
+										// Log
+										byte[] data2 = packet2.getData();
+
+										// Write
+										synchronized (writeLock) {
+											// Build output
+											JsonObject itm = new JsonObject();
+											itm.addProperty("time", System.currentTimeMillis());
+											itm.addProperty("type", "udp");
+											itm.addProperty("host", remoteHost);
+											itm.addProperty("port", remotePort);
+											itm.addProperty("side", "S->C");
+											itm.addProperty("data",
+													Base64.getEncoder().encodeToString(Arrays.copyOf(data2, read2)));
+
+											// Write
+											fOut.write((itm.toString() + "\n\n").getBytes("UTF-8"));
+											fOut.flush();
+										}
+
+										// Send to server
+										DatagramPacket outp = new DatagramPacket(packet2.getData(), read2,
+												packet.getAddress(), packet.getPort());
+										srvUdp.send(outp);
+									} catch (IOException e) {
+										cF.close();
+										synchronized (clients) {
+											clients.remove((packet.getAddress().toString() + "///" + packet.getPort()));
+										}
+										break;
+									}
+								}
+							});
+						}
+
+						// Send to client
+						DatagramPacket outp = new DatagramPacket(packet.getData(), read);
+						client.send(outp);
+					} catch (IOException e) {
+						break;
+					}
+				}
+			});
+		}
+	}
+
+	private static void startBinaryProxy(int localPort, String host, int port) throws IOException {
+		new BinaryProxy().start(localPort, host, port);
+	}
+
 	private static class ProxyProcessor extends HttpPushProcessor {
 
-		private static OutputStream fOut;
-		private static Object writeLock = new Object();
-
-		static {
-			new File("sniffs").mkdirs();
-			try {
-				fOut = new FileOutputStream("sniffs/sniff-" + System.currentTimeMillis() + ".log");
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
+		private static XmlMapper mapper = new XmlMapper();
 
 		@Override
 		public HttpPushProcessor createNewInstance() {
@@ -62,6 +314,16 @@ public class SnifferMain {
 		@Override
 		public boolean supportsChildPaths() {
 			return true;
+		}
+
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+		private static class ServerList {
+
+			@JsonProperty("MMOServerInfo")
+			@JacksonXmlElementWrapper(useWrapping = false)
+			public ObjectNode[] servers;
+
 		}
 
 		@Override
@@ -165,7 +427,41 @@ public class SnifferMain {
 				try {
 					// Read body
 					byte[] respData = body.readAllBytes();
+
+					// Set response info body
 					respInfo.addProperty("responseBody", Base64.getEncoder().encodeToString(respData));
+
+					// Check path
+					if (path.equalsIgnoreCase("/ConfigurationWebService.asmx/GetMMOServerInfoWithZone")) {
+						// Read to string
+						String xml = new String(respData, "UTF-8");
+						ServerList serverList = mapper.readValue(xml, ServerList.class);
+						for (ObjectNode obj : serverList.servers) {
+							String host = obj.get("IP").asText();
+							int port = obj.get("PN").asInt();
+
+							// Add to map if needed
+							synchronized (binaryProxies) {
+								if (!binaryProxies.containsKey("[" + host + "]:" + port)) {
+									// Start proxy
+									int p = currentPort++;
+									startBinaryProxy(p, host, port);
+
+									// Set info
+									binaryProxies.put("[" + host + "]:" + port, p);
+								}
+
+								// Set
+								obj.set("IP", new TextNode("localhost"));
+								obj.set("PN", new IntNode(binaryProxies.get("[" + host + "]:" + port)));
+							}
+						}
+
+						// Write to string
+						xml = mapper.writer().withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL)
+								.withRootName("ArrayOfMMOServerInfo").writeValueAsString(serverList);
+						respData = xml.getBytes("UTF-8");
+					}
 
 					// Set response
 					setResponseContent(respData);
@@ -176,7 +472,8 @@ public class SnifferMain {
 				// Check path
 				if (!disableCredentialSafeties
 						&& (path.equalsIgnoreCase("/v3/AuthenticationWebService.asmx/LoginParent")
-								|| path.equalsIgnoreCase("/AuthenticationWebService.asmx/LoginChild"))) {
+								|| path.equalsIgnoreCase("/AuthenticationWebService.asmx/LoginChild")
+								|| path.equalsIgnoreCase("/MembershipWebService.asmx/GetSubscriptionInfo"))) {
 					LogManager.getLogger("Sniffer").warn("Skipped logging " + url + " to prevent credential leak");
 					return;
 				}
@@ -197,7 +494,8 @@ public class SnifferMain {
 				// Check path
 				if (!disableCredentialSafeties
 						&& (path.equalsIgnoreCase("/v3/AuthenticationWebService.asmx/LoginParent")
-								|| path.equalsIgnoreCase("/AuthenticationWebService.asmx/LoginChild"))) {
+								|| path.equalsIgnoreCase("/AuthenticationWebService.asmx/LoginChild")
+								|| path.equalsIgnoreCase("/MembershipWebService.asmx/GetSubscriptionInfo"))) {
 					LogManager.getLogger("Sniffer").warn("Skipped logging " + url + " to prevent credential leak");
 					return;
 				}
@@ -211,6 +509,7 @@ public class SnifferMain {
 				// Build output
 				JsonObject itm = new JsonObject();
 				itm.addProperty("time", System.currentTimeMillis());
+				itm.addProperty("type", "http");
 				itm.add("request", requestInfo);
 				itm.add("response", respInfo);
 
@@ -307,6 +606,18 @@ public class SnifferMain {
 		log.info("Decrypting manifest...");
 		byte[] dec = TripleDesUtil.decrypt(enc, key);
 		String man = new String(dec, "ASCII");
+
+		// Parse manifest
+		log.info("Parsing manifest...");
+		XmlMapper mapper = new XmlMapper();
+		ObjectNode manifest = mapper.readValue(man, ObjectNode.class);
+		String sfsHost = manifest.get("MMOServer").asText();
+		int sfsPort = manifest.get("MMOServerPort").asInt();
+
+		// Start binary proxy
+		log.info("Starting binary proxy...");
+		currentPort = sfsPort + 1;
+		startBinaryProxy(sfsPort, sfsHost, sfsPort);
 
 		// Modify manifest
 		log.info("Modifying manifest...");

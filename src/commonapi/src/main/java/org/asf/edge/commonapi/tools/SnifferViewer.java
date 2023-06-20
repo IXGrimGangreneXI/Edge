@@ -323,7 +323,7 @@ public class SnifferViewer {
 							buffer = "";
 
 							// Check fields
-							if (!obj.has("time") || !obj.has("request") || !obj.has("response")
+							if ((!obj.has("time") || !obj.has("request") || !obj.has("response")
 									|| !obj.get("request").getAsJsonObject().has("url")
 									|| !obj.get("request").getAsJsonObject().has("method")
 									|| !obj.get("request").getAsJsonObject().has("headers")
@@ -332,6 +332,7 @@ public class SnifferViewer {
 									|| !obj.get("response").getAsJsonObject().has("statusMessage")
 									|| !obj.get("response").getAsJsonObject().has("headers")
 									|| !obj.get("response").getAsJsonObject().has("responseBody"))
+									&& (!obj.has("type") || obj.get("type").getAsString().equals("http")))
 								throw new IOException("Invalid file");
 							break;
 						}
@@ -428,7 +429,7 @@ public class SnifferViewer {
 					JsonObject obj = JsonParser.parseString(buffer).getAsJsonObject();
 
 					// Check fields
-					if (!obj.has("time") || !obj.has("request") || !obj.has("response")
+					if ((!obj.has("time") || !obj.has("request") || !obj.has("response")
 							|| !obj.get("request").getAsJsonObject().has("url")
 							|| !obj.get("request").getAsJsonObject().has("method")
 							|| !obj.get("request").getAsJsonObject().has("headers")
@@ -437,7 +438,10 @@ public class SnifferViewer {
 							|| !obj.get("response").getAsJsonObject().has("statusMessage")
 							|| !obj.get("response").getAsJsonObject().has("headers")
 							|| !obj.get("response").getAsJsonObject().has("responseBody"))
+							&& (!obj.has("type") || obj.get("type").getAsString().equals("http")))
 						throw new IOException("Invalid file");
+					if (obj.has("type") && !obj.get("type").getAsString().equals("http"))
+						continue;
 
 					// Load object into memory
 					SnifferDataBlock block = new SnifferDataBlock();
