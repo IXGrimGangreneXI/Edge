@@ -109,7 +109,7 @@ public class QuestConverter {
 		QuestListData unlockedD = mapper.readValue(upcomingMissionsData, QuestListData.class);
 		ObjectNode[] unlocked = unlockedD.missions;
 		outp.defaultUnlockedQuests = new DefaultUnlockedQuestsBlock();
-		outp.defaultUnlockedQuests.defaultUnlockedQuests = new int[active.length];
+		outp.defaultUnlockedQuests.defaultUnlockedQuests = new int[unlocked.length];
 		for (ObjectNode node : unlocked) {
 			System.out.println("Added default unlocked quest to registry: " + node.get("I").asInt());
 			outp.defaultUnlockedQuests.defaultUnlockedQuests[i++] = node.get("I").asInt();
