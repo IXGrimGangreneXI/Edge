@@ -20,7 +20,7 @@ import org.asf.edge.commonapi.xmls.auth.UserInfoData;
 
 public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeCommonApiServer> {
 
-	private AccountManager manager;
+	private static AccountManager manager;
 
 	public AuthenticationWebServiceV1Processor(EdgeCommonApiServer server) {
 		super(server);

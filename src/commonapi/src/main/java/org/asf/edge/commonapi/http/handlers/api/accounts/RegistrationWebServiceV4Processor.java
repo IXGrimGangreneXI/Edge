@@ -23,7 +23,7 @@ import org.asf.edge.commonapi.xmls.auth.RegistrationResultData.SuggestionResultB
 
 public class RegistrationWebServiceV4Processor extends BaseApiHandler<EdgeCommonApiServer> {
 
-	private AccountManager manager;
+	private static AccountManager manager;
 
 	public RegistrationWebServiceV4Processor(EdgeCommonApiServer server) {
 		super(server);

@@ -25,7 +25,7 @@ import com.google.gson.JsonPrimitive;
 
 public class RegistrationWebServiceV3Processor extends BaseApiHandler<EdgeCommonApiServer> {
 
-	private AccountManager manager;
+	private static AccountManager manager;
 	public static final int COST_DELETE_PROFILE = 50;
 
 	public RegistrationWebServiceV3Processor(EdgeCommonApiServer server) {

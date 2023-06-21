@@ -19,6 +19,9 @@ import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
+import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
+import org.asf.edge.gameplayapi.entities.quests.UserQuestStatus;
+import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.xmls.avatars.SetAvatarResultData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
@@ -27,6 +30,11 @@ import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData.SuggestionResultBlock;
 import org.asf.edge.gameplayapi.xmls.names.NameValidationRequest;
 import org.asf.edge.gameplayapi.xmls.names.NameValidationResponseData;
+import org.asf.edge.gameplayapi.xmls.quests.MissionData;
+import org.asf.edge.gameplayapi.xmls.quests.QuestListResponseData;
+import org.asf.edge.gameplayapi.xmls.quests.RequestFilterData;
+import org.asf.edge.gameplayapi.xmls.quests.RequestFilterData.MissionPairBlock;
+import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonArray;
@@ -36,8 +44,10 @@ import com.google.gson.JsonPrimitive;
 
 public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApiServer> {
 
-	private AccountManager manager;
+	private static AccountManager manager;
 	private static ItemManager itemManager;
+	private static QuestManager questManager;
+	private static Random rnd = new Random();
 
 	public ContentWebServiceV2Processor(EdgeGameplayApiServer server) {
 		super(server);
@@ -59,6 +69,324 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		// Handle request
 		path = path;
 		setResponseStatus(404, "Not found");
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void setTaskState(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+		if (questManager == null)
+			questManager = QuestManager.getInstance();
+
+		// Handle quest data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userID);
+		if (save != null) {
+			// Load fields
+			int invContainer = Integer.parseInt(req.payload.get("ContainerId"));
+			int taskID = Integer.parseInt(req.payload.get("taskId"));
+			int missionId = Integer.parseInt(req.payload.get("missionId"));
+			boolean completed = req.payload.get("completed").equalsIgnoreCase("true");
+			String payload = req.payload.get("xmlPayload");
+
+			// Load inventory requests
+			String invReq = req.payload.get("commonInventoryRequestXml");
+			CommonInventoryRequestData[] requests;
+			if (!invReq.trim().equals("<?xml version=\"1.0\" encoding=\"utf-8\"?>"))
+				requests = req.parseXmlValue(invReq, CommonInventoryRequestData[].class);
+			else
+				requests = new CommonInventoryRequestData[0];
+
+			// Find quest
+			UserQuestInfo quest = questManager.getUserQuest(save, missionId);
+			if (quest != null) {
+				setResponseContent("text/xml", req.generateXmlValue("SetTaskStateResult",
+						quest.handleTaskCall(taskID, payload, completed, invContainer, requests)));
+			} else {
+				// Not found
+				SetTaskStateResultData resp = new SetTaskStateResultData();
+				resp.success = false;
+				resp.status = SetTaskStateResultData.SetTaskStateResultStatuses.MISSION_STATE_NOT_FOUND;
+				setResponseContent("text/xml", req.generateXmlValue("SetTaskStateResult", resp));
+			}
+		} else {
+			setResponseStatus(404, "Not found");
+		}
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getUserMissionState(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+		if (questManager == null)
+			questManager = QuestManager.getInstance();
+
+		// Handle quest data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userID);
+		if (save != null) {
+			// Pull quests
+			questManager.startDefaultQuests(save);
+			MissionData[] quests = questManager.getAllQuestDefs();
+
+			// Parse filters
+			RequestFilterData filter = req.parseXmlValue(req.payload.get("filter"), RequestFilterData.class);
+
+			// Create response
+			ArrayList<Integer> addedQuests = new ArrayList<Integer>();
+			ArrayList<MissionData> questLst = new ArrayList<MissionData>();
+			QuestListResponseData resp = new QuestListResponseData();
+			resp.userID = userID;
+
+			// Handle filters
+			if (filter.groupIDs != null) {
+				for (int group : filter.groupIDs) {
+					// Add group
+					for (MissionData data : quests) {
+						if (addedQuests.contains(data.id))
+							continue;
+
+						// Verify group
+						if (data.groupID == group) {
+							// Pull data
+							UserQuestInfo quest = questManager.getUserQuest(save, data.id);
+							if (filter.getCompletedMissions || !quest.isCompleted()) {
+								// Add
+								addedQuests.add(data.id);
+								questLst.add(quest.getData());
+							}
+						}
+					}
+				}
+			}
+			if (filter.missions != null) {
+				for (MissionPairBlock pair : filter.missions) {
+					// Add group
+					for (MissionData data : quests) {
+						if (addedQuests.contains(data.id))
+							continue;
+
+						// Verify mission
+						if (pair.missionID == data.id && (pair.versionID == -1 || pair.versionID == data.version)) {
+							// Pull data
+							UserQuestInfo quest = questManager.getUserQuest(save, data.id);
+							if (filter.getCompletedMissions || !quest.isCompleted()) {
+								// Add
+								addedQuests.add(data.id);
+								questLst.add(quest.getData());
+							}
+						}
+					}
+				}
+			}
+
+			// Set response
+			resp.quests = questLst.toArray(t -> new MissionData[t]);
+			setResponseContent("text/xml", req.generateXmlValue("UserMissionStateResult", resp));
+		} else {
+			setResponseStatus(404, "Not found");
+		}
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getUserCompletedMissionState(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+		if (questManager == null)
+			questManager = QuestManager.getInstance();
+
+		// Handle quest data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userID);
+		if (save != null) {
+			// Pull quests
+			questManager.startDefaultQuests(save);
+			UserQuestInfo[] quests = questManager.getCompletedQuests(save);
+
+			// Create response
+			QuestListResponseData resp = new QuestListResponseData();
+			resp.userID = userID;
+			resp.quests = new MissionData[quests.length];
+
+			// Add data
+			for (int i = 0; i < resp.quests.length; i++)
+				resp.quests[i] = quests[i].getData();
+
+			// Set response
+			setResponseContent("text/xml", req.generateXmlValue("UserMissionStateResult", resp));
+		} else {
+			setResponseStatus(404, "Not found");
+		}
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getUserActiveMissionState(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+		if (questManager == null)
+			questManager = QuestManager.getInstance();
+
+		// Handle quest data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userID);
+		if (save != null) {
+			// Pull quests
+			questManager.startDefaultQuests(save);
+			UserQuestInfo[] quests = questManager.getActiveQuests(save);
+
+			// Create response
+			QuestListResponseData resp = new QuestListResponseData();
+			resp.userID = userID;
+			resp.quests = new MissionData[quests.length];
+
+			// Add data
+			for (int i = 0; i < resp.quests.length; i++) {
+				MissionData data = quests[i].getData();
+				resp.quests[i] = data;
+			}
+
+			// Set response
+			setResponseContent("text/xml", req.generateXmlValue("UserMissionStateResult", resp));
+		} else {
+			setResponseStatus(404, "Not found");
+		}
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getUserUpcomingMissionState(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+		if (questManager == null)
+			questManager = QuestManager.getInstance();
+
+		// Handle quest data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userID);
+		if (save != null) {
+			// Pull quests
+			questManager.startDefaultQuests(save);
+			UserQuestInfo[] quests = questManager.getUnlockedQuests(save);
+
+			// Create response
+			QuestListResponseData resp = new QuestListResponseData();
+			resp.userID = userID;
+
+			// Add data
+			ArrayList<MissionData> questLst = new ArrayList<MissionData>();
+			for (UserQuestInfo i : quests) {
+				if (i.getStatus() == UserQuestStatus.INACTIVE) {
+					MissionData d = i.getData();
+					d.staticData = null;
+					questLst.add(d);
+				}
+			}
+			resp.quests = questLst.toArray(t -> new MissionData[t]);
+
+			// Set response
+			setResponseContent("text/xml", req.generateXmlValue("UserMissionStateResult", resp));
+		} else {
+			setResponseStatus(404, "Not found");
+		}
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -244,6 +572,47 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 	}
 
 	@Function(allowedMethods = { "POST" })
+	public void createPet(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Handle inventory request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		ObjectNode dragonCreationRequest = req.parseXmlValue(req.payload.get("request"), ObjectNode.class);
+
+		// Find save
+		AccountSaveContainer save = account.getSave(tkn.saveID);
+		AccountDataContainer data = save.getSaveData();
+
+		// Pull dragons
+		data = data.getChildContainer("dragons");
+		JsonArray dragonIds = new JsonArray();
+		if (data.entryExists("dragonlist"))
+			dragonIds = data.getEntry("dragonlist").getAsJsonArray();
+		else
+			data.setEntry("dragonlist", dragonIds);
+
+		// TODO
+	}
+
+	@Function(allowedMethods = { "POST" })
 	public void getCommonInventory(FunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -371,8 +740,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			} else
 				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", null));
 		} else {
-			// ???
-			setResponseStatus(403, "Forbidden, attempted to interact with other user's data (devs please inspect)");
+			setResponseStatus(403, "Forbidden");
 		}
 	}
 }

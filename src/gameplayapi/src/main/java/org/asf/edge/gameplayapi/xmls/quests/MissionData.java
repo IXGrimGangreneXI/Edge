@@ -2,6 +2,8 @@ package org.asf.edge.gameplayapi.xmls.quests;
 
 import java.util.UUID;
 
+import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -175,6 +177,14 @@ public class MissionData {
 		@JsonProperty("maxa")
 		@JsonInclude(Include.NON_DEFAULT)
 		public int maxAmount = -1;
+
+		@JsonProperty("cid")
+		@JsonInclude(Include.NON_DEFAULT)
+		public int uniqueRewardItemID;
+
+		@JsonProperty("ui")
+		@JsonInclude(Include.NON_NULL)
+		public ItemBlock rewardItem;
 
 		public AchievementRewardBlock copy() {
 			AchievementRewardBlock cp = new AchievementRewardBlock();

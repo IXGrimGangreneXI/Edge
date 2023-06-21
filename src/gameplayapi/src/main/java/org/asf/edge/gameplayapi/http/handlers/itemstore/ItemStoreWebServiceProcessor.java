@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
+import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
@@ -90,6 +91,28 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("GetStoreResponse", resp));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getItem(FunctionInfo info) throws IOException {
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Handle store request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+
+		// Find item
+		int item = Integer.parseInt(req.payload.get("itemId"));
+		ItemInfo def = itemManager.getItemDefinition(item);
+		if (def == null) {
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Set response
+		setResponseContent("text/xml", req.generateXmlValue("I", def.getRawObject()));
 	}
 
 }

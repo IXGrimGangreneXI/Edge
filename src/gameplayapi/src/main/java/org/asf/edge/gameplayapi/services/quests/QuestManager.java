@@ -61,6 +61,13 @@ public abstract class QuestManager extends AbstractService {
 	public abstract MissionData[] getAllQuestDefs();
 
 	/**
+	 * Starts the default quests for a save
+	 * 
+	 * @param save Save to start the default quests for
+	 */
+	public abstract void startDefaultQuests(AccountSaveContainer save);
+
+	/**
 	 * Retrieves quest information containers for a specific user
 	 * 
 	 * @param save The save to use to retrieve quest information

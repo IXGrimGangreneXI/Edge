@@ -20,7 +20,7 @@ import com.google.gson.JsonSyntaxException;
 
 public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 
-	private AccountManager manager;
+	private static AccountManager manager;
 
 	public AccountManagerAPI(EdgeCommonApiServer server) {
 		super(server);

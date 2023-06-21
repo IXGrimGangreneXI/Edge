@@ -23,7 +23,7 @@ import org.asf.edge.commonapi.xmls.auth.ParentLoginResponseData;
 
 public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeCommonApiServer> {
 
-	private AccountManager manager;
+	private static AccountManager manager;
 	private static HashMap<String, Integer> usernameLock = new HashMap<String, Integer>();
 
 	static {

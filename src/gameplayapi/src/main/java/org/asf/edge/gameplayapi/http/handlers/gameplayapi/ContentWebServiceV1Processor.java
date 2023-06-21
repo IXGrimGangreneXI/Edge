@@ -11,7 +11,11 @@ import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.account.AccountDataContainer;
 import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.AccountObject;
+import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.entities.items.ItemInfo;
+import org.asf.edge.common.entities.items.PlayerInventory;
+import org.asf.edge.common.entities.items.PlayerInventoryContainer;
+import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -19,21 +23,32 @@ import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
+import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
+import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.xmls.data.KeyValuePairData;
 import org.asf.edge.gameplayapi.xmls.data.KeyValuePairSetData;
+import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.data.EmptyKeyValuePairSetData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
+import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;
+import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
+import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
+import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData;
 
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApiServer> {
 
-	private AccountManager manager;
+	private static AccountManager manager;
 	private static ItemManager itemManager;
+	private static QuestManager questManager;
 
 	public ContentWebServiceV1Processor(EdgeGameplayApiServer server) {
 		super(server);
@@ -85,6 +100,55 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		setResponseContent("text/xml",
 				req.generateXmlValue("dateTime", fmt.format(new Date(System.currentTimeMillis()))));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void acceptMission(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+		if (questManager == null)
+			questManager = QuestManager.getInstance();
+
+		// Handle quest data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userID);
+		if (save != null) {
+			// Load fields
+			int missionId = Integer.parseInt(req.payload.get("missionId"));
+
+			// Find mission
+			UserQuestInfo quest = questManager.getUserQuest(save, missionId);
+			if (quest == null) {
+				setResponseContent("text/xml", req.generateXmlValue("boolean", false));
+				return;
+			}
+
+			// Update
+			quest.setAcceptedField(true);
+			setResponseContent("text/xml", req.generateXmlValue("boolean", true));
+		} else {
+			setResponseContent("text/xml", req.generateXmlValue("boolean", false));
+		}
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -149,6 +213,93 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("CI", resp));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void setCommonInventory(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Handle inventory request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		SetCommonInventoryRequestData[] requests = req.parseXmlValue(req.payload.get("commonInventoryRequestXml"),
+				SetCommonInventoryRequestData[].class);
+
+		// Retrieve container info
+		AccountDataContainer data = account.getAccountData();
+		if (tkn.saveID != null)
+			data = account.getSave(tkn.saveID).getSaveData();
+
+		// Prepare response
+		InventoryUpdateResponseData resp = new InventoryUpdateResponseData();
+		ArrayList<ItemUpdateBlock> updates = new ArrayList<ItemUpdateBlock>();
+		resp.success = true;
+
+		// Handle requests
+		if (requests.length == 0) {
+			resp.success = false;
+		} else {
+			PlayerInventory inv = itemManager.getCommonInventory(data);
+			PlayerInventoryContainer cont = inv.getContainer(Integer.parseInt(req.payload.get("ContainerId")));
+			for (SetCommonInventoryRequestData request : requests) {
+				if (itemManager.getItemDefinition(request.itemID) == null) {
+					// Invalid
+					resp = new InventoryUpdateResponseData();
+					resp.success = false;
+					setResponseContent("text/xml", req.generateXmlValue("CIRS", resp));
+					return;
+				}
+
+				// Find inventory
+				PlayerInventoryItem itm;
+				if (request.itemUniqueID != -1)
+					itm = cont.getItem(request.itemUniqueID);
+				else
+					itm = cont.findFirst(request.itemID);
+				// TODO: complete implementation
+
+				// Check
+				if (itm == null)
+					itm = cont.createItem(request.itemID, 0);
+
+				// Update
+				itm.setQuantity(itm.getQuantity() + request.quantity);
+				if (request.uses != null) {
+					int uses = 0;
+					if (itm.getUses() != -1)
+						uses = itm.getUses();
+					itm.setUses(uses + Integer.parseInt(request.uses));
+				}
+
+				// Add update
+				ItemUpdateBlock b = new ItemUpdateBlock();
+				b.itemID = itm.getItemDefID();
+				b.itemUniqueID = itm.getUniqueID();
+				b.addedQuantity = request.quantity;
+				updates.add(b);
+			}
+		}
+
+		// Set response
+		resp.updateItems = updates.toArray(t -> new ItemUpdateBlock[t]);
+		setResponseContent("text/xml", req.generateXmlValue("CIRS", resp));
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -274,8 +425,7 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 				setResponseContent("text/xml", req.generateXmlValue("Pairs", new EmptyKeyValuePairSetData()));
 			}
 		} else {
-			pair = pair; // ???
-			setResponseStatus(403, "Forbidden, attempted to interact with other user's data (devs please inspect)");
+			setResponseStatus(403, "Forbidden");
 		}
 	}
 
@@ -378,8 +528,7 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 			// Set response
 			setResponseContent("text/xml", req.generateXmlValue("boolean", true));
 		} else {
-			pair = pair; // ???
-			setResponseStatus(403, "Forbidden, attempted to interact with other user's data (devs please inspect)");
+			setResponseStatus(403, "Forbidden");
 		}
 	}
 
@@ -460,9 +609,144 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 			// Set response
 			setResponseContent("text/xml", req.generateXmlValue("boolean", true));
 		} else {
-			pair = pair; // ???
+			setResponseStatus(403, "Forbidden");
+		}
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getSelectedRaisedPet(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Handle dragon data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
+			AccountDataContainer data = account.getAccountData();
+			if (!userID.equals(account.getAccountID()))
+				data = account.getSave(userID).getSaveData();
+
+			// Pull dragons
+			data = data.getChildContainer("dragons");
+			JsonArray dragonIds = new JsonArray();
+			if (data.entryExists("dragonlist"))
+				dragonIds = data.getEntry("dragonlist").getAsJsonArray();
+			else
+				data.setEntry("dragonlist", dragonIds);
+
+			// Prepare response
+			ArrayList<ObjectNode> dragons = new ArrayList<ObjectNode>();
+
+			// Populate list
+			for (JsonElement ele : dragonIds) {
+				String id = ele.getAsString();
+				ObjectNode dragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(), ObjectNode.class);
+
+				// Check if active
+				if (dragon.get("is").asBoolean()) {
+					// Add selected
+					dragons.add(dragon);
+				}
+			}
+
+			// Set response
+			if (dragons.size() != 0) {
+				DragonListData ls = new DragonListData();
+				ls.dragons = dragons.toArray(t -> new ObjectNode[t]);
+				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", ls));
+			} else
+				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", null));
+		} else {
+			// ???
 			setResponseStatus(403, "Forbidden, attempted to interact with other user's data (devs please inspect)");
 		}
 	}
 
+	@Function(allowedMethods = { "POST" })
+	public void setSelectedRaisedPet(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Handle dragon data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+		String dragonID = req.payload.get("raisedPetID");
+
+		// Retrieve container
+		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
+			AccountDataContainer data = account.getAccountData();
+			if (!userID.equals(account.getAccountID()))
+				data = account.getSave(userID).getSaveData();
+
+			// Pull dragons
+			data = data.getChildContainer("dragons");
+			JsonArray dragonIds = new JsonArray();
+			if (data.entryExists("dragonlist"))
+				dragonIds = data.getEntry("dragonlist").getAsJsonArray();
+			else
+				data.setEntry("dragonlist", dragonIds);
+
+			// Select dragon and deselect old
+			boolean found = false;
+			for (JsonElement ele : dragonIds) {
+				String id = ele.getAsString();
+				ObjectNode dragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(), ObjectNode.class);
+
+				// Check if active
+				if (id.equals(dragonID) || dragon.get("is").asBoolean()) {
+					// Select/deselect
+					if (id.equals(dragonID)) {
+						dragon.set("is", BooleanNode.TRUE);
+						found = true;
+					} else
+						dragon.set("is", BooleanNode.FALSE);
+
+					// Save
+					data.setEntry("dragon-" + id, new JsonPrimitive(req.generateXmlValue("RaisedPetData", dragon)));
+				}
+			}
+
+			// Set response
+			setResponseContent("text/xml", req.generateXmlValue("boolean", found));
+		} else {
+			// ???
+			setResponseStatus(403, "Forbidden, attempted to interact with other user's data (devs please inspect)");
+		}
+	}
 }
