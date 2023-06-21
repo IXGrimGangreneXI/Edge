@@ -1,10 +1,11 @@
 package org.asf.edge.gameplayapi.xmls.quests.edgespecific;
 
+import org.asf.edge.gameplayapi.xmls.quests.MissionData;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -41,7 +42,7 @@ public class QuestRegistryManifest {
 
 		@JsonProperty("QuestDef")
 		@JacksonXmlElementWrapper(useWrapping = false)
-		public ObjectNode[] questDefs;
+		public MissionData[] questDefs;
 
 	}
 }

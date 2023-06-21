@@ -1,5 +1,6 @@
 package org.asf.edge.commonapi.tools;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -15,6 +16,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -22,6 +24,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,6 +72,22 @@ public class SnifferMain {
 		private ServerSocket srvTcp;
 		private DatagramSocket srvUdp;
 
+		private int readInt(InputStream strm) throws IOException {
+			return ByteBuffer.wrap(strm.readNBytes(4)).getInt();
+		}
+
+		private int readShort(InputStream strm) throws IOException {
+			return ByteBuffer.wrap(strm.readNBytes(2)).getShort();
+		}
+
+		private void writeInt(OutputStream strm, int val) throws IOException {
+			strm.write(ByteBuffer.allocate(4).putInt(val).array());
+		}
+
+		private void writeShort(OutputStream strm, short val) throws IOException {
+			strm.write(ByteBuffer.allocate(2).putShort(val).array());
+		}
+
 		private HashMap<String, DatagramSocket> clients = new HashMap<String, DatagramSocket>();
 
 		public void start(int localPort, String remoteHost, int remotePort) throws UnknownHostException, IOException {
@@ -91,11 +111,32 @@ public class SnifferMain {
 									// Reader
 									while (client.isConnected()) {
 										try {
-											// Read single packet
-											byte[] data = new byte[20480000];
-											int read = client.getInputStream().read(data, 0, data.length);
-											if (read < 0) {
-												throw new IOException("Stream closed");
+											// Read single bitswarm packet
+
+											// Read header
+											int b = client.getInputStream().read();
+											if (b == -1)
+												throw new IOException("Disconnected");
+											boolean encrypted = ((b & 64) > 0);
+											boolean compressed = ((b & 32) > 0);
+											boolean blueBoxed = ((b & 16) > 0);
+											boolean largeSize = ((b & 8) > 0);
+
+											// Read length
+											int length = (largeSize ? readInt(client.getInputStream())
+													: readShort(client.getInputStream()));
+
+											// Read body
+											byte[] payload = client.getInputStream().readNBytes(length);
+
+											// Decompress and decrypt
+											if (encrypted)
+												throw new IOException("Encryption not supported");
+											if (compressed) {
+												ByteArrayInputStream bIn = new ByteArrayInputStream(payload);
+												InflaterInputStream inInf = new InflaterInputStream(bIn);
+												payload = inInf.readAllBytes();
+												inInf.close();
 											}
 
 											// Write
@@ -103,20 +144,57 @@ public class SnifferMain {
 												// Build output
 												JsonObject itm = new JsonObject();
 												itm.addProperty("time", System.currentTimeMillis());
-												itm.addProperty("type", "tcp");
+												itm.addProperty("type", "bstcp");
 												itm.addProperty("host", remoteHost);
 												itm.addProperty("port", remotePort);
 												itm.addProperty("side", "C->S");
-												itm.addProperty("data",
-														Base64.getEncoder().encodeToString(Arrays.copyOf(data, read)));
+												itm.addProperty("data", Base64.getEncoder().encodeToString(payload));
 
 												// Write
 												fOut.write((itm.toString() + "\n\n").getBytes("UTF-8"));
 												fOut.flush();
 											}
 
-											// Write data
-											remoteConn.getOutputStream().write(Arrays.copyOf(data, read));
+											// Write bitswarm packet
+											compressed = payload.length >= 2000000; // If more than 2mb, compress
+
+											// Compress if needed
+											if (compressed) {
+												ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+												DeflaterOutputStream dOut = new DeflaterOutputStream(bOut);
+												dOut.write(payload);
+												dOut.close();
+												payload = bOut.toByteArray();
+											}
+
+											// Encrypt if needed
+											// TODO
+
+											// Compute length
+											largeSize = payload.length > Short.MAX_VALUE;
+
+											// Build header
+											int header = 0;
+											if (encrypted)
+												header = header | 64;
+											if (compressed)
+												header = header | 32;
+											if (blueBoxed)
+												header = header | 16;
+											if (largeSize)
+												header = header | 8;
+
+											// Write header
+											remoteConn.getOutputStream().write(header);
+
+											// Write length
+											if (largeSize)
+												writeInt(remoteConn.getOutputStream(), payload.length);
+											else
+												writeShort(remoteConn.getOutputStream(), (short) payload.length);
+
+											// Write payload
+											remoteConn.getOutputStream().write(payload);
 										} catch (IOException e) {
 											try {
 												client.close();
@@ -134,11 +212,32 @@ public class SnifferMain {
 									// Writer
 									while (remoteConn.isConnected()) {
 										try {
-											// Read single packet
-											byte[] data = new byte[20480000];
-											int read = remoteConn.getInputStream().read(data, 0, data.length);
-											if (read < 0) {
-												throw new IOException("Stream closed");
+											// Read single bitswarm packet
+
+											// Read header
+											int b = remoteConn.getInputStream().read();
+											if (b == -1)
+												throw new IOException("Disconnected");
+											boolean encrypted = ((b & 64) > 0);
+											boolean compressed = ((b & 32) > 0);
+											boolean blueBoxed = ((b & 16) > 0);
+											boolean largeSize = ((b & 8) > 0);
+
+											// Read length
+											int length = (largeSize ? readInt(remoteConn.getInputStream())
+													: readShort(remoteConn.getInputStream()));
+
+											// Read body
+											byte[] payload = remoteConn.getInputStream().readNBytes(length);
+
+											// Decompress and decrypt
+											if (encrypted)
+												throw new IOException("Encryption not supported");
+											if (compressed) {
+												ByteArrayInputStream bIn = new ByteArrayInputStream(payload);
+												InflaterInputStream inInf = new InflaterInputStream(bIn);
+												payload = inInf.readAllBytes();
+												inInf.close();
 											}
 
 											// Write
@@ -146,20 +245,57 @@ public class SnifferMain {
 												// Build output
 												JsonObject itm = new JsonObject();
 												itm.addProperty("time", System.currentTimeMillis());
-												itm.addProperty("type", "tcp");
+												itm.addProperty("type", "bstcp");
 												itm.addProperty("host", remoteHost);
 												itm.addProperty("port", remotePort);
 												itm.addProperty("side", "S->C");
-												itm.addProperty("data",
-														Base64.getEncoder().encodeToString(Arrays.copyOf(data, read)));
+												itm.addProperty("data", Base64.getEncoder().encodeToString(payload));
 
 												// Write
 												fOut.write((itm.toString() + "\n\n").getBytes("UTF-8"));
 												fOut.flush();
 											}
 
-											// Write data
-											client.getOutputStream().write(Arrays.copyOf(data, read));
+											// Write bitswarm packet
+											compressed = payload.length >= 2000000; // If more than 2mb, compress
+
+											// Compress if needed
+											if (compressed) {
+												ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+												DeflaterOutputStream dOut = new DeflaterOutputStream(bOut);
+												dOut.write(payload);
+												dOut.close();
+												payload = bOut.toByteArray();
+											}
+
+											// Encrypt if needed
+											// TODO
+
+											// Compute length
+											largeSize = payload.length > Short.MAX_VALUE;
+
+											// Build header
+											int header = 0;
+											if (encrypted)
+												header = header | 64;
+											if (compressed)
+												header = header | 32;
+											if (blueBoxed)
+												header = header | 16;
+											if (largeSize)
+												header = header | 8;
+
+											// Write header
+											client.getOutputStream().write(header);
+
+											// Write length
+											if (largeSize)
+												writeInt(client.getOutputStream(), payload.length);
+											else
+												writeShort(client.getOutputStream(), (short) payload.length);
+
+											// Write payload
+											client.getOutputStream().write(payload);
 										} catch (IOException e) {
 											try {
 												client.close();

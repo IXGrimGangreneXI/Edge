@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
@@ -213,6 +214,7 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 
 	private ProfileData getProfile(String saveID, AccountObject account, ServiceRequestInfo req) throws IOException {
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		AccountSaveContainer save = account.getSave(saveID);
 		AccountDataContainer data = save.getSaveData();
 

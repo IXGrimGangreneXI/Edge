@@ -3,6 +3,7 @@ package org.asf.edge.commonapi.http.handlers.api.accounts;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
@@ -157,6 +158,7 @@ public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeComm
 
 		// Check save
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		if (tkn.saveID != null) {
 			// Save specific
 			AccountSaveContainer save = account.getSave(tkn.saveID);

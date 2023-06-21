@@ -10,6 +10,8 @@ import org.asf.connective.ConnectiveHttpServer;
 import org.asf.edge.gameplayapi.http.*;
 import org.asf.edge.gameplayapi.http.handlers.gameplayapi.*;
 import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
+import org.asf.edge.gameplayapi.services.quests.QuestManager;
+import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.gameplayapi.http.handlers.achievements.*;
 import org.asf.edge.common.IBaseServer;
@@ -146,6 +148,12 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		ServiceManager.registerServiceImplementation(ItemManager.class, new ItemManagerImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(ItemManager.class);
+
+		// Select quest manager
+		logger.info("Setting up quest manager...");
+		ServiceManager.registerServiceImplementation(QuestManager.class, new QuestManagerImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(QuestManager.class);
 	}
 
 	/**

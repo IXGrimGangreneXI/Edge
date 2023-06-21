@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.TimeZone;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
@@ -81,6 +82,7 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 
 		// Set response
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		setResponseContent("text/xml",
 				req.generateXmlValue("dateTime", fmt.format(new Date(System.currentTimeMillis()))));
 	}
@@ -183,6 +185,7 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 
 		// Set result
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		if (data.entryExists("pairs-" + pair)) {
 			// Get data
 			int i = 0;
@@ -245,6 +248,7 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 
 			// Set result
 			SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+			fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 			if (data.entryExists("pairs-" + pair)) {
 				// Get data
 				int i = 0;

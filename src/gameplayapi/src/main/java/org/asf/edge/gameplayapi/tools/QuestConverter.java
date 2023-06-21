@@ -8,11 +8,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
 
-import org.asf.edge.gameplayapi.xmls.quests.edgespecific.QuestRegistryManifest;
-import org.asf.edge.gameplayapi.xmls.quests.edgespecific.QuestRegistryManifest.DefaultStartedQuestsBlock;
-import org.asf.edge.gameplayapi.xmls.quests.edgespecific.QuestRegistryManifest.DefaultUnlockedQuestsBlock;
-import org.asf.edge.gameplayapi.xmls.quests.edgespecific.QuestRegistryManifest.QuestDefsBlock;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -96,7 +91,7 @@ public class QuestConverter {
 		System.out.println("Scanning active missions...");
 		QuestListData activeD = mapper.readValue(activeMissionsData, QuestListData.class);
 		ObjectNode[] active = activeD.missions;
-		outp.defaultStartedQuests = new DefaultStartedQuestsBlock();
+		outp.defaultStartedQuests = new QuestRegistryManifest.DefaultStartedQuestsBlock();
 		outp.defaultStartedQuests.defaultStartedQuests = new int[active.length];
 		for (ObjectNode node : active) {
 			System.out.println("Added active quest to registry: " + node.get("I").asInt());
@@ -108,7 +103,7 @@ public class QuestConverter {
 		System.out.println("Scanning active missions...");
 		QuestListData unlockedD = mapper.readValue(upcomingMissionsData, QuestListData.class);
 		ObjectNode[] unlocked = unlockedD.missions;
-		outp.defaultUnlockedQuests = new DefaultUnlockedQuestsBlock();
+		outp.defaultUnlockedQuests = new QuestRegistryManifest.DefaultUnlockedQuestsBlock();
 		outp.defaultUnlockedQuests.defaultUnlockedQuests = new int[unlocked.length];
 		for (ObjectNode node : unlocked) {
 			System.out.println("Added default unlocked quest to registry: " + node.get("I").asInt());
@@ -116,7 +111,7 @@ public class QuestConverter {
 		}
 
 		// Scan into registry
-		outp.defaultQuestDefs = new QuestDefsBlock();
+		outp.defaultQuestDefs = new QuestRegistryManifest.QuestDefsBlock();
 		ArrayList<ObjectNode> nodes = new ArrayList<ObjectNode>();
 		for (File file : new File(args[0]).listFiles(t -> t.getName().endsWith(".xml") && t.isFile())) {
 			// Load def
@@ -133,6 +128,45 @@ public class QuestConverter {
 		Files.writeString(Path.of("questdata.xml"),
 				mapper.writer().withDefaultPrettyPrinter().withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL)
 						.withRootName("QuestRegistryManifest").writeValueAsString(outp));
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+	private static class QuestRegistryManifest {
+
+		public DefaultStartedQuestsBlock defaultStartedQuests;
+		public DefaultUnlockedQuestsBlock defaultUnlockedQuests;
+		public QuestDefsBlock defaultQuestDefs;
+
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+		public static class DefaultStartedQuestsBlock {
+
+			@JsonProperty("DefaultStartedQuest")
+			@JacksonXmlElementWrapper(useWrapping = false)
+			public int[] defaultStartedQuests;
+
+		}
+
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+		public static class DefaultUnlockedQuestsBlock {
+
+			@JsonProperty("DefaultUnlockedQuest")
+			@JacksonXmlElementWrapper(useWrapping = false)
+			public int[] defaultUnlockedQuests;
+
+		}
+
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+		public static class QuestDefsBlock {
+
+			@JsonProperty("QuestDef")
+			@JacksonXmlElementWrapper(useWrapping = false)
+			public ObjectNode[] questDefs;
+
+		}
 	}
 
 }
