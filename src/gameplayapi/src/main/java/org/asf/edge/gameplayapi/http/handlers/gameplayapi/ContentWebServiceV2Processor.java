@@ -1,8 +1,12 @@
 package org.asf.edge.gameplayapi.http.handlers.gameplayapi;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Random;
+import java.util.TimeZone;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
@@ -12,6 +16,9 @@ import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.AccountObject;
 import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.entities.items.ItemInfo;
+import org.asf.edge.common.entities.items.PlayerInventory;
+import org.asf.edge.common.entities.items.PlayerInventoryContainer;
+import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -23,10 +30,15 @@ import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestStatus;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.xmls.avatars.SetAvatarResultData;
+import org.asf.edge.gameplayapi.xmls.dragons.CreatePetResponseData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
+import org.asf.edge.gameplayapi.xmls.dragons.PetCreateRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;
+import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
+import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
+import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData.SuggestionResultBlock;
 import org.asf.edge.gameplayapi.xmls.names.NameValidationRequest;
 import org.asf.edge.gameplayapi.xmls.names.NameValidationResponseData;
@@ -36,7 +48,10 @@ import org.asf.edge.gameplayapi.xmls.quests.RequestFilterData;
 import org.asf.edge.gameplayapi.xmls.quests.RequestFilterData.MissionPairBlock;
 import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData;
 
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -69,6 +84,28 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		// Handle request
 		path = path;
 		setResponseStatus(404, "Not found");
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getGameData(FunctionInfo func) throws IOException {
+		// Handle game data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// TODO: stub
+		setResponseContent("text/xml", "<GetGameDataResponse />");
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -111,11 +148,11 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 
 			// Load inventory requests
 			String invReq = req.payload.get("commonInventoryRequestXml");
-			CommonInventoryRequestData[] requests;
+			SetCommonInventoryRequestData[] requests;
 			if (!invReq.trim().equals("<?xml version=\"1.0\" encoding=\"utf-8\"?>"))
-				requests = req.parseXmlValue(invReq, CommonInventoryRequestData[].class);
+				requests = req.parseXmlValue(invReq, SetCommonInventoryRequestData[].class);
 			else
-				requests = new CommonInventoryRequestData[0];
+				requests = new SetCommonInventoryRequestData[0];
 
 			// Find quest
 			UserQuestInfo quest = questManager.getUserQuest(save, missionId);
@@ -578,7 +615,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
 
-		// Handle inventory request
+		// Handle dragon request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
@@ -595,11 +632,14 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		}
 
 		// Parse request
-		ObjectNode dragonCreationRequest = req.parseXmlValue(req.payload.get("request"), ObjectNode.class);
+		PetCreateRequestData request = req.parseXmlValue(req.payload.get("request"), PetCreateRequestData.class);
 
 		// Find save
 		AccountSaveContainer save = account.getSave(tkn.saveID);
 		AccountDataContainer data = save.getSaveData();
+
+		// Prepare response
+		CreatePetResponseData resp = new CreatePetResponseData();
 
 		// Pull dragons
 		data = data.getChildContainer("dragons");
@@ -609,7 +649,76 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		else
 			data.setEntry("dragonlist", dragonIds);
 
-		// TODO
+		// Create dragon ID
+		String entID = UUID.randomUUID().toString();
+		int id = rnd.nextInt(0, Integer.MAX_VALUE);
+		while (data.entryExists("dragon-" + id))
+			id = rnd.nextInt(0, Integer.MAX_VALUE);
+		while (true) {
+			boolean found = false;
+			for (JsonElement ele : dragonIds) {
+				String did = ele.getAsString();
+				ObjectNode d = req.parseXmlValue(data.getEntry("dragon-" + did).getAsString(), ObjectNode.class);
+				if (d.get("eid").asText().equals(entID)) {
+					entID = UUID.randomUUID().toString();
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				break;
+		}
+
+		// Fill fields
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+		ObjectNode dragon = request.dragonData;
+		dragon.set("id", new IntNode(id)); // ID
+		dragon.set("eid", new TextNode(entID)); // Entity ID
+		dragon.set("n", new TextNode("Dragon-" + System.currentTimeMillis())); // Name
+		dragon.set("cdt", new TextNode(fmt.format(new Date()))); // Creation time
+		dragon.set("upd", new TextNode(fmt.format(new Date()))); // Update time
+
+		// Set active if needed
+		if (request.setAsSelected) {
+			// Deselect old
+			for (JsonElement ele : dragonIds) {
+				String did = ele.getAsString();
+				ObjectNode ddragon = req.parseXmlValue(data.getEntry("dragon-" + did).getAsString(), ObjectNode.class);
+
+				// Check if active
+				if (ddragon.get("is").asBoolean()) {
+					// deselect
+					ddragon.set("is", BooleanNode.FALSE);
+
+					// Save
+					data.setEntry("dragon-" + did, new JsonPrimitive(req.generateXmlValue("RaisedPetData", ddragon)));
+				}
+			}
+
+			// Set current as active
+			dragon.set("is", BooleanNode.TRUE);
+		}
+
+		// Save to list
+		dragonIds = data.getEntry("dragonlist").getAsJsonArray();
+		dragonIds.add(id);
+		data.setEntry("dragonlist", dragonIds);
+
+		// Save dragon
+		data.setEntry("dragon-" + id, new JsonPrimitive(req.generateXmlValue("RaisedPetData", dragon)));
+
+		// Handle inventory
+		if (request.commonInventoryRequests != null && request.commonInventoryRequests.length != 0) {
+			// Handle inventory request
+			resp.inventoryUpdate = processCommonInventorySet(request.commonInventoryRequests, save.getSaveData(),
+					request.containerID);
+		}
+
+		// Set response
+		resp.dragonData = dragon.deepCopy();
+		resp.dragonData.set("ispetcreated", BooleanNode.TRUE);
+		setResponseContent("text/xml", req.generateXmlValue("CPR", resp));
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -742,5 +851,69 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		} else {
 			setResponseStatus(403, "Forbidden");
 		}
+	}
+
+	/**
+	 * Processes common inventory requests
+	 * 
+	 * @param requests  Request list
+	 * @param account   Account object
+	 * @param container Container
+	 * @return InventoryUpdateResponseData instance
+	 */
+	public static InventoryUpdateResponseData processCommonInventorySet(SetCommonInventoryRequestData[] requests,
+			AccountDataContainer data, int container) {
+		// PRepare response
+		InventoryUpdateResponseData resp = new InventoryUpdateResponseData();
+		ArrayList<ItemUpdateBlock> updates = new ArrayList<ItemUpdateBlock>();
+		resp.success = true;
+
+		// Handle requests
+		if (requests.length == 0) {
+			resp.success = false;
+		} else {
+			PlayerInventory inv = itemManager.getCommonInventory(data);
+			PlayerInventoryContainer cont = inv.getContainer(container);
+			for (SetCommonInventoryRequestData request : requests) {
+				if (itemManager.getItemDefinition(request.itemID) == null) {
+					// Invalid
+					resp = new InventoryUpdateResponseData();
+					resp.success = false;
+					return resp;
+				}
+
+				// Find inventory
+				PlayerInventoryItem itm;
+				if (request.itemUniqueID != -1)
+					itm = cont.getItem(request.itemUniqueID);
+				else
+					itm = cont.findFirst(request.itemID);
+				// TODO: complete implementation
+
+				// Check
+				if (itm == null)
+					itm = cont.createItem(request.itemID, 0);
+
+				// Update
+				itm.setQuantity(itm.getQuantity() + request.quantity);
+				if (request.uses != null) {
+					int uses = 0;
+					if (itm.getUses() != -1)
+						uses = itm.getUses();
+					itm.setUses(uses + Integer.parseInt(request.uses));
+				}
+
+				// Add update
+				ItemUpdateBlock b = new ItemUpdateBlock();
+				b.itemID = itm.getItemDefID();
+				b.itemUniqueID = itm.getUniqueID();
+				b.addedQuantity = request.quantity;
+				updates.add(b);
+			}
+		}
+
+		// Set response
+		resp.updateItems = updates.toArray(t -> new ItemUpdateBlock[t]);
+		return resp;
 	}
 }

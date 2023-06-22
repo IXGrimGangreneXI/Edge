@@ -5,23 +5,36 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.Random;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.account.AccountDataContainer;
 import org.asf.edge.common.account.AccountSaveContainer;
+import org.asf.edge.common.entities.items.ItemInfo;
+import org.asf.edge.common.entities.items.PlayerInventory;
+import org.asf.edge.common.entities.items.PlayerInventoryContainer;
+import org.asf.edge.common.entities.items.PlayerInventoryItem;
+import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestStatus;
+import org.asf.edge.gameplayapi.http.handlers.gameplayapi.ContentWebServiceV2Processor;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
-import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;
+import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
+import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
+import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
+import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
+import org.asf.edge.gameplayapi.xmls.quests.MissionData.AchievementRewardBlock;
 import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData;
+import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData.CompletedMissionInfoBlock;
 import org.asf.edge.gameplayapi.xmls.quests.edgespecific.QuestRegistryManifest;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonArray;
 
 public class QuestManagerImpl extends QuestManager {
@@ -31,6 +44,7 @@ public class QuestManagerImpl extends QuestManager {
 	private ArrayList<Integer> defaultUnlockedQuests = new ArrayList<Integer>();
 	private HashMap<Integer, MissionData> quests = new HashMap<Integer, MissionData>();
 	private HashMap<Integer, MissionData> allQuests = new HashMap<Integer, MissionData>();
+	private static Random rnd = new Random();
 
 	@Override
 	public void initService() {
@@ -366,9 +380,7 @@ public class QuestManagerImpl extends QuestManager {
 
 		@Override
 		public SetTaskStateResultData handleTaskCall(int taskID, String payloadStr, boolean completed, int invContainer,
-				CommonInventoryRequestData[] requests) {
-			// TODO: common inventory requests
-
+				SetCommonInventoryRequestData[] requests) throws IOException {
 			// Find task
 			MissionData mission = getData();
 			Optional<MissionData.TaskBlock> opt = Stream.of(mission.tasks).filter(t -> t.id == taskID).findFirst();
@@ -394,9 +406,11 @@ public class QuestManagerImpl extends QuestManager {
 			// FIXME: implement more checks
 
 			// Check if active
+			boolean wasActive = true;
 			if (!isActive()) {
 				// Start quest
 				startQuest();
+				wasActive = false;
 			}
 
 			// Update task
@@ -433,17 +447,315 @@ public class QuestManagerImpl extends QuestManager {
 			resp.status = SetTaskStateResultData.SetTaskStateResultStatuses.TASK_CAN_BE_DONE;
 			resp.success = true;
 
+			// Update inventories
+			if (requests != null & requests.length != 0) {
+				resp.inventoryUpdate = ContentWebServiceV2Processor.processCommonInventorySet(requests,
+						save.getSaveData(), invContainer);
+			}
+
+			// Acceptance rewards
+			if (!wasActive) {
+				// Check if already completed
+				boolean wasCompleted = Stream.of(getCompletedQuests(save))
+						.anyMatch(t -> t.getQuestID() == getQuestID());
+
+				// Achievements
+				// TODO: achievements
+
+				// Go through rewards
+				if (def.acceptanceRewards != null) {
+					for (AchievementRewardBlock reward : def.acceptanceRewards) {
+						if (!reward.allowMultiple && wasCompleted)
+							continue;
+
+						// Prepare update
+						if (resp.inventoryUpdate == null) {
+							resp.inventoryUpdate = new InventoryUpdateResponseData();
+							resp.inventoryUpdate.success = true;
+						}
+
+						// Copy
+						reward = reward.copy();
+
+						// Set amount
+						if (reward.minAmount != -1 && reward.maxAmount != -1) {
+							reward.amount = rnd.nextInt(reward.minAmount, reward.maxAmount + 1);
+							reward.minAmount = -1;
+							reward.maxAmount = -1;
+						}
+
+						// Achievements
+						// TODO: achievements
+
+						// Give rewards
+						switch (reward.pointTypeID) {
+
+						// Achievement points
+						case 1:
+						case 9:
+						case 10:
+						case 12: {
+							// TODO: achievement points
+							// Use amount and point type ID
+
+							break;
+						}
+
+						// Coins
+						case 2: {
+							// Add coins
+							if (resp.inventoryUpdate.currencyUpdate == null) {
+								resp.inventoryUpdate.currencyUpdate = new InventoryUpdateResponseData.CurrencyUpdateBlock();
+								resp.inventoryUpdate.currencyUpdate.userID = save.getSaveID();
+								resp.inventoryUpdate.currencyUpdate.coinCount = 0;
+								resp.inventoryUpdate.currencyUpdate.gemCount = 0;
+							}
+							resp.inventoryUpdate.currencyUpdate.coinCount += reward.amount;
+
+							// Update inventory
+							AccountDataContainer currency = data.getChildContainer("currency");
+							int currentC = 300;
+							if (currency.entryExists("coins"))
+								currentC = currency.getEntry("coins").getAsInt();
+							currency.setEntry("coins", new JsonPrimitive(currentC + reward.amount));
+							break;
+						}
+
+						// Gems
+						case 5: {
+							// Add gems
+							if (resp.inventoryUpdate.currencyUpdate == null) {
+								resp.inventoryUpdate.currencyUpdate = new InventoryUpdateResponseData.CurrencyUpdateBlock();
+								resp.inventoryUpdate.currencyUpdate.userID = save.getSaveID();
+								resp.inventoryUpdate.currencyUpdate.coinCount = 0;
+								resp.inventoryUpdate.currencyUpdate.gemCount = 0;
+							}
+							resp.inventoryUpdate.currencyUpdate.gemCount += reward.amount;
+
+							// Update inventory
+							AccountDataContainer currencyAccWide = save.getAccount().getAccountData()
+									.getChildContainer("currency");
+							int currentG = 0;
+							if (currencyAccWide.entryExists("gems"))
+								currentG = currencyAccWide.getEntry("gems").getAsInt();
+							currencyAccWide.setEntry("gems", new JsonPrimitive(currentG + reward.amount));
+							break;
+						}
+
+						// Item
+						case 6: {
+							// Add item
+							PlayerInventory inv = save.getInventory();
+							PlayerInventoryContainer cont = inv.getContainer(invContainer);
+							PlayerInventoryItem itm = cont.findFirst(reward.itemID);
+							if (itm != null) {
+								itm.add(reward.amount);
+							} else {
+								itm = cont.createItem(reward.itemID, reward.amount);
+							}
+
+							// Set data
+							reward.uniqueRewardItemID = itm.getUniqueID();
+
+							// Add item
+							ItemBlock block = new ItemBlock();
+							block.itemID = itm.getItemDefID();
+							block.quantity = itm.getQuantity();
+							block.uses = itm.getUses();
+							block.uniqueItemID = itm.getUniqueID();
+
+							// Add data info from item manager
+							ItemInfo def = ItemManager.getInstance().getItemDefinition(block.itemID);
+							if (def != null)
+								block.data = def.getRawObject();
+
+							// Add update
+							ItemUpdateBlock update = new ItemUpdateBlock();
+							update.itemID = reward.itemID;
+							update.addedQuantity = reward.amount;
+							update.itemUniqueID = itm.getUniqueID();
+							resp.inventoryUpdate.updateItems = addToArray(resp.inventoryUpdate.updateItems, update);
+
+							// Set block
+							reward.rewardItem = block;
+							break;
+						}
+
+						// Dragon achievement points
+						case 8: {
+							// TODO: achievement points
+							// Use amount
+
+							break;
+						}
+
+						}
+					}
+				}
+			}
+
 			// Update quests if needed
 			if (completed) {
 				// Check tasks
 				boolean missionCompleted = isCompletedMission(mission);
 				if (missionCompleted) {
-					// TODO
-					missionCompleted = missionCompleted;
+					// Handle completion
+					ArrayList<CompletedMissionInfoBlock> completedMissions = new ArrayList<CompletedMissionInfoBlock>();
+
+					// Add rewards
+					UserQuestInfoImpl quest = this;
+					while (quest != null) {
+						// Prepare object
+						CompletedMissionInfoBlock i = new CompletedMissionInfoBlock();
+						boolean wasCompleted = Stream.of(getCompletedQuests(save))
+								.anyMatch(t -> t.getQuestID() == getQuestID());
+
+						// Complete quest
+						quest.completeQuest();
+						i.missionID = quest.getQuestID();
+						MissionData missionD = quest.getDef();
+
+						// Give achievements
+						// TODO: achievements
+
+						// Go through rewards
+						ArrayList<AchievementRewardBlock> rewards = new ArrayList<AchievementRewardBlock>();
+						if (missionD.rewards != null) {
+							for (AchievementRewardBlock reward : missionD.rewards) {
+								if (!reward.allowMultiple && wasCompleted)
+									continue;
+
+								// Copy
+								reward = reward.copy();
+
+								// Set amount
+								if (reward.minAmount != -1 && reward.maxAmount != -1) {
+									reward.amount = rnd.nextInt(reward.minAmount, reward.maxAmount + 1);
+									reward.minAmount = -1;
+									reward.maxAmount = -1;
+								}
+
+								// Achievements
+								// TODO: achievements
+
+								// Give rewards
+								switch (reward.pointTypeID) {
+
+								// Achievement points
+								case 1:
+								case 9:
+								case 10:
+								case 12: {
+									// TODO: achievement points
+									// Use amount and point type ID
+
+									break;
+								}
+
+								// Coins
+								case 2: {
+									// Update inventory
+									AccountDataContainer currency = data.getChildContainer("currency");
+									int currentC = 300;
+									if (currency.entryExists("coins"))
+										currentC = currency.getEntry("coins").getAsInt();
+									currency.setEntry("coins", new JsonPrimitive(currentC + reward.amount));
+									break;
+								}
+
+								// Gems
+								case 5: {
+									// Update inventory
+									AccountDataContainer currencyAccWide = save.getAccount().getAccountData()
+											.getChildContainer("currency");
+									int currentG = 0;
+									if (currencyAccWide.entryExists("gems"))
+										currentG = currencyAccWide.getEntry("gems").getAsInt();
+									currencyAccWide.setEntry("gems", new JsonPrimitive(currentG + reward.amount));
+									break;
+								}
+
+								// Item
+								case 6: {
+									// Add item
+									PlayerInventory inv = save.getInventory();
+									PlayerInventoryContainer cont = inv.getContainer(invContainer);
+									PlayerInventoryItem itm = cont.findFirst(reward.itemID);
+									if (itm != null) {
+										itm.add(reward.amount);
+									} else {
+										itm = cont.createItem(reward.itemID, reward.amount);
+									}
+
+									// Set data
+									reward.uniqueRewardItemID = itm.getUniqueID();
+
+									// Add item
+									ItemBlock block = new ItemBlock();
+									block.itemID = itm.getItemDefID();
+									block.quantity = itm.getQuantity();
+									block.uses = itm.getUses();
+									block.uniqueItemID = itm.getUniqueID();
+
+									// Add data info from item manager
+									ItemInfo def = ItemManager.getInstance().getItemDefinition(block.itemID);
+									if (def != null)
+										block.data = def.getRawObject();
+
+									// Set block
+									reward.rewardItem = block;
+									break;
+								}
+
+								// Dragon achievement points
+								case 8: {
+									// TODO: achievement points
+									// Use amount
+
+									break;
+								}
+
+								}
+
+								// Add reward
+								rewards.add(reward);
+							}
+						}
+
+						// Add block
+						i.rewards = rewards.toArray(t -> new AchievementRewardBlock[t]);
+
+						// Add object
+						completedMissions.add(i);
+
+						// Get parent
+						if (quest.def.parentQuestID != -1) {
+							MissionData parent = allQuests.get(quest.def.parentQuestID);
+							if (parent != null) {
+								quest = new UserQuestInfoImpl(parent, save);
+								if (!isCompletedMission(quest.getData()))
+									break;
+							} else
+								break;
+						} else
+							break;
+					}
+
+					// Set response
+					resp.completedMissions = completedMissions.toArray(t -> new CompletedMissionInfoBlock[t]);
 				}
 			}
 
 			return resp;
+		}
+
+		private ItemUpdateBlock[] addToArray(ItemUpdateBlock[] updateItems, ItemUpdateBlock update) {
+			int i = 0;
+			ItemUpdateBlock[] newA = new ItemUpdateBlock[updateItems.length + 1];
+			for (i = 0; i < updateItems.length; i++)
+				newA[i] = updateItems[i];
+			newA[i] = update;
+			return newA;
 		}
 
 		private boolean isCompletedMission(MissionData mission) {
@@ -470,7 +782,7 @@ public class QuestManagerImpl extends QuestManager {
 		@Override
 		public void startQuest() {
 			// Check status
-			if (status != UserQuestStatus.INACTIVE)
+			if (status == UserQuestStatus.ACTIVE)
 				throw new IllegalArgumentException("Quest is not inactive");
 
 			// Update status
@@ -505,10 +817,6 @@ public class QuestManagerImpl extends QuestManager {
 
 		@Override
 		public void completeQuest() {
-			// Check status
-			if (status == UserQuestStatus.COMPLETED)
-				throw new IllegalArgumentException("Quest is already completed");
-
 			// Update status
 			status = UserQuestStatus.COMPLETED;
 			questInfo.addProperty("status", 0);

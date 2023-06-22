@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.account.AccountDataContainer;
+import org.asf.edge.common.account.AccountObject;
 import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.account.impl.RemoteHttpAccountManager;
 
@@ -16,15 +17,18 @@ public class RemoteHttpSaveContainer extends AccountSaveContainer {
 	private long time;
 	private String username;
 	private String acc;
+	private AccountObject account;
 
 	private RemoteHttpAccountManager mgr;
 	private Logger logger = LogManager.getLogger("AccountManager");
 
-	public RemoteHttpSaveContainer(String id, long time, String username, String acc, RemoteHttpAccountManager mgr) {
+	public RemoteHttpSaveContainer(String id, long time, String username, String acc, RemoteHttpAccountManager mgr,
+			AccountObject account) {
 		this.id = id;
 		this.time = time;
 		this.username = username;
 		this.acc = acc;
+		this.account = account;
 		this.mgr = mgr;
 	}
 
@@ -82,6 +86,11 @@ public class RemoteHttpSaveContainer extends AccountSaveContainer {
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in deleteSave!", e);
 		}
+	}
+
+	@Override
+	public AccountObject getAccount() {
+		return account;
 	}
 
 }

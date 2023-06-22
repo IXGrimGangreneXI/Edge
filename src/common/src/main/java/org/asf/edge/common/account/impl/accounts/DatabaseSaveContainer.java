@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.account.AccountDataContainer;
 import org.asf.edge.common.account.AccountManager;
+import org.asf.edge.common.account.AccountObject;
 import org.asf.edge.common.account.AccountSaveContainer;
 
 import com.google.gson.JsonArray;
@@ -26,15 +27,17 @@ public class DatabaseSaveContainer extends AccountSaveContainer {
 	private Connection conn;
 	private AccountManager manager;
 	private Logger logger = LogManager.getLogger("AccountManager");
+	private AccountObject acc;
 
 	public DatabaseSaveContainer(String saveID, long time, String username, String id, Connection conn,
-			AccountManager manager) {
+			AccountManager manager, AccountObject acc) {
 		this.saveID = saveID;
 		this.time = time;
 		this.username = username;
 		this.id = id;
 		this.conn = conn;
 		this.manager = manager;
+		this.acc = acc;
 	}
 
 	@Override
@@ -144,6 +147,11 @@ public class DatabaseSaveContainer extends AccountSaveContainer {
 			logger.error("Failed to execute database query request while trying to delete save '" + saveID + "' of ID '"
 					+ id + "'", e);
 		}
+	}
+
+	@Override
+	public AccountObject getAccount() {
+		return acc;
 	}
 
 }

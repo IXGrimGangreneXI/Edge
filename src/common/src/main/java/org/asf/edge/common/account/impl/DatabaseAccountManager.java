@@ -149,6 +149,8 @@ public class DatabaseAccountManager extends AccountManager {
 				statement = conn.prepareStatement("SELECT COUNT(ID) FROM SAVEUSERNAMEMAP WHERE USERNAME = ?");
 				statement.setString(1, username);
 				res = statement.executeQuery();
+				if (!res.next())
+					return false; // Not found
 				return res.getInt(1) != 0;
 			} catch (SQLException e) {
 				logger.error("Failed to execute database query request while trying to check if username '" + username

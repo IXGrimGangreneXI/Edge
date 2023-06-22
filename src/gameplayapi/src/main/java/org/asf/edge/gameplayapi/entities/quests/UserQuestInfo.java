@@ -1,6 +1,9 @@
 package org.asf.edge.gameplayapi.entities.quests;
 
+import java.io.IOException;
+
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;
+import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData;
 
@@ -45,14 +48,12 @@ public abstract class UserQuestInfo {
 	/**
 	 * Starts the quest
 	 * 
-	 * @throws IllegalArgumentException If the quest is not inactive
+	 * @throws IllegalArgumentException If the quest is active
 	 */
 	public abstract void startQuest();
 
 	/**
 	 * Completes the quest
-	 * 
-	 * @throws IllegalArgumentException If the quest is already completed
 	 */
 	public abstract void completeQuest();
 
@@ -80,9 +81,10 @@ public abstract class UserQuestInfo {
 	 * @param invContainer Inventory container ID
 	 * @param requests     Inventory requests (may be empty)
 	 * @return SetTaskStateResultData instance
+	 * @throws IOException If updating fails
 	 */
 	public abstract SetTaskStateResultData handleTaskCall(int taskID, String payload, boolean completed,
-			int invContainer, CommonInventoryRequestData[] requests);
+			int invContainer, SetCommonInventoryRequestData[] requests) throws IOException;
 
 	/**
 	 * Checks if the quest is active

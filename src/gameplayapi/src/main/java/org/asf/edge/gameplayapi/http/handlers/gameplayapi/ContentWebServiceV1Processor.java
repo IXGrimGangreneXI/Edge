@@ -1,21 +1,21 @@
 package org.asf.edge.gameplayapi.http.handlers.gameplayapi;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.TimeZone;
 
 import org.asf.connective.RemoteClient;
+import org.asf.connective.TlsSecuredHttpServer;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.account.AccountDataContainer;
 import org.asf.edge.common.account.AccountManager;
 import org.asf.edge.common.account.AccountObject;
 import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.entities.items.ItemInfo;
-import org.asf.edge.common.entities.items.PlayerInventory;
-import org.asf.edge.common.entities.items.PlayerInventoryContainer;
-import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -30,15 +30,13 @@ import org.asf.edge.gameplayapi.xmls.data.KeyValuePairSetData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.data.EmptyKeyValuePairSetData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
-import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;
-import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
-import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData;
 
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -247,59 +245,9 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		if (tkn.saveID != null)
 			data = account.getSave(tkn.saveID).getSaveData();
 
-		// Prepare response
-		InventoryUpdateResponseData resp = new InventoryUpdateResponseData();
-		ArrayList<ItemUpdateBlock> updates = new ArrayList<ItemUpdateBlock>();
-		resp.success = true;
-
-		// Handle requests
-		if (requests.length == 0) {
-			resp.success = false;
-		} else {
-			PlayerInventory inv = itemManager.getCommonInventory(data);
-			PlayerInventoryContainer cont = inv.getContainer(Integer.parseInt(req.payload.get("ContainerId")));
-			for (SetCommonInventoryRequestData request : requests) {
-				if (itemManager.getItemDefinition(request.itemID) == null) {
-					// Invalid
-					resp = new InventoryUpdateResponseData();
-					resp.success = false;
-					setResponseContent("text/xml", req.generateXmlValue("CIRS", resp));
-					return;
-				}
-
-				// Find inventory
-				PlayerInventoryItem itm;
-				if (request.itemUniqueID != -1)
-					itm = cont.getItem(request.itemUniqueID);
-				else
-					itm = cont.findFirst(request.itemID);
-				// TODO: complete implementation
-
-				// Check
-				if (itm == null)
-					itm = cont.createItem(request.itemID, 0);
-
-				// Update
-				itm.setQuantity(itm.getQuantity() + request.quantity);
-				if (request.uses != null) {
-					int uses = 0;
-					if (itm.getUses() != -1)
-						uses = itm.getUses();
-					itm.setUses(uses + Integer.parseInt(request.uses));
-				}
-
-				// Add update
-				ItemUpdateBlock b = new ItemUpdateBlock();
-				b.itemID = itm.getItemDefID();
-				b.itemUniqueID = itm.getUniqueID();
-				b.addedQuantity = request.quantity;
-				updates.add(b);
-			}
-		}
-
-		// Set response
-		resp.updateItems = updates.toArray(t -> new ItemUpdateBlock[t]);
-		setResponseContent("text/xml", req.generateXmlValue("CIRS", resp));
+		// Set
+		setResponseContent("text/xml", req.generateXmlValue("CIRS", ContentWebServiceV2Processor
+				.processCommonInventorySet(requests, data, Integer.parseInt(req.payload.get("ContainerId")))));
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -391,10 +339,40 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		String userID = req.payload.get("userId");
 
 		// Retrieve container info
-		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
-			AccountDataContainer data = account.getAccountData();
-			if (!userID.equals(account.getAccountID()))
-				data = account.getSave(userID).getSaveData();
+		boolean isDragon = false;
+		AccountDataContainer dragonData = null;
+		if (!userID.equals(account.getAccountID()) && account.getSave(userID) == null) {
+			// Check save
+			if (tkn.hasCapability("gp")) {
+				// Find dragon
+				AccountDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("dragons");
+				JsonArray dragonIds = new JsonArray();
+				if (data.entryExists("dragonlist"))
+					dragonIds = data.getEntry("dragonlist").getAsJsonArray();
+				else
+					data.setEntry("dragonlist", dragonIds);
+				for (JsonElement ele : dragonIds) {
+					String id = ele.getAsString();
+					ObjectNode dragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(),
+							ObjectNode.class);
+
+					// Check dragon entity ID
+					if (dragon.get("eid").asText().equals(userID)) {
+						// Its a dragon
+						isDragon = true;
+						dragonData = data.getChildContainer("dragondata-" + userID);
+						break;
+					}
+				}
+			}
+		}
+		if (isDragon || userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
+			AccountDataContainer data = dragonData;
+			if (data == null) {
+				data = account.getAccountData();
+				if (!userID.equals(account.getAccountID()))
+					data = account.getSave(userID).getSaveData();
+			}
 			data = data.getChildContainer("keyvaluedata");
 
 			// Set result
@@ -507,10 +485,40 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		String userID = req.payload.get("userId");
 
 		// Retrieve container info
-		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
-			AccountDataContainer data = account.getAccountData();
-			if (!userID.equals(account.getAccountID()))
-				data = account.getSave(userID).getSaveData();
+		boolean isDragon = false;
+		AccountDataContainer dragonData = null;
+		if (!userID.equals(account.getAccountID()) && account.getSave(userID) == null) {
+			// Check save
+			if (tkn.hasCapability("gp")) {
+				// Find dragon
+				AccountDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("dragons");
+				JsonArray dragonIds = new JsonArray();
+				if (data.entryExists("dragonlist"))
+					dragonIds = data.getEntry("dragonlist").getAsJsonArray();
+				else
+					data.setEntry("dragonlist", dragonIds);
+				for (JsonElement ele : dragonIds) {
+					String id = ele.getAsString();
+					ObjectNode dragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(),
+							ObjectNode.class);
+
+					// Check dragon entity ID
+					if (dragon.get("eid").asText().equals(userID)) {
+						// Its a dragon
+						isDragon = true;
+						dragonData = data.getChildContainer("dragondata-" + userID);
+						break;
+					}
+				}
+			}
+		}
+		if (isDragon || userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
+			AccountDataContainer data = dragonData;
+			if (data == null) {
+				data = account.getAccountData();
+				if (!userID.equals(account.getAccountID()))
+					data = account.getSave(userID).getSaveData();
+			}
 			data = data.getChildContainer("keyvaluedata");
 
 			// Set entries
@@ -682,7 +690,7 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 	}
 
 	@Function(allowedMethods = { "POST" })
-	public void setSelectedRaisedPet(FunctionInfo func) throws IOException {
+	public void setSelectedPet(FunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -748,5 +756,126 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 			// ???
 			setResponseStatus(403, "Forbidden, attempted to interact with other user's data (devs please inspect)");
 		}
+	}
+
+	@Function(allowedMethods = { "POST", "GET" })
+	public void getImage(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Check query
+		if (func.getQuery().containsKey("edgereq") && func.getQuery().get("edgereq").equals("true")) {
+			// Load info
+			String slot = func.getQuery().get("slot");
+			String type = func.getQuery().get("type");
+			String account = func.getQuery().get("account");
+			String save = func.getQuery().get("save");
+
+			// Locate account
+			AccountObject acc = manager.getAccount(account);
+			if (acc == null || acc.getSave(save) == null) {
+				setResponseStatus(404, "Not found");
+				return;
+			}
+
+			// Locate save data
+			AccountDataContainer data = acc.getSave(save).getSaveData().getChildContainer("images");
+			if (!data.entryExists("imagefile-" + slot + "-" + type)) {
+				setResponseStatus(404, "Not found");
+				return;
+			}
+
+			// Set
+			getResponse().setContent("image/jpeg",
+					Base64.getDecoder().decode(data.getEntry("imagefile-" + slot + "-" + type).getAsString()));
+			return;
+		}
+
+		// Handle set image request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse
+		String slot = req.payload.get("ImageSlot");
+		String type = req.payload.get("ImageType");
+
+		// Retrieve data
+		AccountDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("images");
+
+		// Not found
+		if (!data.entryExists("imageslotinfo-" + slot + "-" + type)) {
+			setResponseContent("text/xml", req.generateXmlValue("ImageData", null));
+			return;
+		}
+
+		// Set response
+		setResponseContent("text/xml", data.getEntry("imageslotinfo-" + slot + "-" + type).getAsString());
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void setImage(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Handle set image request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse
+		String xml = req.payload.get("contentXML");
+		String slot = req.payload.get("ImageSlot");
+		String type = req.payload.get("ImageType");
+
+		// Retrieve data
+		AccountDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("images");
+
+		// Set data
+		ObjectNode imgD = req.parseXmlValue(xml, ObjectNode.class);
+		String prot = "http://";
+		if (getServerInstance().getServer() instanceof TlsSecuredHttpServer)
+			prot = "https://";
+		imgD.set("ImageURL",
+				new TextNode(prot + getHeader("Host") + "/"
+						+ (getRequest().getRequestPath().substring(0,
+								getRequest().getRequestPath().toLowerCase().lastIndexOf("setimage"))
+								+ "GetImage?edgereq=true&slot=" + URLEncoder.encode(slot, "UTF-8") + "&account="
+								+ URLEncoder.encode(account.getAccountID(), "UTF-8") + "&save="
+								+ URLEncoder.encode(tkn.saveID, "UTF-8") + "&type=" + URLEncoder.encode(type, "UTF-8")
+								+ "&file=image.jpg")));
+
+		// Set image
+		data.setEntry("imageslotinfo-" + slot + "-" + type, new JsonPrimitive(req.generateXmlValue("ImageData", imgD)));
+		data.setEntry("imagefile-" + slot + "-" + type, new JsonPrimitive(req.payload.get("imageFile")));
+
+		// Set response
+		setResponseContent("text/xml", req.generateXmlValue("ImageData", imgD));
 	}
 }

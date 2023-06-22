@@ -556,7 +556,7 @@ public class DatabaseAccountObject extends AccountObject {
 
 			// Return
 			return new DatabaseSaveContainer(saveID, saveObj.get("creationTime").getAsLong(), username, this.id, conn,
-					manager);
+					manager, this);
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to create save '" + saveID
 					+ "' for ID '" + id + "'", e);
@@ -581,7 +581,7 @@ public class DatabaseAccountObject extends AccountObject {
 					// Found it
 					String username = saveObj.get("username").getAsString();
 					return new DatabaseSaveContainer(id, saveObj.get("creationTime").getAsLong(), username, this.id,
-							conn, manager);
+							conn, manager, this);
 				}
 			}
 			return null;

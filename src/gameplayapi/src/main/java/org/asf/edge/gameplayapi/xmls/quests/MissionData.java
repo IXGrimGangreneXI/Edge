@@ -145,6 +145,7 @@ public class MissionData {
 	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 	public static class AchievementRewardBlock {
 
+		// 1, 9, 10, 12: achievement points, 2: coins, 5: gems, 6: item, 8: dragon XP
 		@JsonProperty("ai")
 		public int achievementID;
 
@@ -180,7 +181,7 @@ public class MissionData {
 
 		@JsonProperty("cid")
 		@JsonInclude(Include.NON_DEFAULT)
-		public int uniqueRewardItemID;
+		public int uniqueRewardItemID = -1;
 
 		@JsonProperty("ui")
 		@JsonInclude(Include.NON_NULL)

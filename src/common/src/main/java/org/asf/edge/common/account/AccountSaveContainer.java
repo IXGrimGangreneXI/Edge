@@ -62,4 +62,11 @@ public abstract class AccountSaveContainer {
 	 */
 	public abstract void deleteSave();
 
+	/**
+	 * Retrieves the account of the save
+	 * 
+	 * @return AccountObject instance
+	 */
+	public abstract AccountObject getAccount();
+
 }

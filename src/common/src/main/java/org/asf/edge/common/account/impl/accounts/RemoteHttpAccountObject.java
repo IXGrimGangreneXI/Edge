@@ -325,7 +325,7 @@ public class RemoteHttpAccountObject extends AccountObject {
 			if (!response.get("success").getAsBoolean())
 				return null;
 			String id = response.get("id").getAsString();
-			return new RemoteHttpSaveContainer(id, response.get("time").getAsLong(), username, this.id, mgr);
+			return new RemoteHttpSaveContainer(id, response.get("time").getAsLong(), username, this.id, mgr, this);
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in createSave!", e);
 			return null;
@@ -344,7 +344,7 @@ public class RemoteHttpAccountObject extends AccountObject {
 			if (!response.get("success").getAsBoolean())
 				return null;
 			String username = response.get("id").getAsString();
-			return new RemoteHttpSaveContainer(id, response.get("time").getAsLong(), username, this.id, mgr);
+			return new RemoteHttpSaveContainer(id, response.get("time").getAsLong(), username, this.id, mgr, this);
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in createSave!", e);
 			return null;
