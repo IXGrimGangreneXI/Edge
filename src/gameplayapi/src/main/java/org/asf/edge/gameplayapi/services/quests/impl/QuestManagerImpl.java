@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.Random;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
@@ -538,6 +539,9 @@ public class QuestManagerImpl extends QuestManager {
 
 								// Copy
 								reward = reward.copy();
+
+								// Set ID
+								reward.entityID = UUID.fromString(save.getSaveID());
 
 								// Set amount
 								if (reward.minAmount != -1 && reward.maxAmount != -1) {
