@@ -71,6 +71,7 @@ public class MissionData {
 
 	public MissionData copy() {
 		MissionData cp = new MissionData();
+		cp.staticData = staticData;
 		cp.acceptanceAchievementID = acceptanceAchievementID;
 		if (acceptanceRewards != null) {
 			cp.acceptanceRewards = new AchievementRewardBlock[acceptanceRewards.length];
