@@ -107,7 +107,15 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 		int item = Integer.parseInt(req.payload.get("itemId"));
 		ItemInfo def = itemManager.getItemDefinition(item);
 		if (def == null) {
-			setResponseStatus(404, "Not found");
+			// Empty
+			setResponseContent("text/xml", "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+					+ "<I xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n"
+					+ "  <ct>0</ct>\n" + "  <ct2>0</ct2>\n" + "  <cp>0</cp>\n" + "  <im>0</im>\n" + "  <id>0</id>\n"
+					+ "  <l>false</l>\n" + "  <ro xsi:nil=\"true\" />\n" + "  <rid xsi:nil=\"true\" />\n"
+					+ "  <s>false</s>\n" + "  <as>false</as>\n" + "  <sf>0</sf>\n" + "  <u>0</u>\n"
+					+ "  <g xsi:nil=\"true\" />\n" + "  <rf>0</rf>\n" + "  <rtid>0</rtid>\n"
+					+ "  <p xsi:nil=\"true\" />\n" + "  <ir xsi:nil=\"true\" />\n" + "  <ipsm xsi:nil=\"true\" />\n"
+					+ "  <ism xsi:nil=\"true\" />\n" + "  <bp xsi:nil=\"true\" />\n" + "</I>\n" + "");
 			return;
 		}
 

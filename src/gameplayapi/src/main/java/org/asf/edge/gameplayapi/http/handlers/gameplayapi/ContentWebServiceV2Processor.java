@@ -27,7 +27,6 @@ import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
-import org.asf.edge.gameplayapi.entities.quests.UserQuestStatus;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.xmls.avatars.SetAvatarResultData;
 import org.asf.edge.gameplayapi.xmls.dragons.CreatePetResponseData;
@@ -203,7 +202,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		AccountSaveContainer save = account.getSave(userID);
 		if (save != null) {
 			// Pull quests
-			questManager.startDefaultQuests(save);
 			MissionData[] quests = questManager.getAllQuestDefs();
 
 			// Parse filters
@@ -297,7 +295,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		AccountSaveContainer save = account.getSave(userID);
 		if (save != null) {
 			// Pull quests
-			questManager.startDefaultQuests(save);
 			UserQuestInfo[] quests = questManager.getCompletedQuests(save);
 
 			// Create response
@@ -348,7 +345,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		AccountSaveContainer save = account.getSave(userID);
 		if (save != null) {
 			// Pull quests
-			questManager.startDefaultQuests(save);
 			UserQuestInfo[] quests = questManager.getActiveQuests(save);
 
 			// Create response
@@ -401,8 +397,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		AccountSaveContainer save = account.getSave(userID);
 		if (save != null) {
 			// Pull quests
-			questManager.startDefaultQuests(save);
-			UserQuestInfo[] quests = questManager.getUnlockedQuests(save);
+			UserQuestInfo[] quests = questManager.getUpcomingQuests(save);
 
 			// Create response
 			QuestListResponseData resp = new QuestListResponseData();
@@ -411,11 +406,9 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			// Add data
 			ArrayList<MissionData> questLst = new ArrayList<MissionData>();
 			for (UserQuestInfo i : quests) {
-				if (i.getStatus() == UserQuestStatus.INACTIVE) {
-					MissionData d = i.getData();
-					d.staticData = null;
-					questLst.add(d);
-				}
+				MissionData d = i.getData();
+				d.staticData = null;
+				questLst.add(d);
 			}
 			resp.quests = questLst.toArray(t -> new MissionData[t]);
 
@@ -883,10 +876,10 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 				}
 
 				// Find inventory
-				PlayerInventoryItem itm;
+				PlayerInventoryItem itm = null;
 				if (request.itemUniqueID != -1)
 					itm = cont.getItem(request.itemUniqueID);
-				else
+				if (itm == null)
 					itm = cont.findFirst(request.itemID);
 				// TODO: complete implementation
 

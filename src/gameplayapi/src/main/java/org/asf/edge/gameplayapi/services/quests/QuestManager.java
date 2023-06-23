@@ -61,13 +61,6 @@ public abstract class QuestManager extends AbstractService {
 	public abstract MissionData[] getAllQuestDefs();
 
 	/**
-	 * Starts the default quests for a save
-	 * 
-	 * @param save Save to start the default quests for
-	 */
-	public abstract void startDefaultQuests(AccountSaveContainer save);
-
-	/**
 	 * Retrieves quest information containers for a specific user
 	 * 
 	 * @param save The save to use to retrieve quest information
@@ -85,7 +78,7 @@ public abstract class QuestManager extends AbstractService {
 	public abstract UserQuestInfo[] getCompletedQuests(AccountSaveContainer save);
 
 	/**
-	 * Retrieves an array of active quests
+	 * Retrieves an array of quests active in the world
 	 * 
 	 * @param save The save to use to retrieve quest information
 	 * @return Array of UserQuestInfo instances
@@ -93,12 +86,11 @@ public abstract class QuestManager extends AbstractService {
 	public abstract UserQuestInfo[] getActiveQuests(AccountSaveContainer save);
 
 	/**
-	 * Retrieves an array of unlocked quests (does not contain completed or active
-	 * quests)
+	 * Retrieves an array of quests that are not active
 	 * 
 	 * @param save The save to use to retrieve quest information
 	 * @return Array of UserQuestInfo instances
 	 */
-	public abstract UserQuestInfo[] getUnlockedQuests(AccountSaveContainer save);
+	public abstract UserQuestInfo[] getUpcomingQuests(AccountSaveContainer save);
 
 }

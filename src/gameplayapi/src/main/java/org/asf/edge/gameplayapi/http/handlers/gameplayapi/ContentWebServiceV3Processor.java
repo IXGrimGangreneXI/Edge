@@ -3,7 +3,9 @@ package org.asf.edge.gameplayapi.http.handlers.gameplayapi;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Optional;
 import java.util.TimeZone;
+import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
@@ -132,8 +134,30 @@ public class ContentWebServiceV3Processor extends BaseApiHandler<EdgeGameplayApi
 		// Merge data
 		if (dragonUpdate.accessories != null)
 			cdragon.accessories = dragonUpdate.accessories;
-		if (dragonUpdate.attributes != null)
-			cdragon.attributes = dragonUpdate.attributes;
+		if (dragonUpdate.attributes != null) {
+			if (cdragon.attributes == null)
+				cdragon.attributes = new ObjectNode[0];
+
+			// Apply attributes
+			for (ObjectNode attr : dragonUpdate.attributes) {
+				String key = attr.get("k").asText();
+				Optional<ObjectNode> optA = Stream.of(cdragon.attributes).filter(t -> t.get("k").asText().equals(key))
+						.findFirst();
+				if (optA.isPresent()) {
+					// Update
+					optA.get().set("v", attr.get("v"));
+					optA.get().set("dt", attr.get("dt"));
+				} else {
+					// Add
+					int i = 0;
+					ObjectNode[] newA = new ObjectNode[cdragon.attributes.length + 1];
+					for (i = 0; i < cdragon.attributes.length; i++)
+						newA[i] = cdragon.attributes[i];
+					newA[i] = attr;
+					cdragon.attributes = newA;
+				}
+			}
+		}
 		if (dragonUpdate.colors != null)
 			cdragon.colors = dragonUpdate.colors;
 		if (dragonUpdate.gender != null)
@@ -186,7 +210,8 @@ public class ContentWebServiceV3Processor extends BaseApiHandler<EdgeGameplayApi
 		if (request.commonInventoryRequests != null && request.commonInventoryRequests.length != 0) {
 			// Handle inventory request
 			resp.inventoryUpdate = ContentWebServiceV2Processor.processCommonInventorySet(
-					request.commonInventoryRequests, save.getSaveData(), request.containerID);
+					request.commonInventoryRequests, save.getSaveData(),
+					(request.containerID == -1 ? 1 : request.containerID));
 		}
 
 		// Set response

@@ -48,6 +48,7 @@ public class EdgeCommonApiServer implements IBaseServer {
 		System.out.println("");
 		System.out.println("This server implements the following endpoints:");
 		System.out.println(" - common.api.jumpstart.com");
+		System.out.println(" - user.api.jumpstart.com");
 		System.out.println("");
 	}
 

@@ -142,7 +142,7 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 			}
 
 			// Update
-			quest.setAcceptedField(true);
+			quest.acceptQuest();
 			setResponseContent("text/xml", req.generateXmlValue("boolean", true));
 		} else {
 			setResponseContent("text/xml", req.generateXmlValue("boolean", false));
@@ -288,13 +288,13 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		if (data.entryExists("pairs-" + pair)) {
 			// Get data
 			int i = 0;
-			JsonArray pairs = data.getEntry("pairs-" + pair).getAsJsonArray();
+			JsonObject pairs = data.getEntry("pairs-" + pair).getAsJsonObject();
 			KeyValuePairSetData setData = new KeyValuePairSetData();
 			setData.items = new KeyValuePairData[pairs.size()];
-			for (JsonElement ele : pairs) {
-				JsonObject obj = ele.getAsJsonObject();
+			for (String key : pairs.keySet()) {
+				JsonObject obj = pairs.get(key).getAsJsonObject();
 				KeyValuePairData p = new KeyValuePairData();
-				p.key = obj.get("key").getAsString();
+				p.key = key;
 				p.value = obj.get("value").getAsString();
 				p.updateDate = fmt.format(new Date(obj.get("time").getAsLong()));
 				setData.items[i++] = p;
@@ -381,13 +381,13 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 			if (data.entryExists("pairs-" + pair)) {
 				// Get data
 				int i = 0;
-				JsonArray pairs = data.getEntry("pairs-" + pair).getAsJsonArray();
+				JsonObject pairs = data.getEntry("pairs-" + pair).getAsJsonObject();
 				KeyValuePairSetData setData = new KeyValuePairSetData();
 				setData.items = new KeyValuePairData[pairs.size()];
-				for (JsonElement ele : pairs) {
-					JsonObject obj = ele.getAsJsonObject();
+				for (String key : pairs.keySet()) {
+					JsonObject obj = pairs.get(key).getAsJsonObject();
 					KeyValuePairData p = new KeyValuePairData();
-					p.key = obj.get("key").getAsString();
+					p.key = key;
 					p.value = obj.get("value").getAsString();
 					p.updateDate = fmt.format(new Date(obj.get("time").getAsLong()));
 					setData.items[i++] = p;
@@ -441,14 +441,15 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		data = data.getChildContainer("keyvaluedata");
 
 		// Set entries
-		JsonArray pairData = new JsonArray();
+		JsonObject pairData = new JsonObject();
+		if (data.entryExists("pairs-" + pair))
+			pairData = data.getEntry("pairs-" + pair).getAsJsonObject();
 		for (KeyValuePairData pairI : updateData.items) {
 			// Set entry
 			JsonObject p = new JsonObject();
-			p.addProperty("key", pairI.key);
 			p.addProperty("value", pairI.value);
 			p.addProperty("time", System.currentTimeMillis());
-			pairData.add(p);
+			pairData.add(pairI.key, p);
 		}
 		data.setEntry("pairs-" + pair, pairData);
 
@@ -522,14 +523,15 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 			data = data.getChildContainer("keyvaluedata");
 
 			// Set entries
-			JsonArray pairData = new JsonArray();
+			JsonObject pairData = new JsonObject();
+			if (data.entryExists("pairs-" + pair))
+				pairData = data.getEntry("pairs-" + pair).getAsJsonObject();
 			for (KeyValuePairData pairI : updateData.items) {
 				// Set entry
 				JsonObject p = new JsonObject();
-				p.addProperty("key", pairI.key);
 				p.addProperty("value", pairI.value);
 				p.addProperty("time", System.currentTimeMillis());
-				pairData.add(p);
+				pairData.add(pairI.key, p);
 			}
 			data.setEntry("pairs-" + pair, pairData);
 
@@ -613,6 +615,54 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 			data = data.getChildContainer("keyvaluedata");
 			if (data.entryExists("pairs-" + pair))
 				data.deleteEntry("pairs-" + pair);
+
+			// Set response
+			setResponseContent("text/xml", req.generateXmlValue("boolean", true));
+		} else {
+			setResponseStatus(403, "Forbidden");
+		}
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void delKeyValuePairByKey(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Handle key/value request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		int pair = Integer.parseInt(req.payload.get("pairId"));
+		String userID = req.payload.get("userId");
+
+		// Retrieve container info
+		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
+			AccountDataContainer data = account.getAccountData();
+			if (!userID.equals(account.getAccountID()))
+				data = account.getSave(userID).getSaveData();
+			data = data.getChildContainer("keyvaluedata");
+			if (data.entryExists("pairs-" + pair)) {
+				JsonObject pairData = data.getEntry("pairs-" + pair).getAsJsonObject();
+				if (pairData.has(req.payload.get("pairKey"))) {
+					pairData.remove(req.payload.get("pairKey"));
+					data.setEntry("pairs-" + pair, pairData);
+				}
+			}
 
 			// Set response
 			setResponseContent("text/xml", req.generateXmlValue("boolean", true));

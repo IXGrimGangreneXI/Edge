@@ -2,7 +2,6 @@ package org.asf.edge.gameplayapi.entities.quests;
 
 import java.io.IOException;
 
-import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData;
@@ -39,16 +38,9 @@ public abstract class UserQuestInfo {
 	public abstract MissionData getData();
 
 	/**
-	 * Retrieves the quest status
-	 * 
-	 * @return UserQuestStatus value
-	 */
-	public abstract UserQuestStatus getStatus();
-
-	/**
 	 * Starts the quest
 	 * 
-	 * @throws IllegalArgumentException If the quest is active
+	 * @throws IllegalArgumentException If the quest is already started
 	 */
 	public abstract void startQuest();
 
@@ -58,19 +50,9 @@ public abstract class UserQuestInfo {
 	public abstract void completeQuest();
 
 	/**
-	 * Changes the 'accepted' field of the quest
-	 * 
-	 * @param accepted New state for the 'accepted' field
+	 * Accepts and starts the quest
 	 */
-	public abstract void setAcceptedField(boolean accepted);
-
-	/**
-	 * Changes the 'failed' field of a task
-	 * 
-	 * @param taskID Task ID
-	 * @param failed New state for the 'failed' field
-	 */
-	public abstract void setTaskFailedField(int taskID, boolean failed);
+	public abstract void acceptQuest();
 
 	/**
 	 * Called to handle task state calls
@@ -91,17 +73,20 @@ public abstract class UserQuestInfo {
 	 * 
 	 * @return True if active, false otherwise
 	 */
-	public boolean isActive() {
-		return getStatus() == UserQuestStatus.ACTIVE;
-	}
+	public abstract boolean isActive();
 
 	/**
 	 * Checks if the quest is completed
 	 * 
 	 * @return True if completed, false otherwise
 	 */
-	public boolean isCompleted() {
-		return getStatus() == UserQuestStatus.COMPLETED;
-	}
+	public abstract boolean isCompleted();
+
+	/**
+	 * Checks if the quest has been started
+	 * 
+	 * @return True if started, false otherwise
+	 */
+	public abstract boolean isStarted();
 
 }

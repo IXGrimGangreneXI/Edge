@@ -12,29 +12,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class QuestRegistryManifest {
 
-	public DefaultStartedQuestsBlock defaultStartedQuests;
-	public DefaultUnlockedQuestsBlock defaultUnlockedQuests;
 	public QuestDefsBlock defaultQuestDefs;
-
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-	public static class DefaultStartedQuestsBlock {
-
-		@JsonProperty("DefaultStartedQuest")
-		@JacksonXmlElementWrapper(useWrapping = false)
-		public int[] defaultStartedQuests;
-
-	}
-
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-	public static class DefaultUnlockedQuestsBlock {
-
-		@JsonProperty("DefaultUnlockedQuest")
-		@JacksonXmlElementWrapper(useWrapping = false)
-		public int[] defaultUnlockedQuests;
-
-	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
