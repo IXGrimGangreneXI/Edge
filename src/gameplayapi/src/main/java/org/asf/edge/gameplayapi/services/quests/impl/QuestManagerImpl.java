@@ -546,8 +546,8 @@ public class QuestManagerImpl extends QuestManager {
 								// Set amount
 								if (reward.minAmount != -1 && reward.maxAmount != -1) {
 									reward.amount = rnd.nextInt(reward.minAmount, reward.maxAmount + 1);
-									reward.minAmount = -1;
-									reward.maxAmount = -1;
+									reward.minAmount = 0;
+									reward.maxAmount = 0;
 								}
 
 								// Achievements
@@ -603,6 +603,7 @@ public class QuestManagerImpl extends QuestManager {
 									}
 
 									// Set data
+									reward.achievementID = 0;
 									reward.uniqueRewardItemID = itm.getUniqueID();
 
 									// Add item
@@ -669,15 +670,18 @@ public class QuestManagerImpl extends QuestManager {
 			int taskCount = mission.tasks.length;
 			int completedTasks = (int) Stream.of(mission.tasks).filter(t -> t.completed > 0).count();
 			if (completedTasks >= taskCount) {
-				// Tasks completed
-				// Check child quests
-				if (mission.childMissions != null) {
-					for (MissionData ch : mission.childMissions) {
-						// Check child quest mission
-						if (!isCompletedMission(ch))
-							return false;
-					}
-				}
+				// The following checks are disabled as disabling them may fix a bug, if it
+				// causes issues instead they should be re-enabled
+
+//				// Tasks completed
+//				// Check child quests
+//				if (mission.childMissions != null) {
+//					for (MissionData ch : mission.childMissions) {
+//						// Check child quest mission
+//						if (!isCompletedMission(ch))
+//							return false;
+//					}
+//				}
 
 				// This quest has been completed
 				return true;

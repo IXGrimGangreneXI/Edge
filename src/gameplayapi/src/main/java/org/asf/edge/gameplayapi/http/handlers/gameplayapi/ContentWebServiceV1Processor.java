@@ -926,6 +926,6 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		data.setEntry("imagefile-" + slot + "-" + type, new JsonPrimitive(req.payload.get("imageFile")));
 
 		// Set response
-		setResponseContent("text/xml", req.generateXmlValue("ImageData", imgD));
+		setResponseContent("text/xml", req.generateXmlValue("boolean", true));
 	}
 }
