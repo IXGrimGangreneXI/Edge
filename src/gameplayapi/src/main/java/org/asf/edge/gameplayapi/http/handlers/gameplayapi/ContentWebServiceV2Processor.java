@@ -850,7 +850,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 	 * Processes common inventory requests
 	 * 
 	 * @param requests  Request list
-	 * @param account   Account object
 	 * @param container Container
 	 * @return InventoryUpdateResponseData instance
 	 */
