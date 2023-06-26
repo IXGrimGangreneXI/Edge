@@ -169,8 +169,9 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 			}
 
 			// Found it
-			setResponseContent("text/xml",
-					req.generateXmlValue("UserProfileDisplayData", getProfile(save.getSaveID(), account, req, true)));
+			setResponseContent("text/xml", req.generateXmlValue("UserProfileDisplayData",
+					getProfile(save.getSaveID(), save.getAccount(), req, true)));
+			return;
 		}
 
 		// Set response
