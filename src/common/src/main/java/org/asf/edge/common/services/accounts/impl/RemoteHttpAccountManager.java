@@ -1,4 +1,4 @@
-package org.asf.edge.common.account.impl;
+package org.asf.edge.common.services.accounts.impl;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,9 +9,11 @@ import java.util.Base64;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.account.AccountObject;
-import org.asf.edge.common.account.impl.accounts.RemoteHttpAccountObject;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.accounts.impl.accounts.RemoteHttpAccountObject;
+import org.asf.edge.common.services.accounts.impl.accounts.RemoteHttpSaveContainer;
 import org.asf.edge.common.tokens.TokenParseResult;
 
 import com.google.gson.Gson;
@@ -317,6 +319,25 @@ public class RemoteHttpAccountManager extends AccountManager {
 					this);
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in registerAccount!", e);
+			return null;
+		}
+	}
+
+	@Override
+	public AccountSaveContainer getSaveByID(String id) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("save", id);
+			JsonObject response = accountManagerRequest("getSaveByID", payload);
+			if (!response.get("success").getAsBoolean())
+				return null;
+			return new RemoteHttpSaveContainer(id, response.get("time").getAsLong(),
+					response.get("username").getAsString(), response.get("accid").getAsString(), this,
+					getAccount(response.get("accid").getAsString()));
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getSaveByID!", e);
 			return null;
 		}
 	}

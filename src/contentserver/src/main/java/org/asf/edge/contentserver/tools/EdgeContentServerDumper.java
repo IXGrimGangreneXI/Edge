@@ -11,13 +11,17 @@ import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.stream.Stream;
 
 import org.asf.edge.common.util.TripleDesUtil;
 import org.asf.edge.contentserver.xmls.AssetVersionManifestData;
 import org.asf.edge.contentserver.xmls.LoadScreenData;
 import org.asf.edge.contentserver.xmls.ProductConfigData;
+import org.asf.edge.contentserver.xmls.AssetVersionManifestData.AssetBlockLegacy;
+import org.asf.edge.contentserver.xmls.AssetVersionManifestData.AssetVersionBlock;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
@@ -83,19 +87,22 @@ public class EdgeContentServerDumper {
 				ProductConfigData.class);
 
 		// Download main asset
-		System.out.println("Downloading main assets...");
-		downloadFileEachQuality(args[0], args[1], args[2], args[3], output, "dwadragonsmain",
-				"?v=00000000000000000000000000000000");
-		for (String man : conf.manifests)
-			downloadFileEachQuality(args[0], args[1], args[2], args[3], output, man,
+		if (conf.manifests != null && conf.manifests.length != 0) {
+			System.out.println("Downloading main assets...");
+			downloadFileEachQuality(args[0], args[1], args[2], args[3], output, "dwadragonsmain",
 					"?v=00000000000000000000000000000000");
+			for (String man : conf.manifests)
+				downloadFileEachQuality(args[0], args[1], args[2], args[3], output, man,
+						"?v=00000000000000000000000000000000");
+		}
 
-		// Download asset version list
-		downloadFileEachQuality(args[0], args[1], args[2], args[3], output, "data/AssetVersionsDO.xml", "");
+		// Compute URL
+		URL dataUrl = new URL(conf.dataURL[0].replace("{Version}", args[1]));
+		String path = dataUrl.getPath().substring(("DWADragonsUnity/" + args[2] + "/" + args[1]).length() + 1);
 
 		// Download assets
-		downloadAssetsForEachQuality(args[0], args[1], args[2], args[3], output, mapper, "AssetVersionsDO.xml", conf,
-				new File(args[4]));
+		downloadAssetsForEachQuality(args[0], args[1], args[2], args[3], output, mapper, path + "/AssetVersionsDO.xml",
+				conf, new File(args[4]));
 
 		// Done!
 		System.out.println("Finished!");
@@ -104,8 +111,8 @@ public class EdgeContentServerDumper {
 	private static void downloadAssetsForEachQuality(String server, String version, String platform, String key,
 			File output, XmlMapper mapper, String manifest, ProductConfigData conf, File outputRoot)
 			throws IOException {
-		downloadAssets(server, version, platform, key, output, mapper, manifest, "Low", conf, outputRoot);
 		downloadAssets(server, version, platform, key, output, mapper, manifest, "Mid", conf, outputRoot);
+		downloadAssets(server, version, platform, key, output, mapper, manifest, "Low", conf, outputRoot);
 		downloadAssets(server, version, platform, key, output, mapper, manifest, "High", conf, outputRoot);
 	}
 
@@ -113,12 +120,53 @@ public class EdgeContentServerDumper {
 			XmlMapper mapper, String manifest, String level, ProductConfigData conf, File outputRoot)
 			throws IOException {
 		// Load asset manifest
-		System.out.println("Parsing asset list... Reading file " + level + "/data/" + manifest + "...");
-		String manData = Files.readString(new File(output, level + "/data/" + manifest).toPath());
+		String manData;
+		try {
+			System.out.println(
+					"Downloading asset list file... Downloading " + manifest.replace("/Mid/", "/" + level + "/"));
+			downloadFile(server, version, platform, key, output, manifest.replace("/Mid/", "/" + level + "/"),
+					"?v=00000000000000000000000000000000");
+			System.out.println(
+					"Parsing asset list... Reading file " + manifest.replace("/Mid/", "/" + level + "/") + "...");
+			manData = Files.readString(new File(output, manifest.replace("/Mid/", "/" + level + "/")).toPath());
+		} catch (IOException e) {
+			System.out.println("Downloading asset list file... Downloading " + manifest);
+			downloadFile(server, version, platform, key, output, manifest, "?v=00000000000000000000000000000000");
+			System.out.println("Parsing asset list... Reading file " + manifest + "...");
+			manData = Files.readString(new File(output, manifest).toPath());
+		}
 		AssetVersionManifestData assetData = mapper.readValue(manData, AssetVersionManifestData.class);
 
+		// Map legacy versions
+		if (assetData.assets == null && assetData.legacyData != null) {
+			HashMap<String, AssetVersionBlock> assets = new HashMap<String, AssetVersionBlock>();
+			for (AssetBlockLegacy legacyBlock : assetData.legacyData) {
+				AssetVersionBlock block = null;
+				if (assets.containsKey(legacyBlock.assetName)) {
+					block = assets.get(legacyBlock.assetName);
+				} else {
+					block = new AssetVersionBlock();
+					block.name = legacyBlock.assetName;
+					block.variants = new AssetVersionBlock.AssetVariantBlock[0];
+					assets.put(block.name, block);
+				}
+
+				// Create variant
+				AssetVersionBlock.AssetVariantBlock var = new AssetVersionBlock.AssetVariantBlock();
+				var.locale = null;
+				var.version = legacyBlock.version;
+				var.size = legacyBlock.size;
+
+				// Add to array
+				ArrayList<AssetVersionBlock.AssetVariantBlock> lst = new ArrayList<AssetVersionBlock.AssetVariantBlock>(
+						Arrays.asList(block.variants));
+				lst.add(var);
+				block.variants = lst.toArray(t -> new AssetVersionBlock.AssetVariantBlock[t]);
+			}
+			assetData.assets = assets.values().toArray(t -> new AssetVersionBlock[t]);
+		}
+
 		// Download all assets
-		URL uBase = new URL(server);
 		ArrayList<String> failed = new ArrayList<String>();
 		for (AssetVersionManifestData.AssetVersionBlock asset : assetData.assets) {
 			// Build url
@@ -148,22 +196,25 @@ public class EdgeContentServerDumper {
 				URL u = new URL(url);
 
 				// Compute path
-				String path = u.getPath().substring(
-						uBase.getPath().length() + ("DWADragonsUnity/" + platform + "/" + version).length() + 1);
+				String path = u.getPath().substring(("DWADragonsUnity/" + platform + "/" + version).length() + 1);
 				if (variant.locale != null) {
-					File f = new File(path);
-					if (f.getName().contains(".")) {
-						String oPth = path;
-						String ext = f.getName().substring(f.getName().lastIndexOf("."));
-						String fn = path.substring(0, path.lastIndexOf("."));
-						path = fn + "." + variant.locale + ext;
-						url = url.replace(oPth, path);
-						u = new URL(url);
+					if (assetData.legacyData == null) {
+						File f = new File(path);
+						if (f.getName().contains(".")) {
+							String oPth = path;
+							String ext = f.getName().substring(f.getName().lastIndexOf("."));
+							String fn = path.substring(0, path.lastIndexOf("."));
+							path = fn + "." + variant.locale + ext;
+							url = url.replace(oPth, path);
+							u = new URL(url);
+						} else {
+							String oPth = path;
+							path = path + "." + variant.locale;
+							url = url.replace(oPth, path);
+							u = new URL(url);
+						}
 					} else {
-						String oPth = path;
-						path = path + "." + variant.locale;
-						url = url.replace(oPth, path);
-						u = new URL(url);
+						path = path.replace("/en-US/", "/" + variant.locale + "/");
 					}
 				}
 
@@ -189,7 +240,7 @@ public class EdgeContentServerDumper {
 
 							// Get path
 							URL promoU = new URL(promoUrl);
-							String path2 = promoU.getPath().substring(uBase.getPath().length());
+							String path2 = promoU.getPath();
 							File dest = new File(outputRoot, path2);
 							if (dest.exists())
 								continue;
@@ -217,7 +268,7 @@ public class EdgeContentServerDumper {
 
 							// Get path
 							URL promoU = new URL(promoUrl);
-							String path2 = promoU.getPath().substring(uBase.getPath().length());
+							String path2 = promoU.getPath();
 							File dest = new File(outputRoot, path2);
 							if (dest.exists())
 								continue;
@@ -245,7 +296,7 @@ public class EdgeContentServerDumper {
 
 							// Get path
 							URL promoU = new URL(promoUrl);
-							String path2 = promoU.getPath().substring(uBase.getPath().length());
+							String path2 = promoU.getPath();
 							File dest = new File(outputRoot, path2);
 							if (dest.exists())
 								continue;
@@ -277,7 +328,7 @@ public class EdgeContentServerDumper {
 					for (LoadScreenData.LoadScreenBlock block : screenData.loadScreens) {
 						// Get path
 						URL screenU = new URL(block.name);
-						String path2 = screenU.getPath().substring(uBase.getPath().length());
+						String path2 = screenU.getPath();
 						File dest = new File(outputRoot, path2);
 						if (dest.exists())
 							continue;
@@ -316,7 +367,7 @@ public class EdgeContentServerDumper {
 
 							// Get path
 							URL promoU = new URL(promoUrl);
-							String path2 = promoU.getPath().substring(uBase.getPath().length());
+							String path2 = promoU.getPath();
 							File dest = new File(outputRoot, path2);
 							if (dest.exists())
 								continue;
@@ -408,8 +459,9 @@ public class EdgeContentServerDumper {
 		System.out.println("Downloading: " + url + " -> " + outputFile.getPath());
 
 		// Download
+		String fileF = file;
 		InputStream strm = new URL(url).openStream();
-		if (Stream.of(tdEncryptedFiles).anyMatch(t -> t.equals(file))) {
+		if (Stream.of(tdEncryptedFiles).anyMatch(t -> t.equals(fileF))) {
 			// Decrypt this file
 
 			// Compute key

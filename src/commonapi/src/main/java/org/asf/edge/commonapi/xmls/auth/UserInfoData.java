@@ -1,6 +1,8 @@
 package org.asf.edge.commonapi.xmls.auth;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -14,6 +16,8 @@ public class UserInfoData {
 	private final String xmlns = "http://api.jumpstart.com/";
 
 	public String userID;
+
+	@JsonInclude(Include.NON_NULL)
 	public String parentUserID;
 
 	public String username;

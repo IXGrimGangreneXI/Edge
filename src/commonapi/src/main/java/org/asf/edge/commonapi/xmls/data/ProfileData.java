@@ -21,9 +21,6 @@ public class ProfileData {
 	@JsonProperty("Ach")
 	public int achievementCount;
 
-	@JsonProperty("Mth")
-	public int mythieCount;
-
 	@JsonProperty("gc")
 	public int coinCount;
 

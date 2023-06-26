@@ -11,9 +11,9 @@ import java.util.Base64;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import org.asf.edge.common.account.AccountDataContainer;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.account.AccountObject;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

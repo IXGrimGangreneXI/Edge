@@ -13,12 +13,12 @@ import java.util.Date;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.account.AccountObject;
-import org.asf.edge.common.account.AccountSaveContainer;
-import org.asf.edge.common.account.AccountDataContainer;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
@@ -110,6 +110,35 @@ public class AchievementWebServiceV1Processor extends BaseApiHandler<EdgeGamepla
 		AccountDataContainer saveData = account.getAccountData();
 		if (!id.equals(account.getAccountID()))
 			saveData = account.getSave(id).getSaveData();
+
+		// FIXME: implement properly
+
+		// Set response
+		setResponseContent("text/xml",
+				req.generateXmlValue("ArrayOfUserAchievementInfo", new EmptyAchievementInfoList()));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getAchievementsByUserID(FunctionInfo func) throws IOException {
+		// Handle time request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Find save
+		String id = req.payload.get("userId");
+		// NOTE: the user id may be a dragon
 
 		// FIXME: implement properly
 

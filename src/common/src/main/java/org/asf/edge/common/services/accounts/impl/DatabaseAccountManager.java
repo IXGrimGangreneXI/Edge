@@ -1,4 +1,4 @@
-package org.asf.edge.common.account.impl;
+package org.asf.edge.common.services.accounts.impl;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,10 +30,11 @@ import javax.crypto.spec.PBEKeySpec;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.account.AccountDataContainer;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.account.AccountObject;
-import org.asf.edge.common.account.impl.accounts.DatabaseAccountObject;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.accounts.impl.accounts.DatabaseAccountObject;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 
@@ -501,6 +502,33 @@ public class DatabaseAccountManager extends AccountManager {
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
+		}
+	}
+
+	@Override
+	public AccountSaveContainer getSaveByID(String id) {
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
+			statement.setString(1, id + "//accountid");
+			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return null;
+			String data = res.getString("DATA");
+			if (data == null)
+				return null;
+
+			// Retrieve account
+			String accID = JsonParser.parseString(data).getAsString();
+			AccountObject acc = getAccount(accID);
+			if (acc == null)
+				return null;
+
+			// Retrieve save
+			return acc.getSave(id);
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to retrieve save '" + id + "'", e);
+			return null;
 		}
 	}
 

@@ -1,11 +1,9 @@
 package org.asf.edge.contentserver.xmls;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
@@ -71,8 +69,6 @@ public class ProductConfigData {
 	public String calendarServerURL;
 
 	public String tokenExpiredURL;
-	public TextBlock tokenExpiredText;
-	public TextBlock loginFromOtherLocationText;
 
 	@JacksonXmlElementWrapper(useWrapping = false)
 	public String[] manifests;
@@ -101,73 +97,5 @@ public class ProductConfigData {
 	public long unityCacheSize;
 	public boolean enablePlayfab;
 	public String logEventServer;
-
-	public TextBlock disconnectText;
-	public TextBlock disconnectTitleText;
-	public TextBlock productRuleFailedText;
-
-	public PlatformSettingsBlock platformSettings;
-
-	@JacksonXmlElementWrapper(useWrapping = false)
-	public LocaleBlock[] locale;
-	
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-	public static class PlatformSettingsBlock {
-
-		public MaxMMODataBlock maxMMOData;
-		public GraphicsSettingsBlock graphicsSettings;
-
-		@JsonIgnoreProperties(ignoreUnknown = true)
-		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-		public static class GraphicsSettingsBlock {
-
-			public GraphicsBlock texture;
-			public GraphicsBlock shadow;
-			public GraphicsBlock effects;
-
-		}
-
-		@JsonIgnoreProperties(ignoreUnknown = true)
-		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-		public static class MaxMMODataBlock {
-
-			@JacksonXmlProperty(isAttribute = true)
-			public String defaultMaxMMO;
-
-			@JacksonXmlProperty(isAttribute = true)
-			public String defaultMaxFullMMO;
-
-		}
-
-		@JsonIgnoreProperties(ignoreUnknown = true)
-		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-		public static class GraphicsBlock {
-			@JsonProperty("Default")
-			public String _default;
-
-			public String available;
-		}
-	}
-
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-	public static class TextBlock {
-		public String text;
-
-		@JsonProperty("ID")
-		public String id;
-	}
-
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-	public static class LocaleBlock {
-		@JsonProperty("ID")
-		public String id;
-
-		@JsonProperty("Variant")
-		@JacksonXmlElementWrapper(useWrapping = false)
-		public String[] variants;
-	}
 
 }

@@ -11,10 +11,6 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.account.AccountDataContainer;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.account.AccountObject;
-import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
@@ -22,6 +18,10 @@ import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
@@ -635,6 +635,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		CreatePetResponseData resp = new CreatePetResponseData();
 
 		// Pull dragons
+		AccountDataContainer images = data.getChildContainer("images");
 		data = data.getChildContainer("dragons");
 		JsonArray dragonIds = new JsonArray();
 		if (data.entryExists("dragonlist"))
@@ -662,11 +663,17 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 				break;
 		}
 
+		// Find free image ID
+		int imageID = id;
+		while (data.entryExists("imageslotinfo-" + imageID + "-EggColor"))
+			imageID++;
+
 		// Fill fields
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		ObjectNode dragon = request.dragonData;
 		dragon.set("id", new IntNode(id)); // ID
+		dragon.set("ip", new IntNode(imageID)); // Image
 		dragon.set("eid", new TextNode(entID)); // Entity ID
 		dragon.set("n", new TextNode("Dragon-" + System.currentTimeMillis())); // Name
 		dragon.set("cdt", new TextNode(fmt.format(new Date()))); // Creation time

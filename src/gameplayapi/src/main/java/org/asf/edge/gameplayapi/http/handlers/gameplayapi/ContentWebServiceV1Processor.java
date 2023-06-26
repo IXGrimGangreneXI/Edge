@@ -11,14 +11,14 @@ import java.util.TimeZone;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.TlsSecuredHttpServer;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.account.AccountDataContainer;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.account.AccountObject;
-import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
@@ -756,56 +756,48 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		SessionToken tkn = new SessionToken();
 		TokenParseResult res = tkn.parseToken(apiToken);
 		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
 			// Error
 			setResponseStatus(404, "Not found");
 			return;
 		}
 
 		// Parse request
-		String userID = req.payload.get("userId");
 		String dragonID = req.payload.get("raisedPetID");
 
 		// Retrieve container
-		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
-			AccountDataContainer data = account.getAccountData();
-			if (!userID.equals(account.getAccountID()))
-				data = account.getSave(userID).getSaveData();
+		AccountDataContainer data = account.getSave(tkn.saveID).getSaveData();
 
-			// Pull dragons
-			data = data.getChildContainer("dragons");
-			JsonArray dragonIds = new JsonArray();
-			if (data.entryExists("dragonlist"))
-				dragonIds = data.getEntry("dragonlist").getAsJsonArray();
-			else
-				data.setEntry("dragonlist", dragonIds);
+		// Pull dragons
+		data = data.getChildContainer("dragons");
+		JsonArray dragonIds = new JsonArray();
+		if (data.entryExists("dragonlist"))
+			dragonIds = data.getEntry("dragonlist").getAsJsonArray();
+		else
+			data.setEntry("dragonlist", dragonIds);
 
-			// Select dragon and deselect old
-			boolean found = false;
-			for (JsonElement ele : dragonIds) {
-				String id = ele.getAsString();
-				ObjectNode dragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(), ObjectNode.class);
+		// Select dragon and deselect old
+		boolean found = false;
+		for (JsonElement ele : dragonIds) {
+			String id = ele.getAsString();
+			ObjectNode dragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(), ObjectNode.class);
 
-				// Check if active
-				if (id.equals(dragonID) || dragon.get("is").asBoolean()) {
-					// Select/deselect
-					if (id.equals(dragonID)) {
-						dragon.set("is", BooleanNode.TRUE);
-						found = true;
-					} else
-						dragon.set("is", BooleanNode.FALSE);
+			// Check if active
+			if (id.equals(dragonID) || dragon.get("is").asBoolean()) {
+				// Select/deselect
+				if (id.equals(dragonID)) {
+					dragon.set("is", BooleanNode.TRUE);
+					found = true;
+				} else
+					dragon.set("is", BooleanNode.FALSE);
 
-					// Save
-					data.setEntry("dragon-" + id, new JsonPrimitive(req.generateXmlValue("RaisedPetData", dragon)));
-				}
+				// Save
+				data.setEntry("dragon-" + id, new JsonPrimitive(req.generateXmlValue("RaisedPetData", dragon)));
 			}
-
-			// Set response
-			setResponseContent("text/xml", req.generateXmlValue("boolean", found));
-		} else {
-			// ???
-			setResponseStatus(403, "Forbidden, attempted to interact with other user's data (devs please inspect)");
 		}
+
+		// Set response
+		setResponseContent("text/xml", req.generateXmlValue("boolean", found));
 	}
 
 	@Function(allowedMethods = { "POST", "GET" })
@@ -919,7 +911,7 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 								+ "GetImage?edgereq=true&slot=" + URLEncoder.encode(slot, "UTF-8") + "&account="
 								+ URLEncoder.encode(account.getAccountID(), "UTF-8") + "&save="
 								+ URLEncoder.encode(tkn.saveID, "UTF-8") + "&type=" + URLEncoder.encode(type, "UTF-8")
-								+ "&file=image.jpg")));
+								+ "&file=image.jpg" + "&")));
 
 		// Set image
 		data.setEntry("imageslotinfo-" + slot + "-" + type, new JsonPrimitive(req.generateXmlValue("ImageData", imgD)));

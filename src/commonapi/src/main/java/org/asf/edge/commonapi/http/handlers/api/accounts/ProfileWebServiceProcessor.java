@@ -10,13 +10,13 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.account.AccountDataContainer;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.account.AccountObject;
-import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
@@ -132,7 +132,7 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 
 		// Find save
 		setResponseContent("text/xml",
-				req.generateXmlValue("UserProfileDisplayData", getProfile(tkn.saveID, account, req)));
+				req.generateXmlValue("UserProfileDisplayData", getProfile(tkn.saveID, account, req, false)));
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -159,14 +159,23 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 		// Find save
 		AccountSaveContainer save = account.getSave(req.payload.get("userId"));
 		if (save == null) {
-			// Error
-			setResponseStatus(404, "Not found");
-			return;
+			// Not part of the user
+			// Find profile by ID
+			save = manager.getSaveByID(req.payload.get("userId"));
+			if (save == null) {
+				// Error
+				setResponseStatus(404, "Not found");
+				return;
+			}
+
+			// Found it
+			setResponseContent("text/xml",
+					req.generateXmlValue("UserProfileDisplayData", getProfile(save.getSaveID(), account, req, true)));
 		}
 
 		// Set response
 		setResponseContent("text/xml",
-				req.generateXmlValue("UserProfileDisplayData", getProfile(save.getSaveID(), account, req)));
+				req.generateXmlValue("UserProfileDisplayData", getProfile(save.getSaveID(), account, req, false)));
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -201,7 +210,7 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 		ProfileDataList lst = new ProfileDataList();
 		lst.profiles = Stream.of(account.getSaveIDs()).map(id -> {
 			try {
-				return getProfile(id, account, req);
+				return getProfile(id, account, req, false);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -212,7 +221,8 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 			setResponseContent("text/xml", req.generateXmlValue("ArrayOfUserProfileDisplayData", null));
 	}
 
-	private ProfileData getProfile(String saveID, AccountObject account, ServiceRequestInfo req) throws IOException {
+	private ProfileData getProfile(String saveID, AccountObject account, ServiceRequestInfo req, boolean minimal)
+			throws IOException {
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		AccountSaveContainer save = account.getSave(saveID);
@@ -234,7 +244,8 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 		// Add save info
 		UserInfoData info = new UserInfoData();
 		info.userID = save.getSaveID();
-		info.parentUserID = account.getAccountID();
+		if (!minimal)
+			info.parentUserID = account.getAccountID();
 		info.username = save.getUsername();
 		info.chatEnabled = account.isChatEnabled();
 		info.multiplayerEnabled = account.isMultiplayerEnabled();
@@ -243,35 +254,41 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 		profile.avatar.userInfo = info;
 
 		// Load currency
-		AccountDataContainer currency = data.getChildContainer("currency");
-		AccountDataContainer currencyAccWide = account.getAccountData().getChildContainer("currency");
-		if (!currencyAccWide.entryExists("gems"))
-			currencyAccWide.setEntry("gems", new JsonPrimitive(0));
-		if (!currency.entryExists("coins"))
-			currency.setEntry("coins", new JsonPrimitive(300));
-		profile.gemCount = currencyAccWide.getEntry("gems").getAsInt();
-		profile.coinCount = currency.getEntry("coins").getAsInt();
+		if (!minimal) {
+			AccountDataContainer currency = data.getChildContainer("currency");
+			AccountDataContainer currencyAccWide = account.getAccountData().getChildContainer("currency");
+			if (!currencyAccWide.entryExists("gems"))
+				currencyAccWide.setEntry("gems", new JsonPrimitive(0));
+			if (!currency.entryExists("coins"))
+				currency.setEntry("coins", new JsonPrimitive(300));
+			profile.gemCount = currencyAccWide.getEntry("gems").getAsInt();
+			profile.coinCount = currency.getEntry("coins").getAsInt();
+		}
 
 		// Load reward multipliers
-		ArrayList<RewardMultiplierBlock> multipliers = new ArrayList<RewardMultiplierBlock>();
-		AccountDataContainer rewardMultipliers = data.getChildContainer("reward_multipliers");
-		if (!rewardMultipliers.entryExists("active"))
-			rewardMultipliers.setEntry("active", new JsonArray());
-		for (JsonElement ele : rewardMultipliers.getEntry("active").getAsJsonArray()) {
-			JsonObject multiplierInfo = ele.getAsJsonObject();
+		if (!minimal) {
+			ArrayList<RewardMultiplierBlock> multipliers = new ArrayList<RewardMultiplierBlock>();
+			AccountDataContainer rewardMultipliers = data.getChildContainer("reward_multipliers");
+			if (!rewardMultipliers.entryExists("active"))
+				rewardMultipliers.setEntry("active", new JsonArray());
+			for (JsonElement ele : rewardMultipliers.getEntry("active").getAsJsonArray()) {
+				JsonObject multiplierInfo = ele.getAsJsonObject();
 
-			// Add
-			RewardMultiplierBlock multiplier = new RewardMultiplierBlock();
-			multiplier.expiryTime = fmt.format(new Date(multiplierInfo.get("expiry").getAsLong()));
-			multiplier.multiplierFactor = multiplierInfo.get("factor").getAsInt();
-			multiplier.typeID = multiplierInfo.get("typeID").getAsInt();
-			multipliers.add(multiplier);
+				// Add
+				RewardMultiplierBlock multiplier = new RewardMultiplierBlock();
+				multiplier.expiryTime = fmt.format(new Date(multiplierInfo.get("expiry").getAsLong()));
+				multiplier.multiplierFactor = multiplierInfo.get("factor").getAsInt();
+				multiplier.typeID = multiplierInfo.get("typeID").getAsInt();
+				multipliers.add(multiplier);
+			}
+			profile.avatar.rewardMultipliers = multipliers.toArray(t -> new RewardMultiplierBlock[t]);
 		}
-		profile.avatar.rewardMultipliers = multipliers.toArray(t -> new RewardMultiplierBlock[t]);
 
 		// Create default subscription block
-		profile.avatar.subscription = new SubscriptionBlock();
-		profile.avatar.subscription.accountID = account.getAccountID();
+		if (!minimal) {
+			profile.avatar.subscription = new SubscriptionBlock();
+			profile.avatar.subscription.accountID = account.getAccountID();
+		}
 
 		// Create default achievement block
 		profile.avatar.achievements = new AchievementBlock[1];
@@ -285,20 +302,22 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 		profile.avatar.achievementInfo.pointTypeID = 1;
 
 		// Create answer data
-		profile.answerData = new AnswerBlock();
-		profile.answerData.userID = save.getSaveID();
+		if (!minimal) {
+			profile.answerData = new AnswerBlock();
+			profile.answerData.userID = save.getSaveID();
 
-		// Load answer data
-		if (!data.entryExists("answerdata"))
-			data.setEntry("answerdata", new JsonObject());
-		JsonObject answerMap = data.getEntry("answerdata").getAsJsonObject();
-		profile.answerData.answers = new AnswerDataBlock[answerMap.size()];
-		int i = 0;
-		for (String key : answerMap.keySet()) {
-			AnswerDataBlock a = new AnswerDataBlock();
-			a.answerID = answerMap.get(key).getAsInt();
-			a.questionID = Integer.parseInt(key);
-			profile.answerData.answers[i++] = a;
+			// Load answer data
+			if (!data.entryExists("answerdata"))
+				data.setEntry("answerdata", new JsonObject());
+			JsonObject answerMap = data.getEntry("answerdata").getAsJsonObject();
+			profile.answerData.answers = new AnswerDataBlock[answerMap.size()];
+			int i = 0;
+			for (String key : answerMap.keySet()) {
+				AnswerDataBlock a = new AnswerDataBlock();
+				a.answerID = answerMap.get(key).getAsInt();
+				a.questionID = Integer.parseInt(key);
+				profile.answerData.answers[i++] = a;
+			}
 		}
 
 		// TODO
@@ -306,7 +325,6 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 		// profile.avatar.subscription
 		// profile.activityCount
 		// profile.achievementCount
-		// profile.mythieCount
 
 		return profile;
 	}

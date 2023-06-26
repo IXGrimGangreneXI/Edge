@@ -1,4 +1,4 @@
-package org.asf.edge.common.account.impl.accounts;
+package org.asf.edge.common.services.accounts.impl.accounts;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -15,10 +15,10 @@ import javax.crypto.spec.PBEKeySpec;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.account.AccountDataContainer;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.account.AccountObject;
-import org.asf.edge.common.account.AccountSaveContainer;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

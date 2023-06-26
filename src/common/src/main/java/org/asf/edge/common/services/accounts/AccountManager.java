@@ -1,4 +1,4 @@
-package org.asf.edge.common.account;
+package org.asf.edge.common.services.accounts;
 
 import org.asf.edge.common.services.AbstractService;
 
@@ -8,10 +8,10 @@ import java.nio.file.Files;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.account.impl.DatabaseAccountManager;
-import org.asf.edge.common.account.impl.RemoteHttpAccountManager;
 import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.impl.DatabaseAccountManager;
+import org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager;
 import org.asf.edge.common.tokens.TokenParseResult;
 
 import com.google.gson.Gson;
@@ -201,6 +201,14 @@ public abstract class AccountManager extends AbstractService {
 	 * @return AccountObject instance or null
 	 */
 	public abstract AccountObject registerAccount(String username, String email, char[] password);
+
+	/**
+	 * Retrieves save data by ID
+	 * 
+	 * @param id Save data ID
+	 * @return AccountSaveContainer instance or null
+	 */
+	public abstract AccountSaveContainer getSaveByID(String id);
 
 	/**
 	 * Called to initialize the account manager

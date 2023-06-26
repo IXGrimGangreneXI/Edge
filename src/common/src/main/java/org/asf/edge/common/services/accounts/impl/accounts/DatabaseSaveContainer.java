@@ -1,4 +1,4 @@
-package org.asf.edge.common.account.impl.accounts;
+package org.asf.edge.common.services.accounts.impl.accounts;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -7,15 +7,16 @@ import java.sql.SQLException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.account.AccountDataContainer;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.account.AccountObject;
-import org.asf.edge.common.account.AccountSaveContainer;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 
 public class DatabaseSaveContainer extends AccountSaveContainer {
 
@@ -38,6 +39,14 @@ public class DatabaseSaveContainer extends AccountSaveContainer {
 		this.conn = conn;
 		this.manager = manager;
 		this.acc = acc;
+
+		AccountDataContainer sv = this.getSaveData();
+		try {
+			if (!sv.entryExists("accountid")) {
+				sv.setEntry("accountid", new JsonPrimitive(acc.getAccountID()));
+			}
+		} catch (IOException e) {
+		}
 	}
 
 	@Override

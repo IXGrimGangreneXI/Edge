@@ -1,4 +1,4 @@
-package org.asf.edge.common.account;
+package org.asf.edge.common.services.accounts;
 
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.services.items.ItemManager;

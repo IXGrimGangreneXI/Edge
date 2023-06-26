@@ -1,4 +1,4 @@
-package org.asf.edge.common.account.impl.accounts;
+package org.asf.edge.common.services.accounts.impl.accounts;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -7,19 +7,19 @@ import java.sql.SQLException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.account.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
-public class DatabaseAccountDataContainer extends AccountDataContainer {
+public class DatabaseSaveDataContainer extends AccountDataContainer {
 
 	private String id;
 	private Connection conn;
 
 	private Logger logger = LogManager.getLogger("AccountManager");
 
-	public DatabaseAccountDataContainer(String id, Connection conn) {
+	public DatabaseSaveDataContainer(String id, Connection conn) {
 		this.id = id;
 		this.conn = conn;
 	}
@@ -28,7 +28,7 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 	protected JsonElement get(String key) throws IOException {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
+			var statement = conn.prepareStatement("SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
 			statement.setString(1, id + "//" + key);
 			ResultSet res = statement.executeQuery();
 			if (!res.next())
@@ -48,7 +48,7 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 	protected void set(String key, JsonElement value) throws IOException {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("UPDATE ACCOUNTWIDEPLAYERDATA SET DATA = ? WHERE PATH = ?");
+			var statement = conn.prepareStatement("UPDATE SAVESPECIFICPLAYERDATA SET DATA = ? WHERE PATH = ?");
 			statement.setString(1, value.toString());
 			statement.setString(2, id + "//" + key);
 			statement.execute();
@@ -63,7 +63,7 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 	protected void create(String key, JsonElement value) throws IOException {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("INSERT INTO ACCOUNTWIDEPLAYERDATA VALUES(?, ?)");
+			var statement = conn.prepareStatement("INSERT INTO SAVESPECIFICPLAYERDATA VALUES(?, ?)");
 			statement.setString(1, id + "//" + key);
 			statement.setString(2, value.toString());
 			statement.execute();
@@ -78,7 +78,7 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 	protected boolean exists(String key) throws IOException {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT COUNT(DATA) FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
+			var statement = conn.prepareStatement("SELECT COUNT(DATA) FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
 			statement.setString(1, id + "//" + key);
 			ResultSet res = statement.executeQuery();
 			if (!res.next())
@@ -95,7 +95,7 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 	protected void delete(String key) throws IOException {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("DELETE FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
+			var statement = conn.prepareStatement("DELETE FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
 			statement.setString(1, id + "//" + key);
 			statement.execute();
 		} catch (SQLException e) {

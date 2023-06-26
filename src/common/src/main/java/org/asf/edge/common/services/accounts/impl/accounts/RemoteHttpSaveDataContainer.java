@@ -1,24 +1,26 @@
-package org.asf.edge.common.account.impl.accounts;
+package org.asf.edge.common.services.accounts.impl.accounts;
 
 import java.io.IOException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.account.AccountDataContainer;
-import org.asf.edge.common.account.impl.RemoteHttpAccountManager;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-public class RemoteHttpDataContainer extends AccountDataContainer {
+public class RemoteHttpSaveDataContainer extends AccountDataContainer {
 
 	private String id;
+	private String acc;
 	private RemoteHttpAccountManager mgr;
 
 	private Logger logger = LogManager.getLogger("AccountManager");
 
-	public RemoteHttpDataContainer(String id, RemoteHttpAccountManager mgr) {
+	public RemoteHttpSaveDataContainer(String id, String acc, RemoteHttpAccountManager mgr) {
 		this.id = id;
+		this.acc = acc;
 		this.mgr = mgr;
 	}
 
@@ -28,14 +30,15 @@ public class RemoteHttpDataContainer extends AccountDataContainer {
 		try {
 			// Build payload
 			JsonObject payload = new JsonObject();
-			payload.addProperty("id", id);
+			payload.addProperty("id", acc);
+			payload.addProperty("save", id);
 			payload.addProperty("key", key);
-			JsonObject response = mgr.accountManagerRequest("accounts/getDataEntry", payload);
+			JsonObject response = mgr.accountManagerRequest("accounts/getSaveDataEntry", payload);
 			if (!response.get("success").getAsBoolean())
 				return null;
 			return response.get("entryValue");
 		} catch (IOException e) {
-			logger.error("Account server query failure occurred in getDataEntry!", e);
+			logger.error("Account server query failure occurred in getSaveDataEntry!", e);
 			return null;
 		}
 	}
@@ -46,14 +49,15 @@ public class RemoteHttpDataContainer extends AccountDataContainer {
 		try {
 			// Build payload
 			JsonObject payload = new JsonObject();
-			payload.addProperty("id", id);
+			payload.addProperty("id", acc);
+			payload.addProperty("save", id);
 			payload.addProperty("key", key);
 			payload.add("value", value);
-			JsonObject response = mgr.accountManagerRequest("accounts/setDataEntry", payload);
+			JsonObject response = mgr.accountManagerRequest("accounts/setSaveDataEntry", payload);
 			if (!response.get("success").getAsBoolean())
 				throw new IOException("Server returned success=false");
 		} catch (IOException e) {
-			logger.error("Account server query failure occurred in setDataEntry!", e);
+			logger.error("Account server query failure occurred in setSaveDataEntry!", e);
 		}
 	}
 
@@ -63,14 +67,15 @@ public class RemoteHttpDataContainer extends AccountDataContainer {
 		try {
 			// Build payload
 			JsonObject payload = new JsonObject();
-			payload.addProperty("id", id);
+			payload.addProperty("id", acc);
+			payload.addProperty("save", id);
 			payload.addProperty("key", key);
 			payload.add("value", value);
-			JsonObject response = mgr.accountManagerRequest("accounts/createDataEntry", payload);
+			JsonObject response = mgr.accountManagerRequest("accounts/createSaveDataEntry", payload);
 			if (!response.get("success").getAsBoolean())
 				throw new IOException("Server returned success=false");
 		} catch (IOException e) {
-			logger.error("Account server query failure occurred in setDataEntry!", e);
+			logger.error("Account server query failure occurred in createSaveDataEntry!", e);
 		}
 	}
 
@@ -80,12 +85,13 @@ public class RemoteHttpDataContainer extends AccountDataContainer {
 		try {
 			// Build payload
 			JsonObject payload = new JsonObject();
-			payload.addProperty("id", id);
+			payload.addProperty("id", acc);
+			payload.addProperty("save", id);
 			payload.addProperty("key", key);
-			JsonObject response = mgr.accountManagerRequest("accounts/dataEntryExists", payload);
+			JsonObject response = mgr.accountManagerRequest("accounts/saveDataEntryExists", payload);
 			return response.get("result").getAsBoolean();
 		} catch (IOException e) {
-			logger.error("Account server query failure occurred in dataEntryExists!", e);
+			logger.error("Account server query failure occurred in saveDataEntryExists!", e);
 			return false;
 		}
 	}
@@ -96,13 +102,14 @@ public class RemoteHttpDataContainer extends AccountDataContainer {
 		try {
 			// Build payload
 			JsonObject payload = new JsonObject();
-			payload.addProperty("id", id);
+			payload.addProperty("id", acc);
+			payload.addProperty("save", id);
 			payload.addProperty("key", key);
-			JsonObject response = mgr.accountManagerRequest("accounts/deleteDataEntry", payload);
+			JsonObject response = mgr.accountManagerRequest("accounts/deleteSaveDataEntry", payload);
 			if (!response.get("success").getAsBoolean())
 				throw new IOException("Server returned success=false");
 		} catch (IOException e) {
-			logger.error("Account server query failure occurred in deleteDataEntry!", e);
+			logger.error("Account server query failure occurred in deleteSaveDataEntry!", e);
 		}
 	}
 

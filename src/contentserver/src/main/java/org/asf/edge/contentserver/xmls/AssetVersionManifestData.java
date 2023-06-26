@@ -15,6 +15,10 @@ public class AssetVersionManifestData {
 	@JacksonXmlElementWrapper(useWrapping = false)
 	public AssetVersionBlock[] assets;
 
+	@JsonProperty("AssetVersion")
+	@JacksonXmlElementWrapper(useWrapping = false)
+	public AssetBlockLegacy[] legacyData;
+
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 	public static class AssetVersionBlock {
@@ -40,6 +44,21 @@ public class AssetVersionManifestData {
 			public long size;
 
 		}
+
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+	public static class AssetBlockLegacy {
+
+		public String assetName;
+
+		public long version;
+
+		public String locale;
+
+		@JacksonXmlProperty(localName = "FileSize", isAttribute = true)
+		public long size;
 
 	}
 

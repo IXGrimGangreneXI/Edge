@@ -1,13 +1,13 @@
-package org.asf.edge.common.account.impl.accounts;
+package org.asf.edge.common.services.accounts.impl.accounts;
 
 import java.io.IOException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.account.AccountDataContainer;
-import org.asf.edge.common.account.AccountObject;
-import org.asf.edge.common.account.AccountSaveContainer;
-import org.asf.edge.common.account.impl.RemoteHttpAccountManager;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager;
 
 import com.google.gson.JsonObject;
 

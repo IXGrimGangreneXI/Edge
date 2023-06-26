@@ -1,8 +1,8 @@
 package org.asf.edge.gameplayapi.services.quests;
 
-import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.services.AbstractService;
 import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 

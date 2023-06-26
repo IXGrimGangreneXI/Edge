@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.util.Base64;
 
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.account.AccountManager;
-import org.asf.edge.common.account.AccountObject;
-import org.asf.edge.common.account.AccountSaveContainer;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 
 import com.google.gson.JsonArray;
@@ -1262,6 +1262,36 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 				resp.addProperty("email", email);
 			} else
 				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getSaveByID(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("save")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		JsonObject resp = new JsonObject();
+		AccountSaveContainer cont = manager.getSaveByID(payload.get("save").getAsString());
+		if (cont != null) {
+			resp.addProperty("success", true);
+			resp.addProperty("accid", cont.getAccount().getAccountID());
+			resp.addProperty("username", cont.getSaveID());
+			resp.addProperty("time", cont.getCreationTime());
 		} else
 			resp.addProperty("success", false);
 		setResponseContent("text/json", resp.toString());
