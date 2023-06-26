@@ -635,7 +635,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		CreatePetResponseData resp = new CreatePetResponseData();
 
 		// Pull dragons
-		AccountDataContainer images = data.getChildContainer("images");
 		data = data.getChildContainer("dragons");
 		JsonArray dragonIds = new JsonArray();
 		if (data.entryExists("dragonlist"))
@@ -663,17 +662,12 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 				break;
 		}
 
-		// Find free image ID
-		int imageID = id;
-		while (data.entryExists("imageslotinfo-" + imageID + "-EggColor"))
-			imageID++;
-
 		// Fill fields
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		ObjectNode dragon = request.dragonData;
 		dragon.set("id", new IntNode(id)); // ID
-		dragon.set("ip", new IntNode(imageID)); // Image
+		dragon.set("ip", new IntNode(dragonIds.size())); // Image
 		dragon.set("eid", new TextNode(entID)); // Entity ID
 		dragon.set("n", new TextNode("Dragon-" + System.currentTimeMillis())); // Name
 		dragon.set("cdt", new TextNode(fmt.format(new Date()))); // Creation time
