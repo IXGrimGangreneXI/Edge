@@ -60,10 +60,12 @@ public class MissionData {
 
 	@JsonProperty("AR")
 	@JacksonXmlElementWrapper(useWrapping = false)
+	@JsonInclude(Include.NON_NULL)
 	public AchievementRewardBlock[] rewards;
 
 	@JsonProperty("AAR")
 	@JacksonXmlElementWrapper(useWrapping = false)
+	@JsonInclude(Include.NON_NULL)
 	public AchievementRewardBlock[] acceptanceRewards;
 
 	@JsonProperty("RPT")

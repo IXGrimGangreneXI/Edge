@@ -911,7 +911,7 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 								+ "GetImage?edgereq=true&slot=" + URLEncoder.encode(slot, "UTF-8") + "&account="
 								+ URLEncoder.encode(account.getAccountID(), "UTF-8") + "&save="
 								+ URLEncoder.encode(tkn.saveID, "UTF-8") + "&type=" + URLEncoder.encode(type, "UTF-8")
-								+ "&file=image.jpg" + "&")));
+								+ "&file=image.jpg")));
 
 		// Set image
 		data.setEntry("imageslotinfo-" + slot + "-" + type, new JsonPrimitive(req.generateXmlValue("ImageData", imgD)));
