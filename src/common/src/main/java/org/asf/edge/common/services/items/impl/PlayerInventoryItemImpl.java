@@ -85,7 +85,10 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 	public void setQuantity(int quantity) {
 		// Update
 		this.quantity = quantity;
-		writeUpdate();
+		if (this.quantity <= 0)
+			delete();
+		else
+			writeUpdate();
 	}
 
 	@Override

@@ -667,26 +667,29 @@ public class QuestManagerImpl extends QuestManager {
 
 		private boolean isCompletedMission(MissionData mission) {
 			// Check completed tasks
-			int taskCount = mission.tasks.length;
-			int completedTasks = (int) Stream.of(mission.tasks).filter(t -> t.completed > 0).count();
-			if (completedTasks >= taskCount) {
-				// The following checks are disabled as disabling them may fix a bug, if it
-				// causes issues instead they should be re-enabled
+			if (mission.tasks != null) {
+				int taskCount = mission.tasks.length;
+				int completedTasks = (int) Stream.of(mission.tasks).filter(t -> t.completed > 0).count();
+				if (completedTasks >= taskCount) {
+					// The following checks are disabled as disabling them may fix a bug, if it
+					// causes issues instead they should be re-enabled
 
-//				// Tasks completed
-//				// Check child quests
-//				if (mission.childMissions != null) {
-//					for (MissionData ch : mission.childMissions) {
-//						// Check child quest mission
-//						if (!isCompletedMission(ch))
-//							return false;
+//					// Tasks completed
+//					// Check child quests
+//					if (mission.childMissions != null) {
+//						for (MissionData ch : mission.childMissions) {
+//							// Check child quest mission
+//							if (!isCompletedMission(ch))
+//								return false;
+//						}
 //					}
-//				}
 
-				// This quest has been completed
-				return true;
-			}
-			return false;
+					// This quest has been completed
+					return true;
+				}
+				return false;
+			} else
+				return true; // No tasks
 		}
 
 		@Override

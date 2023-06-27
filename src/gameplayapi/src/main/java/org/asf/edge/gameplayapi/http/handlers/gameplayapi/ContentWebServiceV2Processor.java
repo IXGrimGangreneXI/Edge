@@ -706,7 +706,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		if (request.commonInventoryRequests != null && request.commonInventoryRequests.length != 0) {
 			// Handle inventory request
 			resp.inventoryUpdate = processCommonInventorySet(request.commonInventoryRequests, save.getSaveData(),
-					request.containerID);
+					request.containerID == -1 ? 1 : request.containerID);
 		}
 
 		// Set response

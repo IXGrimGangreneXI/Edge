@@ -73,11 +73,7 @@ public abstract class PlayerInventoryItem {
 	 * @param amount Amount to remove
 	 */
 	public void remove(int amount) {
-		int newQuant = getQuantity() - amount;
-		if (newQuant <= 0)
-			delete();
-		else
-			setQuantity(amount);
+		setQuantity(getQuantity() - amount);
 	}
 
 	/**
