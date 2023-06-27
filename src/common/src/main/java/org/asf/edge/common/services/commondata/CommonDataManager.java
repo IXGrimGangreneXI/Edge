@@ -38,6 +38,8 @@ public abstract class CommonDataManager extends AbstractService {
 	 * @return CommonDataContainer instance
 	 */
 	public CommonDataContainer getContainer(String rootNodeName) {
+		if (!rootNodeName.matches("^[A-Za-z0-9]+$"))
+			throw new IllegalArgumentException("Root node name can only contain alphanumeric characters");
 		rootNodeName = rootNodeName.toUpperCase();
 		while (true) {
 			try {
