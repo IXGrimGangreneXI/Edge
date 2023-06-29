@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-16"?>
 <ArrayOfUserRank xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://api.jumpstart.com/">
   <UserRank>
     <RankID xmlns="">81</RankID>
@@ -2365,4 +2365,4 @@
     <PointTypeID xmlns="">12</PointTypeID>
     <GlobalRankID xmlns="">400</GlobalRankID>
   </UserRank>
-</ArrayOfUserRank> 
+</ArrayOfUserRank>

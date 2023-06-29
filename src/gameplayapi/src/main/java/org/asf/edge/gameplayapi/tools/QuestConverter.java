@@ -2,12 +2,9 @@ package org.asf.edge.gameplayapi.tools;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Base64;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -16,8 +13,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
 public class QuestConverter {
@@ -34,49 +29,7 @@ public class QuestConverter {
 
 	public static void main(String[] args) throws JsonSyntaxException, IOException {
 		// Expected arguments:
-		// "<path to quest dump directory>" "<path to sniffer log made with a new
-		// account or new guest account being the first game join>"
-
-		// Parse sniff
-		System.out.println("Parsing sniff...");
-		String activeMissionsData = null;
-		String upcomingMissionsData = null;
-		for (String line : Files.readAllLines(Path.of(args[1]))) {
-			if (line.isBlank())
-				continue;
-
-			// Parse json
-			JsonObject packet = JsonParser.parseString(line).getAsJsonObject();
-			if (!packet.has("type") || packet.get("type").getAsString().equals("http")) {
-				// Check request
-				URL u = new URL(packet.get("request").getAsJsonObject().get("url").getAsString());
-				if (u.getPath().equalsIgnoreCase("/V2/ContentWebService.asmx/GetUserActiveMissionState")) {
-					if (activeMissionsData != null)
-						continue;
-					System.out.println("Found active mission data.");
-					activeMissionsData = new String(
-							Base64.getDecoder()
-									.decode(packet.get("response").getAsJsonObject().get("responseBody").getAsString()),
-							"UTF-8");
-				} else if (u.getPath().equalsIgnoreCase("/V2/ContentWebService.asmx/GetUserUpcomingMissionState")) {
-					if (upcomingMissionsData != null)
-						continue;
-					System.out.println("Found upcoming mission data.");
-					upcomingMissionsData = new String(
-							Base64.getDecoder()
-									.decode(packet.get("response").getAsJsonObject().get("responseBody").getAsString()),
-							"UTF-8");
-				}
-			}
-		}
-
-		// Check
-		if (activeMissionsData == null || upcomingMissionsData == null) {
-			System.err.println(
-					"Missing GetUserActiveMissionState and/or GetUserUpcomingMissionState calls in sniffer data.");
-			System.exit(1);
-			return;
-		}
+		// "<path to quest dump directory>"
 
 		// Prepare
 		XmlMapper mapper = new XmlMapper();
@@ -85,30 +38,6 @@ public class QuestConverter {
 
 		// Prepare output
 		QuestRegistryManifest outp = new QuestRegistryManifest();
-
-		// Load active missions
-		int i = 0;
-		System.out.println("Scanning active missions...");
-		QuestListData activeD = mapper.readValue(activeMissionsData, QuestListData.class);
-		ObjectNode[] active = activeD.missions;
-		outp.defaultStartedQuests = new QuestRegistryManifest.DefaultStartedQuestsBlock();
-		outp.defaultStartedQuests.defaultStartedQuests = new int[active.length];
-		for (ObjectNode node : active) {
-			System.out.println("Added active quest to registry: " + node.get("I").asInt());
-			outp.defaultStartedQuests.defaultStartedQuests[i++] = node.get("I").asInt();
-		}
-
-		// Load default unlocked missions
-		i = 0;
-		System.out.println("Scanning active missions...");
-		QuestListData unlockedD = mapper.readValue(upcomingMissionsData, QuestListData.class);
-		ObjectNode[] unlocked = unlockedD.missions;
-		outp.defaultUnlockedQuests = new QuestRegistryManifest.DefaultUnlockedQuestsBlock();
-		outp.defaultUnlockedQuests.defaultUnlockedQuests = new int[unlocked.length];
-		for (ObjectNode node : unlocked) {
-			System.out.println("Added default unlocked quest to registry: " + node.get("I").asInt());
-			outp.defaultUnlockedQuests.defaultUnlockedQuests[i++] = node.get("I").asInt();
-		}
 
 		// Scan into registry
 		outp.defaultQuestDefs = new QuestRegistryManifest.QuestDefsBlock();
@@ -134,29 +63,7 @@ public class QuestConverter {
 	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 	private static class QuestRegistryManifest {
 
-		public DefaultStartedQuestsBlock defaultStartedQuests;
-		public DefaultUnlockedQuestsBlock defaultUnlockedQuests;
 		public QuestDefsBlock defaultQuestDefs;
-
-		@JsonIgnoreProperties(ignoreUnknown = true)
-		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-		public static class DefaultStartedQuestsBlock {
-
-			@JsonProperty("DefaultStartedQuest")
-			@JacksonXmlElementWrapper(useWrapping = false)
-			public int[] defaultStartedQuests;
-
-		}
-
-		@JsonIgnoreProperties(ignoreUnknown = true)
-		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-		public static class DefaultUnlockedQuestsBlock {
-
-			@JsonProperty("DefaultUnlockedQuest")
-			@JacksonXmlElementWrapper(useWrapping = false)
-			public int[] defaultUnlockedQuests;
-
-		}
 
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
