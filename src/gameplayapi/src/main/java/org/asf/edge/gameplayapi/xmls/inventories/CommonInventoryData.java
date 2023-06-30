@@ -3,6 +3,8 @@ package org.asf.edge.gameplayapi.xmls.inventories;
 import org.asf.edge.gameplayapi.xmls.data.KeyValuePairSetData;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -46,6 +48,7 @@ public class CommonInventoryData {
 		public KeyValuePairSetData itemAttributes;
 
 		@JsonProperty("iss")
+		@JsonInclude(Include.NON_NULL)
 		@JacksonXmlElementWrapper(useWrapping = false)
 		public ItemStatBlock[] stats;
 
