@@ -220,28 +220,133 @@ public class EdgeContentServerDumper {
 
 				// Check file
 				String nm = new File(asset.name).getName();
-				if (nm.equals("DailyBonusAndPromoDO.xml")) {
-					// Parse promos
-					InputStream strm = new URL(url).openStream();
-					String xml = new String(strm.readAllBytes(), "UTF-8");
-					strm.close();
+				try {
+					if (nm.equals("DailyBonusAndPromoDO.xml")) {
+						// Parse promos
+						InputStream strm = new URL(url).openStream();
+						String xml = new String(strm.readAllBytes(), "UTF-8");
+						strm.close();
 
-					// Scrape instead of parse, a lot of promo images were disabled bc of shutdown
-					// day but are still there and the archivist that i am at times says get what
-					// you can lol
+						// Scrape instead of parse, a lot of promo images were disabled bc of shutdown
+						// day but are still there and the archivist that i am at times says get what
+						// you can lol
 
-					// IK NOT PRETTY
+						// IK NOT PRETTY
 
-					for (String line : xml.replace("\r", "").split("\n")) {
-						if (line.contains("<BkgIconRes>")) {
-							String promoUrl = line.substring(line.indexOf("<BkgIconRes>") + "<BkgIconRes>".length());
-							promoUrl = promoUrl.substring(0, promoUrl.indexOf("</BkgIconRes>"));
-							promoUrl = decodeXML(promoUrl);
+						for (String line : xml.replace("\r", "").split("\n")) {
+							if (line.contains("<BkgIconRes>")) {
+								String promoUrl = line
+										.substring(line.indexOf("<BkgIconRes>") + "<BkgIconRes>".length());
+								promoUrl = promoUrl.substring(0, promoUrl.indexOf("</BkgIconRes>"));
+								promoUrl = decodeXML(promoUrl);
 
+								try {
+									// Get path
+									URL promoU = new URL(promoUrl);
+									String path2 = promoU.getPath();
+									File dest = new File(outputRoot, path2);
+									if (dest.exists())
+										continue;
+									File outputFile = new File(outputRoot, path2 + ".tmp");
+
+									// Download image
+									System.out.println("Downloading: " + promoUrl + " -> "
+											+ new File(outputRoot, path2).getPath());
+									outputFile.getParentFile().mkdirs();
+									InputStream strmI = new URL(promoUrl).openStream();
+									FileOutputStream fO = new FileOutputStream(outputFile);
+									strmI.transferTo(fO);
+									fO.close();
+
+									// Finish
+									if (dest.exists())
+										dest.delete();
+									outputFile.renameTo(dest);
+								} catch (IOException e) {
+									System.err.println("Failure! " + promoUrl + " was not downloaded!");
+									failed.add(promoUrl);
+								}
+							} else if (line.contains("<IconRes>")) {
+								String promoUrl = line.substring(line.indexOf("<IconRes>") + "<IconRes>".length());
+								promoUrl = promoUrl.substring(0, promoUrl.indexOf("</IconRes>"));
+								promoUrl = decodeXML(promoUrl);
+								if (!promoUrl.startsWith("http"))
+									continue;
+
+								try {
+									// Get path
+									URL promoU = new URL(promoUrl);
+									String path2 = promoU.getPath();
+									File dest = new File(outputRoot, path2);
+									if (dest.exists())
+										continue;
+									File outputFile = new File(outputRoot, path2 + ".tmp");
+
+									// Download image
+									System.out.println("Downloading: " + promoUrl + " -> "
+											+ new File(outputRoot, path2).getPath());
+									outputFile.getParentFile().mkdirs();
+									InputStream strmI = new URL(promoUrl).openStream();
+									FileOutputStream fO = new FileOutputStream(outputFile);
+									strmI.transferTo(fO);
+									fO.close();
+
+									// Finish
+									if (dest.exists())
+										dest.delete();
+									outputFile.renameTo(dest);
+								} catch (IOException e) {
+									System.err.println("Failure! " + promoUrl + " was not downloaded!");
+									failed.add(promoUrl);
+								}
+							} else if (line.contains("<ImageRes>")) {
+								String promoUrl = line.substring(line.indexOf("<ImageRes>") + "<ImageRes>".length());
+								promoUrl = promoUrl.substring(0, promoUrl.indexOf("</ImageRes>"));
+								promoUrl = decodeXML(promoUrl);
+								if (!promoUrl.startsWith("http"))
+									continue;
+
+								try {
+									// Get path
+									URL promoU = new URL(promoUrl);
+									String path2 = promoU.getPath();
+									File dest = new File(outputRoot, path2);
+									if (dest.exists())
+										continue;
+									File outputFile = new File(outputRoot, path2 + ".tmp");
+
+									// Download image
+									System.out.println("Downloading: " + promoUrl + " -> "
+											+ new File(outputRoot, path2).getPath());
+									outputFile.getParentFile().mkdirs();
+									InputStream strmI = new URL(promoUrl).openStream();
+									FileOutputStream fO = new FileOutputStream(outputFile);
+									strmI.transferTo(fO);
+									fO.close();
+
+									// Finish
+									if (dest.exists())
+										dest.delete();
+									outputFile.renameTo(dest);
+								} catch (IOException e) {
+									System.err.println("Failure! " + promoUrl + " was not downloaded!");
+									failed.add(promoUrl);
+								}
+							}
+						}
+					} else if (nm.equals("LoadScreenDataDO.xml")) {
+						// Parse load screen data
+						InputStream strm = new URL(url).openStream();
+						String xml = new String(strm.readAllBytes(), "UTF-8");
+						strm.close();
+
+						// Parse xml
+						LoadScreenData screenData = mapper.readValue(xml, LoadScreenData.class);
+						for (LoadScreenData.LoadScreenBlock block : screenData.loadScreens) {
 							try {
 								// Get path
-								URL promoU = new URL(promoUrl);
-								String path2 = promoU.getPath();
+								URL screenU = new URL(block.name);
+								String path2 = screenU.getPath();
 								File dest = new File(outputRoot, path2);
 								if (dest.exists())
 									continue;
@@ -249,9 +354,9 @@ public class EdgeContentServerDumper {
 
 								// Download image
 								System.out.println(
-										"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
+										"Downloading: " + screenU + " -> " + new File(outputRoot, path2).getPath());
 								outputFile.getParentFile().mkdirs();
-								InputStream strmI = new URL(promoUrl).openStream();
+								InputStream strmI = screenU.openStream();
 								FileOutputStream fO = new FileOutputStream(outputFile);
 								strmI.transferTo(fO);
 								fO.close();
@@ -261,158 +366,59 @@ public class EdgeContentServerDumper {
 									dest.delete();
 								outputFile.renameTo(dest);
 							} catch (IOException e) {
-								System.err.println("Failure! " + promoUrl + " was not downloaded!");
-								failed.add(promoUrl);
+								System.err.println("Failure! " + block.name + " was not downloaded!");
+								failed.add(block.name);
 							}
-						} else if (line.contains("<IconRes>")) {
-							String promoUrl = line.substring(line.indexOf("<IconRes>") + "<IconRes>".length());
-							promoUrl = promoUrl.substring(0, promoUrl.indexOf("</IconRes>"));
-							promoUrl = decodeXML(promoUrl);
-							if (!promoUrl.startsWith("http"))
-								continue;
+						}
+					} else if (nm.equals("LoginContentDO.xml")) {
+						// Parse promos
+						InputStream strm = new URL(url).openStream();
+						String xml = new String(strm.readAllBytes(), "UTF-8");
+						strm.close();
 
-							try {
-								// Get path
-								URL promoU = new URL(promoUrl);
-								String path2 = promoU.getPath();
-								File dest = new File(outputRoot, path2);
-								if (dest.exists())
-									continue;
-								File outputFile = new File(outputRoot, path2 + ".tmp");
+						// Scrape instead of parse, a lot of promos were disabled bc of shutdown
+						// day but are still there and the archivist that i am at times says get what
+						// you can lol
 
-								// Download image
-								System.out.println(
-										"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
-								outputFile.getParentFile().mkdirs();
-								InputStream strmI = new URL(promoUrl).openStream();
-								FileOutputStream fO = new FileOutputStream(outputFile);
-								strmI.transferTo(fO);
-								fO.close();
+						// IK NOT PRETTY
 
-								// Finish
-								if (dest.exists())
-									dest.delete();
-								outputFile.renameTo(dest);
-							} catch (IOException e) {
-								System.err.println("Failure! " + promoUrl + " was not downloaded!");
-								failed.add(promoUrl);
-							}
-						} else if (line.contains("<ImageRes>")) {
-							String promoUrl = line.substring(line.indexOf("<ImageRes>") + "<ImageRes>".length());
-							promoUrl = promoUrl.substring(0, promoUrl.indexOf("</ImageRes>"));
-							promoUrl = decodeXML(promoUrl);
-							if (!promoUrl.startsWith("http"))
-								continue;
+						for (String line : xml.replace("\r", "").split("\n")) {
+							if (line.contains("<URL>")) {
+								String promoUrl = line.substring(line.indexOf("<URL>") + "<URL>".length());
+								promoUrl = promoUrl.substring(0, promoUrl.indexOf("</URL>"));
+								promoUrl = decodeXML(promoUrl);
 
-							try {
-								// Get path
-								URL promoU = new URL(promoUrl);
-								String path2 = promoU.getPath();
-								File dest = new File(outputRoot, path2);
-								if (dest.exists())
-									continue;
-								File outputFile = new File(outputRoot, path2 + ".tmp");
+								try {
+									// Get path
+									URL promoU = new URL(promoUrl);
+									String path2 = promoU.getPath();
+									File dest = new File(outputRoot, path2);
+									if (dest.exists())
+										continue;
+									File outputFile = new File(outputRoot, path2 + ".tmp");
 
-								// Download image
-								System.out.println(
-										"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
-								outputFile.getParentFile().mkdirs();
-								InputStream strmI = new URL(promoUrl).openStream();
-								FileOutputStream fO = new FileOutputStream(outputFile);
-								strmI.transferTo(fO);
-								fO.close();
+									// Download image
+									System.out.println("Downloading: " + promoUrl + " -> " + outputFile.getPath());
+									outputFile.getParentFile().mkdirs();
+									InputStream strmI = new URL(promoUrl).openStream();
+									FileOutputStream fO = new FileOutputStream(outputFile);
+									strmI.transferTo(fO);
+									fO.close();
 
-								// Finish
-								if (dest.exists())
-									dest.delete();
-								outputFile.renameTo(dest);
-							} catch (IOException e) {
-								System.err.println("Failure! " + promoUrl + " was not downloaded!");
-								failed.add(promoUrl);
+									// Finish
+									if (dest.exists())
+										dest.delete();
+									outputFile.renameTo(dest);
+								} catch (IOException e) {
+									System.err.println("Failure! " + promoUrl + " was not downloaded!");
+									failed.add(promoUrl);
+								}
 							}
 						}
 					}
-				} else if (nm.equals("LoadScreenDataDO.xml")) {
-					// Parse load screen data
-					InputStream strm = new URL(url).openStream();
-					String xml = new String(strm.readAllBytes(), "UTF-8");
-					strm.close();
-
-					// Parse xml
-					LoadScreenData screenData = mapper.readValue(xml, LoadScreenData.class);
-					for (LoadScreenData.LoadScreenBlock block : screenData.loadScreens) {
-						try {
-							// Get path
-							URL screenU = new URL(block.name);
-							String path2 = screenU.getPath();
-							File dest = new File(outputRoot, path2);
-							if (dest.exists())
-								continue;
-							File outputFile = new File(outputRoot, path2 + ".tmp");
-
-							// Download image
-							System.out.println(
-									"Downloading: " + screenU + " -> " + new File(outputRoot, path2).getPath());
-							outputFile.getParentFile().mkdirs();
-							InputStream strmI = screenU.openStream();
-							FileOutputStream fO = new FileOutputStream(outputFile);
-							strmI.transferTo(fO);
-							fO.close();
-
-							// Finish
-							if (dest.exists())
-								dest.delete();
-							outputFile.renameTo(dest);
-						} catch (IOException e) {
-							System.err.println("Failure! " + block.name + " was not downloaded!");
-							failed.add(block.name);
-						}
-					}
-				} else if (nm.equals("LoginContentDO.xml")) {
-					// Parse promos
-					InputStream strm = new URL(url).openStream();
-					String xml = new String(strm.readAllBytes(), "UTF-8");
-					strm.close();
-
-					// Scrape instead of parse, a lot of promos were disabled bc of shutdown
-					// day but are still there and the archivist that i am at times says get what
-					// you can lol
-
-					// IK NOT PRETTY
-
-					for (String line : xml.replace("\r", "").split("\n")) {
-						if (line.contains("<URL>")) {
-							String promoUrl = line.substring(line.indexOf("<URL>") + "<URL>".length());
-							promoUrl = promoUrl.substring(0, promoUrl.indexOf("</URL>"));
-							promoUrl = decodeXML(promoUrl);
-
-							try {
-								// Get path
-								URL promoU = new URL(promoUrl);
-								String path2 = promoU.getPath();
-								File dest = new File(outputRoot, path2);
-								if (dest.exists())
-									continue;
-								File outputFile = new File(outputRoot, path2 + ".tmp");
-
-								// Download image
-								System.out.println("Downloading: " + promoUrl + " -> " + outputFile.getPath());
-								outputFile.getParentFile().mkdirs();
-								InputStream strmI = new URL(promoUrl).openStream();
-								FileOutputStream fO = new FileOutputStream(outputFile);
-								strmI.transferTo(fO);
-								fO.close();
-
-								// Finish
-								if (dest.exists())
-									dest.delete();
-								outputFile.renameTo(dest);
-							} catch (IOException e) {
-								System.err.println("Failure! " + promoUrl + " was not downloaded!");
-								failed.add(promoUrl);
-							}
-						}
-					}
+				} catch (IOException e) {
+					System.err.println("Failure! " + url + " was not processed!");
+					failed.add(url);
 				}
 				if (!url.endsWith(".xml"))
 					url += "?v=" + variant.version;
