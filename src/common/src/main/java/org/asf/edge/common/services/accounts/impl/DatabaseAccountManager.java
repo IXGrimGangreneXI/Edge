@@ -183,6 +183,34 @@ public class DatabaseAccountManager extends AccountManager {
 	}
 
 	@Override
+	public String getAccountIdBySaveUsername(String username) {
+		try {
+			// Create prepared statement
+			var statement = conn.prepareStatement("SELECT ID FROM SAVEUSERNAMEMAP WHERE USERNAME = ?");
+			statement.setString(1, username);
+			ResultSet res = statement.executeQuery();
+			if (!res.next())
+				return null;
+			String id = res.getString("ID");
+
+			// Pull account ID
+			statement = conn.prepareStatement("SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
+			statement.setString(1, id + "//accountid");
+			res = statement.executeQuery();
+			if (!res.next())
+				return null;
+			String data = res.getString("DATA");
+			if (data == null)
+				return null;
+			return JsonParser.parseString(data).getAsString();
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to pull user ID of save username '"
+					+ username + "'", e);
+			return null;
+		}
+	}
+
+	@Override
 	public boolean verifyPassword(String id, String password) {
 		try {
 			// Create prepared statement

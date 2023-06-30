@@ -179,6 +179,32 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 	}
 
 	@Function(allowedMethods = { "POST" })
+	public void getAccountIdBySaveUsername(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("username")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		JsonObject resp = new JsonObject();
+		String id = manager.getAccountIdBySaveUsername(payload.get("username").getAsString());
+		resp.addProperty("success", id != null);
+		if (id != null)
+			resp.addProperty("id", id);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" })
 	public void getAccountIDByEmail(FunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
@@ -944,7 +970,7 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
 			if (cont != null) {
 				resp.addProperty("success", true);
-				resp.addProperty("username", cont.getSaveID());
+				resp.addProperty("username", cont.getUsername());
 				resp.addProperty("time", cont.getCreationTime());
 			} else
 				resp.addProperty("success", false);

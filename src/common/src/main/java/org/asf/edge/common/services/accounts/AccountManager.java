@@ -136,6 +136,14 @@ public abstract class AccountManager extends AbstractService {
 	public abstract String getAccountID(String username);
 
 	/**
+	 * Retrieves account IDs by save username
+	 * 
+	 * @param username Save username to retrieve the account ID for
+	 * @return Account ID string or null
+	 */
+	public abstract String getAccountIdBySaveUsername(String username);
+
+	/**
 	 * Checks if an account ID exists
 	 * 
 	 * @param id Account ID

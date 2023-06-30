@@ -44,7 +44,7 @@ public class ItemManagerImpl extends ItemManager {
 			// Load stores
 			for (ItemStoreDefinitionData store : stores) {
 				// Load store
-				logger.info("Loading store: " + store.storeID + " (" + store.storeName + ")");
+				logger.debug("Loading store: " + store.storeID + " (" + store.storeName + ")");
 				ItemInfo[] items = new ItemInfo[store.items.length];
 				for (int i = 0; i < items.length; i++) {
 					// Register item

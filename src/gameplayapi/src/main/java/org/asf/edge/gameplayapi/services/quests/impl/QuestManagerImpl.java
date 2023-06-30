@@ -368,7 +368,7 @@ public class QuestManagerImpl extends QuestManager {
 						case 2: {
 							// Add coins
 							// Update inventory
-							AccountDataContainer currency = data.getChildContainer("currency");
+							AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
 							int currentC = 300;
 							if (currency.entryExists("coins"))
 								currentC = currency.getEntry("coins").getAsInt();
@@ -570,7 +570,7 @@ public class QuestManagerImpl extends QuestManager {
 								// Coins
 								case 2: {
 									// Update inventory
-									AccountDataContainer currency = data.getChildContainer("currency");
+									AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
 									int currentC = 300;
 									if (currency.entryExists("coins"))
 										currentC = currency.getEntry("coins").getAsInt();

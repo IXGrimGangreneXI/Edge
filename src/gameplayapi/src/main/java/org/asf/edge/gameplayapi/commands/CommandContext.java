@@ -1,0 +1,188 @@
+package org.asf.edge.gameplayapi.commands;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.gameplayapi.commands.defaultcommands.HelpCommand;
+import org.asf.edge.gameplayapi.commands.defaultcommands.account.ProfilesCommand;
+import org.asf.edge.gameplayapi.events.commands.CommandSetupEvent;
+import org.asf.edge.gameplayapi.permissions.PermissionContext;
+import org.asf.edge.modules.eventbus.EventBus;
+
+/**
+ * 
+ * Command context system
+ * 
+ * @author Sky Swimmer
+ *
+ */
+public class CommandContext {
+
+	private Logger logger = LogManager.getLogger("COMMANDS");
+	private HashMap<String, String> commandMemory = new HashMap<String, String>();
+	private ArrayList<IEdgeServerCommand> commands = new ArrayList<IEdgeServerCommand>();
+
+	protected static CommandContextImplementationProvider implementationProvider = (acc) -> new CommandContext(acc);
+
+	public static interface CommandContextImplementationProvider {
+		public CommandContext getForAccount(AccountObject account);
+	}
+
+	private AccountObject account;
+	private PermissionContext ctx;
+
+	public CommandContext(AccountObject account) {
+		this.account = account;
+
+		// Load perms
+		ctx = PermissionContext.getFor(account);
+
+		// Register commands
+		logger.info("Registering commands...");
+		registerCommand(new ProfilesCommand());
+		registerCommand(new HelpCommand());
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new CommandSetupEvent(this));
+	}
+
+	/**
+	 * Retrieves the command memory map
+	 * 
+	 * @return Command memory map
+	 */
+	public Map<String, String> getCommandMemory() {
+		return commandMemory;
+	}
+
+	/**
+	 * Retrieves all registered commands
+	 * 
+	 * @return Array of IEdgeServerCommand instances
+	 */
+	public IEdgeServerCommand[] getRegisteredCommands() {
+		return commands.toArray(t -> new IEdgeServerCommand[t]);
+	}
+
+	/**
+	 * Registers commands
+	 * 
+	 * @param command Command to register
+	 */
+	public void registerCommand(IEdgeServerCommand command) {
+		if (commands.stream().anyMatch(t -> t.id().equals(command.id())))
+			throw new IllegalArgumentException("Command already registered: " + command.id());
+		commands.add(command);
+		logger.info("Registered command: " + command.id());
+	}
+
+	/**
+	 * Retrieves command context for a account
+	 * 
+	 * @param account Account to use
+	 * @return CommandContext instance
+	 */
+	public static CommandContext getFor(AccountObject account) {
+		return implementationProvider.getForAccount(account);
+	}
+
+	/**
+	 * Retrieves the account object
+	 * 
+	 * @return CommandContext instance
+	 */
+	public AccountObject getAccount() {
+		return account;
+	}
+
+	/**
+	 * Retrieves the command permission context
+	 * 
+	 * @return PermissionContext instance
+	 */
+	public PermissionContext getPermissions() {
+		return ctx;
+	}
+
+	/**
+	 * Called to run commands
+	 * 
+	 * @param command                 Command to run
+	 * @param outputWriteLineCallback Command output write callback to use
+	 * @return True if successful, false otherwise
+	 */
+	public boolean runCommand(String command, Consumer<String> outputWriteLineCallback) {
+		logger.debug("Evaluating command: " + command);
+		ArrayList<String> cmd;
+		try {
+			cmd = parseCommand(command);
+		} catch (Exception e) {
+			outputWriteLineCallback.accept("Malformed command: " + command);
+			return false;
+		}
+
+		// Check
+		if (cmd.size() <= 0) {
+			outputWriteLineCallback.accept(
+					"Malformed command: " + command + ": missing command ID, please use 'help' for a list of commands");
+			return false;
+		}
+
+		// Find command
+		boolean success = false;
+		String result = "Command not found, please use 'help' for a list of commands";
+		String id = cmd.get(0);
+		cmd.remove(0);
+		for (IEdgeServerCommand c : commands) {
+			if (c.id().equalsIgnoreCase(id)) {
+				if (getPermissions().hasPermission(c.permNode(), c.permLevel())) {
+					// Found it
+					result = c.run(cmd.toArray(t -> new String[t]), this, logger, outputWriteLineCallback, command);
+					if (result != null)
+						success = true;
+					break;
+				}
+			}
+		}
+
+		// Log
+		if (result != null)
+			outputWriteLineCallback.accept(result);
+		return success;
+	}
+
+	// Command parser
+	private ArrayList<String> parseCommand(String args) {
+		ArrayList<String> args3 = new ArrayList<String>();
+		char[] argarray = args.toCharArray();
+		boolean ignorespaces = false;
+		String last = "";
+		int i = 0;
+		for (char c : args.toCharArray()) {
+			if (c == '"' && (i == 0 || argarray[i - 1] != '\\')) {
+				if (ignorespaces)
+					ignorespaces = false;
+				else
+					ignorespaces = true;
+			} else if (c == ' ' && !ignorespaces && (i == 0 || argarray[i - 1] != '\\')) {
+				if (!last.isEmpty())
+					args3.add(last);
+				last = "";
+			} else if (c != '\\' || (i + 1 < argarray.length && argarray[i + 1] != '"'
+					&& (argarray[i + 1] != ' ' || ignorespaces))) {
+				last += c;
+			}
+
+			i++;
+		}
+		if (!last.isEmpty())
+			args3.add(last);
+		return args3;
+	}
+
+}

@@ -165,6 +165,23 @@ public class RemoteHttpAccountManager extends AccountManager {
 	}
 
 	@Override
+	public String getAccountIdBySaveUsername(String username) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("username", username);
+			JsonObject response = accountManagerRequest("getAccountIdBySaveUsername", payload);
+			if (!response.get("success").getAsBoolean())
+				return null;
+			return response.get("id").getAsString();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getAccountID!", e);
+			return null;
+		}
+	}
+
+	@Override
 	public boolean verifyPassword(String id, String password) {
 		// Request
 		try {
