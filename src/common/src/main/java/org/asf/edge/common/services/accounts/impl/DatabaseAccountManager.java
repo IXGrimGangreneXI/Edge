@@ -124,7 +124,7 @@ public class DatabaseAccountManager extends AccountManager {
 	@Override
 	public boolean isValidUsername(String username) {
 		if (username.replace(" ", "").equals("") || username.length() < 2 || username.length() > 100
-				|| !username.matches("^[A-Za-z].*$") || !username.matches("^[A-Za-z0-9@._#]+$"))
+				|| !username.matches("^[A-Za-z].*$") || !username.matches("^[A-Za-z0-9@._# ]+$"))
 			return false;
 		return true;
 	}
