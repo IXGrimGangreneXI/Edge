@@ -238,27 +238,32 @@ public class EdgeContentServerDumper {
 							promoUrl = promoUrl.substring(0, promoUrl.indexOf("</BkgIconRes>"));
 							promoUrl = decodeXML(promoUrl);
 
-							// Get path
-							URL promoU = new URL(promoUrl);
-							String path2 = promoU.getPath();
-							File dest = new File(outputRoot, path2);
-							if (dest.exists())
-								continue;
-							File outputFile = new File(outputRoot, path2 + ".tmp");
+							try {
+								// Get path
+								URL promoU = new URL(promoUrl);
+								String path2 = promoU.getPath();
+								File dest = new File(outputRoot, path2);
+								if (dest.exists())
+									continue;
+								File outputFile = new File(outputRoot, path2 + ".tmp");
 
-							// Download image
-							System.out.println(
-									"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
-							outputFile.getParentFile().mkdirs();
-							InputStream strmI = new URL(promoUrl).openStream();
-							FileOutputStream fO = new FileOutputStream(outputFile);
-							strmI.transferTo(fO);
-							fO.close();
+								// Download image
+								System.out.println(
+										"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
+								outputFile.getParentFile().mkdirs();
+								InputStream strmI = new URL(promoUrl).openStream();
+								FileOutputStream fO = new FileOutputStream(outputFile);
+								strmI.transferTo(fO);
+								fO.close();
 
-							// Finish
-							if (dest.exists())
-								dest.delete();
-							outputFile.renameTo(dest);
+								// Finish
+								if (dest.exists())
+									dest.delete();
+								outputFile.renameTo(dest);
+							} catch (IOException e) {
+								System.err.println("Failure! " + promoUrl + " was not downloaded!");
+								failed.add(promoUrl);
+							}
 						} else if (line.contains("<IconRes>")) {
 							String promoUrl = line.substring(line.indexOf("<IconRes>") + "<IconRes>".length());
 							promoUrl = promoUrl.substring(0, promoUrl.indexOf("</IconRes>"));
@@ -266,27 +271,32 @@ public class EdgeContentServerDumper {
 							if (!promoUrl.startsWith("http"))
 								continue;
 
-							// Get path
-							URL promoU = new URL(promoUrl);
-							String path2 = promoU.getPath();
-							File dest = new File(outputRoot, path2);
-							if (dest.exists())
-								continue;
-							File outputFile = new File(outputRoot, path2 + ".tmp");
+							try {
+								// Get path
+								URL promoU = new URL(promoUrl);
+								String path2 = promoU.getPath();
+								File dest = new File(outputRoot, path2);
+								if (dest.exists())
+									continue;
+								File outputFile = new File(outputRoot, path2 + ".tmp");
 
-							// Download image
-							System.out.println(
-									"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
-							outputFile.getParentFile().mkdirs();
-							InputStream strmI = new URL(promoUrl).openStream();
-							FileOutputStream fO = new FileOutputStream(outputFile);
-							strmI.transferTo(fO);
-							fO.close();
+								// Download image
+								System.out.println(
+										"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
+								outputFile.getParentFile().mkdirs();
+								InputStream strmI = new URL(promoUrl).openStream();
+								FileOutputStream fO = new FileOutputStream(outputFile);
+								strmI.transferTo(fO);
+								fO.close();
 
-							// Finish
-							if (dest.exists())
-								dest.delete();
-							outputFile.renameTo(dest);
+								// Finish
+								if (dest.exists())
+									dest.delete();
+								outputFile.renameTo(dest);
+							} catch (IOException e) {
+								System.err.println("Failure! " + promoUrl + " was not downloaded!");
+								failed.add(promoUrl);
+							}
 						} else if (line.contains("<ImageRes>")) {
 							String promoUrl = line.substring(line.indexOf("<ImageRes>") + "<ImageRes>".length());
 							promoUrl = promoUrl.substring(0, promoUrl.indexOf("</ImageRes>"));
@@ -294,27 +304,32 @@ public class EdgeContentServerDumper {
 							if (!promoUrl.startsWith("http"))
 								continue;
 
-							// Get path
-							URL promoU = new URL(promoUrl);
-							String path2 = promoU.getPath();
-							File dest = new File(outputRoot, path2);
-							if (dest.exists())
-								continue;
-							File outputFile = new File(outputRoot, path2 + ".tmp");
+							try {
+								// Get path
+								URL promoU = new URL(promoUrl);
+								String path2 = promoU.getPath();
+								File dest = new File(outputRoot, path2);
+								if (dest.exists())
+									continue;
+								File outputFile = new File(outputRoot, path2 + ".tmp");
 
-							// Download image
-							System.out.println(
-									"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
-							outputFile.getParentFile().mkdirs();
-							InputStream strmI = new URL(promoUrl).openStream();
-							FileOutputStream fO = new FileOutputStream(outputFile);
-							strmI.transferTo(fO);
-							fO.close();
+								// Download image
+								System.out.println(
+										"Downloading: " + promoUrl + " -> " + new File(outputRoot, path2).getPath());
+								outputFile.getParentFile().mkdirs();
+								InputStream strmI = new URL(promoUrl).openStream();
+								FileOutputStream fO = new FileOutputStream(outputFile);
+								strmI.transferTo(fO);
+								fO.close();
 
-							// Finish
-							if (dest.exists())
-								dest.delete();
-							outputFile.renameTo(dest);
+								// Finish
+								if (dest.exists())
+									dest.delete();
+								outputFile.renameTo(dest);
+							} catch (IOException e) {
+								System.err.println("Failure! " + promoUrl + " was not downloaded!");
+								failed.add(promoUrl);
+							}
 						}
 					}
 				} else if (nm.equals("LoadScreenDataDO.xml")) {
@@ -326,26 +341,32 @@ public class EdgeContentServerDumper {
 					// Parse xml
 					LoadScreenData screenData = mapper.readValue(xml, LoadScreenData.class);
 					for (LoadScreenData.LoadScreenBlock block : screenData.loadScreens) {
-						// Get path
-						URL screenU = new URL(block.name);
-						String path2 = screenU.getPath();
-						File dest = new File(outputRoot, path2);
-						if (dest.exists())
-							continue;
-						File outputFile = new File(outputRoot, path2 + ".tmp");
+						try {
+							// Get path
+							URL screenU = new URL(block.name);
+							String path2 = screenU.getPath();
+							File dest = new File(outputRoot, path2);
+							if (dest.exists())
+								continue;
+							File outputFile = new File(outputRoot, path2 + ".tmp");
 
-						// Download image
-						System.out.println("Downloading: " + screenU + " -> " + new File(outputRoot, path2).getPath());
-						outputFile.getParentFile().mkdirs();
-						InputStream strmI = screenU.openStream();
-						FileOutputStream fO = new FileOutputStream(outputFile);
-						strmI.transferTo(fO);
-						fO.close();
+							// Download image
+							System.out.println(
+									"Downloading: " + screenU + " -> " + new File(outputRoot, path2).getPath());
+							outputFile.getParentFile().mkdirs();
+							InputStream strmI = screenU.openStream();
+							FileOutputStream fO = new FileOutputStream(outputFile);
+							strmI.transferTo(fO);
+							fO.close();
 
-						// Finish
-						if (dest.exists())
-							dest.delete();
-						outputFile.renameTo(dest);
+							// Finish
+							if (dest.exists())
+								dest.delete();
+							outputFile.renameTo(dest);
+						} catch (IOException e) {
+							System.err.println("Failure! " + block.name + " was not downloaded!");
+							failed.add(block.name);
+						}
 					}
 				} else if (nm.equals("LoginContentDO.xml")) {
 					// Parse promos
@@ -365,26 +386,31 @@ public class EdgeContentServerDumper {
 							promoUrl = promoUrl.substring(0, promoUrl.indexOf("</URL>"));
 							promoUrl = decodeXML(promoUrl);
 
-							// Get path
-							URL promoU = new URL(promoUrl);
-							String path2 = promoU.getPath();
-							File dest = new File(outputRoot, path2);
-							if (dest.exists())
-								continue;
-							File outputFile = new File(outputRoot, path2 + ".tmp");
+							try {
+								// Get path
+								URL promoU = new URL(promoUrl);
+								String path2 = promoU.getPath();
+								File dest = new File(outputRoot, path2);
+								if (dest.exists())
+									continue;
+								File outputFile = new File(outputRoot, path2 + ".tmp");
 
-							// Download image
-							System.out.println("Downloading: " + promoUrl + " -> " + outputFile.getPath());
-							outputFile.getParentFile().mkdirs();
-							InputStream strmI = new URL(promoUrl).openStream();
-							FileOutputStream fO = new FileOutputStream(outputFile);
-							strmI.transferTo(fO);
-							fO.close();
+								// Download image
+								System.out.println("Downloading: " + promoUrl + " -> " + outputFile.getPath());
+								outputFile.getParentFile().mkdirs();
+								InputStream strmI = new URL(promoUrl).openStream();
+								FileOutputStream fO = new FileOutputStream(outputFile);
+								strmI.transferTo(fO);
+								fO.close();
 
-							// Finish
-							if (dest.exists())
-								dest.delete();
-							outputFile.renameTo(dest);
+								// Finish
+								if (dest.exists())
+									dest.delete();
+								outputFile.renameTo(dest);
+							} catch (IOException e) {
+								System.err.println("Failure! " + promoUrl + " was not downloaded!");
+								failed.add(promoUrl);
+							}
 						}
 					}
 				}
@@ -436,7 +462,9 @@ public class EdgeContentServerDumper {
 			System.err.println("");
 			System.err.println("");
 			System.err.println("There were failed downloads!");
-			for (String url : failed)
+			for (
+
+			String url : failed)
 				System.err.println(" - " + url);
 			System.err.println("");
 			System.err.println("");
