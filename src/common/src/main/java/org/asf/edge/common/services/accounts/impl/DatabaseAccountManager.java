@@ -46,7 +46,8 @@ import com.google.gson.JsonSyntaxException;
 
 public class DatabaseAccountManager extends AccountManager {
 
-	private Connection conn;
+	private String url;
+	private Properties props;
 	private Logger logger = LogManager.getLogger("AccountManager");
 	private static SecureRandom rnd = new SecureRandom();
 
@@ -89,11 +90,11 @@ public class DatabaseAccountManager extends AccountManager {
 			databaseManagerConfig = accountManagerConfig.get("databaseManager").getAsJsonObject();
 
 		// Load url
-		String url = databaseManagerConfig.get("url").getAsString();
+		url = databaseManagerConfig.get("url").getAsString();
 
 		// Load properties
 		JsonObject properties = databaseManagerConfig.get("properties").getAsJsonObject();
-		Properties props = new Properties();
+		props = new Properties();
 		for (String key : properties.keySet())
 			props.setProperty(key, properties.get(key).getAsString());
 
@@ -101,20 +102,22 @@ public class DatabaseAccountManager extends AccountManager {
 			// Load drivers
 			Class.forName("com.mysql.cj.jdbc.Driver");
 
-			// Connect
-			conn = DriverManager.getConnection(url, props);
-
 			// Create tables
-			Statement statement = conn.createStatement();
-			statement.executeUpdate("CREATE TABLE IF NOT EXISTS EMAILMAP (EMAIL TEXT, ID CHAR(36))");
-			statement
-					.executeUpdate("CREATE TABLE IF NOT EXISTS USERMAP (USERNAME TEXT, ID CHAR(36), CREDS BINARY(48))");
-			statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEUSERNAMEMAP (USERNAME TEXT, ID CHAR(36))");
-			statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEMAP (ACCID CHAR(36), SAVES LONGTEXT)");
-			statement.executeUpdate(
-					"CREATE TABLE IF NOT EXISTS ACCOUNTWIDEPLAYERDATA (PATH varchar(294), DATA LONGTEXT)");
-			statement.executeUpdate(
-					"CREATE TABLE IF NOT EXISTS SAVESPECIFICPLAYERDATA (PATH varchar(294), DATA LONGTEXT)");
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				Statement statement = conn.createStatement();
+				statement.executeUpdate("CREATE TABLE IF NOT EXISTS EMAILMAP (EMAIL TEXT, ID CHAR(36))");
+				statement.executeUpdate(
+						"CREATE TABLE IF NOT EXISTS USERMAP (USERNAME TEXT, ID CHAR(36), CREDS BINARY(48))");
+				statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEUSERNAMEMAP (USERNAME TEXT, ID CHAR(36))");
+				statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEMAP (ACCID CHAR(36), SAVES LONGTEXT)");
+				statement.executeUpdate(
+						"CREATE TABLE IF NOT EXISTS ACCOUNTWIDEPLAYERDATA (PATH varchar(294), DATA LONGTEXT)");
+				statement.executeUpdate(
+						"CREATE TABLE IF NOT EXISTS SAVESPECIFICPLAYERDATA (PATH varchar(294), DATA LONGTEXT)");
+			} finally {
+				conn.close();
+			}
 		} catch (SQLException | ClassNotFoundException e) {
 			logger.error("Failed to connect to database!", e);
 			System.exit(1);
@@ -138,25 +141,30 @@ public class DatabaseAccountManager extends AccountManager {
 	public boolean isUsernameTaken(String username) {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT COUNT(ID) FROM USERMAP WHERE USERNAME = ?");
-			statement.setString(1, username);
-			ResultSet res = statement.executeQuery();
-			if (!res.next())
-				return false;
-			if (res.getInt(1) != 0)
-				return true;
+			Connection conn = DriverManager.getConnection(url, props);
 			try {
-				// Create prepared statement
-				statement = conn.prepareStatement("SELECT COUNT(ID) FROM SAVEUSERNAMEMAP WHERE USERNAME = ?");
+				var statement = conn.prepareStatement("SELECT COUNT(ID) FROM USERMAP WHERE USERNAME = ?");
 				statement.setString(1, username);
-				res = statement.executeQuery();
+				ResultSet res = statement.executeQuery();
 				if (!res.next())
-					return false; // Not found
-				return res.getInt(1) != 0;
-			} catch (SQLException e) {
-				logger.error("Failed to execute database query request while trying to check if username '" + username
-						+ "' is taken", e);
-				return false;
+					return false;
+				if (res.getInt(1) != 0)
+					return true;
+				try {
+					// Create prepared statement
+					statement = conn.prepareStatement("SELECT COUNT(ID) FROM SAVEUSERNAMEMAP WHERE USERNAME = ?");
+					statement.setString(1, username);
+					res = statement.executeQuery();
+					if (!res.next())
+						return false; // Not found
+					return res.getInt(1) != 0;
+				} catch (SQLException e) {
+					logger.error("Failed to execute database query request while trying to check if username '"
+							+ username + "' is taken", e);
+					return false;
+				}
+			} finally {
+				conn.close();
 			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to check if username '" + username
@@ -169,12 +177,17 @@ public class DatabaseAccountManager extends AccountManager {
 	public String getAccountID(String username) {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT ID FROM USERMAP WHERE USERNAME = ?");
-			statement.setString(1, username);
-			ResultSet res = statement.executeQuery();
-			if (!res.next())
-				return null;
-			return res.getString("ID");
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				var statement = conn.prepareStatement("SELECT ID FROM USERMAP WHERE USERNAME = ?");
+				statement.setString(1, username);
+				ResultSet res = statement.executeQuery();
+				if (!res.next())
+					return null;
+				return res.getString("ID");
+			} finally {
+				conn.close();
+			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to pull user ID of username '"
 					+ username + "'", e);
@@ -186,23 +199,28 @@ public class DatabaseAccountManager extends AccountManager {
 	public String getAccountIdBySaveUsername(String username) {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT ID FROM SAVEUSERNAMEMAP WHERE USERNAME = ?");
-			statement.setString(1, username);
-			ResultSet res = statement.executeQuery();
-			if (!res.next())
-				return null;
-			String id = res.getString("ID");
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				var statement = conn.prepareStatement("SELECT ID FROM SAVEUSERNAMEMAP WHERE USERNAME = ?");
+				statement.setString(1, username);
+				ResultSet res = statement.executeQuery();
+				if (!res.next())
+					return null;
+				String id = res.getString("ID");
 
-			// Pull account ID
-			statement = conn.prepareStatement("SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
-			statement.setString(1, id + "//accountid");
-			res = statement.executeQuery();
-			if (!res.next())
-				return null;
-			String data = res.getString("DATA");
-			if (data == null)
-				return null;
-			return JsonParser.parseString(data).getAsString();
+				// Pull account ID
+				statement = conn.prepareStatement("SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
+				statement.setString(1, id + "//accountid");
+				res = statement.executeQuery();
+				if (!res.next())
+					return null;
+				String data = res.getString("DATA");
+				if (data == null)
+					return null;
+				return JsonParser.parseString(data).getAsString();
+			} finally {
+				conn.close();
+			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to pull user ID of save username '"
 					+ username + "'", e);
@@ -214,35 +232,40 @@ public class DatabaseAccountManager extends AccountManager {
 	public boolean verifyPassword(String id, String password) {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT CREDS FROM USERMAP WHERE ID = ?");
-			statement.setString(1, id);
-			ResultSet res = statement.executeQuery();
-			if (!res.next())
-				return false;
-			byte[] data = res.getBytes("CREDS");
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				var statement = conn.prepareStatement("SELECT CREDS FROM USERMAP WHERE ID = ?");
+				statement.setString(1, id);
+				ResultSet res = statement.executeQuery();
+				if (!res.next())
+					return false;
+				byte[] data = res.getBytes("CREDS");
 
-			// Check data
-			if (data == null)
-				return false;
-			if (data.length != 48) {
-				logger.error("Detected corrupted credentials for ID '" + id + "' during password verification.");
-				return false;
-			}
-
-			// Get salt and hash from data
-			byte[] salt = Arrays.copyOfRange(data, 0, 32);
-			byte[] hash = Arrays.copyOfRange(data, 32, 48);
-
-			// Get current password
-			byte[] current = getHash(salt, password.toCharArray());
-
-			// Verify
-			for (int i = 0; i < hash.length; i++) {
-				if (hash[i] != current[i]) {
+				// Check data
+				if (data == null)
+					return false;
+				if (data.length != 48) {
+					logger.error("Detected corrupted credentials for ID '" + id + "' during password verification.");
 					return false;
 				}
+
+				// Get salt and hash from data
+				byte[] salt = Arrays.copyOfRange(data, 0, 32);
+				byte[] hash = Arrays.copyOfRange(data, 32, 48);
+
+				// Get current password
+				byte[] current = getHash(salt, password.toCharArray());
+
+				// Verify
+				for (int i = 0; i < hash.length; i++) {
+					if (hash[i] != current[i]) {
+						return false;
+					}
+				}
+				return true;
+			} finally {
+				conn.close();
 			}
-			return true;
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to verify password for ID '" + id + "'",
 					e);
@@ -254,12 +277,17 @@ public class DatabaseAccountManager extends AccountManager {
 	public boolean accountExists(String id) {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT COUNT(USERNAME) FROM USERMAP WHERE ID = ?");
-			statement.setString(1, id);
-			ResultSet res = statement.executeQuery();
-			if (!res.next())
-				return false;
-			return res.getInt(1) != 0;
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				var statement = conn.prepareStatement("SELECT COUNT(USERNAME) FROM USERMAP WHERE ID = ?");
+				statement.setString(1, id);
+				ResultSet res = statement.executeQuery();
+				if (!res.next())
+					return false;
+				return res.getInt(1) != 0;
+			} finally {
+				conn.close();
+			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to check if ID '" + id + "' exists", e);
 			return false;
@@ -270,15 +298,20 @@ public class DatabaseAccountManager extends AccountManager {
 	public AccountObject getAccount(String id) {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT USERNAME FROM USERMAP WHERE ID = ?");
-			statement.setString(1, id);
-			ResultSet res = statement.executeQuery();
-			if (!res.next())
-				return null;
-			String username = res.getString("USERNAME");
-			if (username == null)
-				return null;
-			return new DatabaseAccountObject(id, username, conn, this);
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				var statement = conn.prepareStatement("SELECT USERNAME FROM USERMAP WHERE ID = ?");
+				statement.setString(1, id);
+				ResultSet res = statement.executeQuery();
+				if (!res.next())
+					return null;
+				String username = res.getString("USERNAME");
+				if (username == null)
+					return null;
+				return new DatabaseAccountObject(id, username, url, props, this);
+			} finally {
+				conn.close();
+			}
 		} catch (SQLException e) {
 			logger.error(
 					"Failed to execute database query request while trying to pull account object of ID '" + id + "'",
@@ -291,15 +324,20 @@ public class DatabaseAccountManager extends AccountManager {
 	public AccountObject getGuestAccount(String guestID) {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT ID FROM USERMAP WHERE USERNAME = ?");
-			statement.setString(1, "g/" + guestID);
-			ResultSet res = statement.executeQuery();
-			if (!res.next())
-				return null;
-			String id = res.getString("ID");
-			if (id == null)
-				return null;
-			return new DatabaseAccountObject(id, "g/" + guestID, conn, this);
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				var statement = conn.prepareStatement("SELECT ID FROM USERMAP WHERE USERNAME = ?");
+				statement.setString(1, "g/" + guestID);
+				ResultSet res = statement.executeQuery();
+				if (!res.next())
+					return null;
+				String id = res.getString("ID");
+				if (id == null)
+					return null;
+				return new DatabaseAccountObject(id, "g/" + guestID, url, props, this);
+			} finally {
+				conn.close();
+			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to pull account object of guest ID '"
 					+ guestID + "'", e);
@@ -311,12 +349,17 @@ public class DatabaseAccountManager extends AccountManager {
 	public String getAccountIDByEmail(String email) {
 		try {
 			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT ID FROM EMAILMAP WHERE EMAIL = ?");
-			statement.setString(1, email);
-			ResultSet res = statement.executeQuery();
-			if (!res.next())
-				return null;
-			return res.getString("ID");
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				var statement = conn.prepareStatement("SELECT ID FROM EMAILMAP WHERE EMAIL = ?");
+				statement.setString(1, email);
+				ResultSet res = statement.executeQuery();
+				if (!res.next())
+					return null;
+				return res.getString("ID");
+			} finally {
+				conn.close();
+			}
 		} catch (SQLException e) {
 			logger.error(
 					"Failed to execute database query request while trying to pull user ID of email '" + email + "'",
@@ -369,22 +412,28 @@ public class DatabaseAccountManager extends AccountManager {
 			id = UUID.randomUUID().toString();
 
 		// Register account
-		DatabaseAccountObject obj = new DatabaseAccountObject(id, "g/" + guestID, conn, this);
-
-		// Insert information
+		DatabaseAccountObject obj;
 		try {
-			// Insert user
-			var statement = conn.prepareStatement("INSERT INTO USERMAP VALUES(?, ?, ?)");
-			statement.setString(1, "g/" + guestID);
-			statement.setString(2, id);
-			statement.setBytes(3, new byte[0]);
-			statement.execute();
+			// Insert information
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				obj = new DatabaseAccountObject(id, "g/" + guestID, url, props, this);
 
-			// Insert save
-			statement = conn.prepareStatement("INSERT INTO SAVEMAP VALUES(?, ?)");
-			statement.setString(1, id);
-			statement.setString(2, "[]");
-			statement.execute();
+				// Insert user
+				var statement = conn.prepareStatement("INSERT INTO USERMAP VALUES(?, ?, ?)");
+				statement.setString(1, "g/" + guestID);
+				statement.setString(2, id);
+				statement.setBytes(3, new byte[0]);
+				statement.execute();
+
+				// Insert save
+				statement = conn.prepareStatement("INSERT INTO SAVEMAP VALUES(?, ?)");
+				statement.setString(1, id);
+				statement.setString(2, "[]");
+				statement.execute();
+			} finally {
+				conn.close();
+			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to register account '" + id + "'", e);
 			return null;
@@ -432,10 +481,8 @@ public class DatabaseAccountManager extends AccountManager {
 		while (accountExists(id))
 			id = UUID.randomUUID().toString();
 
-		// Register account
-		DatabaseAccountObject obj = new DatabaseAccountObject(id, username, conn, this);
-
 		// Insert information
+		DatabaseAccountObject obj;
 		try {
 			// Create salt and compute password
 			byte[] salt = salt();
@@ -446,24 +493,32 @@ public class DatabaseAccountManager extends AccountManager {
 			for (int i = 32; i < 48; i++)
 				cred[i] = hash[i - 32];
 
-			// Insert email
-			var statement = conn.prepareStatement("INSERT INTO EMAILMAP VALUES(?, ?)");
-			statement.setString(1, email);
-			statement.setString(2, id);
-			statement.execute();
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				// Register account
+				obj = new DatabaseAccountObject(id, username, url, props, this);
 
-			// Insert user
-			statement = conn.prepareStatement("INSERT INTO USERMAP VALUES(?, ?, ?)");
-			statement.setString(1, username);
-			statement.setString(2, id);
-			statement.setBytes(3, cred);
-			statement.execute();
+				// Insert email
+				var statement = conn.prepareStatement("INSERT INTO EMAILMAP VALUES(?, ?)");
+				statement.setString(1, email);
+				statement.setString(2, id);
+				statement.execute();
 
-			// Insert save
-			statement = conn.prepareStatement("INSERT INTO SAVEMAP VALUES(?, ?)");
-			statement.setString(1, id);
-			statement.setString(2, "[]");
-			statement.execute();
+				// Insert user
+				statement = conn.prepareStatement("INSERT INTO USERMAP VALUES(?, ?, ?)");
+				statement.setString(1, username);
+				statement.setString(2, id);
+				statement.setBytes(3, cred);
+				statement.execute();
+
+				// Insert save
+				statement = conn.prepareStatement("INSERT INTO SAVEMAP VALUES(?, ?)");
+				statement.setString(1, id);
+				statement.setString(2, "[]");
+				statement.execute();
+			} finally {
+				conn.close();
+			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to register account '" + id + "'", e);
 			return null;
@@ -536,24 +591,29 @@ public class DatabaseAccountManager extends AccountManager {
 	@Override
 	public AccountSaveContainer getSaveByID(String id) {
 		try {
-			// Create prepared statement
-			var statement = conn.prepareStatement("SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
-			statement.setString(1, id + "//accountid");
-			ResultSet res = statement.executeQuery();
-			if (!res.next())
-				return null;
-			String data = res.getString("DATA");
-			if (data == null)
-				return null;
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				// Create prepared statement
+				var statement = conn.prepareStatement("SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
+				statement.setString(1, id + "//accountid");
+				ResultSet res = statement.executeQuery();
+				if (!res.next())
+					return null;
+				String data = res.getString("DATA");
+				if (data == null)
+					return null;
 
-			// Retrieve account
-			String accID = JsonParser.parseString(data).getAsString();
-			AccountObject acc = getAccount(accID);
-			if (acc == null)
-				return null;
+				// Retrieve account
+				String accID = JsonParser.parseString(data).getAsString();
+				AccountObject acc = getAccount(accID);
+				if (acc == null)
+					return null;
 
-			// Retrieve save
-			return acc.getSave(id);
+				// Retrieve save
+				return acc.getSave(id);
+			} finally {
+				conn.close();
+			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to retrieve save '" + id + "'", e);
 			return null;
