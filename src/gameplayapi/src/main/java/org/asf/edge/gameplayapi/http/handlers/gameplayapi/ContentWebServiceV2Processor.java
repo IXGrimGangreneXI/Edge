@@ -900,7 +900,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 				ItemUpdateBlock b = new ItemUpdateBlock();
 				b.itemID = itm.getItemDefID();
 				b.itemUniqueID = itm.getUniqueID();
-				b.addedQuantity = request.quantity;
+				b.addedQuantity = (request.quantity <= 0 ? -1 : request.quantity);
 				updates.add(b);
 			}
 		}

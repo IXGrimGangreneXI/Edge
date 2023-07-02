@@ -444,14 +444,16 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		JsonObject pairData = new JsonObject();
 		if (data.entryExists("pairs-" + pair))
 			pairData = data.getEntry("pairs-" + pair).getAsJsonObject();
-		for (KeyValuePairData pairI : updateData.items) {
-			// Set entry
-			JsonObject p = new JsonObject();
-			p.addProperty("value", pairI.value);
-			p.addProperty("time", System.currentTimeMillis());
-			pairData.add(pairI.key, p);
+		if (updateData != null && updateData.items != null) {
+			for (KeyValuePairData pairI : updateData.items) {
+				// Set entry
+				JsonObject p = new JsonObject();
+				p.addProperty("value", pairI.value);
+				p.addProperty("time", System.currentTimeMillis());
+				pairData.add(pairI.key, p);
+			}
+			data.setEntry("pairs-" + pair, pairData);
 		}
-		data.setEntry("pairs-" + pair, pairData);
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("boolean", true));
