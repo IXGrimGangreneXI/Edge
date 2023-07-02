@@ -139,8 +139,10 @@ public class EdgeGlobalServerMain {
 		if (contentSrvConfig.server == null) {
 			logger.debug("Loading encryption settings...");
 			contentSrvConfig.https = contentSrvJson.get("https").getAsBoolean();
-			contentSrvConfig.tlsKeystore = contentSrvJson.get("tlsKeystore").getAsString();
-			contentSrvConfig.tlsKeystorePassword = contentSrvJson.get("tlsKeystorePassword").getAsString();
+			if (contentSrvConfig.https) {
+				contentSrvConfig.tlsKeystore = contentSrvJson.get("tlsKeystore").getAsString();
+				contentSrvConfig.tlsKeystorePassword = contentSrvJson.get("tlsKeystorePassword").getAsString();
+			}
 		}
 
 		// Common api server

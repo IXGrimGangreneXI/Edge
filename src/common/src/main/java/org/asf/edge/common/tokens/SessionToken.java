@@ -110,7 +110,7 @@ public class SessionToken {
 				return TokenParseResult.INVALID_DATA;
 
 			// Check time
-			if (acc.getLastLoginTime() != lastLoginTime)
+			if (acc.getLastLoginTime() != lastLoginTime && saveID != null)
 				return TokenParseResult.LOGGED_IN_ELSEWHERE;
 
 			// Verify expiry
