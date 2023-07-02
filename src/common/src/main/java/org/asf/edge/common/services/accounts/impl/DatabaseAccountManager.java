@@ -73,8 +73,10 @@ public class DatabaseAccountManager extends AccountManager {
 		}
 		JsonObject databaseManagerConfig = new JsonObject();
 		if (!accountManagerConfig.has("databaseManager")) {
-			databaseManagerConfig.addProperty("url", "jdbc:sqlite:account-data.db");
+			databaseManagerConfig.addProperty("url", "jdbc:mysql://localhost/edge");
 			JsonObject props = new JsonObject();
+			props.addProperty("user", "edge");
+			props.addProperty("password", "edgesodserver");
 			databaseManagerConfig.add("properties", props);
 			accountManagerConfig.add("databaseManager", databaseManagerConfig);
 
