@@ -136,7 +136,7 @@ public class EdgeGlobalServerMain {
 		contentSrvConfig.contentRequestListenPath = contentSrvJson.get("contentRequestListenPath").getAsString();
 		contentSrvConfig.contentDataPath = contentSrvJson.get("contentDataPath").getAsString();
 		contentSrvConfig.allowIndexingAssets = contentSrvJson.get("allowIndexingAssets").getAsBoolean();
-		if (contentSrvConfig.server != null) {
+		if (contentSrvConfig.server == null) {
 			logger.debug("Loading encryption settings...");
 			contentSrvConfig.https = contentSrvJson.get("https").getAsBoolean();
 			contentSrvConfig.tlsKeystore = contentSrvJson.get("tlsKeystore").getAsString();
