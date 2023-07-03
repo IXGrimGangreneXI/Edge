@@ -231,14 +231,15 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 				if (missionFilterMatch || groupFilterMatch) {
 					// Pull data
 					UserQuestInfo quest = questManager.getUserQuest(save, data.id);
-					if (filter.getCompletedMissions && quest.isCompleted()) {
-						// Add
-						questLst.add(quest.getData());
-					} else if (!filter.getCompletedMissions && !quest.isCompleted()) {
+					if ((filter.getCompletedMissions && quest.isCompleted())
+							|| (!filter.getCompletedMissions && !quest.isCompleted())) {
 						// Dont add inactive quests to minimize transfer load
-						if (quest.isActive() || explicitMatchGroup || explicitMatchMission) {
-							questLst.add(quest.getData());
+						MissionData d = quest.getData();
+						if (!explicitMatchGroup || !explicitMatchMission) {
+							// Strip static data unless its an explicit match
+							d.staticData = null;
 						}
+						questLst.add(d);
 					}
 				}
 			}
