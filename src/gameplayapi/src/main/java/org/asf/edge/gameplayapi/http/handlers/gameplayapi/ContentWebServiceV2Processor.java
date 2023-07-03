@@ -228,7 +228,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 					explicitMatchGroup = IntStream.of(filter.groupIDs).anyMatch(t -> data.groupID == t);
 					groupFilterMatch = explicitMatchGroup;
 				}
-				if (missionFilterMatch && groupFilterMatch) {
+				if (missionFilterMatch || groupFilterMatch) {
 					// Pull data
 					UserQuestInfo quest = questManager.getUserQuest(save, data.id);
 					if (filter.getCompletedMissions && quest.isCompleted()) {
@@ -236,7 +236,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 						questLst.add(quest.getData());
 					} else if (!filter.getCompletedMissions && !quest.isCompleted()) {
 						// Dont add inactive quests to minimize transfer load
-						if (explicitMatchGroup || explicitMatchMission || quest.isActive()) {
+						if (quest.isActive() || explicitMatchGroup || explicitMatchMission) {
 							questLst.add(quest.getData());
 						}
 					}
