@@ -723,37 +723,48 @@ public class SnifferMain {
 		url += "DWADragonsUnity/" + config.get("platform").getAsString() + "/" + config.get("version").getAsString()
 				+ "/DWADragonsMain.xml";
 		URL u = new URL(url);
-		InputStream strm = u.openStream();
-		byte[] enc = Base64.getDecoder().decode(strm.readAllBytes());
-		strm.close();
 
 		// Compute key
-		log.info("Computing key...");
-		// Compute key
-		byte[] key;
-		try {
-			MessageDigest digest = MessageDigest.getInstance("MD5");
-			key = digest.digest(config.get("secret").getAsString().getBytes("ASCII"));
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
+		String man;
+		if (!config.get("secret").getAsString().equals("unset")) {
+			InputStream strm = u.openStream();
+			byte[] enc = Base64.getDecoder().decode(strm.readAllBytes());
+			strm.close();
+
+			log.info("Computing key...");
+
+			// Compute key
+			byte[] key;
+			try {
+				MessageDigest digest = MessageDigest.getInstance("MD5");
+				key = digest.digest(config.get("secret").getAsString().getBytes("ASCII"));
+			} catch (NoSuchAlgorithmException e) {
+				throw new RuntimeException(e);
+			}
+
+			// Decrypt manifest
+			log.info("Decrypting manifest...");
+			byte[] dec = TripleDesUtil.decrypt(enc, key);
+			man = new String(dec, "ASCII");
+		} else {
+			InputStream strm = u.openStream();
+			man = new String(strm.readAllBytes(), "UTF-8");
+			strm.close();
 		}
-
-		// Decrypt manifest
-		log.info("Decrypting manifest...");
-		byte[] dec = TripleDesUtil.decrypt(enc, key);
-		String man = new String(dec, "ASCII");
 
 		// Parse manifest
 		log.info("Parsing manifest...");
 		XmlMapper mapper = new XmlMapper();
 		ObjectNode manifest = mapper.readValue(man, ObjectNode.class);
-		String sfsHost = manifest.get("MMOServer").asText();
-		int sfsPort = manifest.get("MMOServerPort").asInt();
+		if (manifest.has("MMOServer")) {
+			String sfsHost = manifest.get("MMOServer").asText();
+			int sfsPort = manifest.get("MMOServerPort").asInt();
 
-		// Start binary proxy
-		log.info("Starting binary proxy...");
-		currentPort = sfsPort + 1;
-		startBinaryProxy(sfsPort, sfsHost, sfsPort);
+			// Start binary proxy
+			log.info("Starting binary proxy...");
+			currentPort = sfsPort + 1;
+			startBinaryProxy(sfsPort, sfsHost, sfsPort);
+		}
 
 		// Modify manifest
 		log.info("Modifying manifest...");
@@ -763,9 +774,23 @@ public class SnifferMain {
 					config.get("host").getAsString() + ":" + config.get("port").getAsString()));
 
 		// Re-encrypt
-		log.info("Re-encrypting manifest...");
-		enc = TripleDesUtil.encrypt(man.getBytes("ASCII"), key);
-		encryptedManifest = Base64.getEncoder().encodeToString(enc);
+		if (!config.get("secret").getAsString().equals("unset")) {
+			log.info("Computing key...");
+
+			// Compute key
+			byte[] key;
+			try {
+				MessageDigest digest = MessageDigest.getInstance("MD5");
+				key = digest.digest(config.get("secret").getAsString().getBytes("ASCII"));
+			} catch (NoSuchAlgorithmException e) {
+				throw new RuntimeException(e);
+			}
+
+			// Re-encrypt
+			log.info("Re-encrypting manifest...");
+			encryptedManifest = Base64.getEncoder().encodeToString(TripleDesUtil.encrypt(man.getBytes("ASCII"), key));
+		} else
+			encryptedManifest = man;
 
 		// Create http server
 		log.info("Setting up http server...");

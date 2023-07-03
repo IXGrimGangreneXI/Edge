@@ -63,6 +63,20 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 	}
 
 	@Function(allowedMethods = { "POST" })
+	public void getProfileTagAll(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Handle profile tag request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+
+		// TODO: dummy'd
+		setResponseContent("text/xml", req.generateXmlValue("ArrayOfProfileTag", null));
+	}
+
+	@Function(allowedMethods = { "POST" })
 	public void getQuestions(FunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();

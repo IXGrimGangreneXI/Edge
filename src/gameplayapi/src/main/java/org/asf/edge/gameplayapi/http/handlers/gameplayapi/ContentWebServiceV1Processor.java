@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.TlsSecuredHttpServer;
@@ -800,6 +801,73 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("boolean", found));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getUnselectedPetByTypes(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Handle dragon data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+		String[] types = req.payload.get("petTypeIDs").split(",");
+
+		// Retrieve container
+		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
+			AccountDataContainer data = account.getAccountData();
+			if (!userID.equals(account.getAccountID()))
+				data = account.getSave(userID).getSaveData();
+
+			// Pull dragons
+			data = data.getChildContainer("dragons");
+			JsonArray dragonIds = new JsonArray();
+			if (data.entryExists("dragonlist"))
+				dragonIds = data.getEntry("dragonlist").getAsJsonArray();
+			else
+				data.setEntry("dragonlist", dragonIds);
+
+			// Prepare response
+			ArrayList<ObjectNode> dragons = new ArrayList<ObjectNode>();
+
+			// Populate list
+			for (JsonElement ele : dragonIds) {
+				// Load dragon
+				String id = ele.getAsString();
+				ObjectNode dragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(), ObjectNode.class);
+
+				// Add if needed
+				if (types.length == 0 || Stream.of(types).anyMatch(t -> t.equals(dragon.get("ptid").asText())))
+					dragons.add(dragon);
+			}
+
+			// Set response
+			if (dragons.size() != 0) {
+				DragonListData ls = new DragonListData();
+				ls.dragons = dragons.toArray(t -> new ObjectNode[t]);
+				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", ls));
+			} else
+				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", null));
+		} else {
+			setResponseStatus(403, "Forbidden");
+		}
 	}
 
 	@Function(allowedMethods = { "POST", "GET" })

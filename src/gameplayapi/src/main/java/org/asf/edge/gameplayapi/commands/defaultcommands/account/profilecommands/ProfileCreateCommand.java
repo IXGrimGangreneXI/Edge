@@ -125,14 +125,14 @@ public class ProfileCreateCommand implements IEdgeServerCommand {
 				int current = 0;
 				if (currencyAccWide.entryExists("gems"))
 					current = currencyAccWide.getEntry("gems").getAsInt();
-				if (current < 750) {
+				if (current < 250) {
 					// Error
 					outputWriteLineCallback.accept("Error: not enough gems");
 					return null;
 				}
 
 				// Remove gems
-				current -= 750;
+				current -= 250;
 				currencyAccWide.setEntry("gems", new JsonPrimitive(current));
 			} catch (IOException e) {
 				outputWriteLineCallback.accept("Error: failed to modify currency data");
