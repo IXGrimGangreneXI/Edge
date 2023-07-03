@@ -19,8 +19,8 @@ public class ApplicationManifestPreProcessor implements IPreProcessor {
 
 	@Override
 	public boolean match(String path, String method, RemoteClient client, String contentType, HttpRequest request,
-			HttpResponse response) {
-		return path.endsWith("/DWADragonsMain.xml");
+			HttpResponse response, File sourceDir) {
+		return path.endsWith("/DWADragonsMain.xml") && !new File(sourceDir, path + ".edgeunencrypted").exists();
 	}
 
 	@Override

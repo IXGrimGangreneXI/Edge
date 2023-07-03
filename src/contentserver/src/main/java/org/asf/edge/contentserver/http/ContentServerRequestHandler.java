@@ -40,7 +40,7 @@ public class ContentServerRequestHandler extends HttpPushProcessor {
 
 	public interface IPreProcessor {
 		public boolean match(String path, String method, RemoteClient client, String contentType, HttpRequest request,
-				HttpResponse response);
+				HttpResponse response, File sourceDir);
 
 		public InputStream preProcess(String path, String method, RemoteClient client, String contentType,
 				HttpRequest request, HttpResponse response, InputStream source, File sourceDir) throws IOException;
@@ -114,7 +114,7 @@ public class ContentServerRequestHandler extends HttpPushProcessor {
 		// Find preprocessor
 		boolean processed = false;
 		for (IPreProcessor processor : preProcessors) {
-			if (processor.match(path, method, client, contentType, getRequest(), getResponse())) {
+			if (processor.match(path, method, client, contentType, getRequest(), getResponse(), sourceDir)) {
 				// Run preprocessor
 				fileStream = processor.preProcess(path, method, client, contentType, getRequest(), getResponse(),
 						fileStream, sourceDir);

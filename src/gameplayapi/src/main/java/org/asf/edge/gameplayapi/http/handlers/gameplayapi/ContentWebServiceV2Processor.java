@@ -856,7 +856,10 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 	 */
 	public static InventoryUpdateResponseData processCommonInventorySet(SetCommonInventoryRequestData[] requests,
 			AccountDataContainer data, int container) {
-		// PRepare response
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Prepare response
 		InventoryUpdateResponseData resp = new InventoryUpdateResponseData();
 		ArrayList<ItemUpdateBlock> updates = new ArrayList<ItemUpdateBlock>();
 		resp.success = true;
@@ -897,11 +900,13 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 				}
 
 				// Add update
-				ItemUpdateBlock b = new ItemUpdateBlock();
-				b.itemID = itm.getItemDefID();
-				b.itemUniqueID = itm.getUniqueID();
-				b.addedQuantity = (request.quantity <= 0 ? -1 : request.quantity);
-				updates.add(b);
+				if (request.quantity > 0) {
+					ItemUpdateBlock b = new ItemUpdateBlock();
+					b.itemID = itm.getItemDefID();
+					b.itemUniqueID = itm.getUniqueID();
+					b.addedQuantity = request.quantity;
+					updates.add(b);
+				}
 			}
 		}
 

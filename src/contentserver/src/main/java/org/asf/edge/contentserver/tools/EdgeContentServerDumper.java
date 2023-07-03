@@ -496,21 +496,30 @@ public class EdgeContentServerDumper {
 		String fileF = file;
 		InputStream strm = new URL(url).openStream();
 		if (Stream.of(tdEncryptedFiles).anyMatch(t -> t.equals(fileF))) {
-			// Decrypt this file
-
-			// Compute key
-			byte[] keyHash;
-			try {
-				MessageDigest digest = MessageDigest.getInstance("MD5");
-				keyHash = digest.digest(key.getBytes("UTF-8"));
-			} catch (NoSuchAlgorithmException e) {
-				throw new RuntimeException(e);
-			}
-
-			// Read data
-			byte[] data = Base64.getDecoder().decode(strm.readAllBytes());
+			// Check if this is a encrypted manifest
+			String man = new String(strm.readAllBytes(), "UTF-8");
 			strm.close();
-			strm = new ByteArrayInputStream(TripleDesUtil.decrypt(data, keyHash));
+			if (man.matches("^([A-Za-z0-9+\\/]{4})*([A-Za-z0-9+\\/]{3}=|[A-Za-z0-9+\\/]{2}==)?$")) {
+				// Decrypt this file
+
+				// Compute key
+				byte[] keyHash;
+				try {
+					MessageDigest digest = MessageDigest.getInstance("MD5");
+					keyHash = digest.digest(key.getBytes("UTF-8"));
+				} catch (NoSuchAlgorithmException e) {
+					throw new RuntimeException(e);
+				}
+
+				// Read data
+				byte[] data = Base64.getDecoder().decode(man);
+				strm = new ByteArrayInputStream(TripleDesUtil.decrypt(data, keyHash));
+
+			} else {
+				// Mark exception for this file
+				strm = new ByteArrayInputStream(man.getBytes("UTF-8"));
+				new File(output, file + ".edgeunencrypted").createNewFile();
+			}
 		}
 
 		// Open output
