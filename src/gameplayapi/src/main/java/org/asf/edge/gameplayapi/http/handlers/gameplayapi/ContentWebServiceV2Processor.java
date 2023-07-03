@@ -255,6 +255,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 	private void stripMission(MissionData d) {
 		d.staticData = null;
 		d.rewards = null;
+		d.acceptanceRewards = null;
 		if (d.childMissions != null)
 			for (MissionData m : d.childMissions)
 				stripMission(m);
