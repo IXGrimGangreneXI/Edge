@@ -215,18 +215,30 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			// Add missions
 			for (MissionData data : quests) {
 				// Verify filters
-				boolean missionFilterMatch = (filter.missions == null || filter.missions.length == 0
-						|| (Stream.of(filter.missions).anyMatch(
-								t -> t.missionID == data.id && (t.versionID == -1 || t.versionID == data.version))));
-				boolean groupFilterMatch = (filter.groupIDs == null || filter.groupIDs.length == 0
-						|| IntStream.of(filter.groupIDs).anyMatch(t -> data.groupID == t));
+				boolean missionFilterMatch = (filter.missions == null || filter.missions.length == 0);
+				boolean explicitMatchMission = false;
+				if (!missionFilterMatch) {
+					explicitMatchMission = (Stream.of(filter.missions).anyMatch(
+							t -> t.missionID == data.id && (t.versionID == -1 || t.versionID == data.version)));
+					missionFilterMatch = explicitMatchMission;
+				}
+				boolean groupFilterMatch = (filter.groupIDs == null || filter.groupIDs.length == 0);
+				boolean explicitMatchGroup = false;
+				if (!groupFilterMatch) {
+					explicitMatchGroup = IntStream.of(filter.groupIDs).anyMatch(t -> data.groupID == t);
+					groupFilterMatch = explicitMatchGroup;
+				}
 				if (missionFilterMatch && groupFilterMatch) {
 					// Pull data
 					UserQuestInfo quest = questManager.getUserQuest(save, data.id);
-					if ((filter.getCompletedMissions && quest.isCompleted())
-							|| (!filter.getCompletedMissions && !quest.isCompleted())) {
+					if (filter.getCompletedMissions && quest.isCompleted()) {
 						// Add
 						questLst.add(quest.getData());
+					} else if (!filter.getCompletedMissions && !quest.isCompleted()) {
+						// Dont add inactive quests to minimize transfer load
+						if (explicitMatchGroup || explicitMatchMission || quest.isActive()) {
+							questLst.add(quest.getData());
+						}
 					}
 				}
 			}
