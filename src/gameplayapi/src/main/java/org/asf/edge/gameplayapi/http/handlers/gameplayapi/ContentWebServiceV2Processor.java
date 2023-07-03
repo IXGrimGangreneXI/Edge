@@ -223,7 +223,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 				if (missionFilterMatch && groupFilterMatch) {
 					// Pull data
 					UserQuestInfo quest = questManager.getUserQuest(save, data.id);
-					if (filter.getCompletedMissions || !quest.isCompleted()) {
+					if ((filter.getCompletedMissions && quest.isCompleted())
+							|| (!filter.getCompletedMissions && !quest.isCompleted())) {
 						// Add
 						questLst.add(quest.getData());
 					}
