@@ -45,6 +45,7 @@ import org.asf.edge.gameplayapi.xmls.names.NameValidationResponseData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 import org.asf.edge.gameplayapi.xmls.quests.QuestListResponseData;
 import org.asf.edge.gameplayapi.xmls.quests.RequestFilterData;
+import org.asf.edge.gameplayapi.xmls.quests.RequestFilterData.MissionPairBlock;
 import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData;
 
 import com.fasterxml.jackson.databind.node.BooleanNode;
@@ -208,40 +209,67 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			RequestFilterData filter = req.parseXmlValue(req.payload.get("filter"), RequestFilterData.class);
 
 			// Create response
+			ArrayList<Integer> addedQuests = new ArrayList<Integer>();
 			ArrayList<MissionData> questLst = new ArrayList<MissionData>();
 			QuestListResponseData resp = new QuestListResponseData();
 			resp.userID = userID;
 
-			// Add missions
-			for (MissionData data : quests) {
-				// Verify filters
-				boolean missionFilterMatch = (filter.missions == null || filter.missions.length == 0);
-				boolean explicitMatchMission = false;
-				if (!missionFilterMatch) {
-					explicitMatchMission = (Stream.of(filter.missions).anyMatch(
-							t -> t.missionID == data.id && (t.versionID == -1 || t.versionID == data.version)));
-					missionFilterMatch = explicitMatchMission;
+			// Apply ID filters
+			boolean hasExplicitRequests = false;
+			if (filter.missions != null && filter.missions.length != 0) {
+				hasExplicitRequests = true;
+				for (MissionPairBlock pair : filter.missions) {
+					// Check ID
+					if (addedQuests.contains(pair.missionID))
+						continue;
+
+					// Find quest
+					UserQuestInfo quest = questManager.getUserQuest(save, pair.missionID);
+					if (quest != null && (filter.getCompletedMissions || !quest.isCompleted())) {
+						// Add if its the right version
+						if (pair.versionID == -1 || quest.getDef().version == pair.versionID) {
+							questLst.add(quest.getData());
+							addedQuests.add(quest.getQuestID());
+						}
+					}
 				}
-				boolean groupFilterMatch = (filter.groupIDs == null || filter.groupIDs.length == 0);
-				boolean explicitMatchGroup = false;
-				if (!groupFilterMatch) {
-					explicitMatchGroup = IntStream.of(filter.groupIDs).anyMatch(t -> data.groupID == t);
-					groupFilterMatch = explicitMatchGroup;
+			}
+
+			// Apply group ID versions
+			if (filter.groupIDs != null && filter.groupIDs.length != 0) {
+				hasExplicitRequests = true;
+				IntStream strm = IntStream.of(filter.groupIDs);
+				for (MissionData data : quests) {
+					// Check ID
+					if (addedQuests.contains(data.id))
+						continue;
+
+					// Check group
+					if (strm.anyMatch(t -> t == data.groupID)) {
+						// Found a quest
+						UserQuestInfo quest = questManager.getUserQuest(save, data.id);
+						if (quest != null && (filter.getCompletedMissions || !quest.isCompleted())) {
+							// Add
+							questLst.add(quest.getData());
+							addedQuests.add(quest.getQuestID());
+						}
+					}
 				}
-				if (missionFilterMatch || groupFilterMatch) {
+			}
+
+			// Add all quests with other filter if not explicit
+			if (!hasExplicitRequests) {
+				// Add missions
+				for (MissionData data : quests) {
 					// Pull data
 					UserQuestInfo quest = questManager.getUserQuest(save, data.id);
-					if ((filter.getCompletedMissions && quest.isCompleted())
-							|| (!filter.getCompletedMissions && !quest.isCompleted())) {
-						// Dont add inactive quests to minimize transfer load
+					if (filter.getCompletedMissions || !quest.isCompleted()) {
 						MissionData d = quest.getData();
-						if (!explicitMatchGroup || !explicitMatchMission) {
-							// Strip static data unless its an explicit match
-							stripMission(d);
-						}
+						stripMission(d);
 						questLst.add(d);
 					}
 				}
+
 			}
 
 			// Set response
