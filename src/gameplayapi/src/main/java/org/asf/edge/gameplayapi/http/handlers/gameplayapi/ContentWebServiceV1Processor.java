@@ -208,6 +208,41 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 				block.data = def.getRawObject();
 			items.add(block);
 		}
+		if (tkn.saveID != null) {
+			// Pull account-wide inventory, for compatibility with legacy versions
+			data = account.getSave(tkn.saveID).getSaveData();
+			data = data.getChildContainer("commoninventories").getChildContainer(containerID);
+
+			// Retrieve container
+			resp = new CommonInventoryData();
+			resp.userID = account.getAccountID();
+
+			// Find items
+			e = data.getEntry("itemlist");
+			if (e == null) {
+				e = new JsonArray();
+				data.setEntry("itemlist", e);
+			}
+			for (JsonElement itemDefEle : e.getAsJsonArray()) {
+				int uniqueID = itemDefEle.getAsInt();
+
+				// Locate item
+				JsonObject itm = data.getEntry("item-" + uniqueID).getAsJsonObject();
+
+				// Add item
+				ItemBlock block = new ItemBlock();
+				block.itemID = itm.get("id").getAsInt();
+				block.quantity = itm.get("quantity").getAsInt();
+				block.uses = itm.get("uses").getAsInt();
+				block.uniqueItemID = uniqueID;
+
+				// Add data info from item manager
+				ItemInfo def = ItemManager.getInstance().getItemDefinition(block.itemID);
+				if (def != null)
+					block.data = def.getRawObject();
+				items.add(block);
+			}
+		}
 		resp.items = items.toArray(t -> new ItemBlock[t]);
 
 		// Set response
