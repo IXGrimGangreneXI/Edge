@@ -1,10 +1,12 @@
 package org.asf.edge.gameplayapi.commands.defaultcommands;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.commands.IEdgeServerCommand;
+import org.asf.edge.gameplayapi.commands.TaskBasedCommand;
 import org.asf.edge.gameplayapi.permissions.PermissionLevel;
 
 public class HelpCommand implements IEdgeServerCommand {
@@ -36,18 +38,48 @@ public class HelpCommand implements IEdgeServerCommand {
 
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
-			String fullCommand) {
+			Map<String, String> dataBlobs) {
 		// List commands
 		String msg = "List of known commands:";
 		for (IEdgeServerCommand cmd : ctx.getRegisteredCommands()) {
 			if (!ctx.getPermissions().hasPermission(cmd.permNode(), cmd.permLevel()))
 				continue;
-			msg += "\n - " + cmd.id();
-			String syntax = cmd.syntax(ctx);
-			if (syntax != null) {
-				msg += " " + syntax;
+			if (cmd instanceof TaskBasedCommand) {
+				// Handle tasks
+				msg += handleTasks(cmd, ctx, cmd.id() + " ");
+			} else {
+				msg += "\n - " + cmd.id();
+				String syntax = cmd.syntax(ctx);
+				if (syntax != null) {
+					msg += " " + syntax;
+				}
+				msg += " - " + cmd.description(ctx);
 			}
-			msg += " - " + cmd.description(ctx);
+		}
+		return msg;
+	}
+
+	private String handleTasks(IEdgeServerCommand cmd, CommandContext ctx, String pref) {
+		String msg = "";
+		if (cmd instanceof TaskBasedCommand) {
+			TaskBasedCommand cmdT = (TaskBasedCommand) cmd;
+
+			// Go through tasks
+			for (IEdgeServerCommand tsk : cmdT.tasks()) {
+				if (!ctx.getPermissions().hasPermission(tsk.permNode(), tsk.permLevel()))
+					continue;
+				if (tsk instanceof TaskBasedCommand) {
+					// Handle tasks
+					msg += handleTasks(tsk, ctx, cmd.id() + " ");
+				} else {
+					msg += "\n - " + pref + tsk.id();
+					String syntax = tsk.syntax(ctx);
+					if (syntax != null) {
+						msg += " " + syntax;
+					}
+					msg += " - " + tsk.description(ctx);
+				}
+			}
 		}
 		return msg;
 	}

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.function.Consumer;
 
@@ -203,7 +204,7 @@ public class ServerCommandTerminal {
 
 			@Override
 			public String run(String[] args, CommandContext ctx, Logger logger,
-					Consumer<String> outputWriteLineCallback, String fullCommand) {
+					Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs) {
 				exit = true;
 				return "Exiting terminal...";
 			}

@@ -1,5 +1,6 @@
 package org.asf.edge.gameplayapi.commands;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
@@ -59,10 +60,10 @@ public interface IEdgeServerCommand {
 	 * @param ctx                     CommandContext instance
 	 * @param logger                  Logger instance
 	 * @param outputWriteLineCallback Callback to write to chat/terminal output
-	 * @param fullCommand             Full command string
+	 * @param dataBlobs               Objects passed to the command
 	 * @return Command output string, null to fail
 	 */
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
-			String fullCommand);
+			Map<String, String> dataBlobs);
 
 }

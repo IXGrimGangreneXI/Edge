@@ -1,6 +1,7 @@
 package org.asf.edge.gameplayapi.commands.defaultcommands.account.profilecommands;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -26,7 +27,7 @@ public class ProfileCreateCommand implements IEdgeServerCommand {
 	@Override
 	public String syntax(CommandContext ctx) {
 		if (ctx.getPermissions().hasPermission("commands.admin.profiles.create", PermissionLevel.ADMINISTRATOR))
-			return "\"<username>\" [owner]";
+			return "\"<username>\" \"[owner]\"";
 		else
 			return "\"<username>\"";
 	}
@@ -48,7 +49,7 @@ public class ProfileCreateCommand implements IEdgeServerCommand {
 
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
-			String fullCommand) {
+			Map<String, String> dataBlobs) {
 		AccountObject account = ctx.getAccount();
 		AccountManager manager = AccountManager.getInstance();
 		if (args.length >= 2 && ctx.getPermissions().hasPermission("commands.admin.profiles.create",

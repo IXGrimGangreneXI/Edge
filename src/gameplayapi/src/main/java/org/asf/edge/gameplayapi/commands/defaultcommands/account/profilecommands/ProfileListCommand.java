@@ -1,5 +1,6 @@
 package org.asf.edge.gameplayapi.commands.defaultcommands.account.profilecommands;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
@@ -42,7 +43,7 @@ public class ProfileListCommand implements IEdgeServerCommand {
 
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
-			String fullCommand) {
+			Map<String, String> dataBlobs) {
 		AccountObject acc = ctx.getAccount();
 		if (args.length >= 1
 				&& ctx.getPermissions().hasPermission("commands.moderator.profiles.list", PermissionLevel.MODERATOR)) {

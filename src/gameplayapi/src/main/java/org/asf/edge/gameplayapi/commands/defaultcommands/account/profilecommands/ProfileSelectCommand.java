@@ -1,8 +1,12 @@
 package org.asf.edge.gameplayapi.commands.defaultcommands.account.profilecommands;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.commands.IEdgeServerCommand;
 import org.asf.edge.gameplayapi.permissions.PermissionLevel;
@@ -16,7 +20,10 @@ public class ProfileSelectCommand implements IEdgeServerCommand {
 
 	@Override
 	public String syntax(CommandContext ctx) {
-		return "<id>";
+		if (ctx.getPermissions().hasPermission("commands.moderator.profiles.select", PermissionLevel.MODERATOR))
+			return "<id> \"[owner]\"";
+		else
+			return "<id>";
 	}
 
 	@Override
@@ -36,19 +43,35 @@ public class ProfileSelectCommand implements IEdgeServerCommand {
 
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
-			String fullCommand) {
+			Map<String, String> dataBlobs) {
+		AccountObject acc = ctx.getAccount();
+		if (args.length >= 2 && ctx.getPermissions().hasPermission("commands.moderator.profiles.select",
+				PermissionLevel.MODERATOR)) {
+			// Find owner
+			String username = args[1];
+			String id = AccountManager.getInstance().getAccountIdBySaveUsername(username);
+			if (id == null)
+				id = AccountManager.getInstance().getAccountID(username);
+			if (id == null) {
+				outputWriteLineCallback.accept("Error: username not recognized");
+				return null;
+			}
+			acc = AccountManager.getInstance().getAccount(id);
+		}
 		String id = null;
+		AccountSaveContainer save = null;
 		if (args.length >= 1) {
 			id = args[0];
-			if (ctx.getAccount().getSave(id) == null)
+			save = acc.getSave(id);
+			if (save == null)
 				id = null;
 		}
 		if (id == null) {
 			outputWriteLineCallback.accept("Error: invalid profile");
 			return null;
 		}
-		ctx.getCommandMemory().put("active_profile", id);
-		return "Selected profile " + ctx.getAccount().getSave(id).getUsername();
+		ctx.getCommandMemory().put("active_profile", save);
+		return "Selected profile " + save.getUsername();
 	}
 
 }

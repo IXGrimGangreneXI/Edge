@@ -1,6 +1,7 @@
 package org.asf.edge.gameplayapi.commands.defaultcommands.account.profilecommands;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
@@ -45,7 +46,7 @@ public class ProfileDeleteCommand implements IEdgeServerCommand {
 
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
-			String fullCommand) {
+			Map<String, String> dataBlobs) {
 		AccountObject acc = ctx.getAccount();
 		if (args.length >= 2 && ctx.getPermissions().hasPermission("commands.admin.profiles.delete",
 				PermissionLevel.ADMINISTRATOR)) {

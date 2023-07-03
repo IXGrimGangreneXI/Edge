@@ -24,8 +24,13 @@ import org.asf.edge.modules.eventbus.EventBus;
 public class CommandContext {
 
 	private Logger logger = LogManager.getLogger("COMMANDS");
-	private HashMap<String, String> commandMemory = new HashMap<String, String>();
+	private HashMap<String, Object> commandMemory = new HashMap<String, Object>();
 	private ArrayList<IEdgeServerCommand> commands = new ArrayList<IEdgeServerCommand>();
+	private boolean logCommands;
+
+	public void enableCommandLogging() {
+		logCommands = true;
+	}
 
 	protected static CommandContextImplementationProvider implementationProvider = (acc) -> new CommandContext(acc);
 
@@ -56,7 +61,7 @@ public class CommandContext {
 	 * 
 	 * @return Command memory map
 	 */
-	public Map<String, String> getCommandMemory() {
+	public Map<String, Object> getCommandMemory() {
 		return commandMemory;
 	}
 
@@ -117,7 +122,6 @@ public class CommandContext {
 	 * @return True if successful, false otherwise
 	 */
 	public boolean runCommand(String command, Consumer<String> outputWriteLineCallback) {
-		logger.debug("Evaluating command: " + command);
 		ArrayList<String> cmd;
 		try {
 			cmd = parseCommand(command);
@@ -133,16 +137,35 @@ public class CommandContext {
 			return false;
 		}
 
+		// Run command
+		String id = cmd.get(0);
+		cmd.remove(0);
+		return runCommand(id, cmd.toArray(t -> new String[t]), outputWriteLineCallback, Map.of());
+	}
+
+	/**
+	 * Called to run commands
+	 * 
+	 * @param id                      Command ID to run
+	 * @param args                    Command arguments
+	 * @param outputWriteLineCallback Command output write callback to use
+	 * @param dataBlobs               Objects to pass to the command
+	 * @return True if successful, false otherwise
+	 */
+	public boolean runCommand(String id, String[] args, Consumer<String> outputWriteLineCallback,
+			Map<String, String> dataBlobs) {
 		// Find command
 		boolean success = false;
 		String result = "Command not found, please use 'help' for a list of commands";
-		String id = cmd.get(0);
-		cmd.remove(0);
 		for (IEdgeServerCommand c : commands) {
 			if (c.id().equalsIgnoreCase(id)) {
 				if (getPermissions().hasPermission(c.permNode(), c.permLevel())) {
 					// Found it
-					result = c.run(cmd.toArray(t -> new String[t]), this, logger, outputWriteLineCallback, command);
+					result = c.run(args, this, logger, t -> {
+						outputWriteLineCallback.accept(t);
+						if (logCommands)
+							logger.info(id + " (" + getAccount().getUsername() + ") : " + t);
+					}, dataBlobs);
 					if (result != null)
 						success = true;
 					break;
@@ -151,8 +174,11 @@ public class CommandContext {
 		}
 
 		// Log
-		if (result != null)
+		if (result != null) {
 			outputWriteLineCallback.accept(result);
+			if (logCommands)
+				logger.info(id + " (" + getAccount().getUsername() + ") : " + result);
+		}
 		return success;
 	}
 

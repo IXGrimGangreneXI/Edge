@@ -6,6 +6,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,13 +72,29 @@ public class DatabaseSaveContainer extends AccountSaveContainer {
 
 	@Override
 	public boolean updateUsername(String name) {
+		if (name.equalsIgnoreCase(username))
+			return true;
+
 		// Check validity
 		if (!manager.isValidUsername(name))
 			return false;
 
 		// Check if its in use
-		if (manager.isUsernameTaken(name))
+		if (!acc.getUsername().equalsIgnoreCase(name) && manager.isUsernameTaken(name)) {
 			return false;
+		} else {
+			// Check if in use by any saves
+			AccountObject accF = acc;
+			if (Stream.of(acc.getSaveIDs()).map(t -> accF.getSave(t)).anyMatch(t -> {
+				try {
+					return t.getUsername().equalsIgnoreCase(name) && t.getSaveData().entryExists("avatar");
+				} catch (IOException e) {
+					return false;
+				}
+			})) {
+				return false;
+			}
+		}
 
 		// Check filters
 		// FIXME: IMPLEMENT THIS
