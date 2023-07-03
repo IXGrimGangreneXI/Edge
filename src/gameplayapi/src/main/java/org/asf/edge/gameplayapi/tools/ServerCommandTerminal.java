@@ -90,6 +90,8 @@ public class ServerCommandTerminal {
 		// Load the json
 		logger.debug("Loading configuration file server.json...");
 		JsonObject configData = JsonParser.parseString(Files.readString(configFile.toPath())).getAsJsonObject();
+		if (configData.has("gameplayApiServer"))
+			configData = configData.get("gameplayApiServer").getAsJsonObject(); // Global server
 
 		// Load server settings
 		if (config.server == null) {
