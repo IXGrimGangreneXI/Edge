@@ -260,16 +260,42 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			// Add all quests with other filter if not explicit
 			if (!hasExplicitRequests) {
 				// Add missions
-				for (MissionData data : quests) {
-					// Pull data
-					UserQuestInfo quest = questManager.getUserQuest(save, data.id);
-					if (filter.getCompletedMissions || !quest.isCompleted()) {
+				if (filter.getCompletedMissions) {
+					for (UserQuestInfo quest : questManager.getCompletedQuests(save)) {
+						// Check ID
+						if (addedQuests.contains(quest.getQuestID()))
+							continue;
+
+						// Add
 						MissionData d = quest.getData();
 						stripMission(d);
 						questLst.add(d);
+						addedQuests.add(quest.getQuestID());
+					}
+				} else {
+					for (UserQuestInfo quest : questManager.getActiveQuests(save)) {
+						// Check ID
+						if (addedQuests.contains(quest.getQuestID()))
+							continue;
+
+						// Add
+						MissionData d = quest.getData();
+						stripMission(d);
+						questLst.add(d);
+						addedQuests.add(quest.getQuestID());
+					}
+					for (UserQuestInfo quest : questManager.getUpcomingQuests(save)) {
+						// Check ID
+						if (addedQuests.contains(quest.getQuestID()))
+							continue;
+
+						// Add
+						MissionData d = quest.getDef();
+						stripMission(d);
+						questLst.add(d);
+						addedQuests.add(quest.getQuestID());
 					}
 				}
-
 			}
 
 			// Set response
@@ -282,8 +308,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 
 	private void stripMission(MissionData d) {
 		d.staticData = null;
-		d.rewards = null;
-		d.acceptanceRewards = null;
 		if (d.childMissions != null)
 			for (MissionData m : d.childMissions)
 				stripMission(m);
@@ -435,7 +459,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			// Add data
 			ArrayList<MissionData> questLst = new ArrayList<MissionData>();
 			for (UserQuestInfo i : quests) {
-				MissionData d = i.getData();
+				MissionData d = i.getDef();
 				stripMission(d);
 				questLst.add(d);
 			}

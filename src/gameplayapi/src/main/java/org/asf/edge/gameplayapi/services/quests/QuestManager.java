@@ -93,4 +93,12 @@ public abstract class QuestManager extends AbstractService {
 	 */
 	public abstract UserQuestInfo[] getUpcomingQuests(AccountSaveContainer save);
 
+	/**
+	 * Recomputes active/upcoming quests for a save container, <b>THIS IS A
+	 * INTENSIVE PROCESS, ONLY DO THIS AFTER QUESTS COMPLETE IN A ASYNC TASK</b>
+	 * 
+	 * @param save Save container to recompute quests for
+	 */
+	public abstract void recomputeQuests(AccountSaveContainer save);
+
 }

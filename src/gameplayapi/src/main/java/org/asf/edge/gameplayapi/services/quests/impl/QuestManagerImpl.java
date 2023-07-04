@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
@@ -153,34 +154,84 @@ public class QuestManagerImpl extends QuestManager {
 
 	@Override
 	public UserQuestInfo[] getActiveQuests(AccountSaveContainer save) {
-		// Create list
-		ArrayList<UserQuestInfo> quests = new ArrayList<UserQuestInfo>();
+		try {
+			// Load active quests
+			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
+			if (!data.entryExists("activequests")) {
+				recomputeQuests(save);
+				return getActiveQuests(save);
+			}
 
-		// Find quests
-		for (MissionData mission : this.quests.values()) {
-			UserQuestInfo q = getUserQuest(save, mission.id);
-			if ((mission.repeatable || !q.isCompleted()) && q.isActive())
-				quests.add(q);
+			// Create list
+			ArrayList<UserQuestInfo> quests = new ArrayList<UserQuestInfo>();
+			JsonArray activeQuests = data.getEntry("activequests").getAsJsonArray();
+			for (JsonElement ele : activeQuests) {
+				// Find quest
+				quests.add(getUserQuest(save, ele.getAsInt()));
+			}
+
+			// Return
+			return quests.toArray(t -> new UserQuestInfo[t]);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
-
-		// Return
-		return quests.toArray(t -> new UserQuestInfo[t]);
 	}
 
 	@Override
 	public UserQuestInfo[] getUpcomingQuests(AccountSaveContainer save) {
-		// Create list
-		ArrayList<UserQuestInfo> quests = new ArrayList<UserQuestInfo>();
+		try {
+			// Load active quests
+			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
+			if (!data.entryExists("upcomingquests")) {
+				recomputeQuests(save);
+				return getUpcomingQuests(save);
+			}
 
-		// Find quests
-		for (MissionData mission : this.quests.values()) {
-			UserQuestInfo q = getUserQuest(save, mission.id);
-			if (!q.isCompleted() && !q.isActive())
-				quests.add(q);
+			// Create list
+			ArrayList<UserQuestInfo> quests = new ArrayList<UserQuestInfo>();
+			JsonArray upcomingQuests = data.getEntry("upcomingquests").getAsJsonArray();
+			for (JsonElement ele : upcomingQuests) {
+				// Find quest
+				quests.add(getUserQuest(save, ele.getAsInt()));
+			}
+
+			// Return
+			return quests.toArray(t -> new UserQuestInfo[t]);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
+	}
 
-		// Return
-		return quests.toArray(t -> new UserQuestInfo[t]);
+	@Override
+	public void recomputeQuests(AccountSaveContainer save) {
+		try {
+			// Load data container and prepare lists
+			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
+			JsonArray active = new JsonArray();
+			JsonArray upcoming = new JsonArray();
+
+			// Find active quests
+			for (MissionData mission : this.quests.values()) {
+				UserQuestInfo q = getUserQuest(save, mission.id);
+				if ((mission.repeatable || !q.isCompleted()) && q.isActive()) {
+					active.add(q.getQuestID());
+				}
+			}
+
+			// Find upcoming quests
+			for (MissionData mission : this.quests.values()) {
+				UserQuestInfo q = getUserQuest(save, mission.id);
+				if (!q.isCompleted() && !q.isActive()) {
+					upcoming.add(q.getQuestID());
+				}
+			}
+
+			// Save
+			data.setEntry("activequests", active);
+			data.setEntry("upcomingquests", upcoming);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private class UserQuestInfoImpl extends UserQuestInfo {
@@ -188,7 +239,44 @@ public class QuestManagerImpl extends QuestManager {
 		private MissionData def;
 		private AccountDataContainer data;
 		private AccountSaveContainer save;
-		private JsonObject questInfo;
+		private JsonObject questInfoData;
+
+		private Object questInfoLock = new Object();
+
+		private void populateQuestInfoIfNeeded() {
+			if (questInfoData != null)
+				return;
+
+			// Lock
+			synchronized (questInfoLock) {
+				if (questInfoData != null)
+					return; // Another thread did it before us
+
+				// Populate data
+				try {
+					data = save.getSaveData().getChildContainer("quests");
+					if (data.entryExists("quest-" + def.id)) {
+						// Load quest
+						questInfoData = data.getEntry("quest-" + def.id).getAsJsonObject();
+						if (!questInfoData.has("accepted"))
+							questInfoData.addProperty("accepted", false);
+						if (!questInfoData.has("started"))
+							questInfoData.addProperty("started", false);
+						if (!questInfoData.has("completed"))
+							questInfoData.addProperty("completed", false);
+					} else {
+						// Not found
+						questInfoData = new JsonObject();
+						questInfoData.addProperty("completed", false);
+						questInfoData.addProperty("accepted", false);
+						questInfoData.addProperty("started", false);
+						questInfoData.add("payload", new JsonObject());
+					}
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
 
 		public UserQuestInfoImpl(MissionData def, AccountSaveContainer save) {
 			this.def = def;
@@ -197,23 +285,6 @@ public class QuestManagerImpl extends QuestManager {
 			// Load object
 			try {
 				data = save.getSaveData().getChildContainer("quests");
-				if (data.entryExists("quest-" + def.id)) {
-					// Load quest
-					questInfo = data.getEntry("quest-" + def.id).getAsJsonObject();
-					if (!questInfo.has("accepted"))
-						questInfo.addProperty("accepted", false);
-					if (!questInfo.has("started"))
-						questInfo.addProperty("started", false);
-					if (!questInfo.has("completed"))
-						questInfo.addProperty("completed", false);
-				} else {
-					// Not found
-					questInfo = new JsonObject();
-					questInfo.addProperty("completed", false);
-					questInfo.addProperty("accepted", false);
-					questInfo.addProperty("started", false);
-					questInfo.add("payload", new JsonObject());
-				}
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -231,6 +302,8 @@ public class QuestManagerImpl extends QuestManager {
 
 		@Override
 		public MissionData getData() {
+			populateQuestInfoIfNeeded();
+
 			// Retrieve data
 			MissionData data = def.copy();
 
@@ -243,7 +316,7 @@ public class QuestManagerImpl extends QuestManager {
 			}
 
 			// Apply modifications
-			JsonObject payload = questInfo.get("payload").getAsJsonObject();
+			JsonObject payload = questInfoData.get("payload").getAsJsonObject();
 			if (payload.has("quest")) {
 				// Apply quest object modifications
 				JsonObject questPayload = payload.get("quest").getAsJsonObject();
@@ -312,12 +385,13 @@ public class QuestManagerImpl extends QuestManager {
 		@Override
 		public void acceptQuest() {
 			// Update info
+			populateQuestInfoIfNeeded();
 
 			// Start quest
 			startQuest();
 
 			// Load payload
-			JsonObject payload = questInfo.get("payload").getAsJsonObject();
+			JsonObject payload = questInfoData.get("payload").getAsJsonObject();
 			JsonObject questPayload;
 			if (payload.has("quest"))
 				questPayload = payload.get("quest").getAsJsonObject();
@@ -326,11 +400,11 @@ public class QuestManagerImpl extends QuestManager {
 				payload.add("quest", questPayload);
 			}
 			questPayload.addProperty("accepted", true);
-			questInfo.addProperty("accepted", true);
+			questInfoData.addProperty("accepted", true);
 
 			// Save
 			try {
-				data.setEntry("quest-" + def.id, questInfo);
+				data.setEntry("quest-" + def.id, questInfoData);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -435,6 +509,8 @@ public class QuestManagerImpl extends QuestManager {
 		@Override
 		public SetTaskStateResultData handleTaskCall(int taskID, String payloadStr, boolean completed, int invContainer,
 				SetCommonInventoryRequestData[] requests) throws IOException {
+			populateQuestInfoIfNeeded();
+
 			// Find task
 			MissionData mission = getData();
 			Optional<MissionData.TaskBlock> opt = Stream.of(mission.tasks).filter(t -> t.id == taskID).findFirst();
@@ -460,14 +536,14 @@ public class QuestManagerImpl extends QuestManager {
 			// FIXME: implement more checks
 
 			// Check if active
-			if (!questInfo.get("started").getAsBoolean()) {
+			if (!questInfoData.get("started").getAsBoolean()) {
 				// Start quest
 				startQuest();
 			}
 
 			// Update task
 			// Load payload
-			JsonObject payload = questInfo.get("payload").getAsJsonObject();
+			JsonObject payload = questInfoData.get("payload").getAsJsonObject();
 			JsonObject tasksBase;
 			if (payload.has("tasks"))
 				tasksBase = payload.get("tasks").getAsJsonObject();
@@ -489,7 +565,7 @@ public class QuestManagerImpl extends QuestManager {
 
 			// Save
 			try {
-				data.setEntry("quest-" + def.id, questInfo);
+				data.setEntry("quest-" + def.id, questInfoData);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -659,6 +735,14 @@ public class QuestManagerImpl extends QuestManager {
 
 					// Set response
 					resp.completedMissions = completedMissions.toArray(t -> new CompletedMissionInfoBlock[t]);
+
+					// Check parent
+					if (def.parentQuestID == -1) {
+						// Root quest, recompute active quests
+						AsyncTaskManager.runAsync(() -> {
+							recomputeQuests(save);
+						});
+					}
 				}
 			}
 
@@ -694,16 +778,18 @@ public class QuestManagerImpl extends QuestManager {
 
 		@Override
 		public void startQuest() {
+			populateQuestInfoIfNeeded();
+
 			// Check status
-			if (questInfo.get("started").getAsBoolean())
+			if (questInfoData.get("started").getAsBoolean())
 				throw new IllegalArgumentException("Quest is already started");
 
 			// Update status
-			questInfo.addProperty("started", true);
+			questInfoData.addProperty("started", true);
 
 			try {
 				// Save
-				data.setEntry("quest-" + def.id, questInfo);
+				data.setEntry("quest-" + def.id, questInfoData);
 
 				// Check
 				if (def.parentQuestID > 0)
@@ -715,13 +801,15 @@ public class QuestManagerImpl extends QuestManager {
 
 		@Override
 		public void completeQuest() {
+			populateQuestInfoIfNeeded();
+
 			// Update status
-			questInfo.addProperty("completed", true);
-			questInfo.addProperty("started", false);
+			questInfoData.addProperty("completed", true);
+			questInfoData.addProperty("started", false);
 
 			try {
 				// Save
-				data.setEntry("quest-" + def.id, questInfo);
+				data.setEntry("quest-" + def.id, questInfoData);
 
 				// Check
 				if (def.parentQuestID > 0)
@@ -751,6 +839,8 @@ public class QuestManagerImpl extends QuestManager {
 
 		@Override
 		public boolean isActive() {
+			populateQuestInfoIfNeeded();
+
 			// Check prerequisites
 			if (def.missionRules != null) {
 				if (def.missionRules.prerequisites != null) {
@@ -763,7 +853,7 @@ public class QuestManagerImpl extends QuestManager {
 							case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.ACCEPT: {
 								// Check if the mission must be accepted
 								if (req.value.equalsIgnoreCase("true")) {
-									if (!questInfo.get("accepted").getAsBoolean())
+									if (!questInfoData.get("accepted").getAsBoolean())
 										return false;
 								}
 
@@ -905,12 +995,14 @@ public class QuestManagerImpl extends QuestManager {
 
 		@Override
 		public boolean isCompleted() {
-			return questInfo.get("completed").getAsBoolean();
+			populateQuestInfoIfNeeded();
+			return questInfoData.get("completed").getAsBoolean();
 		}
 
 		@Override
 		public boolean isStarted() {
-			return questInfo.get("started").getAsBoolean();
+			populateQuestInfoIfNeeded();
+			return questInfoData.get("started").getAsBoolean();
 		}
 
 	}

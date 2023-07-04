@@ -99,12 +99,10 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 			Connection conn = DriverManager.getConnection(url, props);
 			try {
 				// Create prepared statement
-				var statement = conn.prepareStatement("SELECT COUNT(DATA) FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
+				var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
 				statement.setString(1, id + "//" + key);
 				ResultSet res = statement.executeQuery();
-				if (!res.next())
-					return false;
-				return res.getInt(1) != 0;
+				return res.next();
 			} finally {
 				conn.close();
 			}
