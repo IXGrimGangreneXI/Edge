@@ -504,6 +504,11 @@ public class QuestManagerImpl extends QuestManager {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+
+			// Recompute active quests
+			AsyncTaskManager.runAsync(() -> {
+				recomputeQuests(save);
+			});
 		}
 
 		@Override
@@ -736,13 +741,10 @@ public class QuestManagerImpl extends QuestManager {
 					// Set response
 					resp.completedMissions = completedMissions.toArray(t -> new CompletedMissionInfoBlock[t]);
 
-					// Check parent
-					if (def.parentQuestID == -1) {
-						// Root quest, recompute active quests
-						AsyncTaskManager.runAsync(() -> {
-							recomputeQuests(save);
-						});
-					}
+					// Recompute active quests
+					AsyncTaskManager.runAsync(() -> {
+						recomputeQuests(save);
+					});
 				}
 			}
 
