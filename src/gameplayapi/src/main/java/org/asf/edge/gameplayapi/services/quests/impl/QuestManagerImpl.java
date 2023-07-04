@@ -893,6 +893,8 @@ public class QuestManagerImpl extends QuestManager {
 
 							// Date range rule
 							case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.DATERANGE: {
+								// FIXME: quests need recomputation if this changes
+
 								// Parse
 								String[] dStrs = req.value.split(",");
 								if (dStrs.length == 2) {
@@ -946,6 +948,8 @@ public class QuestManagerImpl extends QuestManager {
 
 							// Event rule
 							case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.EVENT: {
+								// FIXME: quests need recomputation if this changes
+
 								// TODO
 								return false;
 							}
@@ -970,6 +974,8 @@ public class QuestManagerImpl extends QuestManager {
 
 							// Member rule
 							case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.MEMBER: {
+								// FIXME: quests need recomputation if this changes
+
 								// Check member only
 								if (req.value.equalsIgnoreCase("true")) {
 									// TODO: membership check
@@ -981,6 +987,8 @@ public class QuestManagerImpl extends QuestManager {
 
 							// Rank rule
 							case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.RANK: {
+								// FIXME: quests need recomputation if this changes
+
 								// Check rank
 								String[] idsStrs = req.value.split(",");
 								int achievementID = 0;
