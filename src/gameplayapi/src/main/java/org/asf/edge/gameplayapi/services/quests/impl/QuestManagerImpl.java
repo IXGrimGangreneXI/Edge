@@ -209,19 +209,21 @@ public class QuestManagerImpl extends QuestManager {
 			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
 			JsonArray active = new JsonArray();
 			JsonArray upcoming = new JsonArray();
+			ArrayList<Integer> activeQuests = new ArrayList<Integer>();
 
 			// Find active quests
 			for (MissionData mission : this.quests.values()) {
 				UserQuestInfo q = getUserQuest(save, mission.id);
 				if ((mission.repeatable || !q.isCompleted()) && q.isActive()) {
 					active.add(q.getQuestID());
+					activeQuests.add(q.getQuestID());
 				}
 			}
 
 			// Find upcoming quests
 			for (MissionData mission : this.quests.values()) {
 				UserQuestInfo q = getUserQuest(save, mission.id);
-				if (!q.isCompleted() && !q.isActive()) {
+				if (!activeQuests.contains(q.getQuestID()) && !q.isCompleted()) {
 					upcoming.add(q.getQuestID());
 				}
 			}
@@ -748,6 +750,10 @@ public class QuestManagerImpl extends QuestManager {
 				}
 			}
 
+//			// Recompute active quests // FIXME disabled for testing, may need enabling
+//			AsyncTaskManager.runAsync(() -> {
+//				recomputeQuests(save);
+//			});
 			return resp;
 		}
 
@@ -799,6 +805,11 @@ public class QuestManagerImpl extends QuestManager {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+
+			// Recompute active quests
+			AsyncTaskManager.runAsync(() -> {
+				recomputeQuests(save);
+			});
 		}
 
 		@Override
@@ -837,6 +848,11 @@ public class QuestManagerImpl extends QuestManager {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+
+			// Recompute active quests
+			AsyncTaskManager.runAsync(() -> {
+				recomputeQuests(save);
+			});
 		}
 
 		@Override
