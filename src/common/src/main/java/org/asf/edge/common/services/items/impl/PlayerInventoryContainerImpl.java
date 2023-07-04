@@ -75,7 +75,7 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 			if (e == null)
 				e = new JsonArray();
 			JsonArray lst = e.getAsJsonArray();
-			if (lst.size() >= Integer.MAX_VALUE + 1)
+			if (lst.size() >= Integer.MAX_VALUE - 1)
 				throw new IOException("Too many items in inventory");
 
 			// Generate item id

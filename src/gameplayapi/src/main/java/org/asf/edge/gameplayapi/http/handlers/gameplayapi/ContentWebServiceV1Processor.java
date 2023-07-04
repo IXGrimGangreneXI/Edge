@@ -34,6 +34,9 @@ import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData;
+import org.asf.edge.gameplayapi.xmls.quests.MissionData;
+import org.asf.edge.gameplayapi.xmls.quests.QuestListResponseData;
+import org.asf.edge.gameplayapi.xmls.quests.RequestFilterDataLegacy;
 
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -1025,4 +1028,112 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("boolean", true));
 	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getUserMissionState(FunctionInfo func) throws IOException {
+		// 1.x questing
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+		if (questManager == null)
+			questManager = QuestManager.getInstance();
+
+		// Handle quest data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userID);
+		if (save != null) {
+			// Pull quests
+			MissionData[] quests = questManager.getAllQuestDefs();
+
+			// Parse filters
+			RequestFilterDataLegacy filter = req.parseXmlValue(req.payload.get("filter"),
+					RequestFilterDataLegacy.class);
+
+			// Create response
+			ArrayList<Integer> addedQuests = new ArrayList<Integer>();
+			ArrayList<MissionData> questLst = new ArrayList<MissionData>();
+			QuestListResponseData resp = new QuestListResponseData();
+			resp.userID = userID;
+
+			// Apply ID filters
+			boolean hasExplicitRequests = false;
+			if (filter.missionID != -1) {
+				hasExplicitRequests = true;
+
+				// Find quest
+				UserQuestInfo quest = questManager.getUserQuest(save, filter.missionID);
+				if (quest != null && (filter.getCompletedMissions || !quest.isCompleted())) {
+					questLst.add(quest.getData());
+					addedQuests.add(quest.getQuestID());
+				}
+			}
+
+			// Apply group ID versions
+			if (filter.groupID != -1) {
+				hasExplicitRequests = true;
+				for (MissionData data : quests) {
+					// Check ID
+					if (addedQuests.contains(data.id))
+						continue;
+
+					// Check group
+					if (data.groupID == filter.groupID) {
+						// Found a quest
+						UserQuestInfo quest = questManager.getUserQuest(save, data.id);
+						if (quest != null && (filter.getCompletedMissions || !quest.isCompleted())) {
+							// Add
+							questLst.add(quest.getData());
+							addedQuests.add(quest.getQuestID());
+						}
+					}
+				}
+			}
+
+			// Add all quests with other filter if not explicit
+			if (!hasExplicitRequests) {
+				// Add missions
+				if (filter.getCompletedMissions) {
+					for (UserQuestInfo quest : questManager.getCompletedQuests(save)) {
+						// Check ID
+						if (addedQuests.contains(quest.getQuestID()))
+							continue;
+
+						// Add
+						MissionData d = quest.getData();
+						questLst.add(d);
+						addedQuests.add(quest.getQuestID());
+					}
+				} else {
+					// Fix for the tutorial, we cannot support full quests
+					questLst.add(questManager.getUserQuest(save, 999).getData());
+				}
+			}
+
+			// Set response
+			resp.quests = questLst.toArray(t -> new MissionData[t]);
+			setResponseContent("text/xml", req.generateXmlValue("UserMissionStateResult", resp));
+		} else {
+			setResponseStatus(404, "Not found");
+		}
+	}
+
 }
