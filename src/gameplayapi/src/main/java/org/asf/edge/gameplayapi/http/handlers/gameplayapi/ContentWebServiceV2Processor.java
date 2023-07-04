@@ -215,9 +215,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			resp.userID = userID;
 
 			// Apply ID filters
-			boolean hasExplicitRequests = false;
 			if (filter.missions != null && filter.missions.length != 0) {
-				hasExplicitRequests = true;
 				for (MissionPairBlock pair : filter.missions) {
 					// Check ID
 					if (addedQuests.contains(pair.missionID))
@@ -237,7 +235,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 
 			// Apply group ID versions
 			if (filter.groupIDs != null && filter.groupIDs.length != 0) {
-				hasExplicitRequests = true;
 				IntStream strm = IntStream.of(filter.groupIDs);
 				for (MissionData data : quests) {
 					// Check ID
@@ -253,44 +250,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 							questLst.add(quest.getData());
 							addedQuests.add(quest.getQuestID());
 						}
-					}
-				}
-			}
-
-			// Add all quests with other filter if not explicit
-			if (!hasExplicitRequests) {
-				// Add missions
-				if (filter.getCompletedMissions) {
-					for (UserQuestInfo quest : questManager.getCompletedQuests(save)) {
-						// Check ID
-						if (addedQuests.contains(quest.getQuestID()))
-							continue;
-
-						// Add
-						MissionData d = quest.getData();
-						questLst.add(d);
-						addedQuests.add(quest.getQuestID());
-					}
-				} else {
-					for (UserQuestInfo quest : questManager.getActiveQuests(save)) {
-						// Check ID
-						if (addedQuests.contains(quest.getQuestID()))
-							continue;
-
-						// Add
-						MissionData d = quest.getData();
-						questLst.add(d);
-						addedQuests.add(quest.getQuestID());
-					}
-					for (UserQuestInfo quest : questManager.getUpcomingQuests(save)) {
-						// Check ID
-						if (addedQuests.contains(quest.getQuestID()))
-							continue;
-
-						// Add
-						MissionData d = quest.getDef();
-						questLst.add(d);
-						addedQuests.add(quest.getQuestID());
 					}
 				}
 			}
