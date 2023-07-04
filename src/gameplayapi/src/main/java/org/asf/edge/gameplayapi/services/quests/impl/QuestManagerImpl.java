@@ -952,6 +952,8 @@ public class QuestManagerImpl extends QuestManager {
 
 							// Item rule
 							case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.ITEM: {
+								// FIXME: quests should be recomputed when quest items change
+
 								// Check item
 								int itmId = Integer.parseInt(req.value);
 								Optional<PlayerInventoryItem> opt = Stream.of(save.getInventory().getContainers())

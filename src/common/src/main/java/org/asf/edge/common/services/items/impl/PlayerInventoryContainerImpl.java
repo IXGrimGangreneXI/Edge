@@ -70,16 +70,20 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 	@Override
 	public PlayerInventoryItem createItem(int defID, int quantity, int uses) {
 		try {
-			// Generate item id
-			int uniqueID = rnd.nextInt(0, 1000000000);
-			while (data.entryExists("item-" + uniqueID))
-				uniqueID = rnd.nextInt(0, 1000000000);
-
 			// Load item list and add to it
 			JsonElement e = data.getEntry("itemlist");
 			if (e == null)
 				e = new JsonArray();
 			JsonArray lst = e.getAsJsonArray();
+			if (lst.size() >= Integer.MAX_VALUE + 1)
+				throw new IOException("Too many items in inventory");
+
+			// Generate item id
+			int uniqueID = rnd.nextInt(0, 1000000000);
+			while (data.entryExists("item-" + uniqueID))
+				uniqueID = rnd.nextInt(0, 1000000000);
+
+			// Add to liast
 			lst.add(uniqueID);
 			data.setEntry("itemlist", lst);
 

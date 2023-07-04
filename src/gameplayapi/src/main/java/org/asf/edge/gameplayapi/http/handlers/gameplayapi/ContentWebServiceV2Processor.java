@@ -682,6 +682,11 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			dragonIds = data.getEntry("dragonlist").getAsJsonArray();
 		else
 			data.setEntry("dragonlist", dragonIds);
+		if (dragonIds.size() >= Integer.MAX_VALUE - 1) {
+			// Too many dragons
+			setResponseStatus(400, "Bad request, too many dragons");
+			return;
+		}
 
 		// Create dragon ID
 		String entID = UUID.randomUUID().toString();
