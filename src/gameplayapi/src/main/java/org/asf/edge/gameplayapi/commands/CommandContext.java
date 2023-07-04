@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.gameplayapi.commands.defaultcommands.HelpCommand;
 import org.asf.edge.gameplayapi.commands.defaultcommands.account.ProfilesCommand;
+import org.asf.edge.gameplayapi.commands.defaultcommands.debug.DebugCommands;
 import org.asf.edge.gameplayapi.events.commands.CommandSetupEvent;
 import org.asf.edge.gameplayapi.permissions.PermissionContext;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -50,10 +51,12 @@ public class CommandContext {
 		// Register commands
 		logger.info("Registering commands...");
 		registerCommand(new ProfilesCommand());
-		registerCommand(new HelpCommand());
+		if (System.getProperty("debugMode") != null)
+			registerCommand(new DebugCommands()); // Debug
 
 		// Dispatch event
 		EventBus.getInstance().dispatchEvent(new CommandSetupEvent(this));
+		registerCommand(new HelpCommand());
 	}
 
 	/**

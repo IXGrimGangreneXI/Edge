@@ -86,7 +86,7 @@ public class DatabaseCommonDataManager extends CommonDataManager {
 
 	@Override
 	protected CommonDataContainer getContainerInternal(String rootNodeName) {
-		return new DatabaseCommonDataContainer(url, props, "CDC-" + rootNodeName);
+		return new DatabaseCommonDataContainer(url, props, "CDC_" + rootNodeName);
 	}
 
 	@Override
@@ -98,7 +98,7 @@ public class DatabaseCommonDataManager extends CommonDataManager {
 			try {
 				Statement statement = conn.createStatement();
 				statement.executeUpdate(
-						"CREATE TABLE IF NOT EXISTS CDC-" + rootNodeName + " (PATH varchar(256), DATA LONGTEXT)");
+						"CREATE TABLE IF NOT EXISTS CDC_" + rootNodeName + " (PATH varchar(256), DATA LONGTEXT)");
 			} finally {
 				conn.close();
 			}
