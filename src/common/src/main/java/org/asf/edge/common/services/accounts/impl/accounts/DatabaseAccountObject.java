@@ -317,27 +317,28 @@ public class DatabaseAccountObject extends AccountObject {
 
 	@Override
 	public boolean isMultiplayerEnabled() {
-		try {
-			Connection conn = DriverManager.getConnection(url, props);
-			try {
-				// Create prepared statement
-				var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
-				statement.setString(1, id + "//accountdata/ismultiplayerenabled");
-				ResultSet res = statement.executeQuery();
-				if (!res.next())
-					return false;
-				String data = res.getString("DATA");
-				if (data == null)
-					return false;
-				return JsonParser.parseString(data).getAsBoolean();
-			} finally {
-				conn.close();
-			}
-		} catch (SQLException e) {
-			logger.error("Failed to execute database query request while trying to check multiplayer state of ID '" + id
-					+ "'", e);
-			return false;
-		}
+//		try {
+//			Connection conn = DriverManager.getConnection(url, props);
+//			try {
+//				// Create prepared statement
+//				var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
+//				statement.setString(1, id + "//accountdata/ismultiplayerenabled");
+//				ResultSet res = statement.executeQuery();
+//				if (!res.next())
+//					return false;
+//				String data = res.getString("DATA");
+//				if (data == null)
+//					return false;
+//				return JsonParser.parseString(data).getAsBoolean();
+//			} finally {
+//				conn.close();
+//			}
+//		} catch (SQLException e) {
+//			logger.error("Failed to execute database query request while trying to check multiplayer state of ID '" + id
+//					+ "'", e);
+//			return false;
+//		}
+		return false; // FIXME: disabled as we dont have a SFS server
 	}
 
 	@Override
