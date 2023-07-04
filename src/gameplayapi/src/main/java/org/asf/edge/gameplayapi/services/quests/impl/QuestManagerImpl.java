@@ -576,7 +576,7 @@ public class QuestManagerImpl extends QuestManager {
 			resp.success = true;
 
 			// Update inventories
-			if (requests != null & requests.length != 0) {
+			if (requests != null && requests.length != 0) {
 				resp.inventoryUpdate = ContentWebServiceV2Processor.processCommonInventorySet(requests,
 						save.getSaveData(), invContainer);
 			}
