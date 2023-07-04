@@ -11,6 +11,7 @@ import org.asf.edge.common.CommonInit;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
 
@@ -113,7 +114,7 @@ public class EdgeGameplayApiServerMain {
 		// Dispatch event
 		EventBus.getInstance().dispatchEvent(new GameplayApiServerConfigLoadedEvent(config));
 
-		// Prepare service
+		// Prepare services
 		logger.info("Setting up the server...");
 		logger.debug("Loading account manager implementations...");
 		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.NORMAL,
@@ -122,6 +123,13 @@ public class EdgeGameplayApiServerMain {
 		ServiceManager.selectServiceImplementation(AccountManager.class);
 		logger.debug("Loading account manager...");
 		AccountManager.getInstance().loadManager();
+		logger.debug("Loading common data manager implementations...");
+		CommonDataManager.initCommonDataManagerServices(ServiceImplementationPriorityLevels.NORMAL,
+				ServiceImplementationPriorityLevels.DEFAULT);
+		logger.debug("Selecting common data manager implementation...");
+		ServiceManager.selectServiceImplementation(CommonDataManager.class);
+		logger.debug("Loading common data manager...");
+		CommonDataManager.getInstance().loadManager();
 
 		// Setup server
 		EdgeGameplayApiServer server = new EdgeGameplayApiServer(config);

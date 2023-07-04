@@ -11,6 +11,7 @@ import org.asf.edge.common.CommonInit;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.contentserver.EdgeContentServer;
 import org.asf.edge.contentserver.config.ContentServerConfig;
 import org.asf.edge.contentserver.events.config.ContentServerConfigLoadedEvent;
@@ -227,6 +228,13 @@ public class EdgeGlobalServerMain {
 		ServiceManager.selectServiceImplementation(AccountManager.class);
 		logger.debug("Loading account manager...");
 		AccountManager.getInstance().loadManager();
+		logger.debug("Loading common data manager implementations...");
+		CommonDataManager.initCommonDataManagerServices(ServiceImplementationPriorityLevels.DEFAULT,
+				ServiceImplementationPriorityLevels.NORMAL);
+		logger.debug("Selecting common data manager implementation...");
+		ServiceManager.selectServiceImplementation(CommonDataManager.class);
+		logger.debug("Loading common data manager...");
+		CommonDataManager.getInstance().loadManager();
 
 		// Content server
 		logger.info("Setting up the content server...");

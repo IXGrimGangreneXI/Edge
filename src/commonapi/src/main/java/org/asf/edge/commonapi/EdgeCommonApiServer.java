@@ -171,6 +171,7 @@ public class EdgeCommonApiServer implements IBaseServer {
 		// Register handlers: internal
 		logger.debug("Configuring internal server request handlers...");
 		internalServer.registerProcessor(new AccountManagerAPI(this));
+		internalServer.registerProcessor(new CommonDataManagerAPI(this));
 
 		// Select item manager
 		logger.info("Setting up item manager...");

@@ -15,6 +15,7 @@ import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.gameplayapi.commands.CommandContext;
@@ -129,7 +130,7 @@ public class ServerCommandTerminal {
 		// Dispatch event
 		EventBus.getInstance().dispatchEvent(new GameplayApiServerConfigLoadedEvent(config));
 
-		// Prepare service
+		// Prepare services
 		logger.info("Setting up the terminal...");
 		logger.debug("Loading account manager implementations...");
 		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.NORMAL,
@@ -138,6 +139,13 @@ public class ServerCommandTerminal {
 		ServiceManager.selectServiceImplementation(AccountManager.class);
 		logger.debug("Loading account manager...");
 		AccountManager.getInstance().loadManager();
+		logger.debug("Loading common data manager implementations...");
+		CommonDataManager.initCommonDataManagerServices(ServiceImplementationPriorityLevels.NORMAL,
+				ServiceImplementationPriorityLevels.DEFAULT);
+		logger.debug("Selecting common data manager implementation...");
+		ServiceManager.selectServiceImplementation(CommonDataManager.class);
+		logger.debug("Loading common data manager...");
+		CommonDataManager.getInstance().loadManager();
 
 		// Select item manager
 		logger.info("Setting up item manager...");
