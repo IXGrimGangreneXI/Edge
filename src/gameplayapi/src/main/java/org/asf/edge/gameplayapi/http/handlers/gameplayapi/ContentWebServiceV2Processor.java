@@ -268,7 +268,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 
 						// Add
 						MissionData d = quest.getData();
-						stripMission(d);
 						questLst.add(d);
 						addedQuests.add(quest.getQuestID());
 					}
@@ -280,7 +279,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 
 						// Add
 						MissionData d = quest.getData();
-						stripMission(d);
 						questLst.add(d);
 						addedQuests.add(quest.getQuestID());
 					}
@@ -291,7 +289,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 
 						// Add
 						MissionData d = quest.getDef();
-						stripMission(d);
 						questLst.add(d);
 						addedQuests.add(quest.getQuestID());
 					}
@@ -304,13 +301,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		} else {
 			setResponseStatus(404, "Not found");
 		}
-	}
-
-	private void stripMission(MissionData d) {
-		d.staticData = null;
-		if (d.childMissions != null)
-			for (MissionData m : d.childMissions)
-				stripMission(m);
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -355,7 +345,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			// Add data
 			for (int i = 0; i < resp.quests.length; i++) {
 				MissionData data = quests[i].getData();
-				stripMission(data);
 				resp.quests[i] = data;
 			}
 
@@ -460,7 +449,6 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			ArrayList<MissionData> questLst = new ArrayList<MissionData>();
 			for (UserQuestInfo i : quests) {
 				MissionData d = i.getDef();
-				stripMission(d);
 				questLst.add(d);
 			}
 			resp.quests = questLst.toArray(t -> new MissionData[t]);
