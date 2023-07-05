@@ -6,7 +6,7 @@ import java.util.HashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.ConnectiveHttpServer;
-
+import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.commonapi.http.*;
 import org.asf.edge.commonapi.http.handlers.api.core.*;
 import org.asf.edge.commonapi.http.handlers.api.accounts.*;
@@ -15,11 +15,17 @@ import org.asf.edge.commonapi.http.handlers.api.messaging.*;
 import org.asf.edge.commonapi.http.handlers.internal.*;
 import org.asf.edge.commonapi.events.server.*;
 import org.asf.edge.modules.eventbus.EventBus;
+
+import com.google.gson.JsonPrimitive;
+
+import org.asf.edge.common.CommonInit;
 import org.asf.edge.common.IBaseServer;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.commonapi.config.CommonApiServerConfig;
 
 /**
@@ -178,7 +184,56 @@ public class EdgeCommonApiServer implements IBaseServer {
 		ServiceManager.registerServiceImplementation(ItemManager.class, new ItemManagerImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(ItemManager.class);
+
+		// Server watchdog
+		logger.info("Starting shutdown and restart watchdog...");
+		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("EDGECOMMON");
+		try {
+			if (!cont.entryExists("shutdown")) {
+				lastShutdownTime = System.currentTimeMillis();
+				cont.setEntry("shutdown", new JsonPrimitive(lastShutdownTime));
+			} else
+				lastShutdownTime = cont.getEntry("shutdown").getAsLong();
+			if (!cont.entryExists("restart")) {
+				lastRestartTime = System.currentTimeMillis();
+				cont.setEntry("restart", new JsonPrimitive(lastRestartTime));
+			} else
+				lastRestartTime = cont.getEntry("restart").getAsLong();
+		} catch (IOException e) {
+		}
+		AsyncTaskManager.runAsync(() -> {
+			while (true) {
+				// Check restart and shutdown
+				try {
+					long shutdown = cont.getEntry("shutdown").getAsLong();
+					if (shutdown > lastShutdownTime) {
+						// Trigger shutdown
+						if (isRunning()) {
+							stopServer();
+							break;
+						}
+					}
+					long restart = cont.getEntry("restart").getAsLong();
+					if (restart > lastRestartTime) {
+						// Trigger restart
+						if (isRunning()) {
+							CommonInit.restartPending = true;
+							stopServer();
+							break;
+						}
+					}
+				} catch (IOException e) {
+				}
+				try {
+					Thread.sleep(30000);
+				} catch (InterruptedException e) {
+				}
+			}
+		});
 	}
+
+	private long lastRestartTime;
+	private long lastShutdownTime;
 
 	/**
 	 * Starts the server

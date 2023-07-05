@@ -94,6 +94,8 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 			itm.addProperty("uses", uses);
 			data.setEntry("item-" + uniqueID, itm);
 
+			// TODO: dispatch event
+
 			// Return
 			return new PlayerInventoryItemImpl(data, uniqueID, defID, quantity, uses);
 		} catch (IOException e) {

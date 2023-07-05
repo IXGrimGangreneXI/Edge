@@ -261,9 +261,10 @@ public class EdgeGlobalServerMain {
 
 		// Wait for exit
 		logger.info("EDGE servers are running!");
-		contSrv.waitForExit();
 		cApiSrv.waitForExit();
 		gpApiSrv.waitForExit();
+		if (CommonInit.restartPending)
+			System.exit(237);
 	}
 
 }

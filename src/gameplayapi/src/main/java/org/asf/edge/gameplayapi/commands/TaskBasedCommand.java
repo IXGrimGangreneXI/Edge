@@ -29,7 +29,7 @@ public abstract class TaskBasedCommand implements IEdgeServerCommand {
 
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
-			Map<String, String> dataBlobs) {
+			Map<String, String> dataBlobs) throws Exception {
 		// Check arguments
 		ArrayList<String> cmd = new ArrayList<String>(Arrays.asList(args));
 

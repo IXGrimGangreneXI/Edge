@@ -57,7 +57,8 @@ public abstract class ItemManager extends AbstractService {
 	public abstract void registerItemDefinition(ItemInfo item);
 
 	/**
-	 * Updates item definitions
+	 * Updates item definitions, merges in data from the given objectnode, this does
+	 * NOT replace the def, only replaces what rawData specifies
 	 * 
 	 * @param id      Item ID
 	 * @param rawData Data to merge into the item definition
@@ -92,5 +93,10 @@ public abstract class ItemManager extends AbstractService {
 	 * @param data Container to retrieve the inventory for
 	 */
 	public abstract PlayerInventory getCommonInventory(AccountDataContainer data);
+
+	/**
+	 * Called to reload items and stores from disk
+	 */
+	public abstract void reload();
 
 }

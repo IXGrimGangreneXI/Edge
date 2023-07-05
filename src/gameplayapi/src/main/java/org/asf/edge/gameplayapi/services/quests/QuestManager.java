@@ -101,4 +101,9 @@ public abstract class QuestManager extends AbstractService {
 	 */
 	public abstract void recomputeQuests(AccountSaveContainer save);
 
+	/**
+	 * Called to reload quests from disk
+	 */
+	public abstract void reload();
+
 }

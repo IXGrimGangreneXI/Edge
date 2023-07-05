@@ -57,4 +57,11 @@ public class ItemInfo {
 	public ObjectNode getRawObject() {
 		return raw;
 	}
+
+	public void reloadDef() {
+		// Reload
+		id = raw.get("id").asInt();
+		name = raw.get("itn").asText();
+		description = raw.get("d").asText();
+	}
 }

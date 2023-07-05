@@ -8,6 +8,7 @@ for /r "./libs" %%i in (*.jar) do SET libs=!libs!;%%i
 SET libs=%libs:~1%
 
 java -cp "%libs%" org.asf.edge.contentserver.EdgeContentServerMain %*
+IF %ERRORLEVEL% NEQ 0 goto MAIN
 
 if EXIST contentserverupdater.jar goto UPDATE
 exit

@@ -10,6 +10,9 @@ import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.gameplayapi.commands.defaultcommands.HelpCommand;
 import org.asf.edge.gameplayapi.commands.defaultcommands.account.ProfilesCommand;
+import org.asf.edge.gameplayapi.commands.defaultcommands.administration.ReloadCommand;
+import org.asf.edge.gameplayapi.commands.defaultcommands.administration.RestartCommand;
+import org.asf.edge.gameplayapi.commands.defaultcommands.administration.ShutdownCommand;
 import org.asf.edge.gameplayapi.commands.defaultcommands.debug.DebugCommands;
 import org.asf.edge.gameplayapi.events.commands.CommandSetupEvent;
 import org.asf.edge.gameplayapi.permissions.PermissionContext;
@@ -51,6 +54,9 @@ public class CommandContext {
 		// Register commands
 		logger.info("Registering commands...");
 		registerCommand(new ProfilesCommand());
+		registerCommand(new ReloadCommand());
+		registerCommand(new ShutdownCommand());
+		registerCommand(new RestartCommand());
 		if (System.getProperty("debugMode") != null)
 			registerCommand(new DebugCommands()); // Debug
 
@@ -158,20 +164,35 @@ public class CommandContext {
 	public boolean runCommand(String id, String[] args, Consumer<String> outputWriteLineCallback,
 			Map<String, String> dataBlobs) {
 		// Find command
+		String cmdStr = id;
+		for (String arg : args) {
+			if (arg.contains(" "))
+				cmdStr += " \"" + arg.replace("\\\"", "\\\\\"").replace("\"", "\\\"") + "\"";
+			else
+				cmdStr += " " + arg.replace("\\\"", "\\\\\"").replace("\"", "\\\"");
+		}
 		boolean success = false;
 		String result = "Command not found, please use 'help' for a list of commands";
 		for (IEdgeServerCommand c : commands) {
 			if (c.id().equalsIgnoreCase(id)) {
 				if (getPermissions().hasPermission(c.permNode(), c.permLevel())) {
 					// Found it
-					result = c.run(args, this, logger, t -> {
-						outputWriteLineCallback.accept(t);
-						if (logCommands)
-							logger.info(id + " (" + getAccount().getUsername() + ") : " + t);
-					}, dataBlobs);
-					if (result != null)
-						success = true;
-					break;
+					try {
+						result = c.run(args, this, logger, t -> {
+							outputWriteLineCallback.accept(t);
+							if (logCommands)
+								logger.info(id + " (" + getAccount().getUsername() + ") : " + t);
+						}, dataBlobs);
+						if (result != null)
+							success = true;
+						break;
+					} catch (Exception e) {
+						result = "An internal server error occured while processing the command";
+						success = false;
+						logger.error("An error occured while processing command '" + cmdStr + "' (issued by "
+								+ getAccount().getUsername() + ")", e);
+						break;
+					}
 				}
 			}
 		}
@@ -180,7 +201,7 @@ public class CommandContext {
 		if (result != null) {
 			outputWriteLineCallback.accept(result);
 			if (logCommands)
-				logger.info(id + " (" + getAccount().getUsername() + ") : " + result);
+				logger.info(cmdStr + " (" + getAccount().getUsername() + ") : " + result);
 		}
 		return success;
 	}

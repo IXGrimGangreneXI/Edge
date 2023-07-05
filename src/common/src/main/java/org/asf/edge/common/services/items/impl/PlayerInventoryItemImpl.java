@@ -13,6 +13,7 @@ import com.google.gson.JsonObject;
 public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 
 	private AccountDataContainer data;
+	private long lastUpdate = System.currentTimeMillis();
 
 	private int defID;
 	private int uniqueID;
@@ -29,6 +30,11 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 
 	private void updateInfo() {
 		try {
+			// Check
+			if (System.currentTimeMillis() < lastUpdate + 10000)
+				return; // Lets leave it to caching, to prevent overloading the database
+			lastUpdate = System.currentTimeMillis();
+
 			// Find item
 			JsonElement ele = data.getEntry("item-" + uniqueID);
 			if (ele == null)
@@ -52,6 +58,8 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 			itm.addProperty("quantity", quantity);
 			itm.addProperty("uses", uses);
 			data.setEntry("item-" + uniqueID, itm);
+
+			// TODO: dispatch event
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -103,6 +111,8 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 		try {
 			// Remove item
 			data.deleteEntry("item-" + uniqueID);
+
+			// TODO: dispatch event
 
 			// Update item list
 			JsonElement e = data.getEntry("itemlist");

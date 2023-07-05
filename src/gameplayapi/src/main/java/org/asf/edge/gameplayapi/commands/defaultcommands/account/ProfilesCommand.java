@@ -7,6 +7,7 @@ import org.asf.edge.gameplayapi.commands.defaultcommands.account.profilecommands
 import org.asf.edge.gameplayapi.commands.defaultcommands.account.profilecommands.ProfileDeleteCommand;
 import org.asf.edge.gameplayapi.commands.defaultcommands.account.profilecommands.ProfileListCommand;
 import org.asf.edge.gameplayapi.commands.defaultcommands.account.profilecommands.ProfileRenameCommand;
+import org.asf.edge.gameplayapi.commands.defaultcommands.account.profilecommands.ProfileResetLocationCommand;
 import org.asf.edge.gameplayapi.commands.defaultcommands.account.profilecommands.ProfileSelectCommand;
 import org.asf.edge.gameplayapi.permissions.PermissionLevel;
 
@@ -44,7 +45,9 @@ public class ProfilesCommand extends TaskBasedCommand {
 
 				new ProfileDeleteCommand(),
 
-				new ProfileSelectCommand()
+				new ProfileSelectCommand(),
+
+				new ProfileResetLocationCommand()
 
 		};
 	}

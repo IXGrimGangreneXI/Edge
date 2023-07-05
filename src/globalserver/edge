@@ -6,11 +6,19 @@ function start() {
 	
 	java -cp "$libs" org.asf.edge.globalserver.EdgeGlobalServerMain "$@"
 	code=$?
+	if [ "$code" != "0" ]; then
+		if [ "$code" != "237" ]; then
+			1>&2 echo "Error: server exited with code $code, restarting!"
+		fi
+		start
+		return
+	fi
 	if [ "$code" == "0" ] && [ -f updater.jar ]; then
 		java -cp "updater.jar" org.asf.edge.globalserver.EdgeGlobalServerUpdater --update
 		rm updater.jar
 		echo
 		start
+		return
 	fi
 	exit $code
 }

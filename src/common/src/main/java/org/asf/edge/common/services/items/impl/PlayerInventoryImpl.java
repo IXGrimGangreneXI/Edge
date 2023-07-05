@@ -31,6 +31,8 @@ public class PlayerInventoryImpl extends PlayerInventory {
 			// Add item
 			getContainer(itm.inventoryID).createItem(itm.itemID, itm.quantity, itm.uses);
 		}
+
+		// TODO: dispatch event
 	}
 
 	@Override

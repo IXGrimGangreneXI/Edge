@@ -21,6 +21,8 @@ import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.http.handlers.gameplayapi.ContentWebServiceV2Processor;
@@ -50,10 +52,46 @@ public class QuestManagerImpl extends QuestManager {
 	private HashMap<Integer, MissionData> allQuests = new HashMap<Integer, MissionData>();
 	private static Random rnd = new Random();
 
+	private long lastReloadTime;
+
 	@Override
 	public void initService() {
 		logger = LogManager.getLogger("QuestManager");
 
+		// Start reload watchdog
+		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("QUESTMANAGER");
+		try {
+			if (!cont.entryExists("lastreload")) {
+				lastReloadTime = System.currentTimeMillis();
+				cont.setEntry("lastreload", new JsonPrimitive(lastReloadTime));
+			} else
+				lastReloadTime = cont.getEntry("lastreload").getAsLong();
+		} catch (IOException e) {
+		}
+		AsyncTaskManager.runAsync(() -> {
+			while (true) {
+				// Check reload
+				try {
+					long reload = cont.getEntry("lastreload").getAsLong();
+					if (reload > lastReloadTime) {
+						// Trigger reload
+						lastReloadTime = reload;
+						loadQuests();
+					}
+				} catch (IOException e) {
+				}
+				try {
+					Thread.sleep(30000);
+				} catch (InterruptedException e) {
+				}
+			}
+		});
+
+		// Load
+		loadQuests();
+	}
+
+	private void loadQuests() {
 		// Load quests
 		logger.info("Loading quest data...");
 		try {
@@ -68,11 +106,13 @@ public class QuestManagerImpl extends QuestManager {
 
 			// Load quests
 			logger.info("Loading quest definitions...");
+			HashMap<Integer, MissionData> quests = new HashMap<Integer, MissionData>();
 			for (MissionData quest : questReg.defaultQuestDefs.questDefs) {
 				// Load quest
 				quests.put(quest.id, quest);
 				scanQuest(quest);
 			}
+			this.quests = quests;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -857,6 +897,15 @@ public class QuestManagerImpl extends QuestManager {
 
 		@Override
 		public boolean isActive() {
+			// Check parent
+			if (def.parentQuestID > 0) {
+				UserQuestInfo quest = getUserQuest(save, def.parentQuestID);
+				if (quest != null)
+					if (!quest.isActive())
+						return false;
+			}
+
+			// Populate
 			populateQuestInfoIfNeeded();
 
 			// Check prerequisites
@@ -1011,13 +1060,6 @@ public class QuestManagerImpl extends QuestManager {
 					}
 				}
 			}
-
-			// Check parent
-			if (def.parentQuestID > 0) {
-				UserQuestInfo quest = getUserQuest(save, def.parentQuestID);
-				if (quest != null)
-					return quest.isActive();
-			}
 			return true;
 		}
 
@@ -1033,6 +1075,19 @@ public class QuestManagerImpl extends QuestManager {
 			return questInfoData.get("started").getAsBoolean();
 		}
 
+	}
+
+	@Override
+	public void reload() {
+		// Trigger a reload on all servers
+		lastReloadTime = System.currentTimeMillis();
+		try {
+			CommonDataManager.getInstance().getContainer("QUESTMANAGER").setEntry("lastreload",
+					new JsonPrimitive(lastReloadTime));
+		} catch (IOException e) {
+		}
+		logger.info("Reloading quest manager...");
+		loadQuests();
 	}
 
 }

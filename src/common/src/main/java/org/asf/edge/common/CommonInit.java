@@ -10,6 +10,7 @@ package org.asf.edge.common;
 public class CommonInit {
 	private static boolean logInited;
 	private static boolean debugMode;
+	public static boolean restartPending;
 
 	/**
 	 * Calls all init methods

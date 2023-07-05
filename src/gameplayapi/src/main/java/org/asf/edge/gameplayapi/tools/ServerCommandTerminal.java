@@ -10,11 +10,13 @@ import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.CommonInit;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
@@ -31,10 +33,14 @@ import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 
 public class ServerCommandTerminal {
 
 	private static boolean exit;
+
+	private static long lastRestartTime;
+	private static long lastShutdownTime;
 
 	public static void main(String[] args) throws IOException {
 		@SuppressWarnings("resource")
@@ -219,6 +225,42 @@ public class ServerCommandTerminal {
 				return "Exiting terminal...";
 			}
 
+		});
+		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("EDGECOMMON");
+		try {
+			if (!cont.entryExists("shutdown")) {
+				lastShutdownTime = System.currentTimeMillis();
+				cont.setEntry("shutdown", new JsonPrimitive(lastShutdownTime));
+			} else
+				lastShutdownTime = cont.getEntry("shutdown").getAsLong();
+			if (!cont.entryExists("restart")) {
+				lastRestartTime = System.currentTimeMillis();
+				cont.setEntry("restart", new JsonPrimitive(lastRestartTime));
+			} else
+				lastRestartTime = cont.getEntry("restart").getAsLong();
+		} catch (IOException e) {
+		}
+		AsyncTaskManager.runAsync(() -> {
+			while (true) {
+				// Check restart and shutdown
+				try {
+					long shutdown = cont.getEntry("shutdown").getAsLong();
+					if (shutdown > lastShutdownTime) {
+						// Trigger shutdown
+						System.exit(0);
+					}
+					long restart = cont.getEntry("restart").getAsLong();
+					if (restart > lastRestartTime) {
+						// Trigger restart
+						System.exit(237);
+					}
+				} catch (IOException e) {
+				}
+				try {
+					Thread.sleep(30000);
+				} catch (InterruptedException e) {
+				}
+			}
 		});
 		System.out.println();
 		System.out.println("Edge interactive terminal, waiting for commands.");

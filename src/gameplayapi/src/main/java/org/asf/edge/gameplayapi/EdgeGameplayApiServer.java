@@ -6,17 +6,23 @@ import java.util.HashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.ConnectiveHttpServer;
-
+import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.gameplayapi.http.*;
 import org.asf.edge.gameplayapi.http.handlers.gameplayapi.*;
 import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
 import org.asf.edge.modules.eventbus.EventBus;
+
+import com.google.gson.JsonPrimitive;
+
 import org.asf.edge.gameplayapi.http.handlers.achievements.*;
+import org.asf.edge.common.CommonInit;
 import org.asf.edge.common.IBaseServer;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.gameplayapi.events.server.GameplayApiServerSetupEvent;
@@ -154,7 +160,56 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		ServiceManager.registerServiceImplementation(QuestManager.class, new QuestManagerImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(QuestManager.class);
+
+		// Server watchdog
+		logger.info("Starting shutdown and restart watchdog...");
+		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("EDGECOMMON");
+		try {
+			if (!cont.entryExists("shutdown")) {
+				lastShutdownTime = System.currentTimeMillis();
+				cont.setEntry("shutdown", new JsonPrimitive(lastShutdownTime));
+			} else
+				lastShutdownTime = cont.getEntry("shutdown").getAsLong();
+			if (!cont.entryExists("restart")) {
+				lastRestartTime = System.currentTimeMillis();
+				cont.setEntry("restart", new JsonPrimitive(lastRestartTime));
+			} else
+				lastRestartTime = cont.getEntry("restart").getAsLong();
+		} catch (IOException e) {
+		}
+		AsyncTaskManager.runAsync(() -> {
+			while (true) {
+				// Check restart and shutdown
+				try {
+					long shutdown = cont.getEntry("shutdown").getAsLong();
+					if (shutdown > lastShutdownTime) {
+						// Trigger shutdown
+						if (isRunning()) {
+							stopServer();
+							break;
+						}
+					}
+					long restart = cont.getEntry("restart").getAsLong();
+					if (restart > lastRestartTime) {
+						// Trigger restart
+						if (isRunning()) {
+							CommonInit.restartPending = true;
+							stopServer();
+							break;
+						}
+					}
+				} catch (IOException e) {
+				}
+				try {
+					Thread.sleep(30000);
+				} catch (InterruptedException e) {
+				}
+			}
+		});
 	}
+
+	private long lastRestartTime;
+	private long lastShutdownTime;
 
 	/**
 	 * Starts the server

@@ -18,6 +18,8 @@ import org.asf.edge.gameplayapi.xmls.items.GetStoreRequestData;
 import org.asf.edge.gameplayapi.xmls.items.GetStoreResponseData;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 
 public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApiServer> {
 
@@ -90,7 +92,10 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 		}
 
 		// Set response
-		setResponseContent("text/xml", req.generateXmlValue("GetStoreResponse", resp));
+		setResponseContent("text/xml",
+				new XmlMapper().writer().withFeatures(ToXmlGenerator.Feature.WRITE_XML_DECLARATION)
+						.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL).withDefaultPrettyPrinter()
+						.withRootName("GetStoreResponse").writeValueAsString(resp));
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -120,7 +125,10 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 		}
 
 		// Set response
-		setResponseContent("text/xml", req.generateXmlValue("I", def.getRawObject()));
+		setResponseContent("text/xml",
+				new XmlMapper().writer().withFeatures(ToXmlGenerator.Feature.WRITE_XML_DECLARATION)
+						.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL).withDefaultPrettyPrinter()
+						.withRootName("I").writeValueAsString(def.getRawObject()));
 	}
 
 }

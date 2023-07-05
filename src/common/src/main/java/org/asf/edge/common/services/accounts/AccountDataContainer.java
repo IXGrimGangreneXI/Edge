@@ -212,21 +212,6 @@ public abstract class AccountDataContainer {
 		if ((path + key + "/").length() + 64 > 256)
 			throw new IOException("Invalid key: key name too long, path length limit would be hit");
 
-		// Verify existence, and if needed, create the container
-		JsonArray table = retrieveRegistry();
-		boolean found = false;
-		for (JsonElement ele : table) {
-			if (ele.getAsString().equals(key + "/")) {
-				found = true;
-				break;
-			}
-		}
-		if (!found) {
-			// Add to table
-			table.add(key + "/");
-			set("datamap", table);
-		}
-
 		// Return container
 		return new ChildDataContainer(path + key + "/", key, this);
 	}
@@ -286,6 +271,8 @@ public abstract class AccountDataContainer {
 
 	private class ChildDataContainer extends AccountDataContainer {
 
+		private boolean registryChecked;
+
 		public ChildDataContainer(String path, String name, AccountDataContainer parent) {
 			this.path = path;
 			this.parent = parent;
@@ -315,6 +302,30 @@ public abstract class AccountDataContainer {
 		@Override
 		protected void delete(String key) throws IOException {
 			parent.delete(name + "/" + key);
+		}
+
+		@Override
+		protected JsonArray retrieveRegistry() throws IOException {
+			// Check if it exists in the parent
+			if (!registryChecked) {
+				registryChecked = true;
+
+				// Verify existence, and if needed, create the container
+				JsonArray table = parent.retrieveRegistry();
+				boolean found = false;
+				for (JsonElement ele : table) {
+					if (ele.getAsString().equals(name + "/")) {
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
+					// Add to table
+					table.add(name + "/");
+					set("datamap", table);
+				}
+			}
+			return super.retrieveRegistry();
 		}
 
 	}

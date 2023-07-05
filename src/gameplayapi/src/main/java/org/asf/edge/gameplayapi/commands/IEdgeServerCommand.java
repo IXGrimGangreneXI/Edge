@@ -64,6 +64,6 @@ public interface IEdgeServerCommand {
 	 * @return Command output string, null to fail
 	 */
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
-			Map<String, String> dataBlobs);
+			Map<String, String> dataBlobs) throws Exception;
 
 }

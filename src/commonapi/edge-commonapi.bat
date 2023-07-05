@@ -8,6 +8,7 @@ for /r "./libs" %%i in (*.jar) do SET libs=!libs!;%%i
 SET libs=%libs:~1%
 
 java -cp "%libs%" org.asf.edge.commonapi.EdgeCommonApiServerMain %*
+IF %ERRORLEVEL% NEQ 0 goto MAIN
 
 if EXIST commonapiupdater.jar goto UPDATE
 exit

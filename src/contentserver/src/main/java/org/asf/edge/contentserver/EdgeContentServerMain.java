@@ -129,6 +129,8 @@ public class EdgeContentServerMain {
 		// Wait for exit
 		logger.info("Server is running!");
 		server.waitForExit();
+		if (CommonInit.restartPending)
+			System.exit(237);
 	}
 
 }
