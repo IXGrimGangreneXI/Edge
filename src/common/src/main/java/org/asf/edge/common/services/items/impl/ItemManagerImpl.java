@@ -130,4 +130,10 @@ public class ItemManagerImpl extends ItemManager {
 		return new PlayerInventoryImpl(data, this);
 	}
 
+	@Override
+	public void registerItemDefinition(ItemInfo item) {
+		if (!itemDefs.containsKey(item.getID()))
+			itemDefs.put(item.getID(), item);
+	}
+
 }

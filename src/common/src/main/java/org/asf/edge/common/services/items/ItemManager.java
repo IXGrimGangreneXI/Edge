@@ -7,6 +7,8 @@ import org.asf.edge.common.services.AbstractService;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 /**
  * 
  * Item Manager
@@ -46,6 +48,21 @@ public abstract class ItemManager extends AbstractService {
 	 * @return ItemStoreInfo instance or null
 	 */
 	public abstract ItemStoreInfo getStore(int id);
+
+	/**
+	 * Registers item definitions
+	 * 
+	 * @param item Item definition to register
+	 */
+	public abstract void registerItemDefinition(ItemInfo item);
+
+	/**
+	 * Updates item definitions
+	 * 
+	 * @param id      Item ID
+	 * @param rawData Data to merge into the item definition
+	 */
+	public abstract void updateItemDefinition(int id, ObjectNode rawData);
 
 	/**
 	 * Retrieves all item IDs
