@@ -12,6 +12,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class QuestRegistryManifest {
 
+	public String questDataVersion;
 	public QuestDefsBlock defaultQuestDefs;
 
 	@JsonIgnoreProperties(ignoreUnknown = true)

@@ -63,6 +63,7 @@ public class QuestManagerImpl extends QuestManager {
 
 	private long lastReloadTime;
 	private long lastQuestUpdateTime;
+	private String questDataVersion;
 	private String lastQuestUpdateVersion;
 
 	@Override
@@ -105,7 +106,8 @@ public class QuestManagerImpl extends QuestManager {
 		if (!new File("questversion.json").exists()) {
 			try {
 				Files.writeString(Path.of("questversion.json"), "{\n    "
-						+ "\"__COMMENT__\": \"this file controls the quest version, each time quest data is updated this file should also be updated to hold a new version ID\",\n    "
+						+ "\"__COMMENT1__\": \"this file controls the quest version, each time quest data is updated this file should also be updated to hold a new version ID\",\n    "
+						+ "\"__COMMENT2__\": \"you MUST update this file manually otherwise quests wont be recomputed after user content updates\",\n    "
 						+ "\"version\": \"" + System.currentTimeMillis() + "\"\n" + "}\n");
 			} catch (IOException e) {
 			}
@@ -278,6 +280,7 @@ public class QuestManagerImpl extends QuestManager {
 			// Load into map
 			XmlMapper mapper = new XmlMapper();
 			QuestRegistryManifest questReg = mapper.readValue(data, QuestRegistryManifest.class);
+			questDataVersion = questReg.questDataVersion;
 
 			// Load quests
 			logger.info("Loading quest definitions...");
@@ -520,7 +523,9 @@ public class QuestManagerImpl extends QuestManager {
 			if (!data.entryExists("activequests") || !data.entryExists("lastupdate")
 					|| data.getEntry("lastupdate").getAsLong() != lastQuestUpdateTime
 					|| !data.entryExists("lastupdate_serverdata")
-					|| !data.getEntry("lastupdate_serverdata").getAsString().equals(lastQuestUpdateVersion)) {
+					|| !data.getEntry("lastupdate_serverdata").getAsString().equals(lastQuestUpdateVersion)
+					|| !data.entryExists("lastupdate_serverver")
+					|| !data.getEntry("lastupdate_serverver").getAsString().equals(questDataVersion)) {
 				recomputeQuests(save);
 				return getActiveQuests(save);
 			}
@@ -548,7 +553,9 @@ public class QuestManagerImpl extends QuestManager {
 			if (!data.entryExists("activequests") || !data.entryExists("lastupdate")
 					|| data.getEntry("lastupdate").getAsLong() != lastQuestUpdateTime
 					|| !data.entryExists("lastupdate_serverdata")
-					|| !data.getEntry("lastupdate_serverdata").getAsString().equals(lastQuestUpdateVersion)) {
+					|| !data.getEntry("lastupdate_serverdata").getAsString().equals(lastQuestUpdateVersion)
+					|| !data.entryExists("lastupdate_serverver")
+					|| !data.getEntry("lastupdate_serverver").getAsString().equals(questDataVersion)) {
 				recomputeQuests(save);
 				return getUpcomingQuests(save);
 			}
@@ -599,6 +606,8 @@ public class QuestManagerImpl extends QuestManager {
 			data.setEntry("activequests", active);
 			data.setEntry("upcomingquests", upcoming);
 			data.setEntry("lastupdate", new JsonPrimitive(lastQuestUpdateTime));
+			data.setEntry("lastupdate_serverdata", new JsonPrimitive(lastQuestUpdateVersion));
+			data.setEntry("lastupdate_serverver", new JsonPrimitive(questDataVersion));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
