@@ -1,7 +1,13 @@
 package org.asf.edge.gameplayapi.services.quests.impl;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -38,10 +44,13 @@ import org.asf.edge.gameplayapi.xmls.quests.MissionData.MissionRulesBlock.Prereq
 import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData;
 import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData.CompletedMissionInfoBlock;
 import org.asf.edge.gameplayapi.xmls.quests.edgespecific.QuestRegistryManifest;
+import org.asf.edge.modules.IEdgeModule;
+import org.asf.edge.modules.ModuleManager;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonArray;
 
@@ -53,6 +62,8 @@ public class QuestManagerImpl extends QuestManager {
 	private static Random rnd = new Random();
 
 	private long lastReloadTime;
+	private long lastQuestUpdateTime;
+	private String lastQuestUpdateVersion;
 
 	@Override
 	public void initService() {
@@ -89,6 +100,170 @@ public class QuestManagerImpl extends QuestManager {
 
 		// Load
 		loadQuests();
+
+		// Load update time
+		if (!new File("questversion.json").exists()) {
+			try {
+				Files.writeString(Path.of("questversion.json"), "{\n    "
+						+ "\"__COMMENT__\": \"this file controls the quest version, each time quest data is updated this file should also be updated to hold a new version ID\",\n    "
+						+ "\"version\": \"" + System.currentTimeMillis() + "\"\n" + "}\n");
+			} catch (IOException e) {
+			}
+		}
+		try {
+			lastQuestUpdateVersion = JsonParser.parseString(Files.readString(Path.of("questversion.json")))
+					.getAsJsonObject().get("version").getAsString();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		// Start quest date check watchdog
+		try {
+			if (!cont.entryExists("lastupdate")) {
+				lastQuestUpdateTime = System.currentTimeMillis();
+				cont.setEntry("lastupdate", new JsonPrimitive(lastQuestUpdateTime));
+			} else
+				lastQuestUpdateTime = cont.getEntry("lastupdate").getAsLong();
+		} catch (IOException e) {
+		}
+		AsyncTaskManager.runAsync(() -> {
+			while (true) {
+				// Check quest defs
+				try {
+					// Check all quest defs
+					JsonArray allDateActiveDefsLast = new JsonArray();
+					if (cont.entryExists("activedefs"))
+						allDateActiveDefsLast = cont.getEntry("activedefs").getAsJsonArray();
+					ArrayList<Integer> defsActiveLast = new ArrayList<Integer>();
+					ArrayList<Integer> defsActiveCurrent = new ArrayList<Integer>();
+					for (JsonElement el : allDateActiveDefsLast)
+						defsActiveLast.add(el.getAsInt());
+
+					// Load current defs
+					for (MissionData def : this.getAllQuestDefs()) {
+						boolean active = true;
+
+						// Check prerequisites
+						if (def.missionRules != null) {
+							if (def.missionRules.prerequisites != null) {
+								for (PrerequisiteInfoBlock req : def.missionRules.prerequisites) {
+									if (!req.clientRule) {
+										// Check type
+										switch (req.type) {
+
+										// Date range rule
+										case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.DATERANGE: {
+											// Parse
+											String[] dStrs = req.value.split(",");
+											if (dStrs.length == 2) {
+												String startDate = dStrs[0];
+												String endDate = dStrs[1];
+
+												try {
+													// Parse dates
+													SimpleDateFormat fmt = new SimpleDateFormat(
+															"MM'-'dd'-'yyyy HH':'mm':'ss");
+													Date start = fmt.parse(startDate);
+													Date end = fmt.parse(endDate);
+
+													// Check
+													Date now = new Date(System.currentTimeMillis());
+													if (start.before(now) || end.after(now)) {
+														active = false;
+													}
+												} catch (ParseException e) {
+													try {
+														// Parse dates
+														SimpleDateFormat fmt = new SimpleDateFormat("MM'-'dd'-'yyyy");
+														Date start = fmt.parse(startDate);
+														Date end = fmt.parse(endDate);
+
+														// Check
+														Date now = new Date(System.currentTimeMillis());
+														if (start.before(now) || end.after(now)) {
+															active = false;
+														}
+													} catch (ParseException e2) {
+														try {
+															// Parse dates
+															SimpleDateFormat fmt = new SimpleDateFormat(
+																	"dd'/'MM'/'yyyy");
+															Date start = fmt.parse(startDate);
+															Date end = fmt.parse(endDate);
+
+															// Check
+															Date now = new Date(System.currentTimeMillis());
+															if (start.before(now) || end.after(now)) {
+																active = false;
+															}
+														} catch (ParseException e3) {
+															throw new RuntimeException(e);
+														}
+													}
+												}
+											}
+
+											break;
+										}
+
+										// Event rule
+										case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.EVENT: {
+											// TODO
+											active = false;
+											break;
+										}
+
+										}
+									}
+								}
+							}
+						}
+
+						// Check
+						if (active)
+							defsActiveCurrent.add(def.id);
+					}
+
+					// Check def lists
+					boolean changed = false;
+					if (defsActiveCurrent.size() != defsActiveLast.size()) {
+						changed = true;
+					} else {
+						// Go through the lists
+						for (int id : defsActiveCurrent) {
+							if (!defsActiveLast.contains(id)) {
+								changed = true;
+								break;
+							}
+						}
+						for (int id : defsActiveLast) {
+							if (!defsActiveCurrent.contains(id)) {
+								changed = true;
+								break;
+							}
+						}
+					}
+
+					// If changed, update
+					if (changed) {
+						// Create new def list
+						JsonArray newDefs = new JsonArray();
+						for (int id : defsActiveCurrent)
+							newDefs.add(id);
+						cont.setEntry("activedefs", newDefs);
+
+						// Update time
+						lastQuestUpdateTime = System.currentTimeMillis();
+						cont.setEntry("lastupdate", new JsonPrimitive(lastQuestUpdateTime));
+					}
+				} catch (IOException e) {
+				}
+				try {
+					Thread.sleep(30000);
+				} catch (InterruptedException e) {
+				}
+			}
+		});
 	}
 
 	private void loadQuests() {
@@ -112,8 +287,140 @@ public class QuestManagerImpl extends QuestManager {
 				quests.put(quest.id, quest);
 				scanQuest(quest);
 			}
+
+			// Load quest transformers
+			logger.info("Loading quest transformers...");
+			loadTransformers(getClass(), quests);
+
+			// Load module transformers
+			for (IEdgeModule module : ModuleManager.getLoadedModules()) {
+				loadTransformers(module.getClass(), quests);
+			}
+
+			// Load all transformers from disk
+			File transformersQuests = new File("questtransformers");
+			if (transformersQuests.exists()) {
+				for (File transformer : transformersQuests
+						.listFiles(t -> t.getName().endsWith(".xml") || t.isDirectory())) {
+					loadTransformer(transformer, quests);
+				}
+			}
+
+			// Apply
 			this.quests = quests;
 		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void applyTransformer(MissionData def, HashMap<Integer, MissionData> quests) {
+		// Find def, if not present, define a new one
+		MissionData old = quests.get(def.id);
+		if (old == null) {
+			// Define new
+			quests.put(def.id, def);
+			scanQuest(def);
+		} else {
+			// Transform
+			if (def.staticData != null)
+				old.staticData = def.staticData;
+			if (def.acceptanceAchievementID != 0)
+				old.acceptanceAchievementID = def.acceptanceAchievementID;
+			if (def.acceptanceRewards != null && def.acceptanceRewards.length != 0)
+				old.acceptanceRewards = def.acceptanceRewards;
+			if (def.achievementID != 0)
+				old.achievementID = def.achievementID;
+			if (def.childMissions != null && def.childMissions.length != 0)
+				old.childMissions = def.childMissions;
+			if (def.groupID != 0)
+				old.groupID = def.groupID;
+			if (def.missionRules != null)
+				old.missionRules = def.missionRules;
+			if (def.name != null)
+				old.name = def.name;
+			if (def.name != null)
+				old.name = def.name;
+			if (def.repeatable != null)
+				old.repeatable = def.repeatable;
+			if (def.tasks != null && def.tasks.length != 0)
+				old.tasks = def.tasks;
+			if (def.rewards != null && def.rewards.length != 0)
+				old.rewards = def.rewards;
+			if (def.version != 0)
+				old.version = def.version;
+			updateQuest(old);
+		}
+	}
+
+	private void loadTransformer(File transformer, HashMap<Integer, MissionData> quests) {
+		if (transformer.isFile()) {
+			logger.debug("Loading transformer: '" + transformer.getPath() + "'...");
+			try {
+				// Find the transformer
+				InputStream strm = new FileInputStream(transformer);
+
+				// Load transformer
+				XmlMapper mapper = new XmlMapper();
+				MissionData def = mapper.reader().readValue(new String(strm.readAllBytes(), "UTF-8"),
+						MissionData.class);
+				strm.close();
+				applyTransformer(def, quests);
+			} catch (Exception e) {
+				logger.error("Transformer failed to load: " + transformer.getPath(), e);
+			}
+		} else {
+			logger.debug("Loading transformers from " + transformer.getPath() + "...");
+			for (File tr : transformer.listFiles(t -> t.getName().endsWith(".xml") || t.isDirectory())) {
+				loadTransformer(tr, quests);
+			}
+		}
+	}
+
+	private void loadTransformers(Class<?> cls, HashMap<Integer, MissionData> quests) {
+		URL source = cls.getProtectionDomain().getCodeSource().getLocation();
+
+		// Generate a base URL
+		String baseURL = "";
+		String fileName = "";
+		try {
+			File sourceFile = new File(source.toURI());
+			fileName = sourceFile.getName();
+			if (sourceFile.isDirectory()) {
+				baseURL = source + (source.toString().endsWith("/") ? "" : "/");
+			} else {
+				baseURL = "jar:" + source + "!/";
+			}
+		} catch (Exception e) {
+			return;
+		}
+
+		try {
+			// Find the transformer document
+			logger.debug("Loading transformers from " + fileName + "...");
+			InputStream strm = new URL(baseURL + "questtransformers/index.json").openStream();
+			JsonArray index = JsonParser.parseString(new String(strm.readAllBytes(), "UTF-8")).getAsJsonArray();
+			strm.close();
+
+			// Load all transformers
+			for (JsonElement ele : index) {
+				logger.debug("Loading transformer: 'questtransformers/" + ele.getAsString() + ".xml'...");
+				try {
+					// Find the transformer
+					strm = new URL(baseURL + "questtransformers/" + ele.getAsString() + ".xml").openStream();
+
+					// Load transformer
+					XmlMapper mapper = new XmlMapper();
+					MissionData def = mapper.reader().readValue(new String(strm.readAllBytes(), "UTF-8"),
+							MissionData.class);
+					strm.close();
+					applyTransformer(def, quests);
+				} catch (Exception e) {
+					logger.error("Transformer failed to load: " + ele.getAsString() + " (" + fileName + ")", e);
+				}
+			}
+		} catch (Exception e) {
+			if (e instanceof FileNotFoundException)
+				return;
 			throw new RuntimeException(e);
 		}
 	}
@@ -122,8 +429,21 @@ public class QuestManagerImpl extends QuestManager {
 		allQuests.put(quest.id, quest);
 		logger.debug("Registered quest definition: " + quest.id + ": " + quest.name);
 		if (quest.childMissions != null) {
-			for (MissionData cQuest : quest.childMissions)
+			for (MissionData cQuest : quest.childMissions) {
+				cQuest.parentQuestID = quest.id;
 				scanQuest(cQuest);
+			}
+		}
+	}
+
+	private void updateQuest(MissionData quest) {
+		allQuests.put(quest.id, quest);
+		logger.debug("Updated quest definition: " + quest.id + ": " + quest.name);
+		if (quest.childMissions != null) {
+			for (MissionData cQuest : quest.childMissions) {
+				cQuest.parentQuestID = quest.id;
+				updateQuest(cQuest);
+			}
 		}
 	}
 
@@ -197,7 +517,10 @@ public class QuestManagerImpl extends QuestManager {
 		try {
 			// Load active quests
 			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
-			if (!data.entryExists("activequests")) {
+			if (!data.entryExists("activequests") || !data.entryExists("lastupdate")
+					|| data.getEntry("lastupdate").getAsLong() != lastQuestUpdateTime
+					|| !data.entryExists("lastupdate_serverdata")
+					|| !data.getEntry("lastupdate_serverdata").getAsString().equals(lastQuestUpdateVersion)) {
 				recomputeQuests(save);
 				return getActiveQuests(save);
 			}
@@ -222,7 +545,10 @@ public class QuestManagerImpl extends QuestManager {
 		try {
 			// Load active quests
 			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
-			if (!data.entryExists("upcomingquests")) {
+			if (!data.entryExists("activequests") || !data.entryExists("lastupdate")
+					|| data.getEntry("lastupdate").getAsLong() != lastQuestUpdateTime
+					|| !data.entryExists("lastupdate_serverdata")
+					|| !data.getEntry("lastupdate_serverdata").getAsString().equals(lastQuestUpdateVersion)) {
 				recomputeQuests(save);
 				return getUpcomingQuests(save);
 			}
@@ -254,7 +580,8 @@ public class QuestManagerImpl extends QuestManager {
 			// Find active quests
 			for (MissionData mission : this.quests.values()) {
 				UserQuestInfo q = getUserQuest(save, mission.id);
-				if ((mission.repeatable || !q.isCompleted()) && q.isActive()) {
+				if (((mission.repeatable != null && mission.repeatable.equalsIgnoreCase("true")) || !q.isCompleted())
+						&& q.isActive()) {
 					active.add(q.getQuestID());
 					activeQuests.add(q.getQuestID());
 				}
@@ -271,6 +598,7 @@ public class QuestManagerImpl extends QuestManager {
 			// Save
 			data.setEntry("activequests", active);
 			data.setEntry("upcomingquests", upcoming);
+			data.setEntry("lastupdate", new JsonPrimitive(lastQuestUpdateTime));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -573,7 +901,7 @@ public class QuestManagerImpl extends QuestManager {
 			}
 
 			// Security checks
-			if (isCompleted() && !mission.repeatable) {
+			if (isCompleted() && (mission.repeatable == null || mission.repeatable.equalsIgnoreCase("false"))) {
 				// Invalid request
 				SetTaskStateResultData resp = new SetTaskStateResultData();
 				resp.success = false;
@@ -942,8 +1270,6 @@ public class QuestManagerImpl extends QuestManager {
 
 							// Date range rule
 							case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.DATERANGE: {
-								// FIXME: quests need recomputation if this changes
-
 								// Parse
 								String[] dStrs = req.value.split(",");
 								if (dStrs.length == 2) {
@@ -997,8 +1323,6 @@ public class QuestManagerImpl extends QuestManager {
 
 							// Event rule
 							case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.EVENT: {
-								// FIXME: quests need recomputation if this changes
-
 								// TODO
 								return false;
 							}

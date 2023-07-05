@@ -69,7 +69,7 @@ public class MissionData {
 	public AchievementRewardBlock[] acceptanceRewards;
 
 	@JsonProperty("RPT")
-	public boolean repeatable;
+	public String repeatable;
 
 	public MissionData copy() {
 		MissionData cp = new MissionData();
