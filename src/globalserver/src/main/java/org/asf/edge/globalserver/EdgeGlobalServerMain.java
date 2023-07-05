@@ -265,6 +265,8 @@ public class EdgeGlobalServerMain {
 		gpApiSrv.waitForExit();
 		if (CommonInit.restartPending)
 			System.exit(237);
+		else
+			System.exit(0);
 	}
 
 }

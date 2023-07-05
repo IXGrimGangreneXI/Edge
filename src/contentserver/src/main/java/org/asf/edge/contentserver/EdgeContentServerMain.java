@@ -131,6 +131,8 @@ public class EdgeContentServerMain {
 		server.waitForExit();
 		if (CommonInit.restartPending)
 			System.exit(237);
+		else
+			System.exit(0);
 	}
 
 }
