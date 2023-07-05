@@ -715,7 +715,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		dragon.set("id", new IntNode(id)); // ID
 		dragon.set("ip", new IntNode(dragonIds.size())); // Image
 		dragon.set("eid", new TextNode(entID)); // Entity ID
-		dragon.set("n", new TextNode("Dragon-" + System.currentTimeMillis())); // Name
+		if (!dragon.has("n") || dragon.get("n").asText().isBlank())
+			dragon.set("n", new TextNode("Dragon-" + System.currentTimeMillis())); // Name
 		dragon.set("cdt", new TextNode(fmt.format(new Date()))); // Creation time
 		dragon.set("upd", new TextNode(fmt.format(new Date()))); // Update time
 
