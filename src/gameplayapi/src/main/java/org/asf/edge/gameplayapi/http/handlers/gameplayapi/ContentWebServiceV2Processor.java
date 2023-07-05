@@ -915,8 +915,36 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		if (requests.length == 0) {
 			resp.success = false;
 		} else {
+			// Verify
 			PlayerInventory inv = itemManager.getCommonInventory(data);
 			PlayerInventoryContainer cont = inv.getContainer(container);
+			for (SetCommonInventoryRequestData request : requests) {
+				if (itemManager.getItemDefinition(request.itemID) == null) {
+					// Invalid
+					resp = new InventoryUpdateResponseData();
+					resp.success = false;
+					return resp;
+				}
+
+				// Find inventory
+				int cQuant = 0;
+				PlayerInventoryItem itm = null;
+				if (request.itemUniqueID != -1)
+					itm = cont.getItem(request.itemUniqueID);
+				if (itm == null)
+					itm = cont.findFirst(request.itemID);
+
+				// Check
+				int newQuant = cQuant + request.quantity;
+				if (newQuant < 0) {
+					// Invalid
+					resp = new InventoryUpdateResponseData();
+					resp.success = false;
+					return resp;
+				}
+			}
+
+			// Add
 			for (SetCommonInventoryRequestData request : requests) {
 				if (itemManager.getItemDefinition(request.itemID) == null) {
 					// Invalid
@@ -932,13 +960,15 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 				if (itm == null)
 					itm = cont.findFirst(request.itemID);
 				// TODO: complete implementation
+				// TODO: security
 
 				// Check
 				if (itm == null)
 					itm = cont.createItem(request.itemID, 0);
 
 				// Update
-				itm.setQuantity(itm.getQuantity() + request.quantity);
+				int newQuant = itm.getQuantity() + request.quantity;
+				itm.setQuantity(newQuant);
 				if (request.uses != null) {
 					int uses = 0;
 					if (itm.getUses() != -1)
