@@ -136,10 +136,10 @@ public class QuestManagerImpl extends QuestManager {
 					JsonArray allDateActiveDefsLast = new JsonArray();
 					if (cont.entryExists("activedefs"))
 						allDateActiveDefsLast = cont.getEntry("activedefs").getAsJsonArray();
-					ArrayList<Integer> defsActiveLast = new ArrayList<Integer>();
-					ArrayList<Integer> defsActiveCurrent = new ArrayList<Integer>();
+					ArrayList<String> defsActiveLast = new ArrayList<String>();
+					ArrayList<String> defsActiveCurrent = new ArrayList<String>();
 					for (JsonElement el : allDateActiveDefsLast)
-						defsActiveLast.add(el.getAsInt());
+						defsActiveLast.add(el.getAsString());
 
 					// Load current defs
 					for (MissionData def : this.getAllQuestDefs()) {
@@ -223,7 +223,7 @@ public class QuestManagerImpl extends QuestManager {
 
 						// Check
 						if (active)
-							defsActiveCurrent.add(def.id);
+							defsActiveCurrent.add(def.id + "-" + def.version);
 					}
 
 					// Check def lists
@@ -232,14 +232,14 @@ public class QuestManagerImpl extends QuestManager {
 						changed = true;
 					} else {
 						// Go through the lists
-						for (int id : defsActiveCurrent) {
-							if (!defsActiveLast.contains(id)) {
+						for (String d : defsActiveCurrent) {
+							if (!defsActiveLast.contains(d)) {
 								changed = true;
 								break;
 							}
 						}
-						for (int id : defsActiveLast) {
-							if (!defsActiveCurrent.contains(id)) {
+						for (String d : defsActiveLast) {
+							if (!defsActiveCurrent.contains(d)) {
 								changed = true;
 								break;
 							}
@@ -250,8 +250,8 @@ public class QuestManagerImpl extends QuestManager {
 					if (changed) {
 						// Create new def list
 						JsonArray newDefs = new JsonArray();
-						for (int id : defsActiveCurrent)
-							newDefs.add(id);
+						for (String d : defsActiveCurrent)
+							newDefs.add(d);
 						cont.setEntry("activedefs", newDefs);
 
 						// Update time
