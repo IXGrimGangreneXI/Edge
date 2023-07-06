@@ -933,6 +933,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 					itm = cont.getItem(request.itemUniqueID);
 				if (itm == null)
 					itm = cont.findFirst(request.itemID);
+				if (itm != null)
+					cQuant = itm.getQuantity();
 
 				// Check
 				int newQuant = cQuant + request.quantity;
