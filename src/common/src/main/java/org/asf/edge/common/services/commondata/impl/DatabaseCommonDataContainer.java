@@ -20,7 +20,6 @@ public class DatabaseCommonDataContainer extends CommonDataContainer {
 	private String table;
 	private Properties props;
 	private Logger logger = LogManager.getLogger("CommonDataManager");
-	private static Object syncLock = new Object();
 
 	public DatabaseCommonDataContainer(String url, Properties props, String table) {
 		this.url = url;
@@ -76,17 +75,15 @@ public class DatabaseCommonDataContainer extends CommonDataContainer {
 	@Override
 	protected void create(String key, JsonElement value) throws IOException {
 		try {
-			synchronized (syncLock) {
-				Connection conn = DriverManager.getConnection(url, props);
-				try {
-					// Create prepared statement
-					var statement = conn.prepareStatement("INSERT INTO " + table + " VALUES(?, ?)");
-					statement.setString(1, key);
-					statement.setString(2, value.toString());
-					statement.execute();
-				} finally {
-					conn.close();
-				}
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				// Create prepared statement
+				var statement = conn.prepareStatement("INSERT INTO " + table + " VALUES(?, ?)");
+				statement.setString(1, key);
+				statement.setString(2, value.toString());
+				statement.execute();
+			} finally {
+				conn.close();
 			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to create common data entry '" + key

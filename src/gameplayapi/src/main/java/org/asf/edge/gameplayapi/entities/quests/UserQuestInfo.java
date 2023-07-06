@@ -55,6 +55,11 @@ public abstract class UserQuestInfo {
 	public abstract void acceptQuest();
 
 	/**
+	 * Resets the quest, wipes progression and marks it unfinished
+	 */
+	public abstract void resetQuest();
+
+	/**
 	 * Called to handle task state calls
 	 * 
 	 * @param taskID       Task ID

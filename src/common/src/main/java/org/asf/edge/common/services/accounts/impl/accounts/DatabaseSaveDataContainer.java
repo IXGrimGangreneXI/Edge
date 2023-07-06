@@ -22,7 +22,6 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 	private Properties props;
 
 	private Logger logger = LogManager.getLogger("AccountManager");
-	private static Object syncLock = new Object();
 
 	public DatabaseSaveDataContainer(String id, String url, Properties props) {
 		this.id = id;
@@ -78,17 +77,15 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 	@Override
 	protected void create(String key, JsonElement value) throws IOException {
 		try {
-			synchronized (syncLock) {
-				Connection conn = DriverManager.getConnection(url, props);
-				try {
-					// Create prepared statement
-					var statement = conn.prepareStatement("INSERT INTO SAVESPECIFICPLAYERDATA VALUES(?, ?)");
-					statement.setString(1, id + "//" + key);
-					statement.setString(2, value.toString());
-					statement.execute();
-				} finally {
-					conn.close();
-				}
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				// Create prepared statement
+				var statement = conn.prepareStatement("INSERT INTO SAVESPECIFICPLAYERDATA VALUES(?, ?)");
+				statement.setString(1, id + "//" + key);
+				statement.setString(2, value.toString());
+				statement.execute();
+			} finally {
+				conn.close();
 			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to create data entry '" + key

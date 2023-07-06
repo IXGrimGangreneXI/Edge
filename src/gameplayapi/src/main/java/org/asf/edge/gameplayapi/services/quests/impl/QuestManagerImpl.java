@@ -526,7 +526,7 @@ public class QuestManagerImpl extends QuestManager {
 					|| !data.getEntry("lastupdate_serverdata").getAsString().equals(lastQuestUpdateVersion)
 					|| !data.entryExists("lastupdate_serverver")
 					|| !data.getEntry("lastupdate_serverver").getAsString().equals(questDataVersion)) {
-				recomputeQuests(save);
+				recomputeActiveQuests(save);
 				return getActiveQuests(save);
 			}
 
@@ -556,7 +556,7 @@ public class QuestManagerImpl extends QuestManager {
 					|| !data.getEntry("lastupdate_serverdata").getAsString().equals(lastQuestUpdateVersion)
 					|| !data.entryExists("lastupdate_serverver")
 					|| !data.getEntry("lastupdate_serverver").getAsString().equals(questDataVersion)) {
-				recomputeQuests(save);
+				recomputeUpcomingQuests(save);
 				return getUpcomingQuests(save);
 			}
 
@@ -575,9 +575,68 @@ public class QuestManagerImpl extends QuestManager {
 		}
 	}
 
+	private void recomputeActiveQuests(AccountSaveContainer save) {
+		try {
+			// Load data container and prepare lists
+			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
+			JsonArray active = new JsonArray();
+			ArrayList<Integer> activeQuests = new ArrayList<Integer>();
+
+			// Find active quests
+			for (MissionData mission : this.quests.values()) {
+				UserQuestInfo q = getUserQuest(save, mission.id);
+				if (((mission.repeatable != null && mission.repeatable.equalsIgnoreCase("true")) || !q.isCompleted())
+						&& q.isActive()) {
+					active.add(q.getQuestID());
+					activeQuests.add(q.getQuestID());
+				}
+			}
+
+			// Save
+			data.setEntry("activequests", active);
+			data.setEntry("lastupdate", new JsonPrimitive(lastQuestUpdateTime));
+			data.setEntry("lastupdate_serverdata", new JsonPrimitive(lastQuestUpdateVersion));
+			data.setEntry("lastupdate_serverver", new JsonPrimitive(questDataVersion));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void recomputeUpcomingQuests(AccountSaveContainer save) {
+		try {
+			// Load data container and prepare lists
+			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
+			JsonArray upcoming = new JsonArray();
+
+			// Find upcoming quests
+			for (MissionData mission : this.quests.values()) {
+				UserQuestInfo q = getUserQuest(save, mission.id);
+				if (!q.isCompleted() && !q.isActive()) {
+					upcoming.add(q.getQuestID());
+				}
+			}
+
+			// Save
+			data.setEntry("upcomingquests", upcoming);
+			data.setEntry("lastupdate", new JsonPrimitive(lastQuestUpdateTime));
+			data.setEntry("lastupdate_serverdata", new JsonPrimitive(lastQuestUpdateVersion));
+			data.setEntry("lastupdate_serverver", new JsonPrimitive(questDataVersion));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	@Override
 	public void recomputeQuests(AccountSaveContainer save) {
 		try {
+			// You may wonder:
+			// Why arent i calling the above computation methods here?
+			//
+			// Well, optimization, the above ones are designed to work without one another,
+			// the one here uses data gathered from computing active quests to speed up
+			// computing upcoming quests instead of having to go through the database for
+			// each quest again after that
+
 			// Load data container and prepare lists
 			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
 			JsonArray active = new JsonArray();
@@ -1406,6 +1465,28 @@ public class QuestManagerImpl extends QuestManager {
 		public boolean isStarted() {
 			populateQuestInfoIfNeeded();
 			return questInfoData.get("started").getAsBoolean();
+		}
+
+		@Override
+		public void resetQuest() {
+			// Reset
+			questInfoData = new JsonObject();
+			questInfoData.addProperty("completed", false);
+			questInfoData.addProperty("accepted", false);
+			questInfoData.addProperty("started", false);
+			questInfoData.add("payload", new JsonObject());
+
+			// Save
+			try {
+				data.setEntry("quest-" + def.id, questInfoData);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+
+			// Recompute
+			AsyncTaskManager.runAsync(() -> {
+				recomputeQuests(save);
+			});
 		}
 
 	}
