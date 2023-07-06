@@ -2,6 +2,7 @@ package org.asf.edge.common.services.items.impl;
 
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.entities.items.*;
+import org.asf.edge.common.events.items.ItemManagerLoadEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
@@ -11,6 +12,7 @@ import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest;
 import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest.DefaultItemBlock;
 import org.asf.edge.modules.IEdgeModule;
 import org.asf.edge.modules.ModuleManager;
+import org.asf.edge.modules.eventbus.EventBus;
 
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -181,6 +183,10 @@ public class ItemManagerImpl extends ItemManager {
 		this.defaultItems = defaultItems;
 		this.itemDefs = itemDefs;
 		this.storeDefs = storeDefs;
+
+		// Fire event
+		logger.info("Dispatching load event...");
+		EventBus.getInstance().dispatchEvent(new ItemManagerLoadEvent(this));
 	}
 
 	private void loadItemTransformer(File transformer, HashMap<Integer, ItemInfo> itemDefs) {
@@ -510,7 +516,7 @@ public class ItemManagerImpl extends ItemManager {
 
 	@Override
 	public PlayerInventory getCommonInventory(AccountDataContainer data) {
-		return new PlayerInventoryImpl(data, this);
+		return new PlayerInventoryImpl(data, data.getAccount(), this);
 	}
 
 	@Override

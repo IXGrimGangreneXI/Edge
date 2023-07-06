@@ -100,5 +100,4 @@ public abstract class PlayerInventoryContainer {
 			invs[i] = getItem(ids[i]);
 		return invs;
 	}
-
 }

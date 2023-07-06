@@ -13,6 +13,8 @@ import org.asf.connective.RemoteClient;
 import org.asf.connective.TlsSecuredHttpServer;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.entities.items.ItemInfo;
+import org.asf.edge.common.entities.items.PlayerInventoryContainer;
+import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -26,13 +28,18 @@ import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
+import org.asf.edge.gameplayapi.util.InventoryUtils;
+import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
 import org.asf.edge.gameplayapi.xmls.data.KeyValuePairData;
 import org.asf.edge.gameplayapi.xmls.data.KeyValuePairSetData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.data.EmptyKeyValuePairSetData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
+import org.asf.edge.gameplayapi.xmls.items.ItemRedeemRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
+import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
+import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 import org.asf.edge.gameplayapi.xmls.quests.QuestListResponseData;
@@ -204,6 +211,7 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 			block.quantity = itm.get("quantity").getAsInt();
 			block.uses = itm.get("uses").getAsInt();
 			block.uniqueItemID = uniqueID;
+			// TODO: stats and attributes
 
 			// Add data info from item manager
 			ItemInfo def = ItemManager.getInstance().getItemDefinition(block.itemID);
@@ -238,6 +246,7 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 				block.quantity = itm.get("quantity").getAsInt();
 				block.uses = itm.get("uses").getAsInt();
 				block.uniqueItemID = uniqueID;
+				// TODO: stats and attributes
 
 				// Add data info from item manager
 				ItemInfo def = ItemManager.getInstance().getItemDefinition(block.itemID);
@@ -285,8 +294,8 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 			data = account.getSave(tkn.saveID).getSaveData();
 
 		// Set
-		setResponseContent("text/xml", req.generateXmlValue("CIRS", ContentWebServiceV2Processor
-				.processCommonInventorySet(requests, data, Integer.parseInt(req.payload.get("ContainerId")))));
+		setResponseContent("text/xml", req.generateXmlValue("CIRS", InventoryUtils.processCommonInventorySet(requests,
+				data, Integer.parseInt(req.payload.get("ContainerId")))));
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -1134,6 +1143,92 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		} else {
 			setResponseStatus(404, "Not found");
 		}
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void redeemMysteryBoxItems(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Handle box redemption
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+		AccountSaveContainer save = account.getSave(tkn.saveID);
+
+		// Parse payload
+		ItemRedeemRequestData request = req.parseXmlValue(req.payload.get("request"), ItemRedeemRequestData.class);
+		int id = request.itemID;
+
+		// Check item
+		int containerId = Integer.parseInt(req.payload.getOrDefault("ContainerId", "1"));
+
+		// Pull inventory container
+		PlayerInventoryContainer cont = save.getInventory().getContainer(containerId);
+
+		// Check item
+		PlayerInventoryItem itm = cont.findFirst(id);
+		if (itm == null || itm.getQuantity() < 1) {
+			// Error
+			InventoryUpdateResponseData resp = new InventoryUpdateResponseData();
+			resp.success = false;
+			setResponseContent("text/xml", req.generateXmlValue("CIRS", resp));
+			return;
+		}
+
+		// Remove item quantity
+		itm.remove(1);
+
+		// Prepare chest request
+		ItemRedemptionInfo rReq = new ItemRedemptionInfo();
+		rReq.containerID = containerId;
+		rReq.defID = id;
+		rReq.quantity = 1;
+
+		// Run request
+		InventoryUpdateResponseData response = InventoryUtils.redeemItems(new ItemRedemptionInfo[] { rReq }, account,
+				save, true);
+
+		// Check quantity
+		if (itm.getQuantity() > 0) {
+			// Create array if needed
+			if (response.updateItems == null)
+				response.updateItems = new ItemUpdateBlock[0];
+
+			// Add to response
+			ItemUpdateBlock b = new ItemUpdateBlock();
+			b.itemID = itm.getItemDefID();
+			b.itemUniqueID = itm.getUniqueID();
+			b.addedQuantity = -1;
+			response.updateItems = appendTo(response.updateItems, b);
+		}
+
+		// Set response
+		setResponseContent("text/xml", req.generateXmlValue("CIRS", response));
+	}
+
+	private static ItemUpdateBlock[] appendTo(ItemUpdateBlock[] arr, ItemUpdateBlock block) {
+		ItemUpdateBlock[] newB = new ItemUpdateBlock[arr.length + 1];
+		for (int i = 0; i < newB.length; i++) {
+			if (i >= arr.length)
+				newB[i] = block;
+			else
+				newB[i] = arr[i];
+		}
+		return newB;
 	}
 
 }

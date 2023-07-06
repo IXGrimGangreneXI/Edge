@@ -5,6 +5,8 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager;
 
 import com.google.gson.JsonElement;
@@ -12,14 +14,17 @@ import com.google.gson.JsonObject;
 
 public class RemoteHttpSaveDataContainer extends AccountDataContainer {
 
-	private String id;
 	private String acc;
+	private AccountSaveContainer save;
 	private RemoteHttpAccountManager mgr;
 
 	private Logger logger = LogManager.getLogger("AccountManager");
+	private AccountObject account;
 
-	public RemoteHttpSaveDataContainer(String id, String acc, RemoteHttpAccountManager mgr) {
-		this.id = id;
+	public RemoteHttpSaveDataContainer(AccountObject account, AccountSaveContainer save, String acc,
+			RemoteHttpAccountManager mgr) {
+		this.account = account;
+		this.save = save;
 		this.acc = acc;
 		this.mgr = mgr;
 	}
@@ -31,7 +36,7 @@ public class RemoteHttpSaveDataContainer extends AccountDataContainer {
 			// Build payload
 			JsonObject payload = new JsonObject();
 			payload.addProperty("id", acc);
-			payload.addProperty("save", id);
+			payload.addProperty("save", save.getSaveID());
 			payload.addProperty("key", key);
 			JsonObject response = mgr.accountManagerRequest("accounts/getSaveDataEntry", payload);
 			if (!response.get("success").getAsBoolean())
@@ -50,7 +55,7 @@ public class RemoteHttpSaveDataContainer extends AccountDataContainer {
 			// Build payload
 			JsonObject payload = new JsonObject();
 			payload.addProperty("id", acc);
-			payload.addProperty("save", id);
+			payload.addProperty("save", save.getSaveID());
 			payload.addProperty("key", key);
 			payload.add("value", value);
 			JsonObject response = mgr.accountManagerRequest("accounts/setSaveDataEntry", payload);
@@ -68,7 +73,7 @@ public class RemoteHttpSaveDataContainer extends AccountDataContainer {
 			// Build payload
 			JsonObject payload = new JsonObject();
 			payload.addProperty("id", acc);
-			payload.addProperty("save", id);
+			payload.addProperty("save", save.getSaveID());
 			payload.addProperty("key", key);
 			payload.add("value", value);
 			JsonObject response = mgr.accountManagerRequest("accounts/createSaveDataEntry", payload);
@@ -86,7 +91,7 @@ public class RemoteHttpSaveDataContainer extends AccountDataContainer {
 			// Build payload
 			JsonObject payload = new JsonObject();
 			payload.addProperty("id", acc);
-			payload.addProperty("save", id);
+			payload.addProperty("save", save.getSaveID());
 			payload.addProperty("key", key);
 			JsonObject response = mgr.accountManagerRequest("accounts/saveDataEntryExists", payload);
 			return response.get("result").getAsBoolean();
@@ -103,7 +108,7 @@ public class RemoteHttpSaveDataContainer extends AccountDataContainer {
 			// Build payload
 			JsonObject payload = new JsonObject();
 			payload.addProperty("id", acc);
-			payload.addProperty("save", id);
+			payload.addProperty("save", save.getSaveID());
 			payload.addProperty("key", key);
 			JsonObject response = mgr.accountManagerRequest("accounts/deleteSaveDataEntry", payload);
 			if (!response.get("success").getAsBoolean())
@@ -111,6 +116,16 @@ public class RemoteHttpSaveDataContainer extends AccountDataContainer {
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in deleteSaveDataEntry!", e);
 		}
+	}
+
+	@Override
+	public AccountObject getAccount() {
+		return account;
+	}
+
+	@Override
+	public AccountSaveContainer getSave() {
+		return save;
 	}
 
 }

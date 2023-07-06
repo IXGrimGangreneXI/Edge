@@ -13,9 +13,6 @@ import java.util.stream.Stream;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.entities.items.ItemInfo;
-import org.asf.edge.common.entities.items.PlayerInventory;
-import org.asf.edge.common.entities.items.PlayerInventoryContainer;
-import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -29,16 +26,15 @@ import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
+import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.gameplayapi.xmls.avatars.SetAvatarResultData;
 import org.asf.edge.gameplayapi.xmls.dragons.CreatePetResponseData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetCreateRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;
-import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
-import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData.SuggestionResultBlock;
 import org.asf.edge.gameplayapi.xmls.names.NameValidationRequest;
 import org.asf.edge.gameplayapi.xmls.names.NameValidationResponseData;
@@ -752,8 +748,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		// Handle inventory
 		if (request.commonInventoryRequests != null && request.commonInventoryRequests.length != 0) {
 			// Handle inventory request
-			resp.inventoryUpdate = processCommonInventorySet(request.commonInventoryRequests, save.getSaveData(),
-					request.containerID == -1 ? 1 : request.containerID);
+			resp.inventoryUpdate = InventoryUtils.processCommonInventorySet(request.commonInventoryRequests,
+					save.getSaveData(), request.containerID == -1 ? 1 : request.containerID);
 		}
 
 		// Set response
@@ -820,6 +816,7 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			block.quantity = itm.get("quantity").getAsInt();
 			block.uses = itm.get("uses").getAsInt();
 			block.uniqueItemID = uniqueID;
+			// TODO: stats and attributes
 
 			// Add data info from item manager
 			ItemInfo def = ItemManager.getInstance().getItemDefinition(block.itemID);
@@ -892,105 +889,5 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		} else {
 			setResponseStatus(403, "Forbidden");
 		}
-	}
-
-	/**
-	 * Processes common inventory requests
-	 * 
-	 * @param requests  Request list
-	 * @param container Container
-	 * @return InventoryUpdateResponseData instance
-	 */
-	public static InventoryUpdateResponseData processCommonInventorySet(SetCommonInventoryRequestData[] requests,
-			AccountDataContainer data, int container) {
-		if (itemManager == null)
-			itemManager = ItemManager.getInstance();
-
-		// Prepare response
-		InventoryUpdateResponseData resp = new InventoryUpdateResponseData();
-		ArrayList<ItemUpdateBlock> updates = new ArrayList<ItemUpdateBlock>();
-		resp.success = true;
-
-		// Handle requests
-		if (requests.length == 0) {
-			resp.success = false;
-		} else {
-			// Verify
-			PlayerInventory inv = itemManager.getCommonInventory(data);
-			PlayerInventoryContainer cont = inv.getContainer(container);
-			for (SetCommonInventoryRequestData request : requests) {
-				if (itemManager.getItemDefinition(request.itemID) == null) {
-					// Invalid
-					resp = new InventoryUpdateResponseData();
-					resp.success = false;
-					return resp;
-				}
-
-				// Find inventory
-				int cQuant = 0;
-				PlayerInventoryItem itm = null;
-				if (request.itemUniqueID != -1)
-					itm = cont.getItem(request.itemUniqueID);
-				if (itm == null)
-					itm = cont.findFirst(request.itemID);
-				if (itm != null)
-					cQuant = itm.getQuantity();
-
-				// Check
-				int newQuant = cQuant + request.quantity;
-				if (newQuant < 0) {
-					// Invalid
-					resp = new InventoryUpdateResponseData();
-					resp.success = false;
-					return resp;
-				}
-			}
-
-			// Add
-			for (SetCommonInventoryRequestData request : requests) {
-				if (itemManager.getItemDefinition(request.itemID) == null) {
-					// Invalid
-					resp = new InventoryUpdateResponseData();
-					resp.success = false;
-					return resp;
-				}
-
-				// Find inventory
-				PlayerInventoryItem itm = null;
-				if (request.itemUniqueID != -1)
-					itm = cont.getItem(request.itemUniqueID);
-				if (itm == null)
-					itm = cont.findFirst(request.itemID);
-				// TODO: complete implementation
-				// TODO: security
-
-				// Check
-				if (itm == null)
-					itm = cont.createItem(request.itemID, 0);
-
-				// Update
-				int newQuant = itm.getQuantity() + request.quantity;
-				itm.setQuantity(newQuant);
-				if (request.uses != null) {
-					int uses = 0;
-					if (itm.getUses() != -1)
-						uses = itm.getUses();
-					itm.setUses(uses + Integer.parseInt(request.uses));
-				}
-
-				// Add update
-				if (request.quantity > 0) {
-					ItemUpdateBlock b = new ItemUpdateBlock();
-					b.itemID = itm.getItemDefID();
-					b.itemUniqueID = itm.getUniqueID();
-					b.addedQuantity = request.quantity;
-					updates.add(b);
-				}
-			}
-		}
-
-		// Set response
-		resp.updateItems = updates.toArray(t -> new ItemUpdateBlock[t]);
-		return resp;
 	}
 }

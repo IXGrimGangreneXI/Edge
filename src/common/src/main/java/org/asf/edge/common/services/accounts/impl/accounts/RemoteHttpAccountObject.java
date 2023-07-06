@@ -290,7 +290,7 @@ public class RemoteHttpAccountObject extends AccountObject {
 
 	@Override
 	public AccountDataContainer getAccountData() {
-		return new RemoteHttpDataContainer(id, mgr);
+		return new RemoteHttpDataContainer(this, id, mgr);
 	}
 
 	@Override

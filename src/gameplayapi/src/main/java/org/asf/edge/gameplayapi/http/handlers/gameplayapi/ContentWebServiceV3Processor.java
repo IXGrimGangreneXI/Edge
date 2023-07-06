@@ -20,6 +20,7 @@ import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
+import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateResponseData;
@@ -209,9 +210,8 @@ public class ContentWebServiceV3Processor extends BaseApiHandler<EdgeGameplayApi
 		// Handle inventory
 		if (request.commonInventoryRequests != null && request.commonInventoryRequests.length != 0) {
 			// Handle inventory request
-			resp.inventoryUpdate = ContentWebServiceV2Processor.processCommonInventorySet(
-					request.commonInventoryRequests, save.getSaveData(),
-					(request.containerID == -1 ? 1 : request.containerID));
+			resp.inventoryUpdate = InventoryUtils.processCommonInventorySet(request.commonInventoryRequests,
+					save.getSaveData(), (request.containerID == -1 ? 1 : request.containerID));
 		}
 
 		// Set response

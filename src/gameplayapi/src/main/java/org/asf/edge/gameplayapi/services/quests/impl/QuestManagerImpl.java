@@ -25,14 +25,19 @@ import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
+import org.asf.edge.common.events.items.InventoryItemCreateEvent;
+import org.asf.edge.common.events.items.InventoryItemDeleteEvent;
+import org.asf.edge.common.events.items.InventoryItemQuantityUpdateEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
-import org.asf.edge.gameplayapi.http.handlers.gameplayapi.ContentWebServiceV2Processor;
+import org.asf.edge.gameplayapi.events.quests.QuestManagerLoadEvent;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
+import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
@@ -46,6 +51,8 @@ import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData.CompletedMiss
 import org.asf.edge.gameplayapi.xmls.quests.edgespecific.QuestRegistryManifest;
 import org.asf.edge.modules.IEdgeModule;
 import org.asf.edge.modules.ModuleManager;
+import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.edge.modules.eventbus.EventListener;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.gson.JsonElement;
@@ -65,6 +72,66 @@ public class QuestManagerImpl extends QuestManager {
 	private long lastQuestUpdateTime;
 	private String questDataVersion;
 	private String lastQuestUpdateVersion;
+
+	@EventListener
+	public void itemCreated(InventoryItemCreateEvent event) {
+		itemChanged(event.getAccount(), event.getSaveData(), event.getItem());
+	}
+
+	@EventListener
+	public void itemDeleted(InventoryItemDeleteEvent event) {
+		itemChanged(event.getAccount(), event.getSaveData(), event.getItem());
+	}
+
+	@EventListener
+	public void itemQuantityChanged(InventoryItemQuantityUpdateEvent event) {
+		itemChanged(event.getAccount(), event.getSaveData(), event.getItem());
+	}
+
+	private void itemChanged(AccountObject account, AccountDataContainer saveData, PlayerInventoryItem item) {
+		if (saveData.getSave() == null)
+			return;
+
+		// Check if any prerequisite is present for this item
+		boolean hasPrerequisite = false;
+		for (MissionData def : this.getAllQuestDefs()) {
+			// Check prerequisites
+			if (def.missionRules != null) {
+				if (def.missionRules.prerequisites != null) {
+					for (PrerequisiteInfoBlock req : def.missionRules.prerequisites) {
+						if (!req.clientRule) {
+							// Check type
+							switch (req.type) {
+
+							// Item rule
+							case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.ITEM: {
+								// Check item
+								int itmId = Integer.parseInt(req.value);
+								if (item.getItemDefID() == itmId) {
+									hasPrerequisite = true;
+								}
+								break;
+							}
+
+							}
+						}
+						if (hasPrerequisite)
+							break;
+					}
+				}
+			}
+			if (hasPrerequisite)
+				break;
+		}
+
+		// Check
+		if (hasPrerequisite) {
+			// Recompute quests
+			AsyncTaskManager.runAsync(() -> {
+				recomputeQuests(saveData.getSave());
+			});
+		}
+	}
 
 	@Override
 	public void initService() {
@@ -311,6 +378,10 @@ public class QuestManagerImpl extends QuestManager {
 
 			// Apply
 			this.quests = quests;
+
+			// Dispatch event
+			logger.info("Dispatching load event...");
+			EventBus.getInstance().dispatchEvent(new QuestManagerLoadEvent(this));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -906,6 +977,7 @@ public class QuestManagerImpl extends QuestManager {
 							block.quantity = itm.getQuantity();
 							block.uses = itm.getUses();
 							block.uniqueItemID = itm.getUniqueID();
+							// TODO: stats and attributes
 
 							// Add data info from item manager
 							ItemInfo def = ItemManager.getInstance().getItemDefinition(block.itemID);
@@ -1007,8 +1079,8 @@ public class QuestManagerImpl extends QuestManager {
 
 			// Update inventories
 			if (requests != null && requests.length != 0) {
-				resp.inventoryUpdate = ContentWebServiceV2Processor.processCommonInventorySet(requests,
-						save.getSaveData(), invContainer);
+				resp.inventoryUpdate = InventoryUtils.processCommonInventorySet(requests, save.getSaveData(),
+						invContainer);
 			}
 			if (invContainer == -1)
 				invContainer = 1;
@@ -1118,6 +1190,7 @@ public class QuestManagerImpl extends QuestManager {
 									block.quantity = itm.getQuantity();
 									block.uses = itm.getUses();
 									block.uniqueItemID = itm.getUniqueID();
+									// TODO: stats and attributes
 
 									// Add data info from item manager
 									ItemInfo def = ItemManager.getInstance().getItemDefinition(block.itemID);
@@ -1173,10 +1246,6 @@ public class QuestManagerImpl extends QuestManager {
 				}
 			}
 
-//			// Recompute active quests // FIXME disabled for testing, may need enabling
-//			AsyncTaskManager.runAsync(() -> {
-//				recomputeQuests(save);
-//			});
 			return resp;
 		}
 
@@ -1385,8 +1454,6 @@ public class QuestManagerImpl extends QuestManager {
 
 							// Item rule
 							case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.ITEM: {
-								// FIXME: quests should be recomputed when quest items change
-
 								// Check item
 								int itmId = Integer.parseInt(req.value);
 								Optional<PlayerInventoryItem> opt = Stream.of(save.getInventory().getContainers())

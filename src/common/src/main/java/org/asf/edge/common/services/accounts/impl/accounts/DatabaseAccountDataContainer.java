@@ -10,6 +10,8 @@ import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -19,10 +21,12 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 	private String id;
 	private String url;
 	private Properties props;
+	private AccountObject account;
 
 	private Logger logger = LogManager.getLogger("AccountManager");
 
-	public DatabaseAccountDataContainer(String id, String url, Properties props) {
+	public DatabaseAccountDataContainer(AccountObject account, String id, String url, Properties props) {
+		this.account = account;
 		this.id = id;
 		this.url = url;
 		this.props = props;
@@ -130,6 +134,16 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 					+ "' for ID '" + id + "'", e);
 			throw new IOException("SQL error", e);
 		}
+	}
+
+	@Override
+	public AccountObject getAccount() {
+		return account;
+	}
+
+	@Override
+	public AccountSaveContainer getSave() {
+		return null;
 	}
 
 }

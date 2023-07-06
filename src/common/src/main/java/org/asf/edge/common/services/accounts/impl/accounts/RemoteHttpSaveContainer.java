@@ -69,7 +69,7 @@ public class RemoteHttpSaveContainer extends AccountSaveContainer {
 
 	@Override
 	public AccountDataContainer getSaveData() {
-		return new RemoteHttpSaveDataContainer(id, acc, mgr);
+		return new RemoteHttpSaveDataContainer(account, this, acc, mgr);
 	}
 
 	@Override

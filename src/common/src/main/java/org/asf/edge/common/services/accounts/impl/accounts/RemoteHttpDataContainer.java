@@ -5,6 +5,8 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager;
 
 import com.google.gson.JsonElement;
@@ -16,10 +18,12 @@ public class RemoteHttpDataContainer extends AccountDataContainer {
 	private RemoteHttpAccountManager mgr;
 
 	private Logger logger = LogManager.getLogger("AccountManager");
+	private AccountObject account;
 
-	public RemoteHttpDataContainer(String id, RemoteHttpAccountManager mgr) {
+	public RemoteHttpDataContainer(AccountObject account, String id, RemoteHttpAccountManager mgr) {
 		this.id = id;
 		this.mgr = mgr;
+		this.account = account;
 	}
 
 	@Override
@@ -104,6 +108,16 @@ public class RemoteHttpDataContainer extends AccountDataContainer {
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in deleteDataEntry!", e);
 		}
+	}
+
+	@Override
+	public AccountObject getAccount() {
+		return account;
+	}
+
+	@Override
+	public AccountSaveContainer getSave() {
+		return null;
 	}
 
 }

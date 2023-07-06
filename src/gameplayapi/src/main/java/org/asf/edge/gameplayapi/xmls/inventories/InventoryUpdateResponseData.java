@@ -1,11 +1,10 @@
 package org.asf.edge.gameplayapi.xmls.inventories;
 
-import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -31,14 +30,14 @@ public class InventoryUpdateResponseData {
 	public static class PrizeItemInfo {
 
 		@JsonProperty("i")
-		public int itemID;
+		public int boxItemID;
 
 		@JsonProperty("pi")
 		public int prizeItemID;
 
 		@JsonProperty("pis")
 		@JacksonXmlElementWrapper(useWrapping = false)
-		public ItemBlock[] mysteryPrizeItems;
+		public ObjectNode[] mysteryPrizeItems;
 
 	}
 

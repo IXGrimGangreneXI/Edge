@@ -144,7 +144,7 @@ public class DatabaseSaveContainer extends AccountSaveContainer {
 
 	@Override
 	public AccountDataContainer getSaveData() {
-		return new DatabaseSaveDataContainer(saveID, url, props);
+		return new DatabaseSaveDataContainer(acc, this, url, props);
 	}
 
 	@Override

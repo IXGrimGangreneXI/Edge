@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest.DefaultItemBlock;
 
 import com.google.gson.JsonElement;
@@ -15,8 +16,11 @@ public class PlayerInventoryImpl extends PlayerInventory {
 	private AccountDataContainer data;
 	private ItemManagerImpl manager;
 
-	public PlayerInventoryImpl(AccountDataContainer data, ItemManagerImpl manager) {
+	private AccountObject account;
+
+	public PlayerInventoryImpl(AccountDataContainer data, AccountObject account, ItemManagerImpl manager) {
 		this.manager = manager;
+		this.account = account;
 		try {
 			this.data = data.getChildContainer("commoninventories");
 		} catch (IOException e) {
@@ -31,8 +35,6 @@ public class PlayerInventoryImpl extends PlayerInventory {
 			// Add item
 			getContainer(itm.inventoryID).createItem(itm.itemID, itm.quantity, itm.uses);
 		}
-
-		// TODO: dispatch event
 	}
 
 	@Override
@@ -68,13 +70,13 @@ public class PlayerInventoryImpl extends PlayerInventory {
 			// Check if present
 			for (JsonElement ele : containerList) {
 				if (ele.getAsInt() == id)
-					return new PlayerInventoryContainerImpl(data, id);
+					return new PlayerInventoryContainerImpl(data, this, account, id);
 			}
 
 			// Add
 			containerList.add(id);
 			data.setEntry("containerList", containerList);
-			return new PlayerInventoryContainerImpl(data, id);
+			return new PlayerInventoryContainerImpl(data, this, account, id);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

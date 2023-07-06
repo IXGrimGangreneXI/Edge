@@ -12,6 +12,7 @@ import org.asf.edge.gameplayapi.http.handlers.gameplayapi.*;
 import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
+import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonPrimitive;
@@ -154,6 +155,7 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		ServiceManager.registerServiceImplementation(ItemManager.class, new ItemManagerImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(ItemManager.class);
+		InventoryUtils.init();
 
 		// Select quest manager
 		logger.info("Setting up quest manager...");

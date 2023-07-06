@@ -469,7 +469,7 @@ public class DatabaseAccountObject extends AccountObject {
 
 	@Override
 	public AccountDataContainer getAccountData() {
-		return new DatabaseAccountDataContainer(id, url, props);
+		return new DatabaseAccountDataContainer(this, id, url, props);
 	}
 
 	@Override
@@ -524,7 +524,8 @@ public class DatabaseAccountObject extends AccountObject {
 						statement.execute();
 
 						// Delete save
-						new DatabaseSaveDataContainer(saveObj.get("id").getAsString(), url, props).deleteContainer();
+						new DatabaseSaveDataContainer(this, getSave(saveObj.get("id").getAsString()), url, props)
+								.deleteContainer();
 					}
 
 					// Delete save list

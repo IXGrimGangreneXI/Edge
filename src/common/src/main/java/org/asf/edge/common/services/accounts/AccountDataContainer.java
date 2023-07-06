@@ -99,6 +99,21 @@ public abstract class AccountDataContainer {
 	 */
 	protected abstract void delete(String key) throws IOException;
 
+	/**
+	 * Retrieves the account object associated with this data container
+	 * 
+	 * @return AccountObject instance
+	 */
+	public abstract AccountObject getAccount();
+
+	/**
+	 * Retrieves the save container associated with this data container, returns
+	 * null if this is an account-wide container
+	 * 
+	 * @return AccountSaveContainer instance or null
+	 */
+	public abstract AccountSaveContainer getSave();
+
 	private boolean validName(String key) {
 		// Check if internal
 		if (key.equalsIgnoreCase("datamap") || key.contains("/"))
@@ -326,6 +341,16 @@ public abstract class AccountDataContainer {
 				}
 			}
 			return super.retrieveRegistry();
+		}
+
+		@Override
+		public AccountObject getAccount() {
+			return parent.getAccount();
+		}
+
+		@Override
+		public AccountSaveContainer getSave() {
+			return parent.getSave();
 		}
 
 	}

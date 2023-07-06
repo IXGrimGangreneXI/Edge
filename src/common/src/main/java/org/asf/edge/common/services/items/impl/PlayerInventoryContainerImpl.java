@@ -3,9 +3,13 @@ package org.asf.edge.common.services.items.impl;
 import java.io.IOException;
 import java.util.Random;
 
+import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
+import org.asf.edge.common.events.items.InventoryItemCreateEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -15,10 +19,14 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 
 	private static Random rnd = new Random();
 	private AccountDataContainer data;
+	private PlayerInventory inv;
+	private AccountObject account;
 	private int id;
 
-	public PlayerInventoryContainerImpl(AccountDataContainer data, int id) {
+	public PlayerInventoryContainerImpl(AccountDataContainer data, PlayerInventory inv, AccountObject account, int id) {
 		this.id = id;
+		this.account = account;
+		this.inv = inv;
 		try {
 			this.data = data.getChildContainer(Integer.toString(id));
 		} catch (IOException e) {
@@ -61,7 +69,7 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 			int defID = itm.get("id").getAsInt();
 			int quantity = itm.get("quantity").getAsInt();
 			int uses = itm.get("uses").getAsInt();
-			return new PlayerInventoryItemImpl(data, uniqueID, defID, quantity, uses);
+			return new PlayerInventoryItemImpl(data, uniqueID, defID, quantity, uses, account, inv, this);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -94,10 +102,13 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 			itm.addProperty("uses", uses);
 			data.setEntry("item-" + uniqueID, itm);
 
-			// TODO: dispatch event
+			// Dispatch event
+			PlayerInventoryItemImpl i = new PlayerInventoryItemImpl(data, uniqueID, defID, quantity, uses, account, inv,
+					this);
+			EventBus.getInstance().dispatchEvent(new InventoryItemCreateEvent(i, account, data, inv, this));
 
 			// Return
-			return new PlayerInventoryItemImpl(data, uniqueID, defID, quantity, uses);
+			return i;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
