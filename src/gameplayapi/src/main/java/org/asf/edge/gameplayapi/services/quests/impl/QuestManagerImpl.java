@@ -755,14 +755,10 @@ public class QuestManagerImpl extends QuestManager {
 
 			// Apply modifications
 			JsonObject payload = questInfoData.get("payload").getAsJsonObject();
-			if (payload.has("quest")) {
-				// Apply quest object modifications
-				JsonObject questPayload = payload.get("quest").getAsJsonObject();
-				if (questPayload.has("accepted"))
-					data.accepted = questPayload.get("accepted").getAsBoolean();
-				if (questPayload.has("completed"))
-					data.completed = questPayload.get("completed").getAsInt();
-			}
+			if (questInfoData.has("accepted"))
+				data.accepted = questInfoData.get("accepted").getAsBoolean();
+			if (questInfoData.has("completed"))
+				data.completed = questInfoData.get("completed").getAsBoolean() ? 1 : 0;
 			if (payload.has("tasks") && data.tasks != null) {
 				// Apply task modifications
 				JsonObject tasksBase = payload.get("tasks").getAsJsonObject();
@@ -828,16 +824,7 @@ public class QuestManagerImpl extends QuestManager {
 			// Start quest
 			startQuest();
 
-			// Load payload
-			JsonObject payload = questInfoData.get("payload").getAsJsonObject();
-			JsonObject questPayload;
-			if (payload.has("quest"))
-				questPayload = payload.get("quest").getAsJsonObject();
-			else {
-				questPayload = new JsonObject();
-				payload.add("quest", questPayload);
-			}
-			questPayload.addProperty("accepted", true);
+			// Mark accepted
 			questInfoData.addProperty("accepted", true);
 
 			// Save
@@ -1254,6 +1241,7 @@ public class QuestManagerImpl extends QuestManager {
 
 			// Update status
 			questInfoData.addProperty("completed", true);
+			questInfoData.addProperty("accepted", false);
 			questInfoData.addProperty("started", false);
 
 			try {
