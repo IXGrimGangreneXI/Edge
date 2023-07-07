@@ -48,35 +48,39 @@ public class ItemManagerImpl extends ItemManager {
 	@Override
 	public void initService() {
 		logger = LogManager.getLogger("ItemManager");
-
-		// Start reload watchdog
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("ITEMMANAGER");
+		
 		try {
-			if (!cont.entryExists("lastreload")) {
-				lastReloadTime = System.currentTimeMillis();
-				cont.setEntry("lastreload", new JsonPrimitive(lastReloadTime));
-			} else
-				lastReloadTime = cont.getEntry("lastreload").getAsLong();
-		} catch (IOException e) {
-		}
-		AsyncTaskManager.runAsync(() -> {
-			while (true) {
-				// Check reload
-				try {
-					long reload = cont.getEntry("lastreload").getAsLong();
-					if (reload > lastReloadTime) {
-						// Trigger reload
-						lastReloadTime = reload;
-						loadData();
-					}
-				} catch (IOException e) {
-				}
-				try {
-					Thread.sleep(30000);
-				} catch (InterruptedException e) {
-				}
+			// Start reload watchdog
+			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("ITEMMANAGER");
+			try {
+				if (!cont.entryExists("lastreload")) {
+					lastReloadTime = System.currentTimeMillis();
+					cont.setEntry("lastreload", new JsonPrimitive(lastReloadTime));
+				} else
+					lastReloadTime = cont.getEntry("lastreload").getAsLong();
+			} catch (IOException e) {
 			}
-		});
+			AsyncTaskManager.runAsync(() -> {
+				while (true) {
+					// Check reload
+					try {
+						long reload = cont.getEntry("lastreload").getAsLong();
+						if (reload > lastReloadTime) {
+							// Trigger reload
+							lastReloadTime = reload;
+							loadData();
+						}
+					} catch (IOException e) {
+					}
+					try {
+						Thread.sleep(30000);
+					} catch (InterruptedException e) {
+					}
+				}
+			});
+
+		} catch (IllegalArgumentException e) {
+		}
 
 		// Load stores
 		loadData();

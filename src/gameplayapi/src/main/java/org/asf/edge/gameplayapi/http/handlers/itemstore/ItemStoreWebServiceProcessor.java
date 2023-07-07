@@ -12,10 +12,10 @@ import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.common.services.items.ItemManager;
-import org.asf.edge.common.xmls.items.ItemStoreDefinitionData;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.xmls.items.GetStoreRequestData;
 import org.asf.edge.gameplayapi.xmls.items.GetStoreResponseData;
+import org.asf.edge.gameplayapi.xmls.items.ItemStoreResponseObject;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -74,12 +74,12 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 		// Find stores
 		GetStoreRequestData stores = req.parseXmlValue(req.payload.get("getStoreRequest"), GetStoreRequestData.class);
 		GetStoreResponseData resp = new GetStoreResponseData();
-		resp.stores = new ItemStoreDefinitionData[stores.storeIDs.length];
+		resp.stores = new ItemStoreResponseObject[stores.storeIDs.length];
 		for (int i = 0; i < resp.stores.length; i++) {
 			// Find store
 			ItemStoreInfo store = itemManager.getStore(stores.storeIDs[i]);
 			if (store != null) {
-				ItemStoreDefinitionData storeData = new ItemStoreDefinitionData();
+				ItemStoreResponseObject storeData = new ItemStoreResponseObject();
 				storeData.storeID = store.getID();
 				storeData.storeName = store.getName();
 				storeData.storeDescription = store.getDescription();
@@ -87,7 +87,7 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 						.toArray(t -> new ObjectNode[t]);
 				resp.stores[i] = storeData;
 			} else {
-				resp.stores[i] = new ItemStoreDefinitionData();
+				resp.stores[i] = new ItemStoreResponseObject();
 			}
 		}
 
