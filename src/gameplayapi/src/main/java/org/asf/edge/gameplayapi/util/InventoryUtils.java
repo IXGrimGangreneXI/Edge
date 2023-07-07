@@ -477,6 +477,11 @@ public class InventoryUtils {
 			for (SetCommonInventoryRequestData request : requests) {
 				if (itemManager.getItemDefinition(request.itemID) == null) {
 					// Invalid
+					LogManager.getLogger("ItemManager")
+							.warn("Warning! Security checks did not pass for common inventory request of user '"
+									+ data.getAccount().getUsername() + "', failed item ID: " + request.itemID
+									+ " (quantity: " + request.quantity
+									+ "), item was NOT added to inventory. (invalid item ID in request)");
 					resp = new InventoryUpdateResponseData();
 					resp.success = false;
 					return resp;
@@ -496,6 +501,11 @@ public class InventoryUtils {
 				int newQuant = cQuant + request.quantity;
 				if (newQuant < 0) {
 					// Invalid
+					LogManager.getLogger("ItemManager")
+							.warn("Warning! Security checks did not pass for common inventory request of user '"
+									+ data.getAccount().getUsername() + "', failed item ID: " + request.itemID
+									+ " (quantity: " + request.quantity
+									+ "), item was NOT added to inventory. (invalid quantity in request, resulting quantity would be less than zero)");
 					resp = new InventoryUpdateResponseData();
 					resp.success = false;
 					return resp;
@@ -537,20 +547,23 @@ public class InventoryUtils {
 				if (invalid)
 					continue; // Skip the request
 
-				// Check
-				if (itm == null)
-					itm = cont.createItem(request.itemID, 0);
-
 				// Check old quantity
-				if (itm.getQuantity() <= 0 && request.quantity < 0) {
+				int cQuant = 0;
+				if (itm != null)
+					cQuant = itm.getQuantity();
+				if (cQuant <= 0 && request.quantity < 0) {
 					// Invalid
 					LogManager.getLogger("ItemManager")
 							.warn("Warning! Security checks did not pass for common inventory request of user '"
 									+ data.getAccount().getUsername() + "', failed item ID: " + request.itemID
 									+ " (quantity: " + request.quantity
-									+ "), item was NOT added to inventory. (invalid quantity in request)");
+									+ "), item was NOT added to inventory. (invalid quantity in request, resulting quantity would be less than zero)");
 					continue;
 				}
+
+				// Check
+				if (itm == null)
+					itm = cont.createItem(request.itemID, 0);
 
 				// Update
 				int newQuant = itm.getQuantity() + request.quantity;
