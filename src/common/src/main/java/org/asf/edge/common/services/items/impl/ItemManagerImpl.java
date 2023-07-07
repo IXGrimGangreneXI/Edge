@@ -48,7 +48,7 @@ public class ItemManagerImpl extends ItemManager {
 	@Override
 	public void initService() {
 		logger = LogManager.getLogger("ItemManager");
-		
+
 		try {
 			// Start reload watchdog
 			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("ITEMMANAGER");
@@ -413,7 +413,7 @@ public class ItemManagerImpl extends ItemManager {
 		// Find shop
 		String mode = transformer.get("mode").getAsString();
 		ItemStoreInfo shop = storeDefs.get(transformer.get("id").getAsInt());
-		if (shop == null && !mode.equals("define"))
+		if (shop == null && mode.equals("merge"))
 			throw new IllegalArgumentException("Store '" + transformer.get("id").getAsInt() + "' was not found");
 		else if (shop != null && mode.equals("define"))
 			throw new IllegalArgumentException("Store '" + transformer.get("id").getAsInt() + "' already exists");
@@ -452,15 +452,40 @@ public class ItemManagerImpl extends ItemManager {
 						throw new IllegalArgumentException("Item definition '" + id + "' does not exists");
 				}
 
-				// Apply transformer
+				// Check transformer
 				JsonObject trans = obj.get(id).getAsJsonObject();
-				if (!trans.has("cost"))
-					throw new IllegalArgumentException("No 'cost' field present in transformer!");
-				if (!trans.has("currency"))
-					throw new IllegalArgumentException("No 'currency' field present in transformer!");
-				if (!trans.get("currency").getAsString().equals("gems")
-						&& !trans.get("currency").getAsString().equals("coins"))
-					throw new IllegalArgumentException("Invalid currency type, expected either 'gems' or 'coins'");
+				if (!trans.has("mode"))
+					throw new IllegalArgumentException("No 'mode' field present in transformer item! Item ID: " + id);
+				if (!trans.get("mode").getAsString().equals("update")
+						&& !trans.get("mode").getAsString().equals("define")
+						&& !trans.get("mode").getAsString().equals("remove"))
+					throw new IllegalArgumentException(
+							"Invalid transformation mode in transformer item, expected either 'update', 'define' or 'remove'");
+				String md = trans.get("mode").getAsString();
+
+				// Check mode
+				if (md.equals("define") && items.containsKey(id))
+					throw new IllegalArgumentException(
+							"Unable to define item that already exists in shop item list! Item ID: " + id);
+				else if (md.equals("remove") && !items.containsKey(id))
+					throw new IllegalArgumentException(
+							"Unable to remove item that does not exists in shop item list! Item ID: " + id);
+
+				// Check type, if this is not a removal request, check fields
+				if (!md.equals("remove")) {
+					if (!trans.has("cost"))
+						throw new IllegalArgumentException(
+								"No 'cost' field present in transformer item! Item ID: " + id);
+					if (!trans.has("currency"))
+						throw new IllegalArgumentException(
+								"No 'currency' field present in transformer item! Item ID: " + id);
+					if (!trans.get("currency").getAsString().equals("gems")
+							&& !trans.get("currency").getAsString().equals("coins"))
+						throw new IllegalArgumentException(
+								"Invalid currency type in transformer item, expected either 'gems' or 'coins'");
+				}
+
+				// Apply
 				ObjectNode newNode = def.getRawObject().deepCopy();
 				newNode.set("ct", new IntNode(-1));
 				newNode.set("ct2", new IntNode(0));

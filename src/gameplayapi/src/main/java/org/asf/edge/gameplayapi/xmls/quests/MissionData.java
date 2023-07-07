@@ -222,7 +222,6 @@ public class MissionData {
 				public static final int RANK = 4;
 				public static final int DATERANGE = 5;
 				public static final int ITEM = 7;
-				public static final int EVENT = 8;
 			}
 
 			public int type;

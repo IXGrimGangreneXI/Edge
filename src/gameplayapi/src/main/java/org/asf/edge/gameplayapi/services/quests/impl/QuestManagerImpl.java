@@ -275,13 +275,6 @@ public class QuestManagerImpl extends QuestManager {
 											break;
 										}
 
-										// Event rule
-										case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.EVENT: {
-											// TODO
-											active = false;
-											break;
-										}
-
 										}
 									}
 								}
@@ -1444,12 +1437,6 @@ public class QuestManagerImpl extends QuestManager {
 								}
 
 								break;
-							}
-
-							// Event rule
-							case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.EVENT: {
-								// TODO
-								return false;
 							}
 
 							// Item rule
