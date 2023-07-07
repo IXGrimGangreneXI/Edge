@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.apache.logging.log4j.LogManager;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
@@ -14,6 +15,7 @@ import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.util.RandomSelectorUtil;
 import org.asf.edge.gameplayapi.events.items.InventoryUtilsLoadEvent;
+import org.asf.edge.gameplayapi.util.inventory.AbstractInventorySecurityValidator;
 import org.asf.edge.gameplayapi.util.inventory.AbstractItemRedemptionHandler;
 import org.asf.edge.gameplayapi.util.inventory.AbstractItemRedemptionHandler.RedemptionResult;
 import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
@@ -21,6 +23,9 @@ import org.asf.edge.gameplayapi.util.inventory.defaulthandlers.CoinItemRedemptio
 import org.asf.edge.gameplayapi.util.inventory.defaulthandlers.DefaultItemRedemptionHandler;
 import org.asf.edge.gameplayapi.util.inventory.defaulthandlers.GemItemRedemptionHandler;
 import org.asf.edge.gameplayapi.util.inventory.defaulthandlers.ProfileSlotItemRedemptionHandler;
+import org.asf.edge.gameplayapi.util.inventory.defaultvalidators.AttributeSecurityValidator;
+import org.asf.edge.gameplayapi.util.inventory.defaultvalidators.BundleSecurityValidator;
+import org.asf.edge.gameplayapi.util.inventory.defaultvalidators.MysteryBoxSecurityValidator;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -44,6 +49,7 @@ import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.Ite
 public class InventoryUtils {
 
 	private static ArrayList<AbstractItemRedemptionHandler> handlers = new ArrayList<AbstractItemRedemptionHandler>();
+	private static ArrayList<AbstractInventorySecurityValidator> securityValidators = new ArrayList<AbstractInventorySecurityValidator>();
 
 	private static ItemManager itemManager;
 	private static boolean inited;
@@ -54,6 +60,11 @@ public class InventoryUtils {
 		registerItemRedemptionHandler(new ProfileSlotItemRedemptionHandler());
 		registerItemRedemptionHandler(new GemItemRedemptionHandler());
 		registerItemRedemptionHandler(new CoinItemRedemptionHandler());
+
+		// Register default security layers
+		registerInventorySecurityValidator(new AttributeSecurityValidator());
+		registerInventorySecurityValidator(new MysteryBoxSecurityValidator());
+		registerInventorySecurityValidator(new BundleSecurityValidator());
 	}
 
 	/**
@@ -75,6 +86,15 @@ public class InventoryUtils {
 	 */
 	public static void registerItemRedemptionHandler(AbstractItemRedemptionHandler handler) {
 		handlers.add(0, handler);
+	}
+
+	/**
+	 * Registers security validators for common inventory client requests
+	 * 
+	 * @param validator Validator to register
+	 */
+	public static void registerInventorySecurityValidator(AbstractInventorySecurityValidator validator) {
+		securityValidators.add(validator);
 	}
 
 	/**
@@ -498,11 +518,39 @@ public class InventoryUtils {
 				if (itm == null)
 					itm = cont.findFirst(request.itemID);
 				// TODO: complete implementation
-				// TODO: security
+				// TODO: default security
+
+				// Run security checks
+				boolean invalid = false;
+				for (AbstractInventorySecurityValidator validator : securityValidators) {
+					if (!validator.isValidRequest(request, data, inv, cont, itm)) {
+						invalid = true;
+						LogManager.getLogger("ItemManager")
+								.warn("Warning! Security checks did not pass for common inventory request of user '"
+										+ data.getAccount().getUsername() + "', failed item ID: " + request.itemID
+										+ " (quantity: " + request.quantity
+										+ "), item was NOT added to inventory. (failed validator: "
+										+ validator.getClass().getSimpleName() + ")");
+						break;
+					}
+				}
+				if (invalid)
+					continue; // Skip the request
 
 				// Check
 				if (itm == null)
 					itm = cont.createItem(request.itemID, 0);
+
+				// Check old quantity
+				if (itm.getQuantity() <= 0 && request.quantity < 0) {
+					// Invalid
+					LogManager.getLogger("ItemManager")
+							.warn("Warning! Security checks did not pass for common inventory request of user '"
+									+ data.getAccount().getUsername() + "', failed item ID: " + request.itemID
+									+ " (quantity: " + request.quantity
+									+ "), item was NOT added to inventory. (invalid quantity in request)");
+					continue;
+				}
 
 				// Update
 				int newQuant = itm.getQuantity() + request.quantity;

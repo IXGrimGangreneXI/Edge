@@ -28,6 +28,11 @@ public class ItemStoreDefinitionData {
 	@JsonInclude(Include.NON_DEFAULT)
 	public ObjectNode[] items;
 
+	@JsonProperty("pitem")
+	@JacksonXmlElementWrapper(useWrapping = false)
+	@JsonInclude(Include.NON_DEFAULT)
+	public PopularItemBlock[] popularItems;
+
 	/**
 	 * Retrieves items by ID
 	 * 
@@ -53,6 +58,18 @@ public class ItemStoreDefinitionData {
 		for (int i = 0; i < arr.length; i++)
 			arr[i] = items[i].get("id").asInt();
 		return arr;
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+	public static class PopularItemBlock {
+
+		@JsonProperty("id")
+		public int itemID;
+
+		@JsonProperty("r")
+		public int rank;
+
 	}
 
 }

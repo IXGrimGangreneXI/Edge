@@ -124,6 +124,10 @@ public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeComm
 		tkn.lastLoginTime = account.getLastLoginTime();
 		tkn.capabilities = new String[] { "api", "gp" };
 
+		// Log
+		getServerInstance().getLogger().info("Viking selected for account " + account.getAccountID()
+				+ ": selected viking '" + save.getUsername() + "' (ID " + save.getSaveID() + ")");
+
 		// Set response
 		setResponseContent("text/xml", req.generateEncryptedResponse(getUtilities().encodeToken(tkn.toTokenString())));
 	}

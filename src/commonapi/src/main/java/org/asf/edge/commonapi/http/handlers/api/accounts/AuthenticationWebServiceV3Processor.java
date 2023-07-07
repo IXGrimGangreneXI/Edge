@@ -257,6 +257,10 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 			return;
 		}
 		if (!manager.isUsernameTaken(login.username)) {
+			// Log
+			getServerInstance().getLogger().warn("Account login from IP " + func.getClient().getRemoteAddress()
+					+ " rejected for " + login.username + ": account not found");
+
 			// Account not found
 			invalidUserCallback(login.username, req);
 			return;
@@ -265,6 +269,10 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		// Retrieve ID
 		String id = manager.getAccountID(login.username);
 		if (!manager.accountExists(id)) {
+			// Log
+			getServerInstance().getLogger().warn("Account login from IP " + func.getClient().getRemoteAddress()
+					+ " rejected for " + id + ": account not found");
+
 			// ID does not exist
 			invalidUserCallback(login.username, req);
 			return;
@@ -272,6 +280,10 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 
 		// Password check
 		if (!manager.verifyPassword(id, login.password)) {
+			// Log
+			getServerInstance().getLogger().warn("Account login from IP " + func.getClient().getRemoteAddress()
+					+ " rejected for " + id + ": invalid password");
+
 			// Password incorrect
 			invalidUserCallback(login.username, req);
 			return;
@@ -280,6 +292,10 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		// Find account
 		AccountObject acc = manager.getAccount(id);
 		if (acc.isGuestAccount()) {
+			// Log
+			getServerInstance().getLogger().warn("Account login from IP " + func.getClient().getRemoteAddress()
+					+ " rejected for " + acc.getAccountID() + ": guest accounts may not be directly logged in on");
+
 			// NO
 			invalidUserCallback(login.username, req);
 			return;
@@ -293,6 +309,10 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		tkn.accountID = acc.getAccountID();
 		tkn.lastLoginTime = acc.getLastLoginTime();
 		tkn.capabilities = new String[] { "api" };
+
+		// Log
+		getServerInstance().getLogger().info("Account login from IP " + func.getClient().getRemoteAddress() + " to "
+				+ acc.getAccountID() + ": logged in as " + acc.getUsername());
 
 		// Create response
 		ParentLoginResponseData resp = new ParentLoginResponseData();
