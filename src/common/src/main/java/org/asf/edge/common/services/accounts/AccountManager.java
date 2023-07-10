@@ -71,10 +71,8 @@ public abstract class AccountManager extends AbstractService {
 		JsonObject databaseManagerConfig = new JsonObject();
 		if (!accountManagerConfig.has("databaseManager")) {
 			databaseManagerConfig.addProperty("priority", priorityDatabase);
-			databaseManagerConfig.addProperty("url", "jdbc:mysql://localhost/edge");
+			databaseManagerConfig.addProperty("url", "jdbc:locking:sqlite:account-data.db");
 			JsonObject props = new JsonObject();
-			props.addProperty("user", "edge");
-			props.addProperty("password", "edgesodserver");
 			databaseManagerConfig.add("properties", props);
 			accountManagerConfig.add("databaseManager", databaseManagerConfig);
 			changed = true;

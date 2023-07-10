@@ -166,6 +166,7 @@ public class DatabaseAccountManager extends AccountManager {
 		try {
 			// Load drivers
 			Class.forName("com.mysql.cj.jdbc.Driver");
+			Class.forName("org.mariadb.jdbc.Driver");
 			Class.forName("org.asf.edge.common.jdbc.LoggingProxyDriver");
 			Class.forName("org.asf.edge.common.jdbc.LockingDriver");
 
