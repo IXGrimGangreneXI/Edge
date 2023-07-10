@@ -54,6 +54,7 @@ public class EdgeContentServerMain {
 						+ "    \"serverTestEndpoint\": null,\n" // test endpoint
 						+ "    \"assetProxyServerEndpoint\": null,\n" // proxy endpoint
 						+ "    \"assetProxyManifestModifications\": {},\n" // proxy modifications
+						+ "\n" //
 						+ "    \"storeFallbackAssetDownloads\": false," // downloading fallback to disk
 						+ "\n" //
 						+ "    \"https\": false,\n" // use https?
@@ -73,8 +74,10 @@ public class EdgeContentServerMain {
 						+ "    \"allowIndexingAssets\": true,\n" // Defines if indexing is enabled
 						+ "\n" //
 						+ "    \"serverTestEndpoint\": null,\n" // test endpoint
-						+ "    \"fallbackAssetServerEndpoint\": null,\n" // proxy endpoint
-						+ "    \"fallbackAssetServerManifestModifications\": {},\n" // proxy modifications
+						+ "    \"assetProxyServerEndpoint\": null,\n" // proxy endpoint
+						+ "    \"assetProxyManifestModifications\": {},\n" // proxy modifications
+						+ "\n" //
+						+ "    \"storeFallbackAssetDownloads\": false," // downloading fallback to disk
 						+ "\n" //
 						+ "    \"modules\": {\n" //
 						+ "    }\n" //
