@@ -44,7 +44,7 @@ public class ProfileSelectCommand implements IEdgeServerCommand {
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
 			Map<String, String> dataBlobs) {
-		AccountObject acc = ctx.getAccount();
+		AccountObject acc = ctx.getAccountObject();
 		if (args.length >= 2 && ctx.getPermissions().hasPermission("commands.moderator.profiles.select",
 				PermissionLevel.MODERATOR)) {
 			// Find owner
@@ -70,7 +70,8 @@ public class ProfileSelectCommand implements IEdgeServerCommand {
 			outputWriteLineCallback.accept("Error: invalid profile");
 			return null;
 		}
-		ctx.getCommandMemory().put("active_profile", save);
+		ctx.getCommandMemory().put("active_account", acc.getAccountID());
+		ctx.getCommandMemory().put("active_profile", save.getSaveID());
 		return "Selected profile " + save.getUsername();
 	}
 

@@ -47,7 +47,7 @@ public class ProfileDeleteCommand implements IEdgeServerCommand {
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
 			Map<String, String> dataBlobs) {
-		AccountObject acc = ctx.getAccount();
+		AccountObject acc = ctx.getAccountObject();
 		if (args.length >= 2 && ctx.getPermissions().hasPermission("commands.admin.profiles.delete",
 				PermissionLevel.ADMINISTRATOR)) {
 			// Find owner
@@ -65,7 +65,7 @@ public class ProfileDeleteCommand implements IEdgeServerCommand {
 		String id = null;
 		if (args.length >= 1) {
 			id = args[0];
-			if (ctx.getAccount().getSave(id) == null)
+			if (ctx.getAccountObject().getSave(id) == null)
 				id = null;
 		}
 		if (id == null) {
@@ -74,7 +74,7 @@ public class ProfileDeleteCommand implements IEdgeServerCommand {
 		}
 
 		// Check currency
-		if (acc.getAccountID().equalsIgnoreCase(ctx.getAccount().getAccountID())) {
+		if (acc.getAccountID().equalsIgnoreCase(ctx.getAccountObject().getAccountID())) {
 			try {
 				// Check currency
 				AccountDataContainer currencyAccWide = acc.getAccountData().getChildContainer("currency");

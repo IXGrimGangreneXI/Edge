@@ -44,7 +44,7 @@ public class ProfileListCommand implements IEdgeServerCommand {
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
 			Map<String, String> dataBlobs) {
-		AccountObject acc = ctx.getAccount();
+		AccountObject acc = ctx.getAccountObject();
 		if (args.length >= 1
 				&& ctx.getPermissions().hasPermission("commands.moderator.profiles.list", PermissionLevel.MODERATOR)) {
 			// Find owner

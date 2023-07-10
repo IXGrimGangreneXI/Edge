@@ -351,4 +351,20 @@ public class RemoteHttpAccountObject extends AccountObject {
 		}
 	}
 
+	@Override
+	public boolean isOnline() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", this.id);
+			payload.addProperty("save", id);
+			JsonObject response = mgr.accountManagerRequest("accounts/isOnline", payload);
+			return response.get("result").getAsBoolean();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in isOnline!", e);
+			return false;
+		}
+	}
+
 }

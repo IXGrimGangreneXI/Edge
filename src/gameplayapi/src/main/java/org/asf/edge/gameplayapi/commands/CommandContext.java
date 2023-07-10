@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.gameplayapi.commands.defaultcommands.HelpCommand;
 import org.asf.edge.gameplayapi.commands.defaultcommands.account.ProfilesCommand;
@@ -42,11 +43,11 @@ public class CommandContext {
 		public CommandContext getForAccount(AccountObject account);
 	}
 
-	private AccountObject account;
+	private String account;
 	private PermissionContext ctx;
 
 	public CommandContext(AccountObject account) {
-		this.account = account;
+		this.account = account.getAccountID();
 
 		// Load perms
 		ctx = PermissionContext.getFor(account);
@@ -110,8 +111,8 @@ public class CommandContext {
 	 * 
 	 * @return CommandContext instance
 	 */
-	public AccountObject getAccount() {
-		return account;
+	public AccountObject getAccountObject() {
+		return AccountManager.getInstance().getAccount(account);
 	}
 
 	/**
@@ -181,7 +182,7 @@ public class CommandContext {
 						result = c.run(args, this, logger, t -> {
 							outputWriteLineCallback.accept(t);
 							if (logCommands)
-								logger.info(id + " (" + getAccount().getUsername() + ") : " + t);
+								logger.info(id + " (" + getAccountObject().getUsername() + ") : " + t);
 						}, dataBlobs);
 						if (result != null)
 							success = true;
@@ -190,7 +191,7 @@ public class CommandContext {
 						result = "An internal server error occured while processing the command";
 						success = false;
 						logger.error("An error occured while processing command '" + cmdStr + "' (issued by "
-								+ getAccount().getUsername() + ")", e);
+								+ getAccountObject().getUsername() + ")", e);
 						break;
 					}
 				}
@@ -201,7 +202,7 @@ public class CommandContext {
 		if (result != null) {
 			outputWriteLineCallback.accept(result);
 			if (logCommands)
-				logger.info(cmdStr + " (" + getAccount().getUsername() + ") : " + result);
+				logger.info(cmdStr + " (" + getAccountObject().getUsername() + ") : " + result);
 		}
 		return success;
 	}

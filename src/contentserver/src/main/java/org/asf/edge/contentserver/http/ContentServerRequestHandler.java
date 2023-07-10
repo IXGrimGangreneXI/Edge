@@ -1,11 +1,16 @@
 package org.asf.edge.contentserver.http;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 import javax.activation.FileTypeMap;
 import javax.activation.MimetypesFileTypeMap;
@@ -15,7 +20,10 @@ import org.asf.connective.objects.HttpRequest;
 import org.asf.connective.objects.HttpResponse;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.CommonIndexPage;
+import org.asf.edge.common.util.TripleDesUtil;
 import org.asf.edge.contentserver.EdgeContentServer;
+
+import com.google.gson.JsonObject;
 
 public class ContentServerRequestHandler extends HttpPushProcessor {
 
@@ -90,6 +98,110 @@ public class ContentServerRequestHandler extends HttpPushProcessor {
 		File requestedFile = new File(sourceDir, path);
 		if (!requestedFile.exists()) {
 			// Not found
+			if (server.getConfiguration().fallbackAssetServerEndpoint != null) {
+				// Attempt to contact fallback server
+				String url = server.getConfiguration().fallbackAssetServerEndpoint;
+				while (url.endsWith("/"))
+					url = url.substring(0, url.lastIndexOf("/"));
+				url += path;
+
+				// Try to contact server
+				try {
+					// Pull file
+					URL u = new URL(url);
+					InputStream fileStream = u.openStream();
+
+					// Find type
+					String type = MainFileMap.getInstance().getContentType(new File(path).getName());
+
+					// Check file
+					if (path.toLowerCase().endsWith("/dwadragonsmain.xml")) {
+						// Read data
+						byte[] docData = fileStream.readAllBytes();
+						fileStream.close();
+
+						// Decode
+						String data = new String(docData, "UTF-8");
+						boolean encrypted = data
+								.matches("^([A-Za-z0-9+\\/]{4})*([A-Za-z0-9+\\/]{3}=|[A-Za-z0-9+\\/]{2}==)?$");
+
+						// Compute key
+						String secret = "C92EC1AA-54CD-4D0C-A8D5-403FCCF1C0BD";
+						byte[] key = null;
+						if (encrypted) {
+							// Find version-specific secret
+							File verSpecificSecret = new File(sourceDir, path.split("/")[1] + "/" + path.split("/")[2]
+									+ "/" + path.split("/")[3] + "/versionxmlsecret.conf");
+							if (verSpecificSecret.exists()) {
+								// Read
+								for (String line : Files.readAllLines(verSpecificSecret.toPath())) {
+									if (!line.isBlank() && !line.startsWith("#") && line.contains("=")) {
+										String k = line.substring(0, line.indexOf("="));
+										String val = line.substring(line.indexOf("=") + 1);
+										if (k.equals("xmlsecret"))
+											secret = val;
+									}
+								}
+							}
+
+							// Compute key
+							try {
+								MessageDigest digest = MessageDigest.getInstance("MD5");
+								key = digest.digest(secret.getBytes("ASCII"));
+							} catch (NoSuchAlgorithmException e) {
+								throw new RuntimeException(e);
+							}
+
+							// Decrypt
+							byte[] b = Base64.getDecoder().decode(data);
+							docData = TripleDesUtil.decrypt(b, key);
+							data = new String(docData, "UTF-8");
+						}
+
+						// Update
+						JsonObject replace = server.getConfiguration().fallbackAssetServerManifestModifications;
+						if (replace != null) {
+							for (String replaceKey : replace.keySet())
+								data = data.replace(replaceKey,
+										replace.get(replaceKey).getAsString().replace("%local%",
+												"[" + server.getConfiguration().listenAddress + "]:"
+														+ server.getConfiguration().listenPort));
+							docData = data.getBytes("UTF-8");
+						}
+
+						// Re-encrypt if needed
+						if (encrypted) {
+							// Re-encrypt
+							docData = TripleDesUtil.encrypt(docData, key);
+
+							// Convert to base64
+							data = Base64.getEncoder().encodeToString(docData);
+						}
+
+						// Set result
+						fileStream = new ByteArrayInputStream(data.getBytes("UTF-8"));
+					}
+
+					// Find preprocessor
+					for (IPreProcessor processor : preProcessors) {
+						if (processor.match(path, method, client, contentType, getRequest(), getResponse(),
+								sourceDir)) {
+							// Run preprocessor
+							fileStream = processor.preProcess(path, method, client, contentType, getRequest(),
+									getResponse(), fileStream, sourceDir);
+						}
+					}
+
+					// Set output
+					if (getResponse().hasHeader("Content-Type"))
+						type = getResponse().getHeaderValue("Content-Type");
+					setResponseContent(type, fileStream);
+					return;
+				} catch (Exception e) {
+				}
+			}
+
+			// Still not found
 			setResponseStatus(404, "Not found");
 			return;
 		} else if (requestedFile.isDirectory()) {

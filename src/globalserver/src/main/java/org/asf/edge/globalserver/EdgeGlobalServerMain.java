@@ -75,11 +75,16 @@ public class EdgeGlobalServerMain {
 			Files.writeString(configFile.toPath(), "{\n" //
 					+ "\n" //
 					+ "    \"contentServer\": {\n" //
+					+ "        \"disabled\": false,\n" // defines if the server is disabled
 					+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
 					+ "        \"listenPort\": 5319,\n" // port to listen on
 					+ "        \"contentRequestListenPath\": \"/\",\n" // URI to listen on
 					+ "        \"contentDataPath\": \"./data/contentserver/asset-data\",\n" // Content data path
 					+ "        \"allowIndexingAssets\": true,\n" // Defines if indexing is enabled
+					+ "\n" //
+					+ "        \"serverTestEndpoint\": null,\n" // test endpoint
+					+ "        \"fallbackAssetServerEndpoint\": null,\n" // proxy endpoint
+					+ "        \"fallbackAssetServerManifestModifications\": {},\n" // proxy modifications
 					+ "\n" //
 					+ "        \"https\": false,\n" // use https?
 					+ "        \"tlsKeystore\": null,\n" // keystore file
@@ -87,6 +92,7 @@ public class EdgeGlobalServerMain {
 					+ "    },\n" //
 					+ "\n" //
 					+ "    \"gameplayApiServer\": {\n" //
+					+ "        \"disabled\": false,\n" // defines if the server is disabled
 					+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
 					+ "        \"listenPort\": 5320,\n" // port to listen on
 					+ "        \"apiRequestListenPath\": \"/\",\n" // URI to listen on
@@ -97,6 +103,7 @@ public class EdgeGlobalServerMain {
 					+ "    },\n" //
 					+ "\n" //
 					+ "    \"commonApiServer\": {\n" //
+					+ "        \"disabled\": false,\n" // defines if the server is disabled
 					+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
 					+ "        \"listenPort\": 5321,\n" // port to listen on
 					+ "        \"apiRequestListenPath\": \"/\",\n" // URI to listen on
@@ -128,73 +135,90 @@ public class EdgeGlobalServerMain {
 		// Content server
 		logger.debug("Configuring content server settings...");
 		JsonObject contentSrvJson = configData.get("contentServer").getAsJsonObject();
-		if (contentSrvConfig.server != null) {
-			logger.debug("Loading listening settings...");
-			contentSrvConfig.listenAddress = contentSrvJson.get("listenAddress").getAsString();
-			contentSrvConfig.listenPort = contentSrvJson.get("listenPort").getAsInt();
-		}
-		logger.debug("Loading IO settings...");
-		contentSrvConfig.contentRequestListenPath = contentSrvJson.get("contentRequestListenPath").getAsString();
-		contentSrvConfig.contentDataPath = contentSrvJson.get("contentDataPath").getAsString();
-		contentSrvConfig.allowIndexingAssets = contentSrvJson.get("allowIndexingAssets").getAsBoolean();
-		if (contentSrvConfig.server == null) {
-			logger.debug("Loading encryption settings...");
-			contentSrvConfig.https = contentSrvJson.get("https").getAsBoolean();
-			if (contentSrvConfig.https) {
-				contentSrvConfig.tlsKeystore = contentSrvJson.get("tlsKeystore").getAsString();
-				contentSrvConfig.tlsKeystorePassword = contentSrvJson.get("tlsKeystorePassword").getAsString();
+		boolean contentDisabled = contentSrvJson.has("disabled") && contentSrvJson.get("disabled").getAsBoolean();
+		if (!contentDisabled) {
+			if (contentSrvConfig.server != null) {
+				logger.debug("Loading listening settings...");
+				contentSrvConfig.listenAddress = contentSrvJson.get("listenAddress").getAsString();
+				contentSrvConfig.listenPort = contentSrvJson.get("listenPort").getAsInt();
+			}
+			logger.debug("Loading IO settings...");
+			if (contentSrvJson.has("serverTestEndpoint"))
+				contentSrvConfig.serverTestEndpoint = contentSrvJson.get("serverTestEndpoint").getAsString();
+			if (contentSrvJson.has("fallbackAssetServerEndpoint"))
+				contentSrvConfig.fallbackAssetServerEndpoint = contentSrvJson.get("fallbackAssetServerEndpoint")
+						.getAsString();
+			if (contentSrvJson.has("fallbackAssetServerManifestModifications"))
+				contentSrvConfig.fallbackAssetServerManifestModifications = contentSrvJson
+						.get("fallbackAssetServerManifestModifications").getAsJsonObject();
+			contentSrvConfig.contentRequestListenPath = contentSrvJson.get("contentRequestListenPath").getAsString();
+			contentSrvConfig.contentDataPath = contentSrvJson.get("contentDataPath").getAsString();
+			contentSrvConfig.allowIndexingAssets = contentSrvJson.get("allowIndexingAssets").getAsBoolean();
+			if (contentSrvConfig.server == null) {
+				logger.debug("Loading encryption settings...");
+				contentSrvConfig.https = contentSrvJson.get("https").getAsBoolean();
+				if (contentSrvConfig.https) {
+					contentSrvConfig.tlsKeystore = contentSrvJson.get("tlsKeystore").getAsString();
+					contentSrvConfig.tlsKeystorePassword = contentSrvJson.get("tlsKeystorePassword").getAsString();
+				}
 			}
 		}
 
 		// Common api server
 		logger.debug("Configuring Common API server settings...");
 		JsonObject cApiJson = configData.get("commonApiServer").getAsJsonObject();
-		if (cApiConfig.server == null) {
-			logger.debug("Loading listening settings...");
-			cApiConfig.listenAddress = cApiJson.get("listenAddress").getAsString();
-			cApiConfig.listenPort = cApiJson.get("listenPort").getAsInt();
-		}
-		logger.debug("Loading IO settings...");
-		cApiConfig.apiRequestListenPath = cApiJson.get("apiRequestListenPath").getAsString();
-		if (cApiConfig.server == null) {
-			logger.debug("Loading encryption settings...");
-			cApiConfig.https = cApiJson.get("https").getAsBoolean();
-			if (cApiConfig.https) {
-				cApiConfig.tlsKeystore = cApiJson.get("tlsKeystore").getAsString();
-				cApiConfig.tlsKeystorePassword = cApiJson.get("tlsKeystorePassword").getAsString();
+		boolean capiDisabled = cApiJson.has("disabled") && cApiJson.get("disabled").getAsBoolean();
+		if (!capiDisabled) {
+			if (cApiConfig.server == null) {
+				logger.debug("Loading listening settings...");
+				cApiConfig.listenAddress = cApiJson.get("listenAddress").getAsString();
+				cApiConfig.listenPort = cApiJson.get("listenPort").getAsInt();
 			}
-		}
-		logger.debug("Loading internal server settings...");
-		if (cApiConfig.internalServer == null) {
-			logger.debug("Loading listening settings...");
-			cApiConfig.internalListenAddress = cApiJson.get("internalListenAddress").getAsString();
-			cApiConfig.internalListenPort = cApiJson.get("internalListenPort").getAsInt();
-		}
-		if (cApiConfig.internalServer == null) {
-			logger.debug("Loading encryption settings...");
-			cApiConfig.httpsInternal = cApiJson.get("httpsInternal").getAsBoolean();
-			if (cApiConfig.httpsInternal) {
-				cApiConfig.tlsKeystoreInternal = cApiJson.get("tlsKeystoreInternal").getAsString();
-				cApiConfig.tlsKeystorePasswordInternal = cApiJson.get("tlsKeystorePasswordInternal").getAsString();
+			logger.debug("Loading IO settings...");
+			cApiConfig.apiRequestListenPath = cApiJson.get("apiRequestListenPath").getAsString();
+			if (cApiConfig.server == null) {
+				logger.debug("Loading encryption settings...");
+				cApiConfig.https = cApiJson.get("https").getAsBoolean();
+				if (cApiConfig.https) {
+					cApiConfig.tlsKeystore = cApiJson.get("tlsKeystore").getAsString();
+					cApiConfig.tlsKeystorePassword = cApiJson.get("tlsKeystorePassword").getAsString();
+				}
+			}
+			logger.debug("Loading internal server settings...");
+			if (cApiConfig.internalServer == null) {
+				logger.debug("Loading listening settings...");
+				cApiConfig.internalListenAddress = cApiJson.get("internalListenAddress").getAsString();
+				cApiConfig.internalListenPort = cApiJson.get("internalListenPort").getAsInt();
+			}
+			if (cApiConfig.internalServer == null) {
+				logger.debug("Loading encryption settings...");
+				cApiConfig.httpsInternal = cApiJson.get("httpsInternal").getAsBoolean();
+				if (cApiConfig.httpsInternal) {
+					cApiConfig.tlsKeystoreInternal = cApiJson.get("tlsKeystoreInternal").getAsString();
+					cApiConfig.tlsKeystorePasswordInternal = cApiJson.get("tlsKeystorePasswordInternal").getAsString();
+				}
 			}
 		}
 
 		// Gameplay api server
 		logger.debug("Configuring Gameplay API server settings...");
 		JsonObject gpApiJson = configData.get("gameplayApiServer").getAsJsonObject();
-		if (gpApiConfig.server == null) {
-			logger.debug("Loading listening settings...");
-			gpApiConfig.listenAddress = gpApiJson.get("listenAddress").getAsString();
-			gpApiConfig.listenPort = gpApiJson.get("listenPort").getAsInt();
-		}
-		logger.debug("Loading IO settings...");
-		gpApiConfig.apiRequestListenPath = gpApiJson.get("apiRequestListenPath").getAsString();
-		if (gpApiConfig.server == null) {
-			logger.debug("Loading encryption settings...");
-			gpApiConfig.https = gpApiJson.get("https").getAsBoolean();
-			if (gpApiConfig.https) {
-				gpApiConfig.tlsKeystore = gpApiJson.get("tlsKeystore").getAsString();
-				gpApiConfig.tlsKeystorePassword = gpApiJson.get("tlsKeystorePassword").getAsString();
+		boolean gapiDisabled = gpApiJson.has("disabled") && gpApiJson.get("disabled").getAsBoolean();
+		if (!gapiDisabled) {
+			if (gpApiConfig.server == null) {
+				logger.debug("Loading listening settings...");
+				gpApiConfig.listenAddress = gpApiJson.get("listenAddress").getAsString();
+				gpApiConfig.listenPort = gpApiJson.get("listenPort").getAsInt();
+			}
+			logger.debug("Loading IO settings...");
+			gpApiConfig.apiRequestListenPath = gpApiJson.get("apiRequestListenPath").getAsString();
+			if (gpApiConfig.server == null) {
+				logger.debug("Loading encryption settings...");
+				gpApiConfig.https = gpApiJson.get("https").getAsBoolean();
+				if (gpApiConfig.https) {
+					gpApiConfig.tlsKeystore = gpApiJson.get("tlsKeystore").getAsString();
+					gpApiConfig.tlsKeystorePassword = gpApiJson.get("tlsKeystorePassword").getAsString();
+				}
 			}
 		}
 
@@ -215,9 +239,12 @@ public class EdgeGlobalServerMain {
 		}
 
 		// Dispatch event
-		EventBus.getInstance().dispatchEvent(new ContentServerConfigLoadedEvent(contentSrvConfig));
-		EventBus.getInstance().dispatchEvent(new GameplayApiServerConfigLoadedEvent(gpApiConfig));
-		EventBus.getInstance().dispatchEvent(new CommonApiServerConfigLoadedEvent(cApiConfig));
+		if (!contentDisabled)
+			EventBus.getInstance().dispatchEvent(new ContentServerConfigLoadedEvent(contentSrvConfig));
+		if (!capiDisabled)
+			EventBus.getInstance().dispatchEvent(new GameplayApiServerConfigLoadedEvent(gpApiConfig));
+		if (!gapiDisabled)
+			EventBus.getInstance().dispatchEvent(new CommonApiServerConfigLoadedEvent(cApiConfig));
 
 		// Setup servers
 		logger.info("Setting up servers...");
@@ -237,32 +264,46 @@ public class EdgeGlobalServerMain {
 		CommonDataManager.getInstance().loadManager();
 
 		// Content server
-		logger.info("Setting up the content server...");
-		EdgeContentServer contSrv = new EdgeContentServer(contentSrvConfig);
-		contSrv.setupServer();
+		EdgeContentServer contSrv = null;
+		if (!contentDisabled) {
+			logger.info("Setting up the content server...");
+			contSrv = new EdgeContentServer(contentSrvConfig);
+			contSrv.setupServer();
+		}
 
 		// Common server
-		logger.info("Setting up the Common API server...");
-		EdgeCommonApiServer cApiSrv = new EdgeCommonApiServer(cApiConfig);
-		cApiSrv.setupServer();
+		EdgeCommonApiServer cApiSrv = null;
+		if (!capiDisabled) {
+			logger.info("Setting up the Common API server...");
+			cApiSrv = new EdgeCommonApiServer(cApiConfig);
+			cApiSrv.setupServer();
+		}
 
 		// Gameplay server
-		logger.info("Setting up the Gameplay API server...");
-		EdgeGameplayApiServer gpApiSrv = new EdgeGameplayApiServer(gpApiConfig);
-		gpApiSrv.setupServer();
+		EdgeGameplayApiServer gpApiSrv = null;
+		if (!gapiDisabled) {
+			logger.info("Setting up the Gameplay API server...");
+			gpApiSrv = new EdgeGameplayApiServer(gpApiConfig);
+			gpApiSrv.setupServer();
+		}
 
 		// Start servers
-		contSrv.startServer();
-		cApiSrv.startServer();
-		gpApiSrv.startServer();
+		if (!contentDisabled)
+			contSrv.startServer();
+		if (!capiDisabled)
+			cApiSrv.startServer();
+		if (!gapiDisabled)
+			gpApiSrv.startServer();
 
 		// Call post-init
 		ModuleManager.runModulePostInit();
 
 		// Wait for exit
 		logger.info("EDGE servers are running!");
-		cApiSrv.waitForExit();
-		gpApiSrv.waitForExit();
+		if (!capiDisabled)
+			cApiSrv.waitForExit();
+		if (!gapiDisabled)
+			gpApiSrv.waitForExit();
 		if (CommonInit.restartPending)
 			System.exit(237);
 		else

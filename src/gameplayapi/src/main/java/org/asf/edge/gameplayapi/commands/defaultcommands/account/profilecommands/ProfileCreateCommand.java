@@ -50,7 +50,7 @@ public class ProfileCreateCommand implements IEdgeServerCommand {
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
 			Map<String, String> dataBlobs) {
-		AccountObject account = ctx.getAccount();
+		AccountObject account = ctx.getAccountObject();
 		AccountManager manager = AccountManager.getInstance();
 		if (args.length >= 2 && ctx.getPermissions().hasPermission("commands.admin.profiles.create",
 				PermissionLevel.ADMINISTRATOR)) {
@@ -118,7 +118,7 @@ public class ProfileCreateCommand implements IEdgeServerCommand {
 		}
 
 		// Check currency
-		if (account.getAccountID().equalsIgnoreCase(ctx.getAccount().getAccountID())) {
+		if (account.getAccountID().equalsIgnoreCase(ctx.getAccountObject().getAccountID())) {
 			try {
 				// Check currency
 				AccountDataContainer currencyAccWide = account.getAccountData().getChildContainer("currency");

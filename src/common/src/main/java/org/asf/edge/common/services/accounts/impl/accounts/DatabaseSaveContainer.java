@@ -142,9 +142,13 @@ public class DatabaseSaveContainer extends AccountSaveContainer {
 		}
 	}
 
+	private DatabaseSaveDataContainer data;
+
 	@Override
 	public AccountDataContainer getSaveData() {
-		return new DatabaseSaveDataContainer(acc, this, url, props);
+		if (data == null)
+			data = new DatabaseSaveDataContainer(acc, this, url, props);
+		return data;
 	}
 
 	@Override

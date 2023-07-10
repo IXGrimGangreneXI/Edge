@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.gameplayapi.commands.CommandContext;
@@ -160,7 +161,9 @@ public class DebugCommands extends TaskBasedCommand {
 									"Error: no active profile, please use 'profiles select' before using this command");
 							return null;
 						}
-						AccountSaveContainer save = (AccountSaveContainer) ctx.getCommandMemory().get("active_profile");
+						AccountSaveContainer save = AccountManager.getInstance()
+								.getAccount(ctx.getCommandMemory().get("active_account").toString())
+								.getSave(ctx.getCommandMemory().get("active_profile").toString());
 						int def = Integer.parseInt(args[0]);
 						int quantity = 1;
 						if (args.length > 1)

@@ -10,6 +10,7 @@ import org.asf.connective.ConnectiveHttpServer;
 import org.asf.edge.contentserver.http.*;
 import org.asf.edge.contentserver.http.ContentServerRequestHandler.IPreProcessor;
 import org.asf.edge.contentserver.http.postprocessors.ApplicationManifestPreProcessor;
+import org.asf.edge.contentserver.http.postprocessors.ServerDownPreprocessor;
 import org.asf.edge.modules.eventbus.EventBus;
 
 import org.asf.edge.common.IBaseServer;
@@ -123,7 +124,8 @@ public class EdgeContentServer implements IBaseServer {
 		// Register handlers
 		logger.debug("Configuring server request handlers...");
 		server.registerProcessor(new ContentServerRequestHandler(dataPath, config.contentRequestListenPath,
-				new IPreProcessor[] { new ApplicationManifestPreProcessor() }, this));
+				new IPreProcessor[] { new ApplicationManifestPreProcessor(), new ServerDownPreprocessor(config) },
+				this));
 	}
 
 	/**

@@ -53,7 +53,7 @@ public class ProfileRenameCommand implements IEdgeServerCommand {
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
 			Map<String, String> dataBlobs) {
-		AccountObject acc = ctx.getAccount();
+		AccountObject acc = ctx.getAccountObject();
 		AccountManager manager = AccountManager.getInstance();
 		if (args.length >= 3 && ctx.getPermissions().hasPermission("commands.moderator.profiles.rename",
 				PermissionLevel.MODERATOR)) {
@@ -73,7 +73,7 @@ public class ProfileRenameCommand implements IEdgeServerCommand {
 		AccountSaveContainer save = null;
 		if (args.length >= 1) {
 			id = args[0];
-			save = ctx.getAccount().getSave(id);
+			save = ctx.getAccountObject().getSave(id);
 			if (save == null)
 				id = null;
 		}

@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.commands.IEdgeServerCommand;
@@ -49,7 +50,9 @@ public class ProfileResetLocationCommand implements IEdgeServerCommand {
 					.accept("Error: no active profile, please use 'profiles select' before using this command");
 			return null;
 		}
-		AccountSaveContainer save = (AccountSaveContainer) ctx.getCommandMemory().get("active_profile");
+		AccountSaveContainer save = AccountManager.getInstance()
+				.getAccount(ctx.getCommandMemory().get("active_account").toString())
+				.getSave(ctx.getCommandMemory().get("active_profile").toString());
 		AccountDataContainer data = save.getSaveData();
 		data = data.getChildContainer("keyvaluedata");
 

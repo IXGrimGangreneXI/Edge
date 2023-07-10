@@ -1323,4 +1323,52 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
+	@Function(allowedMethods = { "POST" })
+	public void getOnlinePlayerIDs(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		JsonObject resp = new JsonObject();
+		JsonArray players = new JsonArray();
+		for (String save : manager.getOnlinePlayerIDs())
+			players.add(save);
+		resp.add("players", players);
+		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/isOnline")
+	public void isOnline(FunctionInfo func) throws JsonSyntaxException, IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id")) {
+			getResponse().setResponseStatus(400, "Bad request");
+			return;
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			resp.addProperty("result", acc.isOnline());
+		} else
+			resp.addProperty("result", false);
+		setResponseContent("text/json", resp.toString());
+	}
+
 }

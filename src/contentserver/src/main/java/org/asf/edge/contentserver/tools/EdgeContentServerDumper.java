@@ -514,7 +514,6 @@ public class EdgeContentServerDumper {
 				// Read data
 				byte[] data = Base64.getDecoder().decode(man);
 				strm = new ByteArrayInputStream(TripleDesUtil.decrypt(data, keyHash));
-
 			} else {
 				// Mark exception for this file
 				strm = new ByteArrayInputStream(man.getBytes("UTF-8"));

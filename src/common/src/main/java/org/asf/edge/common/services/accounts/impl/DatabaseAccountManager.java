@@ -22,6 +22,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -30,6 +32,8 @@ import javax.crypto.spec.PBEKeySpec;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.connective.tasks.AsyncTaskManager;
+import org.asf.edge.common.CommonInit;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
@@ -54,12 +58,71 @@ public class DatabaseAccountManager extends AccountManager {
 	private PublicKey publicKey;
 	private PrivateKey privateKey;
 
+	private class AccountCache {
+		public long lastUpdate;
+		public AccountObject account;
+	}
+
+	private HashMap<String, AccountCache> cache = new HashMap<String, AccountCache>();
+
 	@Override
 	public void initService() {
 	}
 
+	public void keepInMemory(DatabaseAccountObject acc) {
+		// Update in cache
+		synchronized (cache) {
+			if (cache.containsKey(acc.getAccountID())) {
+				cache.get(acc.getAccountID()).lastUpdate = System.currentTimeMillis();
+			} else {
+				// Add to cache
+				AccountCache c = new AccountCache();
+				c.lastUpdate = System.currentTimeMillis();
+				c.account = acc;
+				cache.put(acc.getAccountID(), c);
+
+				// Set player server ID
+				try {
+					AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
+					if (!cont.entryExists("server_id")
+							|| !cont.getEntry("server_id").getAsString().equals(CommonInit.getServerID())) {
+						// Set
+						cont.setEntry("server_id", new JsonPrimitive(CommonInit.getServerID()));
+					}
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+	}
+
 	@Override
 	public void loadManager() {
+		// Cache watchdog
+		AsyncTaskManager.runAsync(() -> {
+			while (true) {
+				// Pull cache
+				AccountCache[] cached;
+				synchronized (cache) {
+					cached = cache.values().toArray(t -> new AccountCache[t]);
+				}
+
+				// Go through cache
+				for (AccountCache obj : cached) {
+					if ((System.currentTimeMillis() - obj.lastUpdate) > (3 * 60 * 1000)) {
+						// Expired, remove from memory as this player is no longer online
+						cache.remove(obj.account.getAccountID());
+					}
+				}
+
+				// Wait
+				try {
+					Thread.sleep(30000);
+				} catch (InterruptedException e) {
+				}
+			}
+		});
+
 		// Write/load config
 		File configFile = new File("accountmanager.json");
 		JsonObject accountManagerConfig = new JsonObject();
@@ -103,6 +166,8 @@ public class DatabaseAccountManager extends AccountManager {
 		try {
 			// Load drivers
 			Class.forName("com.mysql.cj.jdbc.Driver");
+			Class.forName("org.asf.edge.common.jdbc.LoggingProxyDriver");
+			Class.forName("org.asf.edge.common.jdbc.LockingDriver");
 
 			// Create tables
 			Connection conn = DriverManager.getConnection(url, props);
@@ -298,6 +363,16 @@ public class DatabaseAccountManager extends AccountManager {
 
 	@Override
 	public AccountObject getAccount(String id) {
+		// Find
+		while (true) {
+			try {
+				if (cache.containsKey(id))
+					return cache.get(id).account;
+				break;
+			} catch (ConcurrentModificationException | NullPointerException e) {
+			}
+		}
+
 		try {
 			// Create prepared statement
 			Connection conn = DriverManager.getConnection(url, props);
@@ -310,7 +385,8 @@ public class DatabaseAccountManager extends AccountManager {
 				String username = res.getString("USERNAME");
 				if (username == null)
 					return null;
-				return new DatabaseAccountObject(id, username, url, props, this);
+				AccountObject acc = new DatabaseAccountObject(id, username, url, props, this);
+				return acc;
 			} finally {
 				conn.close();
 			}
@@ -336,7 +412,8 @@ public class DatabaseAccountManager extends AccountManager {
 				String id = res.getString("ID");
 				if (id == null)
 					return null;
-				return new DatabaseAccountObject(id, "g/" + guestID, url, props, this);
+				DatabaseAccountObject acc = new DatabaseAccountObject(id, "g/" + guestID, url, props, this);
+				return acc;
 			} finally {
 				conn.close();
 			}
@@ -619,6 +696,25 @@ public class DatabaseAccountManager extends AccountManager {
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to retrieve save '" + id + "'", e);
 			return null;
+		}
+	}
+
+	@Override
+	public String[] getOnlinePlayerIDs() {
+		while (true) {
+			try {
+				return cache.keySet().toArray(t -> new String[t]);
+			} catch (ConcurrentModificationException | NullPointerException e) {
+			}
+		}
+	}
+
+	public boolean isOnline(String accountID) {
+		while (true) {
+			try {
+				return cache.containsKey(accountID);
+			} catch (ConcurrentModificationException | NullPointerException e) {
+			}
 		}
 	}
 

@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -17,10 +19,11 @@ import javax.crypto.spec.PBEKeySpec;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
-import org.asf.edge.common.services.accounts.AccountManager;
+
 import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.accounts.impl.DatabaseAccountManager;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -35,16 +38,22 @@ public class DatabaseAccountObject extends AccountObject {
 	private String url;
 	private Properties props;
 
-	private AccountManager manager;
+	private DatabaseAccountManager manager;
 	private Logger logger = LogManager.getLogger("AccountManager");
 	private static SecureRandom rnd = new SecureRandom();
 
-	public DatabaseAccountObject(String id, String username, String url, Properties props, AccountManager manager) {
+	public DatabaseAccountObject(String id, String username, String url, Properties props,
+			DatabaseAccountManager manager) {
 		this.id = id;
 		this.username = username;
 		this.url = url;
 		this.props = props;
 		this.manager = manager;
+	}
+
+	@Override
+	public void ping() {
+		manager.keepInMemory(this);
 	}
 
 	@Override
@@ -466,9 +475,13 @@ public class DatabaseAccountObject extends AccountObject {
 		}
 	}
 
+	private DatabaseAccountDataContainer accountData;
+
 	@Override
 	public AccountDataContainer getAccountData() {
-		return new DatabaseAccountDataContainer(this, id, url, props);
+		if (accountData == null)
+			accountData = new DatabaseAccountDataContainer(this, id, url, props);
+		return accountData;
 	}
 
 	@Override
@@ -562,8 +575,12 @@ public class DatabaseAccountObject extends AccountObject {
 		}
 	}
 
+	private String[] saveIDs;
+
 	@Override
 	public String[] getSaveIDs() {
+		if (saveIDs != null)
+			return saveIDs;
 		try {
 			Connection conn = DriverManager.getConnection(url, props);
 			try {
@@ -580,6 +597,7 @@ public class DatabaseAccountObject extends AccountObject {
 					JsonObject saveObj = ele.getAsJsonObject();
 					ids[i++] = saveObj.get("id").getAsString();
 				}
+				saveIDs = ids;
 				return ids;
 			} finally {
 				conn.close();
@@ -679,36 +697,63 @@ public class DatabaseAccountObject extends AccountObject {
 
 	}
 
+	private HashMap<String, AccountSaveContainer> saves = new HashMap<String, AccountSaveContainer>();
+
 	@Override
 	public AccountSaveContainer getSave(String id) {
-		try {
-			Connection conn = DriverManager.getConnection(url, props);
+		// Try to retrieve
+		while (true) {
 			try {
-				// Pull list
-				var statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP WHERE ACCID = ?");
-				statement.setString(1, this.id);
-				ResultSet res = statement.executeQuery();
-				if (!res.next())
-					return null;
-				JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
+				if (saves.containsKey(id))
+					return saves.get(id);
+				break;
+			} catch (ConcurrentModificationException e) {
+			}
+		}
+
+		// Add if needed
+		synchronized (saves) {
+			if (saves.containsKey(id))
+				return saves.get(id); // Some other thread already added it
+
+			// Add
+			try {
+				JsonArray saves;
+				Connection conn = DriverManager.getConnection(url, props);
+				try {
+					// Pull list
+					var statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP WHERE ACCID = ?");
+					statement.setString(1, this.id);
+					ResultSet res = statement.executeQuery();
+					if (!res.next())
+						return null;
+					saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
+				} finally {
+					conn.close();
+				}
 				for (JsonElement ele : saves) {
 					JsonObject saveObj = ele.getAsJsonObject();
 					if (saveObj.get("id").getAsString().equals(id)) {
 						// Found it
 						String username = saveObj.get("username").getAsString();
-						return new DatabaseSaveContainer(id, saveObj.get("creationTime").getAsLong(), username, this.id,
-								url, props, manager, this);
+						AccountSaveContainer save = new DatabaseSaveContainer(id,
+								saveObj.get("creationTime").getAsLong(), username, this.id, url, props, manager, this);
+						this.saves.put(id, save);
+						return save;
 					}
 				}
 				return null;
-			} finally {
-				conn.close();
+			} catch (SQLException e) {
+				logger.error("Failed to execute database query request while trying to pull save '" + id + "' of ID '"
+						+ this.id + "'", e);
+				return null;
 			}
-		} catch (SQLException e) {
-			logger.error("Failed to execute database query request while trying to pull save '" + id + "' of ID '"
-					+ this.id + "'", e);
-			return null;
 		}
+	}
+
+	@Override
+	public boolean isOnline() {
+		return manager.isOnline(getAccountID());
 	}
 
 }

@@ -127,6 +127,7 @@ public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeComm
 		// Log
 		getServerInstance().getLogger().info("Viking selected for account " + account.getAccountID()
 				+ ": selected viking '" + save.getUsername() + "' (ID " + save.getSaveID() + ")");
+		save.getAccount().ping();
 
 		// Set response
 		setResponseContent("text/xml", req.generateEncryptedResponse(getUtilities().encodeToken(tkn.toTokenString())));

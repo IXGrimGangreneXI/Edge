@@ -75,6 +75,8 @@ public class DatabaseCommonDataManager extends CommonDataManager {
 		try {
 			// Load drivers
 			Class.forName("com.mysql.cj.jdbc.Driver");
+			Class.forName("org.asf.edge.common.jdbc.LoggingProxyDriver");
+			Class.forName("org.asf.edge.common.jdbc.LockingDriver");
 
 			// Test connection
 			DriverManager.getConnection(url, props).close();

@@ -51,6 +51,10 @@ public class EdgeContentServerMain {
 						+ "    \"contentDataPath\": \"./asset-data\",\n" // Content data path
 						+ "    \"allowIndexingAssets\": true,\n" // Defines if indexing is enabled
 						+ "\n" //
+						+ "    \"serverTestEndpoint\": null,\n" // test endpoint
+						+ "    \"assetProxyServerEndpoint\": null,\n" // proxy endpoint
+						+ "    \"assetProxyManifestModifications\": {},\n" // proxy modifications
+						+ "\n" //
 						+ "    \"https\": false,\n" // use https?
 						+ "    \"tlsKeystore\": null,\n" // keystore file
 						+ "    \"tlsKeystorePassword\": null,\n" // keystore password
@@ -66,6 +70,10 @@ public class EdgeContentServerMain {
 						+ "    \"contentRequestListenPath\": \"/\",\n" // URI to listen on
 						+ "    \"contentDataPath\": \"./asset-data\",\n" // Content data path
 						+ "    \"allowIndexingAssets\": true,\n" // Defines if indexing is enabled
+						+ "\n" //
+						+ "    \"serverTestEndpoint\": null,\n" // test endpoint
+						+ "    \"fallbackAssetServerEndpoint\": null,\n" // proxy endpoint
+						+ "    \"fallbackAssetServerManifestModifications\": {},\n" // proxy modifications
 						+ "\n" //
 						+ "    \"modules\": {\n" //
 						+ "    }\n" //
@@ -88,6 +96,13 @@ public class EdgeContentServerMain {
 		config.contentRequestListenPath = configData.get("contentRequestListenPath").getAsString();
 		config.contentDataPath = configData.get("contentDataPath").getAsString();
 		config.allowIndexingAssets = configData.get("allowIndexingAssets").getAsBoolean();
+		if (configData.has("fallbackAssetServerEndpoint"))
+			config.fallbackAssetServerEndpoint = configData.get("fallbackAssetServerEndpoint").getAsString();
+		if (configData.has("fallbackAssetServerManifestModifications"))
+			config.fallbackAssetServerManifestModifications = configData.get("fallbackAssetServerManifestModifications")
+					.getAsJsonObject();
+		if (configData.has("serverTestEndpoint"))
+			config.serverTestEndpoint = configData.get("serverTestEndpoint").getAsString();
 		if (config.server == null) {
 			logger.debug("Loading encryption settings...");
 			config.https = configData.get("https").getAsBoolean();

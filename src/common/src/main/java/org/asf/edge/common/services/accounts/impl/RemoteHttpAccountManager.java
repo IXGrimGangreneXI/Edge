@@ -17,6 +17,8 @@ import org.asf.edge.common.services.accounts.impl.accounts.RemoteHttpSaveContain
 import org.asf.edge.common.tokens.TokenParseResult;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
@@ -356,6 +358,25 @@ public class RemoteHttpAccountManager extends AccountManager {
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in getSaveByID!", e);
 			return null;
+		}
+	}
+
+	@Override
+	public String[] getOnlinePlayerIDs() {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			JsonObject response = accountManagerRequest("getOnlinePlayerIDs", payload);
+			JsonArray arr = response.get("players").getAsJsonArray();
+			String[] saves = new String[arr.size()];
+			int i = 0;
+			for (JsonElement ele : arr)
+				saves[i++] = ele.getAsString();
+			return saves;
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getOnlinePlayerIDs!", e);
+			return new String[0];
 		}
 	}
 

@@ -185,6 +185,19 @@ public abstract class AccountObject {
 	 */
 	public abstract void deleteAccount() throws IOException;
 
+	/**
+	 * Checks if the account is online
+	 * 
+	 * @return True if online, false otherwise
+	 */
+	public abstract boolean isOnline();
+
+	/**
+	 * Optional override to receive account object pings
+	 */
+	public void ping() {
+	}
+
 	// TODO
 
 }

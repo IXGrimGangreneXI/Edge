@@ -5,6 +5,7 @@ import org.asf.edge.common.services.AbstractService;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -163,7 +164,13 @@ public abstract class AccountManager extends AbstractService {
 	public abstract boolean verifyPassword(String id, String password);
 
 	/**
-	 * Retrieves account objects
+	 * Retrieves account objects<br/>
+	 * <br/>
+	 * <b>Please keep in mind that each time this is called, a new account object is
+	 * created that will cache account data, saves, and save data containers, use as
+	 * much as possible while needing to interact with account data, and get rid of
+	 * as early as possible when done, do NOT keep this in a static field else you
+	 * will run into memory leaks.</b>
 	 * 
 	 * @param id Account ID
 	 * @return AccountObject instance or null if not found
@@ -171,7 +178,13 @@ public abstract class AccountManager extends AbstractService {
 	public abstract AccountObject getAccount(String id);
 
 	/**
-	 * Retrieves guest account objects
+	 * Retrieves guest account objects<br/>
+	 * <br/>
+	 * <b>Please keep in mind that each time this is called, a new account object is
+	 * created that will cache account data, saves, and save data containers, use as
+	 * much as possible while needing to interact with account data, and get rid of
+	 * as early as possible when done, do NOT keep this in a static field else you
+	 * will run into memory leaks.</b>
 	 * 
 	 * @param guestID Guest ID (not a account ID)
 	 * @return AccountObject instance or null if not found
@@ -195,7 +208,13 @@ public abstract class AccountManager extends AbstractService {
 	public abstract byte[] signToken(String token);
 
 	/**
-	 * Registers a guest account
+	 * Registers a guest account<br/>
+	 * <br/>
+	 * <b>Please keep in mind that each time this is called, a new account object is
+	 * returned that will cache account data, saves, and save data containers, use
+	 * as much as possible while needing to interact with account data, and get rid
+	 * of as early as possible when done, do NOT keep this in a static field else
+	 * you will run into memory leaks.</b>
 	 * 
 	 * @param guestID Guest account ID
 	 * @return AccountObject instance or null
@@ -203,7 +222,13 @@ public abstract class AccountManager extends AbstractService {
 	public abstract AccountObject registerGuestAccount(String guestID);
 
 	/**
-	 * Registers accounts
+	 * Registers accounts<br/>
+	 * <br/>
+	 * <b>Please keep in mind that each time this is called, a new account object is
+	 * returned that will cache account data, saves, and save data containers, use
+	 * as much as possible while needing to interact with account data, and get rid
+	 * of as early as possible when done, do NOT keep this in a static field else
+	 * you will run into memory leaks.</b>
 	 * 
 	 * @param username Username to use
 	 * @param email    Email to use
@@ -213,12 +238,34 @@ public abstract class AccountManager extends AbstractService {
 	public abstract AccountObject registerAccount(String username, String email, char[] password);
 
 	/**
-	 * Retrieves save data by ID
+	 * Retrieves save data by ID<br/>
+	 * <br/>
+	 * <b>Please keep in mind that each time this is called, a new save container is
+	 * returned that will cache save data containers, use as much as possible while
+	 * needing to interact with account data, and get rid of as early as possible
+	 * when done, do NOT keep this in a static field else you will run into memory
+	 * leaks.</b>
 	 * 
 	 * @param id Save data ID
 	 * @return AccountSaveContainer instance or null
 	 */
 	public abstract AccountSaveContainer getSaveByID(String id);
+
+	/**
+	 * Retrieves all player IDs that are online on THIS server
+	 * 
+	 * @return String of online player IDs
+	 */
+	public abstract String[] getOnlinePlayerIDs();
+
+	/**
+	 * Retrieves all online player IDs
+	 * 
+	 * @return Array of AccountObject instances
+	 */
+	public AccountObject[] getOnlinePlayers() {
+		return Stream.of(getOnlinePlayerIDs()).map(t -> getAccount(t)).toArray(t -> new AccountObject[t]);
+	}
 
 	/**
 	 * Called to initialize the account manager

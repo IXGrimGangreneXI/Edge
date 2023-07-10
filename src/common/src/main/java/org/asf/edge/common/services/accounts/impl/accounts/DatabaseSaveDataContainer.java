@@ -5,6 +5,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
@@ -27,6 +29,8 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 	private AccountObject account;
 	private Logger logger = LogManager.getLogger("AccountManager");
 
+	private HashMap<String, JsonElement> dataCache = new HashMap<String, JsonElement>();
+
 	public DatabaseSaveDataContainer(AccountObject account, AccountSaveContainer save, String url, Properties props) {
 		this.save = save;
 		this.id = save.getSaveID();
@@ -37,26 +41,47 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 
 	@Override
 	protected JsonElement get(String key) throws IOException {
-		try {
-			Connection conn = DriverManager.getConnection(url, props);
+		while (true) {
 			try {
-				// Create prepared statement
-				var statement = conn.prepareStatement("SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
-				statement.setString(1, id + "//" + key);
-				ResultSet res = statement.executeQuery();
-				if (!res.next())
-					return null;
-				String data = res.getString("DATA");
-				if (data == null)
-					return null;
-				return JsonParser.parseString(data);
-			} finally {
-				conn.close();
+				if (dataCache.containsKey(key))
+					return dataCache.get(key);
+				break;
+			} catch (ConcurrentModificationException e) {
 			}
-		} catch (SQLException e) {
-			logger.error("Failed to execute database query request while trying to retrieve data entry '" + key
-					+ "' for ID '" + id + "'", e);
-			throw new IOException("SQL error", e);
+		}
+
+		// Add if needed
+		synchronized (dataCache) {
+			if (dataCache.containsKey(key))
+				return dataCache.get(key);
+
+			try {
+				Connection conn = DriverManager.getConnection(url, props);
+				try {
+					// Create prepared statement
+					var statement = conn.prepareStatement("SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
+					statement.setString(1, id + "//" + key);
+					ResultSet res = statement.executeQuery();
+					if (!res.next()) {
+						dataCache.put(key, null);
+						return null;
+					}
+					String data = res.getString("DATA");
+					if (data == null) {
+						dataCache.put(key, null);
+						return null;
+					}
+					JsonElement ele = JsonParser.parseString(data);
+					dataCache.put(key, ele);
+					return ele;
+				} finally {
+					conn.close();
+				}
+			} catch (SQLException e) {
+				logger.error("Failed to execute database query request while trying to retrieve data entry '" + key
+						+ "' for ID '" + id + "'", e);
+				throw new IOException("SQL error", e);
+			}
 		}
 	}
 
@@ -70,6 +95,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 				statement.setString(1, value.toString());
 				statement.setString(2, id + "//" + key);
 				statement.execute();
+				dataCache.put(key, value);
 			} finally {
 				conn.close();
 			}
@@ -90,6 +116,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 				statement.setString(1, id + "//" + key);
 				statement.setString(2, value.toString());
 				statement.execute();
+				dataCache.put(key, value);
 			} finally {
 				conn.close();
 			}
@@ -102,6 +129,16 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 
 	@Override
 	protected boolean exists(String key) throws IOException {
+		while (true) {
+			try {
+				if (dataCache.containsKey(key))
+					return dataCache.get(key) != null;
+				break;
+			} catch (ConcurrentModificationException e) {
+			}
+		}
+
+		// Check
 		try {
 			Connection conn = DriverManager.getConnection(url, props);
 			try {
@@ -109,7 +146,18 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 				var statement = conn.prepareStatement("SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
 				statement.setString(1, id + "//" + key);
 				ResultSet res = statement.executeQuery();
-				return res.next();
+				if (!res.next()) {
+					dataCache.put(key, null);
+					return false;
+				}
+				String data = res.getString("DATA");
+				if (data == null) {
+					dataCache.put(key, null);
+					return true;
+				}
+				JsonElement ele = JsonParser.parseString(data);
+				dataCache.put(key, ele);
+				return true;
 			} finally {
 				conn.close();
 			}
@@ -129,6 +177,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 				var statement = conn.prepareStatement("DELETE FROM SAVESPECIFICPLAYERDATA WHERE PATH = ?");
 				statement.setString(1, id + "//" + key);
 				statement.execute();
+				dataCache.remove(key);
 			} finally {
 				conn.close();
 			}
