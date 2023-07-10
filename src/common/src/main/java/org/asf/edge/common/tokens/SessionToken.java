@@ -133,6 +133,15 @@ public class SessionToken {
 			for (JsonElement cap : capLs)
 				this.capabilities[i++] = cap.getAsString();
 
+			// Ping
+			acc.ping(false);
+
+			// If needed update session time
+			if ((System.currentTimeMillis() - tknTime.getAsLong()) > 60000) {
+				// One minute since the last refresh, make sure this token doesnt expire
+				updateSessionTime();
+			}
+
 			// Success!
 			return TokenParseResult.SUCCESS;
 		} catch (IOException e) {

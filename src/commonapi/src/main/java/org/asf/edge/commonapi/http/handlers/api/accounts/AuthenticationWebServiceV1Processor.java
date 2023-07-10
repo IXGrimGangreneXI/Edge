@@ -63,8 +63,6 @@ public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeComm
 		switch (res) {
 
 		case SUCCESS:
-			// Update token
-			tkn.updateSessionTime();
 			setResponseContent("text/xml", req.generateXmlValue("ApiTokenStatus", 1));
 			break;
 
@@ -127,7 +125,7 @@ public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeComm
 		// Log
 		getServerInstance().getLogger().info("Viking selected for account " + account.getAccountID()
 				+ ": selected viking '" + save.getUsername() + "' (ID " + save.getSaveID() + ")");
-		save.getAccount().ping();
+		save.getAccount().ping(true);
 
 		// Set response
 		setResponseContent("text/xml", req.generateEncryptedResponse(getUtilities().encodeToken(tkn.toTokenString())));

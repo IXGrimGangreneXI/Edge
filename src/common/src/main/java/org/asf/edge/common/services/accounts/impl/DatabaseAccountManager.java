@@ -69,12 +69,12 @@ public class DatabaseAccountManager extends AccountManager {
 	public void initService() {
 	}
 
-	public void keepInMemory(DatabaseAccountObject acc) {
+	public void keepInMemory(DatabaseAccountObject acc, boolean addIfNeeded) {
 		// Update in cache
 		synchronized (cache) {
 			if (cache.containsKey(acc.getAccountID())) {
 				cache.get(acc.getAccountID()).lastUpdate = System.currentTimeMillis();
-			} else {
+			} else if (addIfNeeded) {
 				// Add to cache
 				AccountCache c = new AccountCache();
 				c.lastUpdate = System.currentTimeMillis();

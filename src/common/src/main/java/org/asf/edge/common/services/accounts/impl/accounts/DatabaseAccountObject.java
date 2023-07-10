@@ -52,8 +52,8 @@ public class DatabaseAccountObject extends AccountObject {
 	}
 
 	@Override
-	public void ping() {
-		manager.keepInMemory(this);
+	public void ping(boolean addIfNeeded) {
+		manager.keepInMemory(this, addIfNeeded);
 	}
 
 	@Override

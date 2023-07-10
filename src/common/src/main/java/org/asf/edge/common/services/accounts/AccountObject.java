@@ -194,8 +194,12 @@ public abstract class AccountObject {
 
 	/**
 	 * Optional override to receive account object pings
+	 * 
+	 * @param addIfNeeded True to add to cache if not present, false otherwise, to
+	 *                    prevent abuse, unless the token used for requests is valid
+	 *                    for this account, this should be false
 	 */
-	public void ping() {
+	public void ping(boolean addIfNeeded) {
 	}
 
 	// TODO

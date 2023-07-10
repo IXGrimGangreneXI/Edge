@@ -223,7 +223,7 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 			ch.username = t.getUsername();
 			return ch;
 		}).toArray(t -> new CommonLoginInfo[t]);
-		guestAcc.ping();
+		guestAcc.ping(true);
 
 		// Set response
 		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
@@ -330,7 +330,7 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 			ch.username = t.getUsername();
 			return ch;
 		}).toArray(t -> new CommonLoginInfo[t]);
-		acc.ping();
+		acc.ping(true);
 
 		// Set response
 		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
