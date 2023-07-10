@@ -72,10 +72,8 @@ public abstract class CommonDataManager extends AbstractService {
 		JsonObject databaseManagerConfig = new JsonObject();
 		if (!commonDataManagerConfig.has("databaseManager")) {
 			databaseManagerConfig.addProperty("priority", priorityDatabase);
-			databaseManagerConfig.addProperty("url", "jdbc:mysql://localhost/edge");
+			databaseManagerConfig.addProperty("url", "jdbc:locking:sqlite:common-data.db");
 			JsonObject props = new JsonObject();
-			props.addProperty("user", "edge");
-			props.addProperty("password", "edgesodserver");
 			databaseManagerConfig.add("properties", props);
 			commonDataManagerConfig.add("databaseManager", databaseManagerConfig);
 			changed = true;

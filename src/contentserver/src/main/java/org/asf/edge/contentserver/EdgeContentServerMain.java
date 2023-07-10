@@ -97,12 +97,15 @@ public class EdgeContentServerMain {
 		config.contentRequestListenPath = configData.get("contentRequestListenPath").getAsString();
 		config.contentDataPath = configData.get("contentDataPath").getAsString();
 		config.allowIndexingAssets = configData.get("allowIndexingAssets").getAsBoolean();
-		if (configData.has("fallbackAssetServerEndpoint"))
+		if (configData.has("fallbackAssetServerEndpoint")
+				&& !configData.get("fallbackAssetServerEndpoint").isJsonNull())
 			config.fallbackAssetServerEndpoint = configData.get("fallbackAssetServerEndpoint").getAsString();
-		if (configData.has("fallbackAssetServerManifestModifications"))
+		if (configData.has("fallbackAssetServerManifestModifications")
+				&& !configData.get("fallbackAssetServerManifestModifications").isJsonNull())
 			config.fallbackAssetServerManifestModifications = configData.get("fallbackAssetServerManifestModifications")
 					.getAsJsonObject();
-		if (configData.has("storeFallbackAssetDownloads"))
+		if (configData.has("storeFallbackAssetDownloads")
+				&& !configData.get("storeFallbackAssetDownloads").isJsonNull())
 			config.storeFallbackAssetDownloads = configData.get("storeFallbackAssetDownloads").getAsBoolean();
 		if (configData.has("serverTestEndpoint"))
 			config.serverTestEndpoint = configData.get("serverTestEndpoint").getAsString();

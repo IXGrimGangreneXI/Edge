@@ -85,6 +85,7 @@ public class EdgeGlobalServerMain {
 					+ "        \"serverTestEndpoint\": null,\n" // test endpoint
 					+ "        \"fallbackAssetServerEndpoint\": null,\n" // proxy endpoint
 					+ "        \"fallbackAssetServerManifestModifications\": {},\n" // proxy modifications
+					+ "\n" //
 					+ "        \"storeFallbackAssetDownloads\": false," // downloading fallback to disk
 					+ "\n" //
 					+ "        \"https\": false,\n" // use https?
@@ -144,12 +145,14 @@ public class EdgeGlobalServerMain {
 				contentSrvConfig.listenPort = contentSrvJson.get("listenPort").getAsInt();
 			}
 			logger.debug("Loading IO settings...");
-			if (contentSrvJson.has("serverTestEndpoint"))
+			if (contentSrvJson.has("serverTestEndpoint") && !contentSrvJson.get("serverTestEndpoint").isJsonNull())
 				contentSrvConfig.serverTestEndpoint = contentSrvJson.get("serverTestEndpoint").getAsString();
-			if (contentSrvJson.has("fallbackAssetServerEndpoint"))
+			if (contentSrvJson.has("fallbackAssetServerEndpoint")
+					&& !contentSrvJson.get("fallbackAssetServerEndpoint").isJsonNull())
 				contentSrvConfig.fallbackAssetServerEndpoint = contentSrvJson.get("fallbackAssetServerEndpoint")
 						.getAsString();
-			if (contentSrvJson.has("fallbackAssetServerManifestModifications"))
+			if (contentSrvJson.has("fallbackAssetServerManifestModifications")
+					&& !contentSrvJson.get("fallbackAssetServerManifestModifications").isJsonNull())
 				contentSrvConfig.fallbackAssetServerManifestModifications = contentSrvJson
 						.get("fallbackAssetServerManifestModifications").getAsJsonObject();
 			if (contentSrvJson.has("storeFallbackAssetDownloads"))
