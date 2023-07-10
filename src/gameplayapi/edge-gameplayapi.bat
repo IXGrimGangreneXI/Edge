@@ -8,7 +8,7 @@ for /r "./libs" %%i in (*.jar) do SET libs=!libs!;%%i
 SET libs=%libs:~1%
 
 java -cp "%libs%" org.asf.edge.gameplayapi.EdgeGameplayApiServerMain %*
-IF %ERRORLEVEL% NEQ 0 goto MAIN
+IF %ERRORLEVEL% EQU 237 goto MAIN
 
 if EXIST gameplayapiupdater.jar goto UPDATE
 exit

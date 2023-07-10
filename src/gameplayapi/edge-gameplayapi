@@ -6,10 +6,7 @@ function start() {
 	
 	java -cp "$libs" org.asf.edge.gameplayapi.EdgeGameplayApiServerMain "$@"
 	code=$?
-	if [ "$code" != "0" ]; then
-		if [ "$code" != "237" ]; then
-			1>&2 echo "Error: server exited with code $code, restarting!"
-		fi
+	if [ "$code" == "237" ]; then
 		start
 		return
 	fi
