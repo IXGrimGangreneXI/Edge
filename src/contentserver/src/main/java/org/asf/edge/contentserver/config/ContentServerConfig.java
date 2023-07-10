@@ -39,6 +39,11 @@ public class ContentServerConfig {
 	public JsonObject fallbackAssetServerManifestModifications = new JsonObject();
 
 	/**
+	 * Configures if downloaded fallback assets should be written to disk
+	 */
+	public boolean storeFallbackAssetDownloads = false;
+
+	/**
 	 * Defines the server test endpoint contacted to check if the servers are live
 	 */
 	public String serverTestEndpoint = null;

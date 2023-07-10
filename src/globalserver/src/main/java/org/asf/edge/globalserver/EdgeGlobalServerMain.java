@@ -85,6 +85,7 @@ public class EdgeGlobalServerMain {
 					+ "        \"serverTestEndpoint\": null,\n" // test endpoint
 					+ "        \"fallbackAssetServerEndpoint\": null,\n" // proxy endpoint
 					+ "        \"fallbackAssetServerManifestModifications\": {},\n" // proxy modifications
+					+ "        \"storeFallbackAssetDownloads\": false," // downloading fallback to disk
 					+ "\n" //
 					+ "        \"https\": false,\n" // use https?
 					+ "        \"tlsKeystore\": null,\n" // keystore file
@@ -151,6 +152,9 @@ public class EdgeGlobalServerMain {
 			if (contentSrvJson.has("fallbackAssetServerManifestModifications"))
 				contentSrvConfig.fallbackAssetServerManifestModifications = contentSrvJson
 						.get("fallbackAssetServerManifestModifications").getAsJsonObject();
+			if (contentSrvJson.has("storeFallbackAssetDownloads"))
+				contentSrvConfig.storeFallbackAssetDownloads = contentSrvJson.get("storeFallbackAssetDownloads")
+						.getAsBoolean();
 			contentSrvConfig.contentRequestListenPath = contentSrvJson.get("contentRequestListenPath").getAsString();
 			contentSrvConfig.contentDataPath = contentSrvJson.get("contentDataPath").getAsString();
 			contentSrvConfig.allowIndexingAssets = contentSrvJson.get("allowIndexingAssets").getAsBoolean();

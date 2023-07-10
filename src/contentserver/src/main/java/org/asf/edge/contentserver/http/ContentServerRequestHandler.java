@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -15,6 +16,7 @@ import java.util.Base64;
 import javax.activation.FileTypeMap;
 import javax.activation.MimetypesFileTypeMap;
 
+import org.apache.logging.log4j.LogManager;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.objects.HttpRequest;
 import org.asf.connective.objects.HttpResponse;
@@ -115,6 +117,8 @@ public class ContentServerRequestHandler extends HttpPushProcessor {
 					String type = MainFileMap.getInstance().getContentType(new File(path).getName());
 
 					// Check file
+					boolean encrypted = false;
+					byte[] key = null;
 					if (path.toLowerCase().endsWith("/dwadragonsmain.xml")) {
 						// Read data
 						byte[] docData = fileStream.readAllBytes();
@@ -122,12 +126,10 @@ public class ContentServerRequestHandler extends HttpPushProcessor {
 
 						// Decode
 						String data = new String(docData, "UTF-8");
-						boolean encrypted = data
-								.matches("^([A-Za-z0-9+\\/]{4})*([A-Za-z0-9+\\/]{3}=|[A-Za-z0-9+\\/]{2}==)?$");
+						encrypted = data.matches("^([A-Za-z0-9+\\/]{4})*([A-Za-z0-9+\\/]{3}=|[A-Za-z0-9+\\/]{2}==)?$");
 
 						// Compute key
 						String secret = "C92EC1AA-54CD-4D0C-A8D5-403FCCF1C0BD";
-						byte[] key = null;
 						if (encrypted) {
 							// Find version-specific secret
 							File verSpecificSecret = new File(sourceDir, path.split("/")[1] + "/" + path.split("/")[2]
@@ -168,18 +170,7 @@ public class ContentServerRequestHandler extends HttpPushProcessor {
 														+ server.getConfiguration().listenPort));
 							docData = data.getBytes("UTF-8");
 						}
-
-						// Re-encrypt if needed
-						if (encrypted) {
-							// Re-encrypt
-							docData = TripleDesUtil.encrypt(docData, key);
-
-							// Convert to base64
-							data = Base64.getEncoder().encodeToString(docData);
-						}
-
-						// Set result
-						fileStream = new ByteArrayInputStream(data.getBytes("UTF-8"));
+						fileStream = new ByteArrayInputStream(docData);
 					}
 
 					// Find preprocessor
@@ -190,6 +181,35 @@ public class ContentServerRequestHandler extends HttpPushProcessor {
 							fileStream = processor.preProcess(path, method, client, contentType, getRequest(),
 									getResponse(), fileStream, sourceDir);
 						}
+					}
+
+					// Write to disk if needed
+					if (server.getConfiguration().storeFallbackAssetDownloads) {
+						try {
+							// Create output
+							requestedFile.getParentFile().mkdirs();
+							FileOutputStream fO = new FileOutputStream(requestedFile);
+							fileStream.transferTo(fO);
+							fileStream.close();
+							fO.close();
+							fileStream = new FileInputStream(requestedFile);
+						} catch (IOException e) {
+							// Error
+							LogManager.getLogger("CONTENTSERVER").error("Failed to download asset to disk: " + path, e);
+						}
+					}
+
+					// Re-encrypt if needed
+					if (encrypted) {
+						byte[] docData = fileStream.readAllBytes();
+						fileStream.close();
+
+						// Re-encrypt
+						docData = TripleDesUtil.encrypt(docData, key);
+
+						// Set result
+						fileStream = new ByteArrayInputStream(
+								Base64.getEncoder().encodeToString(docData).getBytes("UTF-8"));
 					}
 
 					// Set output

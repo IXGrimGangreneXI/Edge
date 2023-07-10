@@ -54,6 +54,7 @@ public class EdgeContentServerMain {
 						+ "    \"serverTestEndpoint\": null,\n" // test endpoint
 						+ "    \"assetProxyServerEndpoint\": null,\n" // proxy endpoint
 						+ "    \"assetProxyManifestModifications\": {},\n" // proxy modifications
+						+ "    \"storeFallbackAssetDownloads\": false," // downloading fallback to disk
 						+ "\n" //
 						+ "    \"https\": false,\n" // use https?
 						+ "    \"tlsKeystore\": null,\n" // keystore file
@@ -101,6 +102,8 @@ public class EdgeContentServerMain {
 		if (configData.has("fallbackAssetServerManifestModifications"))
 			config.fallbackAssetServerManifestModifications = configData.get("fallbackAssetServerManifestModifications")
 					.getAsJsonObject();
+		if (configData.has("storeFallbackAssetDownloads"))
+			config.storeFallbackAssetDownloads = configData.get("storeFallbackAssetDownloads").getAsBoolean();
 		if (configData.has("serverTestEndpoint"))
 			config.serverTestEndpoint = configData.get("serverTestEndpoint").getAsString();
 		if (config.server == null) {
