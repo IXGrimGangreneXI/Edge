@@ -44,8 +44,8 @@ public class EdgeContentServerDumper {
 					"The server url can be found in the client's resources.assets, the url before 'DWADragonsMain_SodStaging' is where the DWADragonsMain.xml file is pulled from.");
 			System.err.println("The UUID after 'DWADragonsMain_SodStaging' is the secret used to decrypt the xmls.");
 			System.err.println("");
-			System.err
-					.println("Make sure to remove 'DWADragonsUnity' from the server URL as else resolution will fail!");
+			System.err.println(
+					"Make sure to remove 'DWADragonsUnity' from the server URL as else asset resolution will fail!");
 			System.exit(1);
 		}
 		if (!args[0].endsWith("/"))
