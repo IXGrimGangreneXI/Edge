@@ -649,6 +649,11 @@ public class DatabaseAccountObject extends AccountObject {
 
 		// Create save
 		try {
+			// Create object
+			JsonObject saveObj = new JsonObject();
+			saveObj.addProperty("id", saveID);
+			saveObj.addProperty("username", username);
+			saveObj.addProperty("creationTime", System.currentTimeMillis());
 			Connection conn = DriverManager.getConnection(url, props);
 			try {
 				// Pull list
@@ -659,16 +664,12 @@ public class DatabaseAccountObject extends AccountObject {
 					return null;
 				JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
 				for (JsonElement ele : saves) {
-					JsonObject saveObj = ele.getAsJsonObject();
-					if (saveObj.get("username").getAsString().equals(username))
+					JsonObject saveObj2 = ele.getAsJsonObject();
+					if (saveObj2.get("username").getAsString().equals(username))
 						return null;
 				}
 
 				// Add object
-				JsonObject saveObj = new JsonObject();
-				saveObj.addProperty("id", saveID);
-				saveObj.addProperty("username", username);
-				saveObj.addProperty("creationTime", System.currentTimeMillis());
 				saves.add(saveObj);
 
 				// Write to db
@@ -682,13 +683,13 @@ public class DatabaseAccountObject extends AccountObject {
 				statement.setString(1, username);
 				statement.setString(2, saveID);
 				statement.execute();
-
-				// Return
-				return new DatabaseSaveContainer(saveID, saveObj.get("creationTime").getAsLong(), username, this.id,
-						url, props, manager, this);
 			} finally {
 				conn.close();
 			}
+
+			// Return
+			return new DatabaseSaveContainer(saveID, saveObj.get("creationTime").getAsLong(), username, this.id, url,
+					props, manager, this);
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to create save '" + saveID
 					+ "' for ID '" + id + "'", e);
