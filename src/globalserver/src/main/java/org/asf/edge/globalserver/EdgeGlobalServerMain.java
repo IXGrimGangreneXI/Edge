@@ -139,7 +139,7 @@ public class EdgeGlobalServerMain {
 		JsonObject contentSrvJson = configData.get("contentServer").getAsJsonObject();
 		boolean contentDisabled = contentSrvJson.has("disabled") && contentSrvJson.get("disabled").getAsBoolean();
 		if (!contentDisabled) {
-			if (contentSrvConfig.server != null) {
+			if (contentSrvConfig.server == null) {
 				logger.debug("Loading listening settings...");
 				contentSrvConfig.listenAddress = contentSrvJson.get("listenAddress").getAsString();
 				contentSrvConfig.listenPort = contentSrvJson.get("listenPort").getAsInt();
