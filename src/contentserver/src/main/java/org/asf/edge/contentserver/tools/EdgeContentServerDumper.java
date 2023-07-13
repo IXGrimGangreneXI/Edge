@@ -16,14 +16,22 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.stream.Stream;
 
+import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.common.util.TripleDesUtil;
+import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest;
 import org.asf.edge.contentserver.xmls.AssetVersionManifestData;
 import org.asf.edge.contentserver.xmls.LoadScreenData;
 import org.asf.edge.contentserver.xmls.ProductConfigData;
 import org.asf.edge.contentserver.xmls.AssetVersionManifestData.AssetBlockLegacy;
 import org.asf.edge.contentserver.xmls.AssetVersionManifestData.AssetVersionBlock;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 
 public class EdgeContentServerDumper {
 
@@ -35,10 +43,11 @@ public class EdgeContentServerDumper {
 
 	public static void main(String[] args) throws IOException {
 		// Check arguments
-		if (args.length < 5) {
-			System.err.println("Missing arguments: \"<server>\" \"<version>\" \"<platform>\" \"<key>\" \"<output>\"");
+		if (args.length < 7) {
 			System.err.println(
-					"Example arguments: \"http://media.jumpstart.com/\" \"3.31.0\" \"WIN\" \"C92EC1AA-54CD-4D0C-A8D5-403FCCF1C0BD\" \"asset-archive\"");
+					"Missing arguments: \"<server>\" \"<version>\" \"<platform>\" \"<key>\" \"<output>\" \"<new-server-url>\" <overwrite true/false>");
+			System.err.println(
+					"Example arguments: \"http://media.jumpstart.com/\" \"3.31.0\" \"WIN\" \"C92EC1AA-54CD-4D0C-A8D5-403FCCF1C0BD\" \"asset-archive\" \"https://example.com/sod-archive/\" true");
 			System.err.println("");
 			System.err.println(
 					"The server url can be found in the client's resources.assets, the url before 'DWADragonsMain_SodStaging' is where the DWADragonsMain.xml file is pulled from.");
@@ -50,6 +59,8 @@ public class EdgeContentServerDumper {
 		}
 		if (!args[0].endsWith("/"))
 			args[0] += "/";
+		if (!args[5].endsWith("/"))
+			args[5] += "/";
 
 		// Create output
 		System.out.println("Creating output...");
@@ -78,60 +89,265 @@ public class EdgeContentServerDumper {
 
 		// Download manifest
 		System.out.println("Downloading manifest...");
-		downloadFile(args[0], args[1], args[2], args[3], output, "DWADragonsMain.xml", "");
+		downloadFile(args[0], args[1], args[2], args[3], output, "DWADragonsMain.xml", "",
+				args[6].equalsIgnoreCase("true"));
+
+		// Read XML into memory
+		System.out.println("Loading manifest...");
+		String[] urlsToSwap = new String[] {
+
+				// HTTPS JS media
+				"https://media.jumpstart.com/",
+				// HTTPS SoD media
+				"https://media.schoolofdragons.com/",
+				// HTTP JS media
+				"http://media.jumpstart.com/",
+				// HTTP SoD media
+				"http://media.schoolofdragons.com/",
+
+				// User
+				args[5]
+
+		};
+		String xml = Files.readString(new File(output, "DWADragonsMain.xml").toPath());
+		for (String u2 : urlsToSwap) {
+			if (xml.contains(u2)) {
+				xml = xml.replace(u2, args[0]);
+			}
+		}
 
 		// Parse manifest
 		XmlMapper mapper = new XmlMapper();
-		System.out.println("Loading manifest...");
-		ProductConfigData conf = mapper.readValue(Files.readString(new File(output, "DWADragonsMain.xml").toPath()),
-				ProductConfigData.class);
+		ProductConfigData conf = mapper.readValue(xml, ProductConfigData.class);
+
+		// Modify
+		System.out.println("Modifying manifest...");
+		xml = Files.readString(new File(output, "DWADragonsMain.xml").toPath());
+		urlsToSwap = new String[] {
+
+				// HTTPS JS media
+				"https://media.jumpstart.com/",
+				// HTTPS SoD media
+				"https://media.schoolofdragons.com/",
+				// HTTP JS media
+				"http://media.jumpstart.com/",
+				// HTTP SoD media
+				"http://media.schoolofdragons.com/",
+
+				// User
+				args[0]
+
+		};
+		for (String u2 : urlsToSwap) {
+			if (xml.contains(u2)) {
+				// Swap it for our new server
+				xml = xml.replace(u2, args[5]);
+			}
+		}
+
+		// Save
+		if (!new File(output, "DWADragonsMain.xml").exists())
+			Files.writeString(new File(output, "DWADragonsMain.xml").toPath(), xml);
 
 		// Download main asset
 		if (conf.manifests != null && conf.manifests.length != 0) {
 			System.out.println("Downloading main assets...");
 			downloadFileEachQuality(args[0], args[1], args[2], args[3], output, "dwadragonsmain",
-					"?v=00000000000000000000000000000000");
+					"?v=00000000000000000000000000000000", args[6].equalsIgnoreCase("true"));
 			for (String man : conf.manifests)
 				downloadFileEachQuality(args[0], args[1], args[2], args[3], output, man,
-						"?v=00000000000000000000000000000000");
+						"?v=00000000000000000000000000000000", args[6].equalsIgnoreCase("true"));
 		}
 
 		// Compute URL
 		URL dataUrl = new URL(conf.dataURL[0].replace("{Version}", args[1]));
-		String path = dataUrl.getPath().substring(("DWADragonsUnity/" + args[2] + "/" + args[1]).length() + 1);
+		String path = dataUrl.getPath()
+				.substring(dataUrl.getPath().indexOf("DWADragonsUnity/" + args[2] + "/" + args[1])
+						+ ("DWADragonsUnity/" + args[2] + "/" + args[1]).length() + 1);
 
 		// Download assets
 		downloadAssetsForEachQuality(args[0], args[1], args[2], args[3], output, mapper, path + "/AssetVersionsDO.xml",
-				conf, new File(args[4]));
+				conf, new File(args[4]), args[5], args[6].equalsIgnoreCase("true"));
+
+		// Download question files
+		System.out.println("Downloading questiondata assets...");
+
+		// Download item assets
+		System.out.println("Downloading item assets...");
+		InputStream strm = EdgeContentServerDumper.class.getClassLoader().getResourceAsStream("questiondata.xml");
+		String data = new String(strm.readAllBytes(), "UTF-8");
+		strm.close();
+
+		// Go through questions
+		QuestionListData[] questions = mapper.reader().readValue(data, QuestionListData[].class);
+		for (QuestionListData lst : questions) {
+			if (lst.imageURL != null) {
+				downloadAsset(lst.imageURL, args, path);
+			}
+			for (QuestionListData.QuestionBlock q : lst.questions) {
+				if (q.imageURL != null) {
+					downloadAsset(q.imageURL, args, path);
+				}
+				for (QuestionListData.QuestionBlock.AnswerBlock a : q.answers) {
+					if (a.imageURL != null) {
+						downloadAsset(a.imageURL, args, path);
+					}
+				}
+			}
+		}
+
+		// Load XML
+		strm = ItemManagerImpl.class.getClassLoader().getResourceAsStream("itemdata/itemdefs.xml");
+		data = new String(strm.readAllBytes(), "UTF-8");
+		strm.close();
+
+		// Go through defs
+		ItemRegistryManifest reg = mapper.reader().readValue(data, ItemRegistryManifest.class);
+
+		// Load items
+		for (ObjectNode def : reg.itemDefs) {
+			// Check item assets
+			if (def.has("an")) {
+				// Check asset name
+				String asset = def.get("an").asText();
+				if (asset != null) {
+					downloadAsset(asset, args, path);
+				}
+			}
+		}
 
 		// Done!
 		System.out.println("Finished!");
 	}
 
+	private static void downloadAsset(String asset, String[] args, String path) throws IOException {
+		// Replace URL
+		if (asset.startsWith("https://media.jumpstart.com/"))
+			asset = args[0] + asset.substring("https://media.jumpstart.com/".length());
+		else if (asset.startsWith("http://media.jumpstart.com/"))
+			asset = args[0] + asset.substring("http://media.jumpstart.com/".length());
+		else if (asset.startsWith("https://media.schoolofdragons.com/"))
+			asset = args[0] + asset.substring("https://media.schoolofdragons.com/".length());
+		else if (asset.startsWith("http://media.schoolofdragons.com/"))
+			asset = args[0] + asset.substring("http://media.schoolofdragons.com/".length());
+		if (asset.startsWith(args[0])) {
+			// Download asset
+			URL asU = new URL(asset);
+			String path2 = asset.substring(args[0].length());
+			File dest = new File(args[4], path2);
+			File outputFile = new File(args[4], path2 + ".tmp");
+
+			// Download image
+			System.out.println("Downloading: " + asset + " -> " + new File(args[4], path2).getPath());
+			try {
+				outputFile.getParentFile().mkdirs();
+				InputStream strmI = asU.openStream();
+				FileOutputStream fO = new FileOutputStream(outputFile);
+				strmI.transferTo(fO);
+				fO.close();
+
+				// Finish
+				if (dest.exists())
+					dest.delete();
+				outputFile.renameTo(dest);
+			} catch (IOException e) {
+				System.err.println("Failure! " + asset + " was not downloaded!");
+			}
+
+			// Download for each quality level
+			outputFile = new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1]
+					+ ("/" + path).replace("/Mid/", "/Low/") + "/" + path2 + ".tmp");
+			dest = new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1]
+					+ ("/" + path).replace("/Mid/", "/Low/") + "/" + path2);
+			System.out.println("Downloading: " + asset + " -> " + new File(args[4],
+					"DWADragonsUnity/" + args[2] + "/" + args[1] + ("/" + path).replace("/Mid/", "/Low/") + "/" + path2)
+					.getPath());
+			try {
+				outputFile.getParentFile().mkdirs();
+				InputStream strmI = asU.openStream();
+				FileOutputStream fO = new FileOutputStream(outputFile);
+				strmI.transferTo(fO);
+				fO.close();
+
+				// Finish
+				if (dest.exists())
+					dest.delete();
+				outputFile.renameTo(dest);
+			} catch (IOException e) {
+				System.err.println("Failure! " + asset + " was not downloaded!");
+			}
+			outputFile = new File(args[4],
+					"DWADragonsUnity/" + args[2] + "/" + args[1] + "/" + path + "/" + path2 + ".tmp");
+			dest = new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1] + "/" + path + "/" + path2);
+			System.out.println("Downloading: " + asset + " -> "
+					+ new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1] + "/" + path + "/" + path2)
+							.getPath());
+			try {
+				outputFile.getParentFile().mkdirs();
+				InputStream strmI = asU.openStream();
+				FileOutputStream fO = new FileOutputStream(outputFile);
+				strmI.transferTo(fO);
+				fO.close();
+
+				// Finish
+				if (dest.exists())
+					dest.delete();
+				outputFile.renameTo(dest);
+			} catch (IOException e) {
+				System.err.println("Failure! " + asset + " was not downloaded!");
+			}
+			outputFile = new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1]
+					+ ("/" + path).replace("/Mid/", "/High/") + "/" + path2 + ".tmp");
+			dest = new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1]
+					+ ("/" + path).replace("/Mid/", "/High/") + "/" + path2);
+			System.out.println("Downloading: " + asset + " -> " + new File(args[4], "DWADragonsUnity/" + args[2] + "/"
+					+ args[1] + ("/" + path).replace("/Mid/", "/High/") + "/" + path2).getPath());
+			try {
+				outputFile.getParentFile().mkdirs();
+				InputStream strmI = asU.openStream();
+				FileOutputStream fO = new FileOutputStream(outputFile);
+				strmI.transferTo(fO);
+				fO.close();
+
+				// Finish
+				if (dest.exists())
+					dest.delete();
+				outputFile.renameTo(dest);
+			} catch (IOException e) {
+				System.err.println("Failure! " + asset + " was not downloaded!");
+			}
+		}
+	}
+
 	private static void downloadAssetsForEachQuality(String server, String version, String platform, String key,
-			File output, XmlMapper mapper, String manifest, ProductConfigData conf, File outputRoot)
-			throws IOException {
-		downloadAssets(server, version, platform, key, output, mapper, manifest, "Mid", conf, outputRoot);
-		downloadAssets(server, version, platform, key, output, mapper, manifest, "Low", conf, outputRoot);
-		downloadAssets(server, version, platform, key, output, mapper, manifest, "High", conf, outputRoot);
+			File output, XmlMapper mapper, String manifest, ProductConfigData conf, File outputRoot,
+			String newServerURL, boolean overwrite) throws IOException {
+		downloadAssets(server, version, platform, key, output, mapper, manifest, "Mid", conf, outputRoot, newServerURL,
+				overwrite);
+		downloadAssets(server, version, platform, key, output, mapper, manifest, "Low", conf, outputRoot, newServerURL,
+				overwrite);
+		downloadAssets(server, version, platform, key, output, mapper, manifest, "High", conf, outputRoot, newServerURL,
+				overwrite);
 	}
 
 	private static void downloadAssets(String server, String version, String platform, String key, File output,
-			XmlMapper mapper, String manifest, String level, ProductConfigData conf, File outputRoot)
-			throws IOException {
+			XmlMapper mapper, String manifest, String level, ProductConfigData conf, File outputRoot,
+			String newServerURL, boolean overwrite) throws IOException {
+		if (manifest.startsWith("/"))
+			manifest = manifest.substring(1);
 		// Load asset manifest
 		String manData;
 		try {
 			System.out.println(
 					"Downloading asset list file... Downloading " + manifest.replace("/Mid/", "/" + level + "/"));
 			downloadFile(server, version, platform, key, output, manifest.replace("/Mid/", "/" + level + "/"),
-					"?v=00000000000000000000000000000000");
+					"?v=00000000000000000000000000000000", true);
 			System.out.println(
 					"Parsing asset list... Reading file " + manifest.replace("/Mid/", "/" + level + "/") + "...");
 			manData = Files.readString(new File(output, manifest.replace("/Mid/", "/" + level + "/")).toPath());
 		} catch (IOException e) {
 			System.out.println("Downloading asset list file... Downloading " + manifest);
-			downloadFile(server, version, platform, key, output, manifest, "?v=00000000000000000000000000000000");
+			downloadFile(server, version, platform, key, output, manifest, "?v=00000000000000000000000000000000", true);
 			System.out.println("Parsing asset list... Reading file " + manifest + "...");
 			manData = Files.readString(new File(output, manifest).toPath());
 		}
@@ -196,7 +412,8 @@ public class EdgeContentServerDumper {
 				URL u = new URL(url);
 
 				// Compute path
-				String path = u.getPath().substring(("DWADragonsUnity/" + platform + "/" + version).length() + 1);
+				String path = u.getPath().substring(u.getPath().indexOf("DWADragonsUnity/" + platform + "/" + version)
+						+ ("DWADragonsUnity/" + platform + "/" + version).length() + 1);
 				if (variant.locale != null) {
 					if (assetData.legacyData == null) {
 						File f = new File(path);
@@ -425,8 +642,10 @@ public class EdgeContentServerDumper {
 
 				// Compute output
 				File outputFile = new File(output, path);
-				if ((outputFile.exists() && outputFile.length() == variant.size))
+				if (!overwrite && (outputFile.exists() && outputFile.length() == variant.size)) {
+					System.out.println("Skipped: " + url);
 					continue;
+				}
 				outputFile.getParentFile().mkdirs();
 				System.out.println("Downloading: " + url + " -> " + outputFile.getPath());
 				try {
@@ -456,6 +675,37 @@ public class EdgeContentServerDumper {
 					strm.transferTo(fO);
 					fO.close();
 
+					// Modify if needed
+					if (path.endsWith(".xml")) {
+						String[] urlsToSwap = new String[] {
+
+								// HTTPS JS media
+								"https://media.jumpstart.com/",
+								// HTTPS SoD media
+								"https://media.schoolofdragons.com/",
+								// HTTP JS media
+								"http://media.jumpstart.com/",
+								// HTTP SoD media
+								"http://media.schoolofdragons.com/",
+
+								// User
+								server
+
+						};
+
+						// Read XML into memory
+						String xml = Files.readString(outputFile.toPath());
+						for (String u2 : urlsToSwap) {
+							if (xml.contains(u2)) {
+								// Swap it for our new server
+								xml = xml.replace(u2, newServerURL);
+							}
+						}
+
+						// Save
+						Files.writeString(outputFile.toPath(), xml);
+					}
+
 					// Close stream
 					strm.close();
 				} catch (IOException e) {
@@ -478,17 +728,21 @@ public class EdgeContentServerDumper {
 	}
 
 	private static void downloadFileEachQuality(String server, String version, String platform, String key, File output,
-			String file, String query) throws MalformedURLException, IOException {
-		downloadFile(server, version, platform, key, output, "Low/" + file, query);
-		downloadFile(server, version, platform, key, output, "Mid/" + file, query);
-		downloadFile(server, version, platform, key, output, "High/" + file, query);
+			String file, String query, boolean overwrite) throws MalformedURLException, IOException {
+		downloadFile(server, version, platform, key, output, "Low/" + file, query, overwrite);
+		downloadFile(server, version, platform, key, output, "Mid/" + file, query, overwrite);
+		downloadFile(server, version, platform, key, output, "High/" + file, query, overwrite);
 	}
 
 	private static void downloadFile(String server, String version, String platform, String key, File output,
-			String file, String query) throws MalformedURLException, IOException {
+			String file, String query, boolean overwrite) throws MalformedURLException, IOException {
 		// Build url
 		String url = server + "DWADragonsUnity/" + platform + "/" + version + "/" + file + query;
 		File outputFile = new File(output, file);
+		if (!overwrite && outputFile.exists()) {
+			System.out.println("Skipped: " + url);
+			return;
+		}
 		outputFile.getParentFile().mkdirs();
 		System.out.println("Downloading: " + url + " -> " + outputFile.getPath());
 
@@ -579,6 +833,48 @@ public class EdgeContentServerDumper {
 			newContent += buffer;
 
 		return newContent;
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+	public static class QuestionListData {
+
+		@JsonProperty("ID")
+		public int id;
+
+		public String imageURL;
+
+		@JsonProperty("Qs")
+		@JacksonXmlElementWrapper(useWrapping = false)
+		public QuestionBlock[] questions = new QuestionBlock[0];
+
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+		public static class QuestionBlock {
+
+			@JsonProperty("ID")
+			public int id;
+
+			@JsonProperty("Img")
+			public String imageURL;
+
+			@JacksonXmlElementWrapper(useWrapping = false)
+			public AnswerBlock[] answers = new AnswerBlock[0];
+
+			@JsonIgnoreProperties(ignoreUnknown = true)
+			@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+			public static class AnswerBlock {
+
+				@JsonProperty("ID")
+				public int id;
+
+				@JsonProperty("Img")
+				public String imageURL;
+
+			}
+
+		}
+
 	}
 
 }

@@ -111,6 +111,10 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 		InputStream strm = getClass().getClassLoader().getResourceAsStream("questiondata.xml");
 		String data = new String(strm.readAllBytes(), "UTF-8");
 		strm.close();
+		data = data.replace("http://media.jumpstart.com/", "RS_DATA/");
+		data = data.replace("https://media.jumpstart.com/", "RS_DATA/");
+		data = data.replace("http://media.schoolofdragons.com/", "RS_DATA/");
+		data = data.replace("https://media.schoolofdragons.com/", "RS_DATA/");
 		setResponseContent("text/xml", data);
 
 		// TODO: filter

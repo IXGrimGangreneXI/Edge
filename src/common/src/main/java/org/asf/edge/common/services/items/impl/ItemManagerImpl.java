@@ -98,6 +98,10 @@ public class ItemManagerImpl extends ItemManager {
 			InputStream strm = getClass().getClassLoader().getResourceAsStream("itemdata/itemstores.xml");
 			String data = new String(strm.readAllBytes(), "UTF-8");
 			strm.close();
+			data = data.replace("http://media.jumpstart.com/", "RS_DATA/");
+			data = data.replace("https://media.jumpstart.com/", "RS_DATA/");
+			data = data.replace("http://media.schoolofdragons.com/", "RS_DATA/");
+			data = data.replace("https://media.schoolofdragons.com/", "RS_DATA/");
 
 			// Load into map
 			XmlMapper mapper = new XmlMapper();
@@ -129,6 +133,10 @@ public class ItemManagerImpl extends ItemManager {
 			InputStream strm = getClass().getClassLoader().getResourceAsStream("itemdata/itemdefs.xml");
 			String data = new String(strm.readAllBytes(), "UTF-8");
 			strm.close();
+			data = data.replace("http://media.jumpstart.com/", "RS_DATA/");
+			data = data.replace("https://media.jumpstart.com/", "RS_DATA/");
+			data = data.replace("http://media.schoolofdragons.com/", "RS_DATA/");
+			data = data.replace("https://media.schoolofdragons.com/", "RS_DATA/");
 
 			// Load object
 			XmlMapper mapper = new XmlMapper();
