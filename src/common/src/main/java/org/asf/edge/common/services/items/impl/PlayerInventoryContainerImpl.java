@@ -1,6 +1,7 @@
 package org.asf.edge.common.services.items.impl;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Random;
 
 import org.asf.edge.common.entities.items.PlayerInventory;
@@ -46,11 +47,17 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 			JsonArray lst = e.getAsJsonArray();
 
 			// Create list
-			int[] ids = new int[lst.size()];
-			int i = 0;
-			for (JsonElement ele : lst)
-				ids[i++] = ele.getAsInt();
-			return ids;
+			ArrayList<Integer> ids = new ArrayList<Integer>();
+			for (JsonElement ele : lst) {
+				int id = ele.getAsInt();
+				if (getItem(id) == null)
+					continue;
+				ids.add(id);
+			}
+			int[] i = new int[ids.size()];
+			for (int i2 = 0; i2 < i.length; i2++)
+				i[i2] = ids.get(i2);
+			return i;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

@@ -44,7 +44,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 		while (true) {
 			try {
 				if (dataCache.containsKey(key))
-					return dataCache.get(key);
+					return dataCache.get(key) == null ? null : dataCache.get(key).deepCopy();
 				break;
 			} catch (ConcurrentModificationException e) {
 			}
@@ -53,7 +53,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 		// Add if needed
 		synchronized (dataCache) {
 			if (dataCache.containsKey(key))
-				return dataCache.get(key);
+				return dataCache.get(key) == null ? null : dataCache.get(key).deepCopy();
 
 			try {
 				Connection conn = DriverManager.getConnection(url, props);
@@ -73,7 +73,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 					}
 					JsonElement ele = JsonParser.parseString(data);
 					dataCache.put(key, ele);
-					return ele;
+					return ele.deepCopy();
 				} finally {
 					conn.close();
 				}
