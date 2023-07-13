@@ -8,6 +8,7 @@ import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.commands.IEdgeServerCommand;
 import org.asf.edge.gameplayapi.permissions.PermissionLevel;
+import org.asf.edge.gameplayapi.services.achievements.RankManager;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 
 public class ReloadCommand implements IEdgeServerCommand {
@@ -50,6 +51,10 @@ public class ReloadCommand implements IEdgeServerCommand {
 		// Reload items
 		logger.info("Reloading item and store manager...");
 		ItemManager.getInstance().reload();
+
+		// Reload ranks
+		logger.info("Reloading achievement and rank manager...");
+		RankManager.getInstance().reload();
 
 		// Completed
 		return "Reload completed";

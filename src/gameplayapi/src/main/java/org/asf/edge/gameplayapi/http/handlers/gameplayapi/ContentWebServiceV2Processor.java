@@ -977,7 +977,10 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			int uniqueID = itemDefEle.getAsInt();
 
 			// Locate item
-			JsonObject itm = data.getEntry("item-" + uniqueID).getAsJsonObject();
+			JsonElement ent = data.getEntry("item-" + uniqueID);
+			if (ent == null)
+				continue;
+			JsonObject itm = ent.getAsJsonObject();
 
 			// Add item
 			ItemBlock block = new ItemBlock();

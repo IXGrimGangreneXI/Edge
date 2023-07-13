@@ -263,7 +263,7 @@ public abstract class AccountDataContainer {
 		JsonArray dataMap = ele.getAsJsonArray();
 
 		// Delete entries
-		for (JsonElement elem : dataMap) {
+		for (JsonElement elem : dataMap.deepCopy()) {
 			if (elem.getAsString().endsWith("/")) {
 				// Child container
 				getChildContainer(elem.getAsString().substring(0, elem.getAsString().length() - 1)).deleteContainer();

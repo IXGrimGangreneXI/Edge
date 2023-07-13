@@ -10,6 +10,8 @@ import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.gameplayapi.http.*;
 import org.asf.edge.gameplayapi.http.handlers.gameplayapi.*;
 import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
+import org.asf.edge.gameplayapi.services.achievements.RankManager;
+import org.asf.edge.gameplayapi.services.achievements.impl.RankManagerImpl;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
@@ -162,6 +164,12 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		ServiceManager.registerServiceImplementation(QuestManager.class, new QuestManagerImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(QuestManager.class);
+
+		// Select rank manager
+		logger.info("Setting up rank manager...");
+		ServiceManager.registerServiceImplementation(RankManager.class, new RankManagerImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(RankManager.class);
 
 		// Server watchdog
 		logger.info("Starting shutdown and restart watchdog...");
