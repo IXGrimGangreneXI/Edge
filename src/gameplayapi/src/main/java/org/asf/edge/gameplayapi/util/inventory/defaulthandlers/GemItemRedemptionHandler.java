@@ -64,7 +64,7 @@ public class GemItemRedemptionHandler extends AbstractItemRedemptionHandler {
 			}
 		}
 		// Add gems
-		currencyUpdate.gemCount += amount;
+		currencyUpdate.gemCount += amount * req.quantity;
 		return RedemptionResult.success();
 	}
 

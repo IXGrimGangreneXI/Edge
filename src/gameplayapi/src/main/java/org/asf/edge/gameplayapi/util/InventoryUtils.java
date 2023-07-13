@@ -3,8 +3,8 @@ package org.asf.edge.gameplayapi.util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.asf.edge.common.entities.items.ItemInfo;
@@ -16,6 +16,8 @@ import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.util.RandomSelectorUtil;
 import org.asf.edge.gameplayapi.events.items.InventoryUtilsLoadEvent;
@@ -38,6 +40,7 @@ import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.Pri
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
@@ -166,8 +169,8 @@ public class InventoryUtils {
 	private static boolean processItemRedemption(ItemRedemptionInfo[] items, AccountObject account,
 			AccountSaveContainer save, boolean openMysteryBoxes, ArrayList<ItemUpdateBlock> itemLst,
 			ArrayList<PrizeItemInfo> prizeLst, CurrencyUpdateBlock currencyUpdate, PrizeItemInfo prizeInfo,
-			Function<ItemInfo, Boolean> itemRedemptionValidationCall, Function<ItemInfo, Boolean> itemRedemptionCall,
-			Consumer<ItemInfo> innerItemRedemptionCall) {
+			BiFunction<ItemInfo, Integer, Boolean> itemRedemptionValidationCall,
+			BiFunction<ItemInfo, Integer, Boolean> itemRedemptionCall, Consumer<ItemInfo> innerItemRedemptionCall) {
 		// Verify items
 		for (ItemRedemptionInfo req : items) {
 			// Check item def
@@ -177,7 +180,7 @@ public class InventoryUtils {
 
 			// Check
 			if (itemRedemptionValidationCall != null)
-				if (!itemRedemptionValidationCall.apply(itm))
+				if (!itemRedemptionValidationCall.apply(itm, req.quantity))
 					return false;
 		}
 
@@ -219,7 +222,7 @@ public class InventoryUtils {
 			if (!isBundle(itm) && (!openMysteryBoxes || !isMysteryBox(itm))) {
 				// Attempt redemption
 				if (itemRedemptionCall != null)
-					if (!itemRedemptionCall.apply(itm))
+					if (!itemRedemptionCall.apply(itm, req.quantity))
 						return false;
 
 				// Regular item
@@ -626,9 +629,9 @@ public class InventoryUtils {
 				CostInfo cost = store.getItem(itm.defID).getFinalCost(false); // FIXME: membership support
 				if (!cost.isFree) {
 					if (cost.isGems) {
-						costGemsTotal += cost.cost;
+						costGemsTotal += cost.cost * itm.quantity;
 					} else if (cost.isCoins) {
-						costCoinsTotal += cost.cost;
+						costCoinsTotal += cost.cost * itm.quantity;
 					}
 				}
 			}
@@ -653,45 +656,71 @@ public class InventoryUtils {
 
 			// Handle requests
 			resp.success = processItemRedemption(items, account, save, openMysteryBoxes, itemLst, prizeLst,
-					currencyUpdate, null, item -> {
+					currencyUpdate, null, (item, quant) -> {
 						// Payment
 						CostInfo cost = item.getFinalCost(false); // FIXME: membership support
 						if (!cost.isFree) {
 							if (cost.isGems) {
-								if (cost.cost > currencyUpdate.gemCount) {
+								if ((cost.cost * quant) > currencyUpdate.gemCount) {
 									// Not enough gems
 									return false;
 								}
 							} else if (cost.isCoins) {
-								if (cost.cost > currencyUpdate.coinCount) {
+								if ((cost.cost * quant) > currencyUpdate.coinCount) {
 									// Not enough coins
 									return false;
 								}
 							}
 						}
 						return true;
-					}, item -> {
+					}, (item, quant) -> {
 						// Payment
 						CostInfo cost = item.getFinalCost(false); // FIXME: membership support
 						if (!cost.isFree) {
+							// Check type
 							if (cost.isGems) {
-								if (cost.cost <= currencyUpdate.gemCount) {
-									// Pay
-									currencyUpdate.gemCount -= cost.cost;
+								if ((cost.cost * quant) <= currencyUpdate.gemCount) {
+									// Apply cost
+									currencyUpdate.gemCount -= (cost.cost * quant);
 								} else {
 									// Not enough gems
 									return false;
 								}
 							} else if (cost.isCoins) {
-								if (cost.cost <= currencyUpdate.coinCount) {
-									// Pay
-									currencyUpdate.coinCount -= cost.cost;
+								if ((cost.cost * quant) <= currencyUpdate.coinCount) {
+									// Apply cost
+									currencyUpdate.coinCount -= (cost.cost * quant);
 								} else {
 									// Not enough coins
 									return false;
 								}
 							}
+
+							try {
+								// Load popular item data
+								CommonDataContainer contPopularItems = CommonDataManager.getInstance()
+										.getContainer("POPULARITEMS");
+								JsonObject popularItems = new JsonObject();
+								if (contPopularItems.entryExists("current-" + store.getID()))
+									popularItems = contPopularItems.getEntry("current-" + store.getID())
+											.getAsJsonObject();
+
+								// Load item
+								int last = 0;
+								if (popularItems.has(Integer.toString(item.getID())))
+									last = popularItems.get(Integer.toString(item.getID())).getAsInt();
+
+								// Apply
+								popularItems.addProperty(Integer.toString(item.getID()), last + 1);
+
+								// Save
+								contPopularItems.setEntry("current-" + store.getID(), popularItems);
+							} catch (IOException e) {
+								LogManager.getLogger().error("Failed to save popular items", e);
+							}
 						}
+
+						// Return
 						return true;
 					}, null);
 

@@ -64,7 +64,7 @@ public class CoinItemRedemptionHandler extends AbstractItemRedemptionHandler {
 			}
 		}
 		// Add coins
-		currencyUpdate.coinCount += amount;
+		currencyUpdate.coinCount += amount * req.quantity;
 		return RedemptionResult.success();
 	}
 }
