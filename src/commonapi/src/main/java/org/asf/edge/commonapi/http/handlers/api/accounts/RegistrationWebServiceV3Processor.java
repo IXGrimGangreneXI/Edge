@@ -256,8 +256,10 @@ public class RegistrationWebServiceV3Processor extends BaseApiHandler<EdgeCommon
 			AccountDataContainer cont = guestAcc.getAccountData().getChildContainer("accountdata");
 			cont.setEntry("sendupdates", new JsonPrimitive(registration.emailNotification == 1));
 			cont.setEntry("isunderage", new JsonPrimitive(registration.childList[0].age < 13));
-			if (registration.childList[0].age < 13)
+			if (registration.childList[0].age < 13) {
+				guestAcc.setChatEnabled(false);
 				guestAcc.setStrictChatFilterEnabled(true);
+			}
 			acc = guestAcc;
 		} else {
 			// Create new account
@@ -276,8 +278,10 @@ public class RegistrationWebServiceV3Processor extends BaseApiHandler<EdgeCommon
 			AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
 			cont.setEntry("sendupdates", new JsonPrimitive(registration.emailNotification == 1));
 			cont.setEntry("isunderage", new JsonPrimitive(registration.childList[0].age < 13));
-			if (registration.childList[0].age < 13)
+			if (registration.childList[0].age < 13) {
+				acc.setChatEnabled(false);
 				acc.setStrictChatFilterEnabled(true);
+			}
 		}
 
 		// Build response

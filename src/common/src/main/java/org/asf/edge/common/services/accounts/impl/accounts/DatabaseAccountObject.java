@@ -352,6 +352,11 @@ public class DatabaseAccountObject extends AccountObject {
 	@Override
 	public boolean isChatEnabled() {
 		try {
+			// Check guest
+			if (isGuestAccount())
+				return false; // Guests cannot chat
+
+			// Check from account data
 			Connection conn = DriverManager.getConnection(url, props);
 			try {
 				// Create prepared statement
