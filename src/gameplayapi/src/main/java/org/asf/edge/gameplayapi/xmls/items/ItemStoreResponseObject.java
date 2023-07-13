@@ -32,6 +32,11 @@ public class ItemStoreResponseObject {
 	@JsonInclude(Include.NON_DEFAULT)
 	public PopularItemBlock[] popularItems;
 
+	@JsonProperty("ss")
+	@JacksonXmlElementWrapper(useWrapping = false)
+	@JsonInclude(Include.NON_DEFAULT)
+	public SaleBlock[] itemSales;
+
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 	public static class PopularItemBlock {
@@ -39,8 +44,35 @@ public class ItemStoreResponseObject {
 		@JsonProperty("id")
 		public int itemID;
 
-		@JsonProperty("r")
+		@JsonProperty("c")
 		public int rank;
+
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+	public static class SaleBlock {
+
+		@JsonProperty("pcid")
+		public int saleID;
+
+		@JsonProperty("m")
+		public float modifier;
+
+		@JsonProperty("iids")
+		public int[] itemIDs;
+
+		@JsonProperty("cids")
+		public int[] categoryIDs;
+
+		@JsonProperty("ism")
+		public boolean memberOnly;
+
+		@JsonProperty("sd")
+		public String startDate;
+
+		@JsonProperty("ed")
+		public String endDate;
 
 	}
 

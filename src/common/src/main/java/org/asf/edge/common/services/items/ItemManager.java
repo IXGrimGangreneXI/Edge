@@ -1,6 +1,7 @@
 package org.asf.edge.common.services.items;
 
 import org.asf.edge.common.entities.items.ItemInfo;
+import org.asf.edge.common.entities.items.ItemSaleInfo;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.services.AbstractService;
@@ -93,6 +94,41 @@ public abstract class ItemManager extends AbstractService {
 	 * @param data Container to retrieve the inventory for
 	 */
 	public abstract PlayerInventory getCommonInventory(AccountDataContainer data);
+
+	/**
+	 * Registers sales
+	 * 
+	 * @param sale Sale object to register
+	 */
+	public abstract void registerSale(ItemSaleInfo sale);
+
+	/**
+	 * Unregisters sales
+	 * 
+	 * @param sale Sale object to remove
+	 */
+	public abstract void unregisterSale(ItemSaleInfo sale);
+
+	/**
+	 * Retrieves all known sales
+	 * 
+	 * @return Array of ItemSaleInfo instances
+	 */
+	public abstract ItemSaleInfo[] getSales();
+
+	/**
+	 * Retrieves all active sales
+	 * 
+	 * @return Array of ItemSaleInfo instances
+	 */
+	public abstract ItemSaleInfo[] getActiveSales();
+
+	/**
+	 * Retrieves all upcoming sales
+	 * 
+	 * @return Array of ItemSaleInfo instances
+	 */
+	public abstract ItemSaleInfo[] getUpcomingSales();
 
 	/**
 	 * Called to reload items and stores from disk

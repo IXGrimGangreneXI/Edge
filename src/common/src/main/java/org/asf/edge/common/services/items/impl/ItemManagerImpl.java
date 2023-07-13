@@ -7,6 +7,7 @@ import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.util.RandomSelectorUtil;
 import org.asf.edge.common.xmls.items.ItemStoreDefinitionData;
 import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest;
 import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest.DefaultItemBlock;
@@ -14,6 +15,8 @@ import org.asf.edge.modules.IEdgeModule;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -29,8 +32,18 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,9 +54,17 @@ public class ItemManagerImpl extends ItemManager {
 	private HashMap<Integer, ItemInfo> itemDefs = new HashMap<Integer, ItemInfo>();
 	private HashMap<Integer, ItemStoreInfo> storeDefs = new HashMap<Integer, ItemStoreInfo>();
 
+	private ArrayList<ItemSaleInfo> currentRandomSales = new ArrayList<ItemSaleInfo>();
+	private ArrayList<ItemSaleInfo> upcomingRandomSales = new ArrayList<ItemSaleInfo>();
+
+	private ArrayList<ItemSaleInfo> sales = new ArrayList<ItemSaleInfo>();
+	private RandomSaleConfig randomSaleConfig;
+
 	private long lastReloadTime;
 
 	public DefaultItemBlock[] defaultItems;
+
+	private Random rnd = new Random();
 
 	@Override
 	public void initService() {
@@ -78,18 +99,300 @@ public class ItemManagerImpl extends ItemManager {
 					}
 				}
 			});
-
 		} catch (IllegalArgumentException e) {
 		}
 
 		// Load stores
 		loadData();
+
+		// Update active sales
+		try {
+			// Find all categories
+			ArrayList<Integer> categoryIds = new ArrayList<Integer>();
+			for (ItemInfo itm : getAllItemDefinitions()) {
+				ItemCategoryInfo[] cats = itm.getCategories();
+				for (ItemCategoryInfo cat : cats) {
+					if (!categoryIds.contains(cat.getCategoryID()))
+						categoryIds.add(cat.getCategoryID());
+				}
+			}
+
+			// Update sales
+			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("ITEMSALES");
+			ArrayList<ItemSaleInfo> currentRandomSales = new ArrayList<ItemSaleInfo>();
+			ArrayList<ItemSaleInfo> upcomingRandomSales = new ArrayList<ItemSaleInfo>();
+			ObjectMapper mapper = new ObjectMapper();
+			for (int cat : categoryIds) {
+				// Add to list
+				if (!cont.entryExists("current-" + cat))
+					continue;
+				SaleInfoBlock b = mapper.readValue(cont.getEntry("current-" + cat).toString(), SaleInfoBlock.class);
+				currentRandomSales.add(new ItemSaleInfo(b.name, b.startTime, b.endTime, b.saleModifier, b.categories,
+						b.itemIDs, b.memberOnly));
+				b = mapper.readValue(cont.getEntry("next-" + cat).toString(), SaleInfoBlock.class);
+				upcomingRandomSales.add(new ItemSaleInfo(b.name, b.startTime, b.endTime, b.saleModifier, b.categories,
+						b.itemIDs, b.memberOnly));
+			}
+
+			// Save sales to memory
+			this.currentRandomSales = currentRandomSales;
+			this.upcomingRandomSales = upcomingRandomSales;
+		} catch (IOException e) {
+			logger.error("Failed to load current random sales", e);
+		}
+
+		try {
+			// Start random sale selector
+			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("ITEMSALES");
+			CommonDataContainer contPopularItems = CommonDataManager.getInstance().getContainer("POPULARITEMS");
+			AsyncTaskManager.runAsync(() -> {
+				while (true) {
+					// Check if a update is needed
+					Calendar cal = Calendar.getInstance();
+					Calendar calNext = Calendar.getInstance();
+					boolean requiresUpdate = false;
+					try {
+						int val = -1;
+						if (!cont.entryExists("lastupdate")) {
+							requiresUpdate = true;
+						} else {
+							val = cont.getEntry("lastupdate").getAsInt();
+						}
+
+						// Check interval
+						switch (randomSaleConfig.refreshInterval) {
+						case DAILY:
+							if (cal.get(Calendar.DAY_OF_WEEK) != val) {
+								requiresUpdate = true;
+								cont.setEntry("lastupdate", new JsonPrimitive(cal.get(Calendar.DAY_OF_WEEK)));
+								cal.set(Calendar.HOUR_OF_DAY, 0);
+								calNext.set(Calendar.HOUR_OF_DAY, 0);
+								calNext.add(Calendar.DAY_OF_WEEK, 1);
+							}
+							break;
+						case MONTHLY:
+							if (cal.get(Calendar.MONTH) != val) {
+								requiresUpdate = true;
+								cont.setEntry("lastupdate", new JsonPrimitive(cal.get(Calendar.MONTH)));
+								cal.set(Calendar.DAY_OF_MONTH, 0);
+								calNext.set(Calendar.DAY_OF_MONTH, 0);
+								calNext.add(Calendar.MONTH, 1);
+							}
+							break;
+						case WEEKLY:
+							if (cal.get(Calendar.WEEK_OF_YEAR) != val) {
+								requiresUpdate = true;
+								cont.setEntry("lastupdate", new JsonPrimitive(cal.get(Calendar.WEEK_OF_YEAR)));
+								cal.set(Calendar.DAY_OF_WEEK, 0);
+								calNext.set(Calendar.DAY_OF_WEEK, 0);
+								calNext.add(Calendar.WEEK_OF_YEAR, 1);
+							}
+							break;
+						case YEARLY:
+							if (cal.get(Calendar.YEAR) != val) {
+								requiresUpdate = true;
+								cont.setEntry("lastupdate", new JsonPrimitive(cal.get(Calendar.YEAR)));
+								cal.set(Calendar.MONTH, 0);
+								calNext.set(Calendar.MONTH, 0);
+								calNext.add(Calendar.YEAR, 1);
+							}
+							break;
+
+						}
+
+						// Update if needed
+						if (requiresUpdate) {
+							// Find all categories
+							ArrayList<Integer> categoryIds = new ArrayList<Integer>();
+							for (ItemInfo itm : getAllItemDefinitions()) {
+								ItemCategoryInfo[] cats = itm.getCategories();
+								for (ItemCategoryInfo cat : cats) {
+									if (!categoryIds.contains(cat.getCategoryID()))
+										categoryIds.add(cat.getCategoryID());
+								}
+							}
+
+							// Compute sale duration
+							cal.set(Calendar.HOUR_OF_DAY, 0);
+							cal.set(Calendar.MINUTE, 0);
+							cal.set(Calendar.SECOND, 0);
+							calNext.set(Calendar.HOUR_OF_DAY, 0);
+							calNext.set(Calendar.MINUTE, 0);
+							calNext.set(Calendar.SECOND, 0);
+							Date saleStart = cal.getTime();
+							cal.add(Calendar.DAY_OF_MONTH, randomSaleConfig.expiryLength);
+							Date saleEnd = cal.getTime();
+							Date saleStartNext = calNext.getTime();
+							calNext.add(Calendar.DAY_OF_MONTH, randomSaleConfig.expiryLength);
+							Date saleEndNext = calNext.getTime();
+
+							// Generate sale list
+							Map<Integer, ItemSaleInfo> salesNext = generateSales(saleStartNext, saleEndNext, cont,
+									contPopularItems, categoryIds);
+							Map<Integer, ItemSaleInfo> salesCurrent = null;
+
+							// Save sale information for each category
+							ObjectMapper mapper = new ObjectMapper();
+							for (int cat : categoryIds) {
+								if (!salesNext.containsKey(cat))
+									continue;
+
+								// Check if current is present
+								if (!cont.entryExists("current-" + cat)) {
+									// Save new sale set
+									if (salesCurrent == null)
+										salesCurrent = generateSales(saleStart, saleEnd, cont, contPopularItems,
+												categoryIds);
+
+									// Save next
+									cont.setEntry("next-" + cat,
+											JsonParser.parseString(mapper.writeValueAsString(salesNext.get(cat))));
+
+									// Set current
+									cont.setEntry("current-" + cat,
+											JsonParser.parseString(mapper.writeValueAsString(salesCurrent.get(cat))));
+								} else {
+									// Load next into current
+									cont.setEntry("current-" + cat, cont.getEntry("next-" + cat));
+
+									// Save next
+									cont.setEntry("next-" + cat,
+											JsonParser.parseString(mapper.writeValueAsString(salesNext.get(cat))));
+								}
+							}
+
+							// Update active sales
+							ArrayList<ItemSaleInfo> currentRandomSales = new ArrayList<ItemSaleInfo>();
+							ArrayList<ItemSaleInfo> upcomingRandomSales = new ArrayList<ItemSaleInfo>();
+							for (int cat : categoryIds) {
+								// Add to list
+								SaleInfoBlock b = mapper.readValue(cont.getEntry("current-" + cat).toString(),
+										SaleInfoBlock.class);
+								currentRandomSales.add(new ItemSaleInfo(b.name, b.startTime, b.endTime, b.saleModifier,
+										b.categories, b.itemIDs, b.memberOnly));
+								b = mapper.readValue(cont.getEntry("next-" + cat).toString(), SaleInfoBlock.class);
+								upcomingRandomSales.add(new ItemSaleInfo(b.name, b.startTime, b.endTime, b.saleModifier,
+										b.categories, b.itemIDs, b.memberOnly));
+							}
+
+							// Save sales to memory
+							this.currentRandomSales = currentRandomSales;
+							this.upcomingRandomSales = upcomingRandomSales;
+						}
+					} catch (IOException e) {
+						logger.error("Failed to update sales", e);
+					}
+
+					// Wait a bit
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+					}
+				}
+			});
+		} catch (IllegalArgumentException e) {
+		}
+
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	private static class SaleInfoBlock {
+
+		public String name;
+		public long startTime;
+		public long endTime;
+
+		public float saleModifier;
+		public int[] categories;
+		public int[] itemIDs;
+
+		public boolean memberOnly;
+
+	}
+
+	private Map<Integer, ItemSaleInfo> generateSales(Date saleStart, Date saleEnd, CommonDataContainer cont,
+			CommonDataContainer contPopularItems, ArrayList<Integer> categoryIds) throws IOException {
+		// Create sales
+		HashMap<Integer, JsonObject> popularItemsData = new HashMap<Integer, JsonObject>();
+		HashMap<Integer, ItemSaleInfo> sales = new HashMap<Integer, ItemSaleInfo>();
+		for (int category : categoryIds) {
+			// Load items for category
+			HashMap<Integer, Integer> itemWeights = new HashMap<Integer, Integer>();
+
+			// Select random sales for each store
+			for (ItemStoreInfo store : getAllStores()) {
+				// Load popular items for the store
+				JsonObject popularItems = new JsonObject();
+				if (popularItemsData.containsKey(store.getID()))
+					popularItems = popularItemsData.get(store.getID());
+				else {
+					if (contPopularItems.entryExists("last-" + store.getID()))
+						popularItems = contPopularItems.getEntry("last-" + store.getID()).getAsJsonObject();
+					popularItemsData.put(store.getID(), popularItems);
+				}
+
+				// Load items
+				for (ItemInfo itm : store.getItems()) {
+					// Check category
+					if (!Stream.of(itm.getCategories()).anyMatch(t -> t.getCategoryID() == category))
+						continue;
+
+					// Load popular item info
+					int popularity = 0;
+					if (popularItems.has(Integer.toString(itm.getID()))) {
+						popularity = popularItems.get(Integer.toString(itm.getID())).getAsInt();
+					}
+
+					// Add item
+					int weight = 50 - (popularity / 50);
+					if (weight <= 0)
+						weight = 1;
+					itemWeights.put(itm.getID(), weight);
+				}
+			}
+
+			// Select items
+			if (itemWeights.size() > 0) {
+				// Calculate amount
+				int amount = (itemWeights.size() / randomSaleConfig.saleCountFactor);
+				if (amount < 1)
+					amount = 1;
+				else if (amount > randomSaleConfig.maximumSalesPerCategory)
+					amount = randomSaleConfig.maximumSalesPerCategory;
+
+				// Randomly select the item IDs
+				ArrayList<Integer> itemIDs = new ArrayList<Integer>();
+				for (int i = 0; i < amount; i++) {
+					int id = RandomSelectorUtil.selectWeighted(itemWeights);
+					while (itemIDs.contains(id))
+						id = RandomSelectorUtil.selectWeighted(itemWeights);
+					itemIDs.add(id);
+				}
+
+				// Select modifier
+				float modifier = rnd.nextFloat(randomSaleConfig.randomMinimalModifier,
+						randomSaleConfig.randomMaximalModifier);
+
+				// Round the modifier
+				modifier = Float.parseFloat(new DecimalFormat("0.000").format(modifier));
+
+				// Create sale object
+				int[] itemIdArr = new int[itemIDs.size()];
+				for (int i = 0; i < itemIdArr.length; i++)
+					itemIdArr[i] = itemIDs.get(i);
+				ItemSaleInfo sale = new ItemSaleInfo("Random sale " + category, saleStart.getTime(), saleEnd.getTime(),
+						modifier, new int[0], itemIdArr, false);
+				sales.put(category, sale);
+			}
+		}
+		return sales;
 	}
 
 	private void loadData() {
 		// Prepare
 		HashMap<Integer, ItemInfo> itemDefs = new HashMap<Integer, ItemInfo>();
 		HashMap<Integer, ItemStoreInfo> storeDefs = new HashMap<Integer, ItemStoreInfo>();
+		ArrayList<ItemSaleInfo> sales = new ArrayList<ItemSaleInfo>();
 		DefaultItemBlock[] defaultItems;
 		logger.info("Loading item store data...");
 
@@ -191,10 +494,145 @@ public class ItemManagerImpl extends ItemManager {
 			}
 		}
 
+		// Load sales
+		logger.info("Loading item sales...");
+		try {
+			File saleConfig = new File("salesettings.json");
+			SimpleDateFormat fmt = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+			if (!saleConfig.exists()) {
+				Calendar cal = Calendar.getInstance();
+				cal.set(Calendar.HOUR_OF_DAY, 12);
+				cal.set(Calendar.MINUTE, 00);
+				cal.set(Calendar.SECOND, 00);
+				Date start = cal.getTime();
+				cal = Calendar.getInstance();
+				cal.set(Calendar.HOUR_OF_DAY, 12);
+				cal.set(Calendar.MINUTE, 00);
+				cal.set(Calendar.SECOND, 00);
+				cal.add(Calendar.MONTH, 1);
+				Date end = cal.getTime();
+
+				Files.writeString(saleConfig.toPath(), "{\n" //
+						+ "    \"randomSales\": {\n" //
+						+ "        \"enabled\": true,\n" //
+						+ "        \n" //
+						+ "        \"__COMMENT1__\": \"The following settings control the interval and expiry for sales\",\n" //
+						+ "        \"__COMMENT2__\": \"The interval can be either daily, weekly, monthly or yearly, however make sure the expiry isnt too high else things can get weird\",\n" //
+						+ "        \n" //
+						+ "        \"saleTimeDays\": 20,\n" //
+						+ "        \"refreshInterval\": \"monthly\",\n" //
+						+ "        \n" //
+						+ "        \"__COMMENT3__\": \"The modifiers below control how much the random sales discount\",\n" //
+						+ "        \"randomMinimalModifier\": 0.1,\n" //
+						+ "        \"randomMaximalModifier\": 0.3,\n" //
+						+ "        \n" //
+						+ "        \"__COMMENT4__\": \"The sale count factor is used to determine how many items should be on sale per category\",\n" //
+						+ "        \"saleCountFactor\": 10,\n" //
+						+ "        \n" //
+						+ "        \"__COMMENT5__\": \"The following maximum value is used to limit the amount of sales per category\",\n" //
+						+ "        \"maximumSalesPerCategory\": 12\n" //
+						+ "    },\n" //
+						+ "    \n" //
+						+ "    \"sales\": [\n" //
+						+ "        {\n" //
+						+ "            \"name\": \"Example sale, eggs and hatch tickets at 95% discount\",\n" //
+						+ "            \n" //
+						+ "            \"__COMMENT6__\": \"Sale duration\",\n" //
+						+ "            \"start\": \"" + fmt.format(start) + "\",\n" //
+						+ "            \"end\": \"" + fmt.format(end) + "\",\n" //
+						+ "            \n" //
+						+ "            \"modifier\": 0.95,\n" //
+						+ "            \n" //
+						+ "            \"__COMMENT7__\": \"Adds dragon egg categories to sales, you can find category IDs in item definitions\",\n" //
+						+ "            \"categories\": [\n" //
+						+ "                456,\n" //
+						+ "                \n" //
+						+ "                545,\n" //
+						+ "                546,\n" //
+						+ "                547,\n" //
+						+ "                548,\n" //
+						+ "                549,\n" //
+						+ "                550,\n" //
+						+ "                551\n" //
+						+ "            ],\n" //
+						+ "            \n" //
+						+ "            \"__COMMENT8__\": \"Adds the instant hatch ticket to the sale\",\n" //
+						+ "            \"itemIDs\": [\n" //
+						+ "                18601\n" //
+						+ "            ],\n" //
+						+ "            \n" //
+						+ "            \"memberOnly\": false\n" //
+						+ "        }\n" //
+						+ "    ]\n" //
+						+ "}\n" //
+				);
+			}
+
+			// Load config
+			JsonObject saleConf = JsonParser.parseString(Files.readString(saleConfig.toPath())).getAsJsonObject();
+			RandomSaleConfig config = new RandomSaleConfig();
+
+			// Read properties
+			JsonObject randomSales = saleConf.get("randomSales").getAsJsonObject();
+			config.enabled = randomSales.get("enabled").getAsBoolean();
+			config.expiryLength = randomSales.get("saleTimeDays").getAsInt();
+			String interval = randomSales.get("refreshInterval").getAsString();
+			if (interval.equalsIgnoreCase("monthly"))
+				config.refreshInterval = RandomSaleInterval.MONTHLY;
+			else if (interval.equalsIgnoreCase("yearly"))
+				config.refreshInterval = RandomSaleInterval.YEARLY;
+			else if (interval.equalsIgnoreCase("weekly"))
+				config.refreshInterval = RandomSaleInterval.WEEKLY;
+			else if (interval.equalsIgnoreCase("daily"))
+				config.refreshInterval = RandomSaleInterval.DAILY;
+			else
+				throw new IOException("Invalid refreshInterval value: " + interval);
+			config.randomMinimalModifier = randomSales.get("randomMinimalModifier").getAsFloat();
+			config.randomMaximalModifier = randomSales.get("randomMaximalModifier").getAsFloat();
+			config.saleCountFactor = randomSales.get("saleCountFactor").getAsInt();
+			config.maximumSalesPerCategory = randomSales.get("maximumSalesPerCategory").getAsInt();
+
+			// Load sales
+			int saleID = Integer.MIN_VALUE;
+			for (JsonElement objE : saleConf.get("sales").getAsJsonArray()) {
+				if (saleID == 0) {
+					throw new IOException("Too many sales registered, hit the upper limit for user sales");
+				}
+				saleID++;
+				JsonObject sale = objE.getAsJsonObject();
+
+				// Create item and category ID arrays
+				int[] categories = new int[sale.get("categories").getAsJsonArray().size()];
+				int[] itemIds = new int[sale.get("itemIDs").getAsJsonArray().size()];
+				int in = 0;
+				for (JsonElement ele : sale.get("categories").getAsJsonArray()) {
+					categories[in++] = ele.getAsInt();
+				}
+				in = 0;
+				for (JsonElement ele : sale.get("itemIDs").getAsJsonArray()) {
+					itemIds[in++] = ele.getAsInt();
+				}
+
+				// Create sale object
+				Date start = fmt.parse(sale.get("start").getAsString());
+				Date end = fmt.parse(sale.get("end").getAsString());
+				ItemSaleInfo i = new ItemSaleInfo(sale.get("name").getAsString(), start.getTime(), end.getTime(),
+						sale.get("modifier").getAsFloat(), categories, itemIds, sale.get("memberOnly").getAsBoolean());
+				sales.add(i);
+				logger.debug("Registered sale: " + i.getName());
+			}
+
+			// Update
+			randomSaleConfig = config;
+		} catch (IOException | ParseException e) {
+			throw new RuntimeException(e);
+		}
+
 		// Apply
 		this.defaultItems = defaultItems;
 		this.itemDefs = itemDefs;
 		this.storeDefs = storeDefs;
+		this.sales = sales;
 
 		// Fire event
 		logger.info("Dispatching load event...");
@@ -597,6 +1035,40 @@ public class ItemManagerImpl extends ItemManager {
 		}
 		logger.info("Reloading item manager...");
 		loadData();
+	}
+
+	@Override
+	public void registerSale(ItemSaleInfo sale) {
+		sales.add(sale);
+		logger.debug("Registered sale: " + sale.getName());
+	}
+
+	@Override
+	public void unregisterSale(ItemSaleInfo sale) {
+		sales.remove(sale);
+		logger.debug("Removed sale: " + sale.getName());
+	}
+
+	@Override
+	public ItemSaleInfo[] getSales() {
+		ArrayList<ItemSaleInfo> sales = new ArrayList<ItemSaleInfo>(this.sales);
+		sales.addAll(currentRandomSales);
+		sales.addAll(upcomingRandomSales);
+		return sales.toArray(t -> new ItemSaleInfo[t]);
+	}
+
+	@Override
+	public ItemSaleInfo[] getActiveSales() {
+		ArrayList<ItemSaleInfo> sales = new ArrayList<ItemSaleInfo>(this.sales);
+		sales.addAll(currentRandomSales);
+		return sales.stream().filter(t -> t.isActive()).toArray(t -> new ItemSaleInfo[t]);
+	}
+
+	@Override
+	public ItemSaleInfo[] getUpcomingSales() {
+		ArrayList<ItemSaleInfo> sales = new ArrayList<ItemSaleInfo>(this.sales);
+		sales.addAll(upcomingRandomSales);
+		return sales.stream().filter(t -> t.isUpcoming()).toArray(t -> new ItemSaleInfo[t]);
 	}
 
 }

@@ -183,6 +183,66 @@ public class DebugCommands extends TaskBasedCommand {
 								.writeValueAsString(resp).trim();
 					}
 
+				}, new IEdgeServerCommand() {
+
+					@Override
+					public String id() {
+						return "itemtestbuy";
+					}
+
+					@Override
+					public String syntax(CommandContext ctx) {
+						return "<shopID> <defID> [<quantity>]";
+					}
+
+					@Override
+					public String description(CommandContext ctx) {
+						return "Test command for buying";
+					}
+
+					@Override
+					public PermissionLevel permLevel() {
+						return PermissionLevel.OPERATOR;
+					}
+
+					@Override
+					public String permNode() {
+						return "commands.operator.debugcommands";
+					}
+
+					@Override
+					public String run(String[] args, CommandContext ctx, Logger logger,
+							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs)
+							throws IOException {
+						// Check
+						if (!ctx.getCommandMemory().containsKey("active_profile")) {
+							outputWriteLineCallback.accept(
+									"Error: no active profile, please use 'profiles select' before using this command");
+							return null;
+						}
+						AccountSaveContainer save = AccountManager.getInstance()
+								.getAccount(ctx.getCommandMemory().get("active_account").toString())
+								.getSave(ctx.getCommandMemory().get("active_profile").toString());
+						int shop = Integer.parseInt(args[0]);
+						int def = Integer.parseInt(args[1]);
+						int quantity = 1;
+						if (args.length > 2)
+							quantity = Integer.parseInt(args[2]);
+
+						// Test
+						ItemRedemptionInfo info = new ItemRedemptionInfo();
+						info.containerID = 1;
+						info.defID = def;
+						info.quantity = quantity;
+						InventoryUpdateResponseData resp = InventoryUtils.purchaseItems(shop,
+								new ItemRedemptionInfo[] { info }, save.getAccount(), save, false);
+
+						// Show response
+						return "Response:\n" + new XmlMapper().writer().withDefaultPrettyPrinter()
+								.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL).withRootName("CIRS")
+								.writeValueAsString(resp).trim();
+					}
+
 				}
 
 		};

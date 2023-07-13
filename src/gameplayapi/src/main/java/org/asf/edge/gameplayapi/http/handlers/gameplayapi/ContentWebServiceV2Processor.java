@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -27,14 +28,17 @@ import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
+import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
 import org.asf.edge.gameplayapi.xmls.avatars.SetAvatarResultData;
 import org.asf.edge.gameplayapi.xmls.dragons.CreatePetResponseData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetCreateRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;
+import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
+import org.asf.edge.gameplayapi.xmls.items.ItemPurchaseRequestData;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData.SuggestionResultBlock;
 import org.asf.edge.gameplayapi.xmls.names.NameValidationRequest;
 import org.asf.edge.gameplayapi.xmls.names.NameValidationResponseData;
@@ -889,5 +893,71 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		} else {
 			setResponseStatus(403, "Forbidden");
 		}
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void purchaseItems(FunctionInfo func) throws IOException {
+		// Handle quest data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+		if (!tkn.hasCapability("gp")) {
+			// Oh frack COME ON
+			// Well lets select the first save
+
+			// Check saves
+			String[] saves = account.getSaveIDs();
+			if (saves.length == 0) {
+				// Error
+				setResponseStatus(404, "Not found");
+				return;
+			}
+
+			// Set ID
+			tkn.saveID = account.getSaveIDs()[0];
+		}
+
+		// Retrieve container info
+		AccountSaveContainer save = account.getSave(tkn.saveID);
+
+		// Parse request
+		ItemPurchaseRequestData request = req.parseXmlValue(req.payload.get("purchaseItemRequest"),
+				ItemPurchaseRequestData.class);
+
+		// Build request objects
+		HashMap<Integer, ItemRedemptionInfo> items = new HashMap<Integer, ItemRedemptionInfo>();
+		for (int id : request.itemIDs) {
+			if (!items.containsKey(id)) {
+				ItemRedemptionInfo itm = new ItemRedemptionInfo();
+				itm.containerID = request.containerID;
+				itm.defID = id;
+				items.put(id, itm);
+			}
+			items.get(id).quantity++;
+		}
+
+		// Run request
+		InventoryUpdateResponseData response = InventoryUtils.purchaseItems(request.storeID,
+				items.values().toArray(t -> new ItemRedemptionInfo[t]), account, save, !request.addBoxesAsItem);
+
+		// Swap ID if needed
+		if (!tkn.hasCapability("gp")) {
+			if (response.currencyUpdate != null)
+				response.currencyUpdate.userID = account.getAccountID();
+		}
+
+		// Set response
+		setResponseContent("text/xml", req.generateXmlValue("CIRS", response));
 	}
 }

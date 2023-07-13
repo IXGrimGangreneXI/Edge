@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
@@ -109,6 +110,73 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		setResponseContent("text/xml",
 				req.generateXmlValue("dateTime", fmt.format(new Date(System.currentTimeMillis()))));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void purchaseItems(FunctionInfo func) throws IOException {
+		// Handle quest data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+		if (!tkn.hasCapability("gp")) {
+			// Oh frack COME ON
+			// Well lets select the first save
+
+			// Check saves
+			String[] saves = account.getSaveIDs();
+			if (saves.length == 0) {
+				// Error
+				setResponseStatus(404, "Not found");
+				return;
+			}
+
+			// Set ID
+			tkn.saveID = account.getSaveIDs()[0];
+		}
+
+		// Retrieve container info
+		AccountSaveContainer save = account.getSave(tkn.saveID);
+
+		// Parse request
+		int storeID = Integer.parseInt(req.payload.get("storeId"));
+		int containerID = Integer.parseInt(req.payload.getOrDefault("ContainerID", "1"));
+		int[] itemIds = req.parseXmlValue(req.payload.get("itemIDArrayXml"), int[].class);
+
+		// Build request objects
+		HashMap<Integer, ItemRedemptionInfo> items = new HashMap<Integer, ItemRedemptionInfo>();
+		for (int id : itemIds) {
+			if (!items.containsKey(id)) {
+				ItemRedemptionInfo itm = new ItemRedemptionInfo();
+				itm.containerID = containerID;
+				itm.defID = id;
+				items.put(id, itm);
+			}
+			items.get(id).quantity++;
+		}
+
+		// Run request
+		InventoryUpdateResponseData response = InventoryUtils.purchaseItems(storeID,
+				items.values().toArray(t -> new ItemRedemptionInfo[t]), account, save, true);
+
+		// Swap ID if needed
+		if (!tkn.hasCapability("gp")) {
+			if (response.currencyUpdate != null)
+				response.currencyUpdate.userID = account.getAccountID();
+		}
+
+		// Set response
+		setResponseContent("text/xml", req.generateXmlValue("CIRS", response));
 	}
 
 	@Function(allowedMethods = { "POST" })

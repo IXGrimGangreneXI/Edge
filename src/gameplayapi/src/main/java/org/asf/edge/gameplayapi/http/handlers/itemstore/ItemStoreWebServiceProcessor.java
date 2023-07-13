@@ -2,15 +2,21 @@ package org.asf.edge.gameplayapi.http.handlers.itemstore;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
+import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.xmls.items.GetStoreRequestData;
@@ -20,10 +26,13 @@ import org.asf.edge.gameplayapi.xmls.items.ItemStoreResponseObject;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApiServer> {
 
 	private static ItemManager itemManager;
+	private static boolean popularItemManagementInited = false;
 
 	public ItemStoreWebServiceProcessor(EdgeGameplayApiServer server) {
 		super(server);
@@ -61,10 +70,65 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 		setResponseContent("text/xml", data);
 	}
 
+	private static synchronized void initPopularItemManager() {
+		if (popularItemManagementInited)
+			return;
+		popularItemManagementInited = true;
+		initPopularItemManager();
+
+		// Refresh popular items in the background
+		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("POPULARITEMS");
+		AsyncTaskManager.runAsync(() -> {
+			while (true) {
+				try {
+					// Check if a refresh should be done, refreshes are weekly
+					boolean requiresRefresh = false;
+					if (!cont.entryExists("lastupdate") || (System.currentTimeMillis()
+							- cont.getEntry("lastupdate").getAsLong()) > (7 * 24 * 60 * 60 * 1000)) {
+						// Refresh needed
+						requiresRefresh = true;
+					}
+
+					if (requiresRefresh) {
+						// Set last update
+						cont.setEntry("lastupdate", new JsonPrimitive(System.currentTimeMillis()));
+
+						// Check for each store
+						int[] storeIDs = ItemManager.getInstance().getStoreIds();
+						for (int store : storeIDs) {
+							// Update store
+							if (cont.entryExists("current-" + store)) {
+								JsonObject current = cont.getEntry("current-" + store).getAsJsonObject();
+								cont.setEntry("last-" + store, current);
+								cont.setEntry("current-" + store, new JsonObject());
+							}
+						}
+					}
+				} catch (IOException e) {
+					// Error
+					LogManager.getLogger("ItemManager")
+							.error("Failed to check if popular items need to be refreshed due to a database error.", e);
+				}
+
+				// Wait 30 seconds
+				try {
+					Thread.sleep(30000);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+		});
+	}
+
 	@Function(allowedMethods = { "POST" })
 	public void getStore(FunctionInfo info) throws IOException {
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
+
+		// Init if needed
+		if (!popularItemManagementInited) {
+			initPopularItemManager();
+		}
 
 		// Handle store request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
@@ -79,12 +143,51 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 			// Find store
 			ItemStoreInfo store = itemManager.getStore(stores.storeIDs[i]);
 			if (store != null) {
+				// Create object
 				ItemStoreResponseObject storeData = new ItemStoreResponseObject();
 				storeData.storeID = store.getID();
 				storeData.storeName = store.getName();
 				storeData.storeDescription = store.getDescription();
 				storeData.items = Stream.of(store.getItems()).map(t -> t.getRawObject())
 						.toArray(t -> new ObjectNode[t]);
+
+				// Load popular items
+				ArrayList<ItemStoreResponseObject.PopularItemBlock> items = new ArrayList<ItemStoreResponseObject.PopularItemBlock>();
+
+				// Go through all items in store
+				CommonDataContainer cont = CommonDataManager.getInstance().getContainer("POPULARITEMS");
+				if (cont.entryExists("last-" + storeData.storeID)) {
+					JsonObject popularItems = cont.getEntry("last-" + storeData.storeID).getAsJsonObject();
+					HashMap<Integer, Integer> itms = new HashMap<Integer, Integer>();
+					for (String key : popularItems.keySet()) {
+						itms.put(Integer.parseInt(key), popularItems.get(key).getAsInt());
+					}
+					int i2 = 0;
+					ItemInfo[] storeItems = ItemManager.getInstance().getStore(storeData.storeID).getItems();
+					int limit = (storeItems.length / 15);
+					if (limit <= 0)
+						limit = 1;
+					for (Integer id : itms.keySet().stream()
+							.sorted((t1, t2) -> -Integer.compare(itms.get(t1), itms.get(t2)))
+							.toArray(t -> new Integer[t])) {
+						if (i2 >= limit)
+							break;
+
+						// Add item info
+						ItemStoreResponseObject.PopularItemBlock itm = new ItemStoreResponseObject.PopularItemBlock();
+						itm.itemID = id;
+						itm.rank = itms.get(id);
+						items.add(itm);
+
+						// Increase index
+						i2++;
+					}
+				}
+
+				// Add to object
+				storeData.popularItems = items.toArray(t -> new ItemStoreResponseObject.PopularItemBlock[t]);
+
+				// Add to response
 				resp.stores[i] = storeData;
 			} else {
 				resp.stores[i] = new ItemStoreResponseObject();

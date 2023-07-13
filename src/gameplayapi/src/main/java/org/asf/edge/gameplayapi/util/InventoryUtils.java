@@ -3,9 +3,13 @@ package org.asf.edge.gameplayapi.util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.asf.edge.common.entities.items.ItemInfo;
+import org.asf.edge.common.entities.items.ItemInfo.CostInfo;
+import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
@@ -137,7 +141,7 @@ public class InventoryUtils {
 
 		// Handle requests
 		resp.success = processItemRedemption(items, account, save, openMysteryBoxes, itemLst, prizeLst, currencyUpdate,
-				null);
+				null, null, null, null);
 
 		// Save
 		if (currencyUpdate.gemCount != currentG) {
@@ -161,13 +165,20 @@ public class InventoryUtils {
 
 	private static boolean processItemRedemption(ItemRedemptionInfo[] items, AccountObject account,
 			AccountSaveContainer save, boolean openMysteryBoxes, ArrayList<ItemUpdateBlock> itemLst,
-			ArrayList<PrizeItemInfo> prizeLst, CurrencyUpdateBlock currencyUpdate, PrizeItemInfo prizeInfo) {
+			ArrayList<PrizeItemInfo> prizeLst, CurrencyUpdateBlock currencyUpdate, PrizeItemInfo prizeInfo,
+			Function<ItemInfo, Boolean> itemRedemptionValidationCall, Function<ItemInfo, Boolean> itemRedemptionCall,
+			Consumer<ItemInfo> innerItemRedemptionCall) {
 		// Verify items
 		for (ItemRedemptionInfo req : items) {
 			// Check item def
 			ItemInfo itm = itemManager.getItemDefinition(req.defID);
 			if (itm == null)
 				return false; // Invalid item ID
+
+			// Check
+			if (itemRedemptionValidationCall != null)
+				if (!itemRedemptionValidationCall.apply(itm))
+					return false;
 		}
 
 		// Verify mystery boxes
@@ -206,9 +217,18 @@ public class InventoryUtils {
 
 			// Check if its a bundle or box
 			if (!isBundle(itm) && (!openMysteryBoxes || !isMysteryBox(itm))) {
+				// Attempt redemption
+				if (itemRedemptionCall != null)
+					if (!itemRedemptionCall.apply(itm))
+						return false;
+
 				// Regular item
 				if (!addItem(itm, req, account, save, itemLst, prizeLst, currencyUpdate, prizeInfo))
 					return false;
+
+				// Call
+				if (innerItemRedemptionCall != null)
+					innerItemRedemptionCall.accept(itm);
 			}
 		}
 
@@ -257,7 +277,7 @@ public class InventoryUtils {
 
 							// Add
 							if (!processItemRedemption(new ItemRedemptionInfo[] { prize }, account, save, false,
-									itemLst, prizeLst, currencyUpdate, obj))
+									itemLst, prizeLst, currencyUpdate, obj, null, null, innerItemRedemptionCall))
 								return false;
 							prizeLst.add(obj);
 						}
@@ -291,7 +311,7 @@ public class InventoryUtils {
 
 					// Add
 					if (!processItemRedemption(new ItemRedemptionInfo[] { it }, account, save, false, itemLst, prizeLst,
-							currencyUpdate, null))
+							currencyUpdate, null, null, null, innerItemRedemptionCall))
 						return false;
 				}
 			}
@@ -486,30 +506,6 @@ public class InventoryUtils {
 					resp.success = false;
 					return resp;
 				}
-
-				// Find inventory
-				int cQuant = 0;
-				PlayerInventoryItem itm = null;
-				if (request.itemUniqueID != -1)
-					itm = cont.getItem(request.itemUniqueID);
-				if (itm == null)
-					itm = cont.findFirst(request.itemID);
-				if (itm != null)
-					cQuant = itm.getQuantity();
-
-				// Check
-				int newQuant = cQuant + request.quantity;
-				if (newQuant < 0) {
-					// Invalid
-					LogManager.getLogger("ItemManager")
-							.warn("Warning! Security checks did not pass for common inventory request of user '"
-									+ data.getAccount().getUsername() + "', failed item ID: " + request.itemID
-									+ " (quantity: " + request.quantity
-									+ "), item was NOT added to inventory. (invalid quantity in request, resulting quantity would be less than zero)");
-					resp = new InventoryUpdateResponseData();
-					resp.success = false;
-					return resp;
-				}
 			}
 
 			// Add
@@ -528,7 +524,6 @@ public class InventoryUtils {
 				if (itm == null)
 					itm = cont.findFirst(request.itemID);
 				// TODO: complete implementation
-				// TODO: default security
 
 				// Run security checks
 				boolean invalid = false;
@@ -547,36 +542,25 @@ public class InventoryUtils {
 				if (invalid)
 					continue; // Skip the request
 
-				// Check old quantity
-				int cQuant = 0;
-				if (itm != null)
-					cQuant = itm.getQuantity();
-				if (cQuant <= 0 && request.quantity < 0) {
-					// Invalid
-					LogManager.getLogger("ItemManager")
-							.warn("Warning! Security checks did not pass for common inventory request of user '"
-									+ data.getAccount().getUsername() + "', failed item ID: " + request.itemID
-									+ " (quantity: " + request.quantity
-									+ "), item was NOT added to inventory. (invalid quantity in request, resulting quantity would be less than zero)");
-					continue;
-				}
-
 				// Check
-				if (itm == null)
-					itm = cont.createItem(request.itemID, 0);
+				int newQuant = request.quantity;
+				if (itm != null || request.quantity > 0) {
+					if (itm == null)
+						itm = cont.createItem(request.itemID, 0);
 
-				// Update
-				int newQuant = itm.getQuantity() + request.quantity;
-				itm.setQuantity(newQuant);
-				if (request.uses != null) {
-					int uses = 0;
-					if (itm.getUses() != -1)
-						uses = itm.getUses();
-					itm.setUses(uses + Integer.parseInt(request.uses));
+					// Update
+					newQuant = itm.getQuantity() + request.quantity;
+					itm.setQuantity(newQuant);
+					if (request.uses != null) {
+						int uses = 0;
+						if (itm.getUses() != -1)
+							uses = itm.getUses();
+						itm.setUses(uses + Integer.parseInt(request.uses));
+					}
 				}
 
 				// Add update
-				if (newQuant > 0) {
+				if (newQuant > 0 || request.quantity == 0) {
 					ItemUpdateBlock b = new ItemUpdateBlock();
 					b.itemID = itm.getItemDefID();
 					b.itemUniqueID = itm.getUniqueID();
@@ -589,6 +573,150 @@ public class InventoryUtils {
 		// Set response
 		resp.updateItems = updates.toArray(t -> new ItemUpdateBlock[t]);
 		return resp;
+	}
+
+	/**
+	 * Purchases items
+	 * 
+	 * @param shopID           Shop ID
+	 * @param items            Items to buy
+	 * @param account          Account object
+	 * @param save             Save to use
+	 * @param openMysteryBoxes True to automatically open mystery boxes, false to
+	 *                         add them to the inventory instead
+	 * @return InventoryUpdateResponseData instance
+	 * @throws IOException If purchasing the items fails
+	 */
+	public static InventoryUpdateResponseData purchaseItems(int shopID, ItemRedemptionInfo[] items,
+			AccountObject account, AccountSaveContainer save, boolean openMysteryBoxes) throws IOException {
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Find store
+		ItemStoreInfo store = ItemManager.getInstance().getStore(shopID);
+		if (store != null) {
+			// Create currency block
+			CurrencyUpdateBlock currencyUpdate = new CurrencyUpdateBlock();
+			currencyUpdate.userID = save.getSaveID();
+
+			// Load currency
+			AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+			int currentC = 300;
+			if (currency.entryExists("coins"))
+				currentC = currency.getEntry("coins").getAsInt();
+			AccountDataContainer currencyAccWide = save.getAccount().getAccountData().getChildContainer("currency");
+			int currentG = 0;
+			if (currencyAccWide.entryExists("gems"))
+				currentG = currencyAccWide.getEntry("gems").getAsInt();
+			currencyUpdate.coinCount = currentC;
+			currencyUpdate.gemCount = currentG;
+
+			// Validate items
+			int costGemsTotal = 0;
+			int costCoinsTotal = 0;
+			for (ItemRedemptionInfo itm : items) {
+				if (store.getItem(itm.defID) == null) {
+					// Invalid item ID
+					InventoryUpdateResponseData fail = new InventoryUpdateResponseData();
+					fail.success = false;
+					return fail;
+				}
+
+				// Verify cost
+				CostInfo cost = store.getItem(itm.defID).getFinalCost(false); // FIXME: membership support
+				if (!cost.isFree) {
+					if (cost.isGems) {
+						costGemsTotal += cost.cost;
+					} else if (cost.isCoins) {
+						costCoinsTotal += cost.cost;
+					}
+				}
+			}
+
+			// Check
+			if (costGemsTotal > currencyUpdate.gemCount) {
+				// Not enough gems
+				InventoryUpdateResponseData fail = new InventoryUpdateResponseData();
+				fail.success = false;
+				return fail;
+			} else if (costCoinsTotal > currencyUpdate.coinCount) {
+				// Not enough coins
+				InventoryUpdateResponseData fail = new InventoryUpdateResponseData();
+				fail.success = false;
+				return fail;
+			}
+
+			// Prepare response
+			InventoryUpdateResponseData resp = new InventoryUpdateResponseData();
+			ArrayList<ItemUpdateBlock> itemLst = new ArrayList<ItemUpdateBlock>();
+			ArrayList<PrizeItemInfo> prizeLst = new ArrayList<PrizeItemInfo>();
+
+			// Handle requests
+			resp.success = processItemRedemption(items, account, save, openMysteryBoxes, itemLst, prizeLst,
+					currencyUpdate, null, item -> {
+						// Payment
+						CostInfo cost = item.getFinalCost(false); // FIXME: membership support
+						if (!cost.isFree) {
+							if (cost.isGems) {
+								if (cost.cost > currencyUpdate.gemCount) {
+									// Not enough gems
+									return false;
+								}
+							} else if (cost.isCoins) {
+								if (cost.cost > currencyUpdate.coinCount) {
+									// Not enough coins
+									return false;
+								}
+							}
+						}
+						return true;
+					}, item -> {
+						// Payment
+						CostInfo cost = item.getFinalCost(false); // FIXME: membership support
+						if (!cost.isFree) {
+							if (cost.isGems) {
+								if (cost.cost <= currencyUpdate.gemCount) {
+									// Pay
+									currencyUpdate.gemCount -= cost.cost;
+								} else {
+									// Not enough gems
+									return false;
+								}
+							} else if (cost.isCoins) {
+								if (cost.cost <= currencyUpdate.coinCount) {
+									// Pay
+									currencyUpdate.coinCount -= cost.cost;
+								} else {
+									// Not enough coins
+									return false;
+								}
+							}
+						}
+						return true;
+					}, null);
+
+			// Save
+			if (currencyUpdate.gemCount != currentG) {
+				resp.currencyUpdate = currencyUpdate;
+				currencyAccWide.setEntry("gems", new JsonPrimitive(currencyUpdate.gemCount));
+			}
+			if (currencyUpdate.coinCount != currentC) {
+				resp.currencyUpdate = currencyUpdate;
+				currency.setEntry("coins", new JsonPrimitive(currencyUpdate.coinCount));
+			}
+
+			// Set response
+			resp.prizeItems = prizeLst.toArray(t -> new PrizeItemInfo[t]);
+			resp.updateItems = itemLst.toArray(t -> new ItemUpdateBlock[t]);
+			if (resp.prizeItems.length == 0)
+				resp.prizeItems = null;
+			if (resp.updateItems.length == 0)
+				resp.updateItems = null;
+			return resp;
+		}
+		InventoryUpdateResponseData fail = new InventoryUpdateResponseData();
+		fail.success = false;
+		return fail;
 	}
 
 }

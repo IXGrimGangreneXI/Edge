@@ -35,7 +35,7 @@ public class DefaultItemRedemptionHandler extends AbstractItemRedemptionHandler 
 
 		// Add update
 		ItemUpdateBlock update = null;
-		if (req.quantity != 0) {
+		if (newQuant > 0 || req.quantity == 0) {
 			ItemUpdateBlock b = new ItemUpdateBlock();
 			b.itemID = itm.getItemDefID();
 			b.itemUniqueID = itm.getUniqueID();
