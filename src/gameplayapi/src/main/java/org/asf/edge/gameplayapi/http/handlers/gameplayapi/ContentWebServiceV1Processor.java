@@ -40,6 +40,7 @@ import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.items.ItemRedeemRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
+import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.CurrencyUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
@@ -177,6 +178,57 @@ public class ContentWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApi
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("CIRS", response));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void getUserGameCurrency(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+		if (questManager == null)
+			questManager = QuestManager.getInstance();
+
+		// Handle quest data request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+		AccountSaveContainer save = account.getSave(userID);
+		if (save == null) {
+			setResponseStatus(403, "Forbidden");
+			return;
+		}
+
+		// Load currency
+		CurrencyUpdateBlock c = new CurrencyUpdateBlock();
+		AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+		int currentC = 300;
+		if (currency.entryExists("coins"))
+			currentC = currency.getEntry("coins").getAsInt();
+		AccountDataContainer currencyAccWide = save.getAccount().getAccountData().getChildContainer("currency");
+		int currentG = 0;
+		if (currencyAccWide.entryExists("gems"))
+			currentG = currencyAccWide.getEntry("gems").getAsInt();
+		c.coinCount = currentC;
+		c.gemCount = currentG;
+
+		// Set response
+		c.userID = save.getSaveID();
+		setResponseContent("text/xml", req.generateXmlValue("UserGameCurrency", c));
 	}
 
 	@Function(allowedMethods = { "POST" })

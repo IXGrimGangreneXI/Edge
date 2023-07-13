@@ -60,9 +60,11 @@ public class ItemStoreResponseObject {
 		public float modifier;
 
 		@JsonProperty("iids")
+		@JacksonXmlElementWrapper(useWrapping = false)
 		public int[] itemIDs;
 
 		@JsonProperty("cids")
+		@JacksonXmlElementWrapper(useWrapping = false)
 		public int[] categoryIDs;
 
 		@JsonProperty("ism")

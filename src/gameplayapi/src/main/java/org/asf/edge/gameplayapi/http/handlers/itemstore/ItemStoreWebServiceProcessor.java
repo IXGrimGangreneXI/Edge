@@ -2,15 +2,26 @@ package org.asf.edge.gameplayapi.http.handlers.itemstore;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.TimeZone;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.connective.tasks.AsyncTaskManager;
+import org.asf.edge.common.entities.items.ItemCategoryInfo;
 import org.asf.edge.common.entities.items.ItemInfo;
+import org.asf.edge.common.entities.items.ItemSaleInfo;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
@@ -22,7 +33,9 @@ import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.xmls.items.GetStoreRequestData;
 import org.asf.edge.gameplayapi.xmls.items.GetStoreResponseData;
 import org.asf.edge.gameplayapi.xmls.items.ItemStoreResponseObject;
+import org.asf.edge.gameplayapi.xmls.items.ItemStoreResponseObject.SaleBlock;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
@@ -187,6 +200,53 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 				// Add to object
 				storeData.popularItems = items.toArray(t -> new ItemStoreResponseObject.PopularItemBlock[t]);
 
+				// Find categories
+				ArrayList<Integer> categoryIds = new ArrayList<Integer>();
+				for (ItemInfo itm : store.getItems()) {
+					ItemCategoryInfo[] cats = itm.getCategories();
+					for (ItemCategoryInfo cat : cats) {
+						if (!categoryIds.contains(cat.getCategoryID()))
+							categoryIds.add(cat.getCategoryID());
+					}
+				}
+
+				// Load sales
+				ArrayList<SaleBlock> sales = new ArrayList<SaleBlock>();
+				ObjectMapper mapper = new ObjectMapper();
+				for (ItemSaleInfo sale : itemManager.getSales()) {
+					if (sale.isActive() || sale.isUpcoming()) {
+						// Check sale
+						boolean valid = false;
+						if (IntStream.of(sale.getItemIDs())
+								.anyMatch(t -> Stream.of(store.getItems()).anyMatch(t2 -> t2.getID() == t)))
+							valid = true;
+						else if (IntStream.of(sale.getCategories())
+								.anyMatch(t -> categoryIds.stream().anyMatch(t2 -> t2 == t)))
+							valid = true;
+						if (!valid)
+							continue;
+
+						// Create sale block
+						SimpleDateFormat fmt2 = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+						fmt2.setTimeZone(TimeZone.getTimeZone("UTC"));
+						SaleBlock block = new SaleBlock();
+						block.modifier = sale.getSaleModifier();
+						block.saleID = idHash(mapper.writeValueAsString(sale));
+						block.memberOnly = sale.isMemberOnly();
+						block.categoryIDs = sale.getCategories();
+						block.itemIDs = sale.getItemIDs();
+						block.startDate = fmt2.format(new Date(sale.getStartTime()));
+						block.endDate = fmt2.format(new Date(sale.getEndTime()));
+						if (sales.stream().anyMatch(t -> t.saleID == block.saleID))
+							LogManager.getLogger("ItemManager")
+									.error("Duplicate sale ID due to failure in hashing code for sale '"
+											+ sale.getName()
+											+ "', this must immediately be reported as the store will break down!");
+						sales.add(block);
+					}
+				}
+				storeData.itemSales = sales.toArray(t -> new SaleBlock[t]);
+
 				// Add to response
 				resp.stores[i] = storeData;
 			} else {
@@ -199,6 +259,29 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 				new XmlMapper().writer().withFeatures(ToXmlGenerator.Feature.WRITE_XML_DECLARATION)
 						.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL).withDefaultPrettyPrinter()
 						.withRootName("GetStoreResponse").writeValueAsString(resp));
+	}
+
+	private int idHash(String s) {
+		try {
+			// IK, MD5, its not for security, just need a way to create 4-byte ids
+			// represented as integers
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			byte[] digest = md.digest(s.getBytes("UTF-8"));
+
+			byte[] sub1 = Arrays.copyOfRange(digest, 0, 4);
+			byte[] sub2 = Arrays.copyOfRange(digest, 4, 8);
+			byte[] sub3 = Arrays.copyOfRange(digest, 8, 12);
+			byte[] sub4 = Arrays.copyOfRange(digest, 12, 16);
+			int x1 = ByteBuffer.wrap(sub1).getInt();
+			int x2 = ByteBuffer.wrap(sub2).getInt();
+			int x3 = ByteBuffer.wrap(sub3).getInt();
+			int x4 = ByteBuffer.wrap(sub4).getInt();
+
+			return x1 ^ x2 ^ x3 ^ x4;
+		} catch (UnsupportedEncodingException | NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
+
 	}
 
 	@Function(allowedMethods = { "POST" })

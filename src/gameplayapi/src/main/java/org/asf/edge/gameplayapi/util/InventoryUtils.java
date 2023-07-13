@@ -625,6 +625,14 @@ public class InventoryUtils {
 					return fail;
 				}
 
+				// Check quanity
+				if (itm.quantity < 0) {
+					// Invalid quantity
+					InventoryUpdateResponseData fail = new InventoryUpdateResponseData();
+					fail.success = false;
+					return fail;
+				}
+
 				// Verify cost
 				CostInfo cost = store.getItem(itm.defID).getFinalCost(false); // FIXME: membership support
 				if (!cost.isFree) {
@@ -658,6 +666,7 @@ public class InventoryUtils {
 			resp.success = processItemRedemption(items, account, save, openMysteryBoxes, itemLst, prizeLst,
 					currencyUpdate, null, (item, quant) -> {
 						// Payment
+						item = store.getItem(item.getID());
 						CostInfo cost = item.getFinalCost(false); // FIXME: membership support
 						if (!cost.isFree) {
 							if (cost.isGems) {
@@ -675,6 +684,7 @@ public class InventoryUtils {
 						return true;
 					}, (item, quant) -> {
 						// Payment
+						item = store.getItem(item.getID());
 						CostInfo cost = item.getFinalCost(false); // FIXME: membership support
 						if (!cost.isFree) {
 							// Check type

@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.entities.items.ItemInfo;
+import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -30,6 +31,7 @@ import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
 import org.asf.edge.gameplayapi.xmls.avatars.SetAvatarResultData;
+import org.asf.edge.gameplayapi.xmls.avatars.SetDisplayNameRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.CreatePetResponseData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetCreateRequestData;
@@ -52,6 +54,8 @@ import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -458,6 +462,167 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		} else {
 			setResponseStatus(404, "Not found");
 		}
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public void setDisplayName(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Handle avatar name change request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// Find save
+		AccountSaveContainer save = account.getSave(tkn.saveID);
+
+		// Parse request
+		SetDisplayNameRequestData request = req.parseXmlValue(req.payload.get("request"),
+				SetDisplayNameRequestData.class);
+
+		// Find store
+		ItemStoreInfo store = itemManager.getStore(request.storeID);
+		if (store == null) {
+			// Invalid store
+			SetAvatarResultData resp = new SetAvatarResultData();
+			resp.success = false;
+			resp.statusCode = 255;
+			resp.suggestions = null;
+			setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
+			return;
+		}
+
+		// Find item
+		ItemInfo itm = store.getItem(request.itemID);
+		if (itm == null) {
+			// Invalid item
+			SetAvatarResultData resp = new SetAvatarResultData();
+			resp.success = false;
+			resp.statusCode = 255;
+			resp.suggestions = null;
+			setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
+			return;
+		}
+
+		// Find name
+		String name = request.displayName;
+
+		// Check if not the same
+		if (!name.equalsIgnoreCase(save.getUsername())) {
+			// Check validity
+			if (!manager.isValidUsername(name)) {
+				// Invalid name
+				SetAvatarResultData resp = new SetAvatarResultData();
+				resp.success = false;
+				resp.statusCode = 10;
+				resp.suggestions = null;
+				setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
+				return;
+			}
+
+			// Check filters
+			// FIXME: implement this, use the same error response as invalid names for this
+
+			// Check if in use
+			boolean inUse = false;
+			if (!account.getUsername().equalsIgnoreCase(name) && manager.isUsernameTaken(name)) {
+				inUse = true;
+			} else {
+				// Check if in use by any saves
+				if (Stream.of(account.getSaveIDs()).map(t -> account.getSave(t)).anyMatch(t -> {
+					try {
+						return t.getUsername().equalsIgnoreCase(name) && t.getSaveData().entryExists("avatar");
+					} catch (IOException e) {
+						return false;
+					}
+				})) {
+					inUse = true;
+				}
+			}
+			if (inUse) {
+				// Taken
+				SetAvatarResultData resp = new SetAvatarResultData();
+				resp.success = false;
+				resp.statusCode = 10;
+				resp.suggestions = new SuggestionResultBlock();
+
+				// Generate suggestions
+				// TODO: better suggestions
+				Random rnd = new Random();
+				ArrayList<String> suggestions = new ArrayList<String>();
+				for (int i = 1000; i < 9999; i++) {
+					if (suggestions.size() == 6)
+						break;
+					if (!manager.isUsernameTaken(name + rnd.nextInt(1000, 9999)))
+						suggestions.add(name + rnd.nextInt(1000, 9999));
+				}
+
+				// Set response
+				resp.suggestions.suggestions = suggestions.toArray(t -> new String[t]);
+				setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
+				return;
+			}
+
+			// Set avatar name
+			XmlMapper mapper = new XmlMapper();
+			ObjectNode aviCurrent = mapper.readValue(save.getSaveData().getEntry("avatar").getAsString(),
+					ObjectNode.class);
+			aviCurrent.set("DisplayName", new TextNode(name));
+			save.getSaveData().setEntry("avatar",
+					new JsonPrimitive(mapper.writer().withFeatures(ToXmlGenerator.Feature.WRITE_XML_DECLARATION)
+							.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL).withRootName("AvatarData")
+							.writeValueAsString(aviCurrent)));
+
+			// Set username
+			if (!save.updateUsername(name)) {
+				// Invalid name
+				SetAvatarResultData resp = new SetAvatarResultData();
+				resp.success = false;
+				resp.statusCode = 10;
+				resp.suggestions = null;
+				setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
+				return;
+			}
+
+		}
+
+		// Remove cost
+		AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+		int currentC = 300;
+		if (currency.entryExists("coins"))
+			currentC = currency.getEntry("coins").getAsInt();
+		AccountDataContainer currencyAccWide = save.getAccount().getAccountData().getChildContainer("currency");
+		int currentG = 0;
+		if (currencyAccWide.entryExists("gems"))
+			currentG = currencyAccWide.getEntry("gems").getAsInt();
+		if (!itm.isFree()) {
+			if (itm.costsGems())
+				currencyAccWide.setEntry("gems", new JsonPrimitive(currentG - itm.getGemCost()));
+			if (itm.costsCoins())
+				currency.setEntry("coins", new JsonPrimitive(currentC - itm.getCoinCost()));
+		}
+
+		// Send response
+		SetAvatarResultData resp = new SetAvatarResultData();
+		resp.statusCode = 1;
+		resp.success = true;
+		resp.displayName = name;
+		resp.suggestions = null;
+		setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
 	}
 
 	@Function(allowedMethods = { "POST" })
