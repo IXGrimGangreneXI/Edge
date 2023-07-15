@@ -16,6 +16,6 @@ public class UserRankList {
 
 	@JsonProperty("UserRank")
 	@JacksonXmlElementWrapper(useWrapping = false)
-	public UserRankData[] ranks;
+	public UserRankData.UserRankDataWrapper[] ranks;
 
 }

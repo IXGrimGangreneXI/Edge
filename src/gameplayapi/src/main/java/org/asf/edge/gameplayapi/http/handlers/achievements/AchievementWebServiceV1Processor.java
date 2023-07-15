@@ -72,9 +72,9 @@ public class AchievementWebServiceV1Processor extends BaseApiHandler<EdgeGamepla
 
 		// Find all ranks
 		RankInfo[] ranks = achievementManager.getRankDefinitions();
-		UserRankData[] defs = new UserRankData[ranks.length];
+		UserRankData.UserRankDataWrapper[] defs = new UserRankData.UserRankDataWrapper[ranks.length];
 		for (int i = 0; i < ranks.length; i++)
-			defs[i] = ranks[i].getRawObject();
+			defs[i] = ranks[i].getRawObject().getWrapped();
 
 		// Create response
 		UserRankList lst = new UserRankList();

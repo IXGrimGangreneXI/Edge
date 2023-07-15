@@ -55,9 +55,9 @@ public class AchievementManagerImpl extends AchievementManager {
 			UserRankList rs = mapper.reader().readValue(data, UserRankList.class);
 
 			// Load ranks
-			for (UserRankData rank : rs.ranks) {
-				ranks.put(rank.rankID, new RankInfo(rank));
-				logger.debug("Registered rank: " + rank.rankID + ": " + rank.rankName);
+			for (UserRankData.UserRankDataWrapper rank : rs.ranks) {
+				ranks.put(rank.rankID.value, new RankInfo(rank.getUnwrapped()));
+				logger.debug("Registered rank: " + rank.getUnwrapped().rankID + ": " + rank.getUnwrapped().rankName);
 
 			}
 		} catch (IOException e) {
