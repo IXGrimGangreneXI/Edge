@@ -42,6 +42,6 @@ public class ConfigurationWebServiceProcessor extends BaseApiHandler<EdgeCommonA
 
 		// Dummy
 		setResponseContent("text/xml", "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-				+ "<ArrayOfMMOServerInfo xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://api.jumpstart.com/\" xsi:nil=\"true\">");
+				+ "<ArrayOfMMOServerInfo xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://api.jumpstart.com/\" xsi:nil=\"true\" />");
 	}
 }

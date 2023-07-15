@@ -22,7 +22,11 @@ import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
+import org.asf.edge.gameplayapi.entities.achivements.RankInfo;
+import org.asf.edge.gameplayapi.services.achievements.AchievementManager;
 import org.asf.edge.gameplayapi.xmls.achievements.EmptyAchievementInfoList;
+import org.asf.edge.gameplayapi.xmls.achievements.UserRankData;
+import org.asf.edge.gameplayapi.xmls.achievements.UserRankList;
 import org.asf.edge.gameplayapi.xmls.multipliers.RewardTypeMultiplierData;
 import org.asf.edge.gameplayapi.xmls.multipliers.RewardTypeMultiplierListData;
 
@@ -31,6 +35,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class AchievementWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApiServer> {
+
+	private static AchievementManager achievementManager;
 
 	public AchievementWebServiceV1Processor(EdgeGameplayApiServer server) {
 		super(server);
@@ -56,18 +62,24 @@ public class AchievementWebServiceV1Processor extends BaseApiHandler<EdgeGamepla
 
 	@Function(allowedMethods = { "POST" })
 	public void getAllRanks(FunctionInfo func) throws IOException {
-		// Handle time request
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
+
+		// Handle rank request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 
-		// FIXME: implement properly
+		// Find all ranks
+		RankInfo[] ranks = achievementManager.getRankDefinitions();
+		UserRankData[] defs = new UserRankData[ranks.length];
+		for (int i = 0; i < ranks.length; i++)
+			defs[i] = ranks[i].getRawObject();
 
-		// Load XML
-		InputStream strm = getClass().getClassLoader().getResourceAsStream("ranks.xml");
-		String data = new String(strm.readAllBytes(), "UTF-8");
-		strm.close();
-		setResponseContent("text/xml", data);
+		// Create response
+		UserRankList lst = new UserRankList();
+		lst.ranks = defs;
+		setResponseContent("text/xml", req.generateXmlValue("ArrayOfUserRank", lst));
 	}
 
 	@Function(allowedMethods = { "POST" })

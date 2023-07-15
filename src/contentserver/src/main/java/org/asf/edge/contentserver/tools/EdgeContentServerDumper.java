@@ -182,15 +182,15 @@ public class EdgeContentServerDumper {
 		QuestionListData[] questions = mapper.reader().readValue(data, QuestionListData[].class);
 		for (QuestionListData lst : questions) {
 			if (lst.imageURL != null) {
-				downloadAsset(lst.imageURL, args, path);
+				downloadAsset(lst.imageURL, args[0], new File(args[4]), args[1], args[2], path);
 			}
 			for (QuestionListData.QuestionBlock q : lst.questions) {
 				if (q.imageURL != null) {
-					downloadAsset(q.imageURL, args, path);
+					downloadAsset(q.imageURL, args[0], new File(args[4]), args[1], args[2], path);
 				}
 				for (QuestionListData.QuestionBlock.AnswerBlock a : q.answers) {
 					if (a.imageURL != null) {
-						downloadAsset(a.imageURL, args, path);
+						downloadAsset(a.imageURL, args[0], new File(args[4]), args[1], args[2], path);
 					}
 				}
 			}
@@ -211,7 +211,7 @@ public class EdgeContentServerDumper {
 				// Check asset name
 				String asset = def.get("an").asText();
 				if (asset != null) {
-					downloadAsset(asset, args, path);
+					downloadAsset(asset, args[0], new File(args[4]), args[1], args[2], path);
 				}
 			}
 		}
@@ -220,25 +220,26 @@ public class EdgeContentServerDumper {
 		System.out.println("Finished!");
 	}
 
-	private static void downloadAsset(String asset, String[] args, String path) throws IOException {
+	private static void downloadAsset(String asset, String server, File outputRoot, String version, String platform,
+			String path) throws IOException {
 		// Replace URL
 		if (asset.startsWith("https://media.jumpstart.com/"))
-			asset = args[0] + asset.substring("https://media.jumpstart.com/".length());
+			asset = server + asset.substring("https://media.jumpstart.com/".length());
 		else if (asset.startsWith("http://media.jumpstart.com/"))
-			asset = args[0] + asset.substring("http://media.jumpstart.com/".length());
+			asset = server + asset.substring("http://media.jumpstart.com/".length());
 		else if (asset.startsWith("https://media.schoolofdragons.com/"))
-			asset = args[0] + asset.substring("https://media.schoolofdragons.com/".length());
+			asset = server + asset.substring("https://media.schoolofdragons.com/".length());
 		else if (asset.startsWith("http://media.schoolofdragons.com/"))
-			asset = args[0] + asset.substring("http://media.schoolofdragons.com/".length());
-		if (asset.startsWith(args[0])) {
+			asset = server + asset.substring("http://media.schoolofdragons.com/".length());
+		if (asset.startsWith(server)) {
 			// Download asset
 			URL asU = new URL(asset);
-			String path2 = asset.substring(args[0].length());
-			File dest = new File(args[4], path2);
-			File outputFile = new File(args[4], path2 + ".tmp");
+			String path2 = asset.substring(server.length());
+			File dest = new File(outputRoot, path2);
+			File outputFile = new File(outputRoot, path2 + ".tmp");
 
 			// Download image
-			System.out.println("Downloading: " + asset + " -> " + new File(args[4], path2).getPath());
+			System.out.println("Downloading: " + asset + " -> " + new File(outputRoot, path2).getPath());
 			try {
 				outputFile.getParentFile().mkdirs();
 				InputStream strmI = asU.openStream();
@@ -255,13 +256,12 @@ public class EdgeContentServerDumper {
 			}
 
 			// Download for each quality level
-			outputFile = new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1]
+			outputFile = new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version
 					+ ("/" + path).replace("/Mid/", "/Low/") + "/" + path2 + ".tmp");
-			dest = new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1]
+			dest = new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version
 					+ ("/" + path).replace("/Mid/", "/Low/") + "/" + path2);
-			System.out.println("Downloading: " + asset + " -> " + new File(args[4],
-					"DWADragonsUnity/" + args[2] + "/" + args[1] + ("/" + path).replace("/Mid/", "/Low/") + "/" + path2)
-					.getPath());
+			System.out.println("Downloading: " + asset + " -> " + new File(outputRoot, "DWADragonsUnity/" + platform
+					+ "/" + version + ("/" + path).replace("/Mid/", "/Low/") + "/" + path2).getPath());
 			try {
 				outputFile.getParentFile().mkdirs();
 				InputStream strmI = asU.openStream();
@@ -276,11 +276,11 @@ public class EdgeContentServerDumper {
 			} catch (IOException e) {
 				System.err.println("Failure! " + asset + " was not downloaded!");
 			}
-			outputFile = new File(args[4],
-					"DWADragonsUnity/" + args[2] + "/" + args[1] + "/" + path + "/" + path2 + ".tmp");
-			dest = new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1] + "/" + path + "/" + path2);
+			outputFile = new File(outputRoot,
+					"DWADragonsUnity/" + platform + "/" + version + "/" + path + "/" + path2 + ".tmp");
+			dest = new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version + "/" + path + "/" + path2);
 			System.out.println("Downloading: " + asset + " -> "
-					+ new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1] + "/" + path + "/" + path2)
+					+ new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version + "/" + path + "/" + path2)
 							.getPath());
 			try {
 				outputFile.getParentFile().mkdirs();
@@ -296,12 +296,12 @@ public class EdgeContentServerDumper {
 			} catch (IOException e) {
 				System.err.println("Failure! " + asset + " was not downloaded!");
 			}
-			outputFile = new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1]
+			outputFile = new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version
 					+ ("/" + path).replace("/Mid/", "/High/") + "/" + path2 + ".tmp");
-			dest = new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1]
+			dest = new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version
 					+ ("/" + path).replace("/Mid/", "/High/") + "/" + path2);
-			System.out.println("Downloading: " + asset + " -> " + new File(args[4], "DWADragonsUnity/" + args[2] + "/"
-					+ args[1] + ("/" + path).replace("/Mid/", "/High/") + "/" + path2).getPath());
+			System.out.println("Downloading: " + asset + " -> " + new File(outputRoot, "DWADragonsUnity/" + platform
+					+ "/" + version + ("/" + path).replace("/Mid/", "/High/") + "/" + path2).getPath());
 			try {
 				outputFile.getParentFile().mkdirs();
 				InputStream strmI = asU.openStream();
@@ -456,99 +456,35 @@ public class EdgeContentServerDumper {
 										.substring(line.indexOf("<BkgIconRes>") + "<BkgIconRes>".length());
 								promoUrl = promoUrl.substring(0, promoUrl.indexOf("</BkgIconRes>"));
 								promoUrl = decodeXML(promoUrl);
-
-								try {
-									// Get path
-									URL promoU = new URL(promoUrl);
-									String path2 = promoU.getPath();
-									File dest = new File(outputRoot, path2);
-									if (dest.exists())
-										continue;
-									File outputFile = new File(outputRoot, path2 + ".tmp");
-
-									// Download image
-									System.out.println("Downloading: " + promoUrl + " -> "
-											+ new File(outputRoot, path2).getPath());
-									outputFile.getParentFile().mkdirs();
-									InputStream strmI = new URL(promoUrl).openStream();
-									FileOutputStream fO = new FileOutputStream(outputFile);
-									strmI.transferTo(fO);
-									fO.close();
-
-									// Finish
-									if (dest.exists())
-										dest.delete();
-									outputFile.renameTo(dest);
-								} catch (IOException e) {
-									System.err.println("Failure! " + promoUrl + " was not downloaded!");
-									failed.add(promoUrl);
-								}
+								if (!promoUrl.startsWith("http"))
+									continue;
+								URL dataUrl = new URL(conf.dataURL[0].replace("{Version}", version));
+								String pth = dataUrl.getPath().substring(
+										dataUrl.getPath().indexOf("DWADragonsUnity/" + platform + "/" + version)
+												+ ("DWADragonsUnity/" + platform + "/" + version).length() + 1);
+								downloadAsset(promoUrl, server, outputRoot, version, platform, pth);
 							} else if (line.contains("<IconRes>")) {
 								String promoUrl = line.substring(line.indexOf("<IconRes>") + "<IconRes>".length());
 								promoUrl = promoUrl.substring(0, promoUrl.indexOf("</IconRes>"));
 								promoUrl = decodeXML(promoUrl);
 								if (!promoUrl.startsWith("http"))
 									continue;
-
-								try {
-									// Get path
-									URL promoU = new URL(promoUrl);
-									String path2 = promoU.getPath();
-									File dest = new File(outputRoot, path2);
-									if (dest.exists())
-										continue;
-									File outputFile = new File(outputRoot, path2 + ".tmp");
-
-									// Download image
-									System.out.println("Downloading: " + promoUrl + " -> "
-											+ new File(outputRoot, path2).getPath());
-									outputFile.getParentFile().mkdirs();
-									InputStream strmI = new URL(promoUrl).openStream();
-									FileOutputStream fO = new FileOutputStream(outputFile);
-									strmI.transferTo(fO);
-									fO.close();
-
-									// Finish
-									if (dest.exists())
-										dest.delete();
-									outputFile.renameTo(dest);
-								} catch (IOException e) {
-									System.err.println("Failure! " + promoUrl + " was not downloaded!");
-									failed.add(promoUrl);
-								}
+								URL dataUrl = new URL(conf.dataURL[0].replace("{Version}", version));
+								String pth = dataUrl.getPath().substring(
+										dataUrl.getPath().indexOf("DWADragonsUnity/" + platform + "/" + version)
+												+ ("DWADragonsUnity/" + platform + "/" + version).length() + 1);
+								downloadAsset(promoUrl, server, outputRoot, version, platform, pth);
 							} else if (line.contains("<ImageRes>")) {
 								String promoUrl = line.substring(line.indexOf("<ImageRes>") + "<ImageRes>".length());
 								promoUrl = promoUrl.substring(0, promoUrl.indexOf("</ImageRes>"));
 								promoUrl = decodeXML(promoUrl);
 								if (!promoUrl.startsWith("http"))
 									continue;
-
-								try {
-									// Get path
-									URL promoU = new URL(promoUrl);
-									String path2 = promoU.getPath();
-									File dest = new File(outputRoot, path2);
-									if (dest.exists())
-										continue;
-									File outputFile = new File(outputRoot, path2 + ".tmp");
-
-									// Download image
-									System.out.println("Downloading: " + promoUrl + " -> "
-											+ new File(outputRoot, path2).getPath());
-									outputFile.getParentFile().mkdirs();
-									InputStream strmI = new URL(promoUrl).openStream();
-									FileOutputStream fO = new FileOutputStream(outputFile);
-									strmI.transferTo(fO);
-									fO.close();
-
-									// Finish
-									if (dest.exists())
-										dest.delete();
-									outputFile.renameTo(dest);
-								} catch (IOException e) {
-									System.err.println("Failure! " + promoUrl + " was not downloaded!");
-									failed.add(promoUrl);
-								}
+								URL dataUrl = new URL(conf.dataURL[0].replace("{Version}", version));
+								String pth = dataUrl.getPath().substring(
+										dataUrl.getPath().indexOf("DWADragonsUnity/" + platform + "/" + version)
+												+ ("DWADragonsUnity/" + platform + "/" + version).length() + 1);
+								downloadAsset(promoUrl, server, outputRoot, version, platform, pth);
 							}
 						}
 					} else if (nm.equals("LoadScreenDataDO.xml")) {
@@ -695,10 +631,20 @@ public class EdgeContentServerDumper {
 
 						// Read XML into memory
 						String xml = Files.readString(outputFile.toPath());
-						for (String u2 : urlsToSwap) {
-							if (xml.contains(u2)) {
-								// Swap it for our new server
-								xml = xml.replace(u2, newServerURL);
+						if (path.endsWith("/DailyBonusAndPromoDO.xml")) {
+							// Swap out media URLS
+							for (String u2 : urlsToSwap) {
+								if (xml.contains(u2)) {
+									// Swap it for our new server
+									xml = xml.replace(u2, "RS_DATA/");
+								}
+							}
+						} else {
+							for (String u2 : urlsToSwap) {
+								if (xml.contains(u2)) {
+									// Swap it for our new server
+									xml = xml.replace(u2, newServerURL);
+								}
 							}
 						}
 
