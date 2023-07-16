@@ -270,7 +270,7 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 		if (!manager.accountExists(id)) {
 			// Log
 			getServerInstance().getLogger().warn("Account login from IP " + func.getClient().getRemoteAddress()
-					+ " rejected for " + id + ": account not found");
+					+ " rejected for " + login.username + ": account not found");
 
 			// ID does not exist
 			invalidUserCallback(login.username, null, req);

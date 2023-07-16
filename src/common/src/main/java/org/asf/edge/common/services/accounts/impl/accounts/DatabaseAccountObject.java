@@ -460,6 +460,7 @@ public class DatabaseAccountObject extends AccountObject {
 		// Delete account
 		try {
 			Connection conn = DriverManager.getConnection(url, props);
+			JsonArray saves = null;
 			try {
 				try {
 					// Create prepared statement
@@ -492,7 +493,7 @@ public class DatabaseAccountObject extends AccountObject {
 					ResultSet res = statement.executeQuery();
 					if (!res.next())
 						return;
-					JsonArray saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
+					saves = JsonParser.parseString(res.getString("SAVES")).getAsJsonArray();
 
 					// Delete each save
 					for (JsonElement saveEle : saves) {
@@ -502,10 +503,6 @@ public class DatabaseAccountObject extends AccountObject {
 						statement = conn.prepareStatement("DELETE FROM SAVEUSERNAMEMAP WHERE ID = ?");
 						statement.setString(1, saveObj.get("id").getAsString());
 						statement.execute();
-
-						// Delete save
-						new DatabaseSaveDataContainer(this, getSave(saveObj.get("id").getAsString()), url, props)
-								.deleteContainer();
 					}
 
 					// Delete save list
@@ -519,6 +516,15 @@ public class DatabaseAccountObject extends AccountObject {
 				}
 			} finally {
 				conn.close();
+			}
+
+			// Delete each save
+			for (JsonElement saveEle : saves) {
+				JsonObject saveObj = saveEle.getAsJsonObject();
+
+				// Delete save
+				new DatabaseSaveDataContainer(this, getSave(saveObj.get("id").getAsString()), url, props)
+						.deleteContainer();
 			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to delete account '" + id + "'", e);

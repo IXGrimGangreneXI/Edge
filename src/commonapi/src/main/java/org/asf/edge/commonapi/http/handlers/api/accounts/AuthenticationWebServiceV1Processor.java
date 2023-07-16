@@ -8,6 +8,9 @@ import java.util.TimeZone;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.Function;
+import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
@@ -16,6 +19,7 @@ import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
+import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
 import org.asf.edge.commonapi.xmls.auth.UserInfoData;
 
 public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeCommonApiServer> {
@@ -42,6 +46,30 @@ public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeComm
 		// Handle request
 		path = path;
 		setResponseStatus(404, "Not found");
+	}
+
+	@Function(value = "DeleteAccountNotification", allowedMethods = { "POST" })
+	public FunctionResult deleteAccount(FunctionInfo func) throws IOException {
+		// Handle login request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return response(400, "Bad request");
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			return response(404, "Not found");
+		}
+
+		// Delete account
+		account.deleteAccount();
+
+		// Done
+		return ok("text/xml", req.generateXmlValue("MembershipUserStatus", LoginStatusType.Success));
 	}
 
 	@LegacyFunction(allowedMethods = { "POST" })
