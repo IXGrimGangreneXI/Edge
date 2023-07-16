@@ -21,6 +21,9 @@ import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
 import org.asf.edge.commonapi.xmls.auth.ParentLoginData;
 import org.asf.edge.commonapi.xmls.auth.ParentLoginResponseData;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+
 public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeCommonApiServer> {
 
 	private static AccountManager manager;
@@ -244,20 +247,10 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 		String parentLoginData = req.getEncryptedValue("parentLoginData");
 		ParentLoginData login = req.parseXmlValue(parentLoginData, ParentLoginData.class);
 
-		// Return null if the username is on cooldown
-		if (usernameLock.containsKey(login.username.toLowerCase())) {
-			// Locked
-			ParentLoginResponseData resp = new ParentLoginResponseData();
-			resp.status = LoginStatusType.InvalidUserName;
-			setResponseContent("text/xml",
-					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
-			return;
-		}
-
 		// Find account
 		if (!manager.isValidUsername(login.username)) {
 			// Invalid username
-			invalidUserCallback(login.username, req);
+			invalidUserCallback(login.username, null, req);
 			return;
 		}
 		if (!manager.isUsernameTaken(login.username)) {
@@ -266,30 +259,21 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 					+ " rejected for " + login.username + ": account not found");
 
 			// Account not found
-			invalidUserCallback(login.username, req);
+			invalidUserCallback(login.username, null, req);
 			return;
 		}
 
 		// Retrieve ID
 		String id = manager.getAccountID(login.username);
+
+		// Check ID
 		if (!manager.accountExists(id)) {
 			// Log
 			getServerInstance().getLogger().warn("Account login from IP " + func.getClient().getRemoteAddress()
 					+ " rejected for " + id + ": account not found");
 
 			// ID does not exist
-			invalidUserCallback(login.username, req);
-			return;
-		}
-
-		// Password check
-		if (!manager.verifyPassword(id, login.password)) {
-			// Log
-			getServerInstance().getLogger().warn("Account login from IP " + func.getClient().getRemoteAddress()
-					+ " rejected for " + id + ": invalid password");
-
-			// Password incorrect
-			invalidUserCallback(login.username, req);
+			invalidUserCallback(login.username, null, req);
 			return;
 		}
 
@@ -301,7 +285,37 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 					+ " rejected for " + acc.getAccountID() + ": guest accounts may not be directly logged in on");
 
 			// NO
-			invalidUserCallback(login.username, req);
+			invalidUserCallback(login.username, acc, req);
+			return;
+		}
+
+		// Return invalid if the username is on cooldown
+		JsonElement lock = acc.getAccountData().getChildContainer("accountdata").getEntry("lockedsince");
+		if (lock != null && (System.currentTimeMillis() - lock.getAsLong()) < 8000) {
+			// Log
+			getServerInstance().getLogger().warn("Account login from IP " + func.getClient().getRemoteAddress()
+					+ " rejected for " + acc.getAccountID() + ": login rejected by antibruteforce");
+
+			// Locked
+			ParentLoginResponseData resp = new ParentLoginResponseData();
+			resp.status = LoginStatusType.InvalidUserName;
+			setResponseContent("text/xml",
+					req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
+			try {
+				Thread.sleep(8000);
+			} catch (InterruptedException e) {
+			}
+			return;
+		}
+
+		// Password check
+		if (!manager.verifyPassword(id, login.password)) {
+			// Log
+			getServerInstance().getLogger().warn("Account login from IP " + func.getClient().getRemoteAddress()
+					+ " rejected for " + id + ": invalid password");
+
+			// Password incorrect
+			invalidUserCallback(login.username, acc, req);
 			return;
 		}
 
@@ -337,15 +351,17 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
 	}
 
-	private void invalidUserCallback(String username, ServiceRequestInfo req) throws IOException {
+	private void invalidUserCallback(String username, AccountObject account, ServiceRequestInfo req)
+			throws IOException {
 		ParentLoginResponseData resp = new ParentLoginResponseData();
 		resp.status = LoginStatusType.InvalidUserName;
 		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
-		usernameLock.put(username.toLowerCase(), 8);
+		if (account != null)
+			account.getAccountData().getChildContainer("accountdata").setEntry("lockedsince",
+					new JsonPrimitive(System.currentTimeMillis()));
 		try {
 			Thread.sleep(8000);
 		} catch (InterruptedException e) {
 		}
 	}
-
 }
