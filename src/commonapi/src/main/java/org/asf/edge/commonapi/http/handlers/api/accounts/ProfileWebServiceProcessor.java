@@ -10,13 +10,15 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.entities.items.PlayerInventoryItem;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
@@ -31,12 +33,13 @@ import org.asf.edge.commonapi.xmls.data.ProfileData.AvatarBlock.SubscriptionBloc
 import org.asf.edge.commonapi.xmls.data.ProfileDataList;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServer> {
+public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServer> {
 
 	private static AccountManager manager;
 
@@ -62,8 +65,8 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getProfileTagAll(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getProfileTagAll(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -76,8 +79,8 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 		setResponseContent("text/xml", req.generateXmlValue("ArrayOfProfileTag", null));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getQuestions(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getQuestions(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -120,8 +123,8 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 		// TODO: filter
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getUserProfile(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getUserProfile(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -148,13 +151,23 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 			return;
 		}
 
-		// Find save
-		setResponseContent("text/xml",
-				req.generateXmlValue("UserProfileDisplayData", getProfile(tkn.saveID, account, req, false)));
+		// Find profile
+		ProfileData profile = getProfile(tkn.saveID, account, req, false);
+
+		// Check filter
+		if (TextFilterService.getInstance().isFiltered(account.getSave(profile.id).getUsername(),
+				account.isStrictChatFilterEnabled())) {
+			// Filtered
+			if (profile.avatar.avatarData.has("DisplayName"))
+				profile.avatar.avatarData.remove("DisplayName");
+		}
+
+		// Set response
+		setResponseContent("text/xml", req.generateXmlValue("UserProfileDisplayData", profile));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getUserProfileByUserID(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getUserProfileByUserID(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -186,19 +199,39 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 				return;
 			}
 
-			// Found it
-			setResponseContent("text/xml", req.generateXmlValue("UserProfileDisplayData",
-					getProfile(save.getSaveID(), save.getAccount(), req, true)));
+			// Find profile
+			ProfileData profile = getProfile(save.getSaveID(), save.getAccount(), req, true);
+
+			// Check filter
+			if (TextFilterService.getInstance().isFiltered(save.getUsername(), account.isStrictChatFilterEnabled())) {
+				// Filtered
+				if (profile.avatar.avatarData.has("DisplayName"))
+					profile.avatar.avatarData.set("DisplayName", new TextNode(TextFilterService.getInstance()
+							.filterString(save.getUsername(), account.isStrictChatFilterEnabled())));
+			}
+
+			// Set response
+			setResponseContent("text/xml", req.generateXmlValue("UserProfileDisplayData", profile));
 			return;
 		}
 
+		// Find profile
+		ProfileData profile = getProfile(save.getSaveID(), account, req, false);
+
+		// Check filter
+		if (TextFilterService.getInstance().isFiltered(account.getSave(profile.id).getUsername(),
+				account.isStrictChatFilterEnabled())) {
+			// Filtered
+			if (profile.avatar.avatarData.has("DisplayName"))
+				profile.avatar.avatarData.remove("DisplayName");
+		}
+
 		// Set response
-		setResponseContent("text/xml",
-				req.generateXmlValue("UserProfileDisplayData", getProfile(save.getSaveID(), account, req, false)));
+		setResponseContent("text/xml", req.generateXmlValue("UserProfileDisplayData", profile));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getDetailedChildList(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getDetailedChildList(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -337,6 +370,13 @@ public class ProfileWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServ
 				a.questionID = Integer.parseInt(key);
 				profile.answerData.answers[i++] = a;
 			}
+		}
+
+		// Check filter
+		if (TextFilterService.getInstance().isFiltered(save.getUsername(), account.isStrictChatFilterEnabled())) {
+			// Force name change
+			if (profile.avatar.avatarData != null && profile.avatar.avatarData.has("DisplayName"))
+				profile.avatar.avatarData.set("DisplayName", new TextNode("Viking-" + save.getSaveID()));
 		}
 
 		// TODO

@@ -23,9 +23,9 @@ import org.asf.edge.common.entities.items.ItemCategoryInfo;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.ItemSaleInfo;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
@@ -42,7 +42,7 @@ import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApiServer> {
+public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApiServer> {
 
 	private static ItemManager itemManager;
 	private static boolean popularItemManagementInited = false;
@@ -69,8 +69,8 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getRankAttributeData(FunctionInfo info) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getRankAttributeData(LegacyFunctionInfo info) throws IOException {
 		// Handle request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
@@ -133,8 +133,8 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 		});
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getStore(FunctionInfo info) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getStore(LegacyFunctionInfo info) throws IOException {
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
 
@@ -284,8 +284,8 @@ public class ItemStoreWebServiceProcessor extends BaseApiHandler<EdgeGameplayApi
 
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getItem(FunctionInfo info) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getItem(LegacyFunctionInfo info) throws IOException {
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
 

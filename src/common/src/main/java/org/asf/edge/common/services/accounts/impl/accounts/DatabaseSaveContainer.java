@@ -14,6 +14,7 @@ import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.textfilter.TextFilterService;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -97,7 +98,8 @@ public class DatabaseSaveContainer extends AccountSaveContainer {
 		}
 
 		// Check filters
-		// FIXME: IMPLEMENT THIS
+		if (TextFilterService.getInstance().isFiltered(name, acc.isStrictChatFilterEnabled()))
+			return false;
 
 		try {
 			Connection conn = DriverManager.getConnection(url, props);

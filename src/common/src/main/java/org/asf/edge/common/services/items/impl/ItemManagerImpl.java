@@ -285,7 +285,7 @@ public class ItemManagerImpl extends ItemManager {
 
 					// Wait a bit
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(30000);
 					} catch (InterruptedException e) {
 					}
 				}

@@ -24,6 +24,7 @@ import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.DatabaseAccountManager;
+import org.asf.edge.common.services.textfilter.TextFilterService;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -151,7 +152,8 @@ public class DatabaseAccountObject extends AccountObject {
 			return false;
 
 		// Check filters
-		// FIXME: IMPLEMENT THIS
+		if (TextFilterService.getInstance().isFiltered(name, isStrictChatFilterEnabled()))
+			return false;
 
 		try {
 			Connection conn = DriverManager.getConnection(url, props);
@@ -250,7 +252,8 @@ public class DatabaseAccountObject extends AccountObject {
 			return false;
 
 		// Check filters
-		// FIXME: IMPLEMENT THIS
+		if (TextFilterService.getInstance().isFiltered(newName, isStrictChatFilterEnabled()))
+			return false;
 
 		// Update username
 		if (!updateUsername(newName))
@@ -327,54 +330,27 @@ public class DatabaseAccountObject extends AccountObject {
 	@Override
 	public boolean isMultiplayerEnabled() {
 		try {
-			Connection conn = DriverManager.getConnection(url, props);
-			try {
-				// Create prepared statement
-				var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
-				statement.setString(1, id + "//accountdata/ismultiplayerenabled");
-				ResultSet res = statement.executeQuery();
-				if (!res.next())
-					return false;
-				String data = res.getString("DATA");
-				if (data == null)
-					return false;
-				return JsonParser.parseString(data).getAsBoolean();
-			} finally {
-				conn.close();
-			}
-		} catch (SQLException e) {
-			logger.error("Failed to execute database query request while trying to check multiplayer state of ID '" + id
-					+ "'", e);
+			JsonElement ele = getAccountData().getChildContainer("accountdata").getEntry("ismultiplayerenabled");
+			if (ele == null)
+				return false;
+			return ele.getAsBoolean();
+		} catch (IOException e) {
 			return false;
 		}
 	}
 
 	@Override
 	public boolean isChatEnabled() {
-		try {
-			// Check guest
-			if (isGuestAccount())
-				return false; // Guests cannot chat
+		// Check guest
+		if (isGuestAccount())
+			return false; // Guests cannot chat
 
-			// Check from account data
-			Connection conn = DriverManager.getConnection(url, props);
-			try {
-				// Create prepared statement
-				var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
-				statement.setString(1, id + "//accountdata/ischatenabled");
-				ResultSet res = statement.executeQuery();
-				if (!res.next())
-					return false;
-				String data = res.getString("DATA");
-				if (data == null)
-					return false;
-				return JsonParser.parseString(data).getAsBoolean();
-			} finally {
-				conn.close();
-			}
-		} catch (SQLException e) {
-			logger.error("Failed to execute database query request while trying to check chat state of ID '" + id + "'",
-					e);
+		try {
+			JsonElement ele = getAccountData().getChildContainer("accountdata").getEntry("ischatenabled");
+			if (ele == null)
+				return false;
+			return ele.getAsBoolean();
+		} catch (IOException e) {
 			return false;
 		}
 	}
@@ -382,24 +358,11 @@ public class DatabaseAccountObject extends AccountObject {
 	@Override
 	public boolean isStrictChatFilterEnabled() {
 		try {
-			Connection conn = DriverManager.getConnection(url, props);
-			try {
-				// Create prepared statement
-				var statement = conn.prepareStatement("SELECT DATA FROM ACCOUNTWIDEPLAYERDATA WHERE PATH = ?");
-				statement.setString(1, id + "//accountdata/isstrictchatfilterenabled");
-				ResultSet res = statement.executeQuery();
-				if (!res.next())
-					return false;
-				String data = res.getString("DATA");
-				if (data == null)
-					return false;
-				return JsonParser.parseString(data).getAsBoolean();
-			} finally {
-				conn.close();
-			}
-		} catch (SQLException e) {
-			logger.error("Failed to execute database query request while trying to check chat filter state of ID '" + id
-					+ "'", e);
+			JsonElement ele = getAccountData().getChildContainer("accountdata").getEntry("isstrictchatfilterenabled");
+			if (ele == null)
+				return false;
+			return ele.getAsBoolean();
+		} catch (IOException e) {
 			return false;
 		}
 	}
@@ -625,7 +588,8 @@ public class DatabaseAccountObject extends AccountObject {
 			return null;
 
 		// Check filters
-		// FIXME: IMPLEMENT THIS
+		if (TextFilterService.getInstance().isFiltered(username, isStrictChatFilterEnabled()))
+			return null;
 
 		// Generate save ID
 		String saveID = UUID.randomUUID().toString();

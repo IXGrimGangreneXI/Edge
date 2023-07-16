@@ -1,6 +1,7 @@
 package org.asf.edge.common.http.apihandlerutils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -16,8 +17,11 @@ import org.apache.logging.log4j.Logger;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.IBaseServer;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
 import org.asf.edge.common.http.cookies.CookieContext;
 import org.asf.edge.common.http.cookies.CookieManager;
 import org.asf.edge.common.util.TripleDesUtil;
@@ -29,14 +33,15 @@ import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 
 /**
  * 
- * Base API request handler for all api servers
+ * Edge Web Service Abstract
  * 
  * @author Sky Swimmer
  *
  * @param <T> Server type
  * 
  */
-public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProcessor {
+@SuppressWarnings("deprecation")
+public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProcessor {
 	private static XmlMapper mapper = new XmlMapper();
 	static {
 		mapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true);
@@ -86,10 +91,11 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 
 	private Utilities utils = new Utilities();
 	private HashMap<String, Method> functions = new HashMap<String, Method>();
+	private HashMap<String, Method> legacyFunctions = new HashMap<String, Method>();
 	private CookieContext cookies;
 	private T server;
 
-	public BaseApiHandler(T server) {
+	public EdgeWebService(T server) {
 		this.server = server;
 		initialize();
 	}
@@ -99,7 +105,24 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 		for (Method meth : getClass().getMethods()) {
 			if (!Modifier.isAbstract(meth.getModifiers()) && !Modifier.isStatic(meth.getModifiers())) {
 				// Check parameters
-				if (meth.getParameterCount() == 1 && FunctionInfo.class.isAssignableFrom(meth.getParameterTypes()[0])) {
+				if (meth.getParameterCount() == 1
+						&& LegacyFunctionInfo.class.isAssignableFrom(meth.getParameterTypes()[0])) {
+					// Check annotation
+					if (meth.isAnnotationPresent(LegacyFunction.class)) {
+						LegacyFunction funcAnno = meth.getAnnotation(LegacyFunction.class);
+						String name = meth.getName();
+						if (!funcAnno.value().equals("<auto>"))
+							name = funcAnno.value();
+
+						// Make accessible
+						meth.setAccessible(true);
+
+						// Register
+						legacyFunctions.put(name.toLowerCase(), meth);
+					}
+				} else if (meth.getParameterCount() == 1
+						&& FunctionInfo.class.isAssignableFrom(meth.getParameterTypes()[0])
+						&& FunctionResult.class.isAssignableFrom(meth.getReturnType())) {
 					// Check annotation
 					if (meth.isAnnotationPresent(Function.class)) {
 						Function funcAnno = meth.getAnnotation(Function.class);
@@ -174,7 +197,54 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 
 			// Run function
 			try {
-				mth.invoke(this, new FunctionInfo(path, getRequest(), getResponse(), getServer(), method, client,
+				FunctionResult res = (FunctionResult) mth.invoke(this, new FunctionInfo(path, getRequest(),
+						getResponse(), getServer(), method, client, contentType, getCookies()));
+
+				// Set response
+				setResponseStatus(res.getStatusCode(), res.getStatusMessage());
+				if (res.hasResponseBody()) {
+					// Check response modes
+					if (res.getContentLength() != -1) {
+						// With length
+						if (res.getResponseMediaType() != null)
+							setResponseContent(res.getResponseMediaType(), res.getResponseBodyStream(),
+									res.getContentLength());
+						else
+							setResponseContent(res.getResponseBodyStream(), res.getContentLength());
+					} else {
+						// Without length
+						if (res.getResponseMediaType() != null)
+							setResponseContent(res.getResponseMediaType(), res.getResponseBodyStream());
+						else
+							setResponseContent(res.getResponseBodyStream());
+					}
+				}
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+				throw new RuntimeException(e);
+			}
+			return;
+		}
+		if (legacyFunctions.containsKey(path.toLowerCase())) {
+			// Get function
+			Method mth = legacyFunctions.get(path.toLowerCase());
+			LegacyFunction anno = mth.getAnnotation(LegacyFunction.class);
+
+			// Check method
+			boolean allowed = false;
+			for (String meth : anno.allowedMethods()) {
+				if (meth.equalsIgnoreCase(method)) {
+					allowed = true;
+					break;
+				}
+			}
+			if (!allowed) {
+				setResponseStatus(405, "Method not allowed");
+				return;
+			}
+
+			// Run function
+			try {
+				mth.invoke(this, new LegacyFunctionInfo(path, getRequest(), getResponse(), getServer(), method, client,
 						contentType, getCookies()));
 			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 				throw new RuntimeException(e);
@@ -231,7 +301,8 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 	}
 
 	/**
-	 * Retrieves the utilities container for this api handler
+	 * Retrieves the utilities container for this api handler (specifically for
+	 * JumpStart client compatibility)
 	 * 
 	 * @return Utilities instance
 	 */
@@ -503,6 +574,200 @@ public abstract class BaseApiHandler<T extends IBaseServer> extends HttpPushProc
 			return Base32.toBase32String(token.getBytes("UTF-8"));
 		}
 
+	}
+
+	/**
+	 * Creates a function result object with no response body (errors will use
+	 * default error page)
+	 */
+	public FunctionResult ok() {
+		return new FunctionResult(200, "OK");
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param mediaType    Response media type
+	 * @param responseBody Response body
+	 */
+	public FunctionResult ok(String mediaType, InputStream responseBody) {
+		return new FunctionResult(200, "OK", mediaType, responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param responseBody Response body
+	 */
+	public FunctionResult ok(InputStream responseBody) {
+		return new FunctionResult(200, "OK", responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param mediaType     Response media type
+	 * @param contentLength Response body length
+	 * @param responseBody  Response body
+	 */
+	public FunctionResult ok(String mediaType, long contentLength, InputStream responseBody) {
+		return new FunctionResult(200, "OK", mediaType, contentLength, responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param contentLength Response body length
+	 * @param responseBody  Response body
+	 */
+	public FunctionResult ok(long contentLength, InputStream responseBody) {
+		return new FunctionResult(200, "OK", contentLength, responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param mediaType    Response media type
+	 * @param responseBody Response body
+	 */
+	public FunctionResult ok(String mediaType, byte[] responseBody) {
+		return new FunctionResult(200, "OK", mediaType, responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param responseBody Response body
+	 */
+	public FunctionResult ok(byte[] responseBody) {
+		return new FunctionResult(200, "OK", responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param mediaType    Response media type
+	 * @param responseBody Response body
+	 */
+	public FunctionResult ok(String mediaType, String responseBody) {
+		return new FunctionResult(200, "OK", mediaType, responseBody);
+
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param responseBody Response body
+	 */
+	public FunctionResult ok(String responseBody) {
+		return new FunctionResult(200, "OK", responseBody);
+	}
+
+	/**
+	 * Creates a function result object with no response body (errors will use
+	 * default error page)
+	 * 
+	 * @param statusCode    Result status code
+	 * @param statusMessage Result status message
+	 */
+	public FunctionResult response(int statusCode, String statusMessage) {
+		return new FunctionResult(statusCode, statusMessage);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param statusCode    Result status code
+	 * @param statusMessage Result status message
+	 * @param mediaType     Response media type
+	 * @param responseBody  Response body
+	 */
+	public FunctionResult response(int statusCode, String statusMessage, String mediaType, InputStream responseBody) {
+		return new FunctionResult(statusCode, statusMessage, mediaType, responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param statusCode    Result status code
+	 * @param statusMessage Result status message
+	 * @param responseBody  Response body
+	 */
+	public FunctionResult response(int statusCode, String statusMessage, InputStream responseBody) {
+		return new FunctionResult(statusCode, statusMessage, responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param statusCode    Result status code
+	 * @param statusMessage Result status message
+	 * @param mediaType     Response media type
+	 * @param contentLength Response body length
+	 * @param responseBody  Response body
+	 */
+	public FunctionResult response(int statusCode, String statusMessage, String mediaType, long contentLength,
+			InputStream responseBody) {
+		return new FunctionResult(statusCode, statusMessage, mediaType, contentLength, responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param statusCode    Result status code
+	 * @param statusMessage Result status message
+	 * @param contentLength Response body length
+	 * @param responseBody  Response body
+	 */
+	public FunctionResult response(int statusCode, String statusMessage, long contentLength, InputStream responseBody) {
+		return new FunctionResult(statusCode, statusMessage, contentLength, responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param statusCode    Result status code
+	 * @param statusMessage Result status message
+	 * @param mediaType     Response media type
+	 * @param responseBody  Response body
+	 */
+	public FunctionResult response(int statusCode, String statusMessage, String mediaType, byte[] responseBody) {
+		return new FunctionResult(statusCode, statusMessage, mediaType, responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param statusCode    Result status code
+	 * @param statusMessage Result status message
+	 * @param responseBody  Response body
+	 */
+	public FunctionResult response(int statusCode, String statusMessage, byte[] responseBody) {
+		return new FunctionResult(statusCode, statusMessage, responseBody);
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param statusCode    Result status code
+	 * @param statusMessage Result status message
+	 * @param mediaType     Response media type
+	 * @param responseBody  Response body
+	 */
+	public FunctionResult response(int statusCode, String statusMessage, String mediaType, String responseBody) {
+		return new FunctionResult(statusCode, statusMessage, mediaType, responseBody);
+
+	}
+
+	/**
+	 * Creates a function result object
+	 * 
+	 * @param statusCode    Result status code
+	 * @param statusMessage Result status message
+	 * @param responseBody  Response body
+	 */
+	public FunctionResult response(int statusCode, String statusMessage, String responseBody) {
+		return new FunctionResult(statusCode, statusMessage, responseBody);
 	}
 
 }

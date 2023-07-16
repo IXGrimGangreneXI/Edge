@@ -5,9 +5,9 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.tokens.SessionToken;
@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
-public class MembershipWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServer> {
+public class MembershipWebServiceProcessor extends EdgeWebService<EdgeCommonApiServer> {
 
 	public MembershipWebServiceProcessor(EdgeCommonApiServer server) {
 		super(server);
@@ -42,8 +42,8 @@ public class MembershipWebServiceProcessor extends BaseApiHandler<EdgeCommonApiS
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getChildList(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getChildList(LegacyFunctionInfo func) throws IOException {
 		AccountManager manager = AccountManager.getInstance();
 
 		// Handle user profile request

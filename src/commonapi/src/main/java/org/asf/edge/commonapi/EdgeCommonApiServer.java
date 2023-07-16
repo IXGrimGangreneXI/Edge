@@ -22,6 +22,7 @@ import org.asf.edge.common.CommonInit;
 import org.asf.edge.common.IBaseServer;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
+import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
@@ -184,6 +185,10 @@ public class EdgeCommonApiServer implements IBaseServer {
 		ServiceManager.registerServiceImplementation(ItemManager.class, new ItemManagerImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(ItemManager.class);
+
+		// Load filter
+		logger.info("Loading text filter...");
+		TextFilterService.getInstance();
 
 		// Server watchdog
 		logger.info("Starting shutdown and restart watchdog...");

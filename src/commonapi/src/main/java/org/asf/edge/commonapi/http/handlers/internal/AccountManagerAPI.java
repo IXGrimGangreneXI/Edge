@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.util.Base64;
 
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -18,7 +18,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
-public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
+public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 
 	private static AccountManager manager;
 
@@ -36,8 +36,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		return "/accountmanager";
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void verifyToken(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void verifyToken(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -59,8 +59,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void signToken(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void signToken(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -83,8 +83,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void isValidUsername(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void isValidUsername(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -106,8 +106,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void isValidPassword(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void isValidPassword(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -129,8 +129,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void isUsernameTaken(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void isUsernameTaken(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -152,8 +152,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getAccountID(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getAccountID(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -178,8 +178,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getAccountIdBySaveUsername(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getAccountIdBySaveUsername(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -204,8 +204,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getAccountIDByEmail(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getAccountIDByEmail(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -230,8 +230,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void verifyPassword(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void verifyPassword(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -254,8 +254,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void accountExists(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void accountExists(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -277,8 +277,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getAccount(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getAccount(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -303,8 +303,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getGuestAccount(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getGuestAccount(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -331,8 +331,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/getDataEntry")
-	public void getDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/getDataEntry")
+	public void getDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -361,8 +361,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/setDataEntry")
-	public void setDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/setDataEntry")
+	public void setDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -389,8 +389,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/createDataEntry")
-	public void createDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/createDataEntry")
+	public void createDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -417,8 +417,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/dataEntryExists")
-	public void dataEntryExists(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/dataEntryExists")
+	public void dataEntryExists(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -444,8 +444,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/deleteDataEntry")
-	public void deleteDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/deleteDataEntry")
+	public void deleteDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -472,8 +472,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/deleteAccount")
-	public void deleteAccount(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/deleteAccount")
+	public void deleteAccount(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -500,8 +500,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/updateLastLoginTime")
-	public void updateLastLoginTime(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/updateLastLoginTime")
+	public void updateLastLoginTime(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -528,8 +528,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/setStrictChatFilterEnabled")
-	public void setStrictChatFilterEnabled(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/setStrictChatFilterEnabled")
+	public void setStrictChatFilterEnabled(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -556,8 +556,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/setChatEnabled")
-	public void setChatEnabled(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/setChatEnabled")
+	public void setChatEnabled(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -584,8 +584,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/setMultiplayerEnabled")
-	public void setMultiplayerEnabled(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/setMultiplayerEnabled")
+	public void setMultiplayerEnabled(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -612,8 +612,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/isStrictChatFilterEnabled")
-	public void isStrictChatFilterEnabled(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/isStrictChatFilterEnabled")
+	public void isStrictChatFilterEnabled(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -639,8 +639,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/isChatEnabled")
-	public void isChatEnabled(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/isChatEnabled")
+	public void isChatEnabled(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -666,8 +666,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/isMultiplayerEnabled")
-	public void isMultiplayerEnabled(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/isMultiplayerEnabled")
+	public void isMultiplayerEnabled(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -693,8 +693,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/isGuestAccount")
-	public void isGuestAccount(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/isGuestAccount")
+	public void isGuestAccount(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -720,8 +720,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/migrateToNormalAccountFromGuest")
-	public void migrateToNormalAccountFromGuest(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/migrateToNormalAccountFromGuest")
+	public void migrateToNormalAccountFromGuest(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -748,8 +748,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/updatePassword")
-	public void updatePassword(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/updatePassword")
+	public void updatePassword(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -775,8 +775,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/updateUsername")
-	public void updateUsername(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/updateUsername")
+	public void updateUsername(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -802,8 +802,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/updateEmail")
-	public void updateEmail(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/updateEmail")
+	public void updateEmail(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -829,8 +829,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/getRegistrationTimestamp")
-	public void getRegistrationTimestamp(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/getRegistrationTimestamp")
+	public void getRegistrationTimestamp(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -856,8 +856,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/getLastLoginTime")
-	public void getLastLoginTime(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/getLastLoginTime")
+	public void getLastLoginTime(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -883,8 +883,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/getSaveIDs")
-	public void getSaveIDs(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/getSaveIDs")
+	public void getSaveIDs(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -913,8 +913,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/createSave")
-	public void createSave(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/createSave")
+	public void createSave(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -946,8 +946,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/getSave")
-	public void getSave(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/getSave")
+	public void getSave(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -979,8 +979,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/updateSaveUsername")
-	public void updateSaveUsername(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/updateSaveUsername")
+	public void updateSaveUsername(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1010,8 +1010,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/deleteSave")
-	public void deleteSave(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/deleteSave")
+	public void deleteSave(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1042,8 +1042,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/getSaveDataEntry")
-	public void getSaveDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/getSaveDataEntry")
+	public void getSaveDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1076,8 +1076,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/setSaveDataEntry")
-	public void setSaveDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/setSaveDataEntry")
+	public void setSaveDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1108,8 +1108,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/createSaveDataEntry")
-	public void createSaveDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/createSaveDataEntry")
+	public void createSaveDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load createSaveDataEntry
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1140,8 +1140,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/saveDataEntryExists")
-	public void saveDataEntryExists(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/saveDataEntryExists")
+	public void saveDataEntryExists(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1172,8 +1172,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/deleteSaveDataEntry")
-	public void deleteSaveDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/deleteSaveDataEntry")
+	public void deleteSaveDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1204,8 +1204,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void registerGuestAccount(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void registerGuestAccount(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1232,8 +1232,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void registerAccount(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void registerAccount(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1261,8 +1261,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/getAccountEmail")
-	public void getAccountEmail(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/getAccountEmail")
+	public void getAccountEmail(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1293,8 +1293,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getSaveByID(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getSaveByID(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1323,8 +1323,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getOnlinePlayerIDs(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getOnlinePlayerIDs(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1344,8 +1344,8 @@ public class AccountManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" }, value = "accounts/isOnline")
-	public void isOnline(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/isOnline")
+	public void isOnline(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = AccountManager.getInstance();

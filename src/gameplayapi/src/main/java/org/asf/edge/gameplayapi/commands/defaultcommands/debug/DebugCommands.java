@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
+import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.commands.IEdgeServerCommand;
 import org.asf.edge.gameplayapi.commands.TaskBasedCommand;
@@ -241,6 +242,114 @@ public class DebugCommands extends TaskBasedCommand {
 						return "Response:\n" + new XmlMapper().writer().withDefaultPrettyPrinter()
 								.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL).withRootName("CIRS")
 								.writeValueAsString(resp).trim();
+					}
+
+				}, new IEdgeServerCommand() {
+
+					@Override
+					public String id() {
+						return "filtertest";
+					}
+
+					@Override
+					public String syntax(CommandContext ctx) {
+						return "<text> [<strictmode>]";
+					}
+
+					@Override
+					public String description(CommandContext ctx) {
+						return "Test command for filtering";
+					}
+
+					@Override
+					public PermissionLevel permLevel() {
+						return PermissionLevel.OPERATOR;
+					}
+
+					@Override
+					public String permNode() {
+						return "commands.operator.debugcommands";
+					}
+
+					@Override
+					public String run(String[] args, CommandContext ctx, Logger logger,
+							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs) {
+						return TextFilterService.getInstance().filterString(args[0], args[1].equals("true"));
+					}
+
+				}, new IEdgeServerCommand() {
+
+					@Override
+					public String id() {
+						return "filtertest2";
+					}
+
+					@Override
+					public String syntax(CommandContext ctx) {
+						return "<text> <strictmode>";
+					}
+
+					@Override
+					public String description(CommandContext ctx) {
+						return "Test command for filtering";
+					}
+
+					@Override
+					public PermissionLevel permLevel() {
+						return PermissionLevel.OPERATOR;
+					}
+
+					@Override
+					public String permNode() {
+						return "commands.operator.debugcommands";
+					}
+
+					@Override
+					public String run(String[] args, CommandContext ctx, Logger logger,
+							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs)
+							throws IOException {
+						return "Response:\n"
+								+ new XmlMapper().writer().withDefaultPrettyPrinter()
+										.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL)
+										.withRootName("FilterResult")
+										.writeValueAsString(
+												TextFilterService.getInstance().filter(args[0], args[1].equals("true")))
+										.trim();
+					}
+
+				}, new IEdgeServerCommand() {
+
+					@Override
+					public String id() {
+						return "filtertest3";
+					}
+
+					@Override
+					public String syntax(CommandContext ctx) {
+						return "<text> <strictmode>";
+					}
+
+					@Override
+					public String description(CommandContext ctx) {
+						return "Test command for filtering";
+					}
+
+					@Override
+					public PermissionLevel permLevel() {
+						return PermissionLevel.OPERATOR;
+					}
+
+					@Override
+					public String permNode() {
+						return "commands.operator.debugcommands";
+					}
+
+					@Override
+					public String run(String[] args, CommandContext ctx, Logger logger,
+							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs)
+							throws IOException {
+						return "Response: "
+								+ TextFilterService.getInstance().isFiltered(args[0], args[1].equals("true"));
 					}
 
 				}

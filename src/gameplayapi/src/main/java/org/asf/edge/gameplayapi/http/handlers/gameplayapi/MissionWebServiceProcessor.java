@@ -3,10 +3,10 @@ package org.asf.edge.gameplayapi.http.handlers.gameplayapi;
 import java.io.IOException;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 
-public class MissionWebServiceProcessor extends BaseApiHandler<EdgeGameplayApiServer> {
+public class MissionWebServiceProcessor extends EdgeWebService<EdgeGameplayApiServer> {
 
 	public MissionWebServiceProcessor(EdgeGameplayApiServer server) {
 		super(server);

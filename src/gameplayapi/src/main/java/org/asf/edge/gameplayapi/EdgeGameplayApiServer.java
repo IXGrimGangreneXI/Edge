@@ -28,6 +28,8 @@ import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
+import org.asf.edge.common.services.textfilter.TextFilterService;
+import org.asf.edge.gameplayapi.http.handlers.edgespecific.EdgeApiService;
 import org.asf.edge.gameplayapi.events.server.GameplayApiServerSetupEvent;
 import org.asf.edge.gameplayapi.events.server.GameplayApiServerStartupEvent;
 import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
@@ -151,6 +153,7 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		server.registerProcessor(new MissionWebServiceProcessor(this));
 		server.registerProcessor(new AchievementWebServiceV1Processor(this));
 		server.registerProcessor(new AchievementWebServiceV2Processor(this));
+		server.registerProcessor(new EdgeApiService(this));
 
 		// Select item manager
 		logger.info("Setting up item manager...");
@@ -170,6 +173,10 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		ServiceManager.registerServiceImplementation(AchievementManager.class, new AchievementManagerImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(AchievementManager.class);
+
+		// Load filter
+		logger.info("Loading text filter...");
+		TextFilterService.getInstance();
 
 		// Server watchdog
 		logger.info("Starting shutdown and restart watchdog...");

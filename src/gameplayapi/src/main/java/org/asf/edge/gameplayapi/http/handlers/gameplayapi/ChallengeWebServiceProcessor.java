@@ -4,10 +4,10 @@ import java.io.IOException;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 
-public class ChallengeWebServiceProcessor extends BaseApiHandler<EdgeGameplayApiServer> {
+public class ChallengeWebServiceProcessor extends EdgeWebService<EdgeGameplayApiServer> {
 
 	public ChallengeWebServiceProcessor(EdgeGameplayApiServer server) {
 		super(server);

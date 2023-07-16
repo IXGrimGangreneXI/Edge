@@ -212,20 +212,25 @@ public class CommandContext {
 		ArrayList<String> args3 = new ArrayList<String>();
 		char[] argarray = args.toCharArray();
 		boolean ignorespaces = false;
+		boolean hasData = false;
 		String last = "";
 		int i = 0;
 		for (char c : args.toCharArray()) {
 			if (c == '"' && (i == 0 || argarray[i - 1] != '\\')) {
 				if (ignorespaces)
 					ignorespaces = false;
-				else
+				else {
+					hasData = true;
 					ignorespaces = true;
+				}
 			} else if (c == ' ' && !ignorespaces && (i == 0 || argarray[i - 1] != '\\')) {
-				if (!last.isEmpty())
+				if (hasData)
 					args3.add(last);
+				hasData = false;
 				last = "";
 			} else if (c != '\\' || (i + 1 < argarray.length && argarray[i + 1] != '"'
 					&& (argarray[i + 1] != ' ' || ignorespaces))) {
+				hasData = true;
 				last += c;
 			}
 

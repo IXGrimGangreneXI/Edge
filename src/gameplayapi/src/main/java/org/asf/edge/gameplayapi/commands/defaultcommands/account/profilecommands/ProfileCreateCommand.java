@@ -11,6 +11,7 @@ import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.commands.IEdgeServerCommand;
 import org.asf.edge.gameplayapi.permissions.PermissionLevel;
@@ -81,7 +82,11 @@ public class ProfileCreateCommand implements IEdgeServerCommand {
 		}
 
 		// Check filters
-		// FIXME: implement this, use the same error response as invalid names for this
+		if (TextFilterService.getInstance().isFiltered(username, account.isStrictChatFilterEnabled())) {
+			// Invalid name
+			outputWriteLineCallback.accept("Error: invalid profile name");
+			return null;
+		}
 
 		// Check if in use
 		boolean inUse = false;

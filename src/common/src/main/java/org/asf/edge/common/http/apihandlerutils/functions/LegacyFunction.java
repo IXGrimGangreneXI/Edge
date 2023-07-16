@@ -11,16 +11,17 @@ import java.lang.annotation.Target;
  * Marks methods as functions, if annotation has a value, it is used as function
  * name, else the method name is used.<br/>
  * <br/>
- * <b>Note</b>: the annotated method must return a {@link FunctionResult} object
- * and its parameters must contain a {@link LegacyFunctionInfo} parameter, no other
- * parameters are supported.
+ * <b>Note</b>: the annotated method must contain a {@link FunctionInfo}
+ * parameter, no other parameters are supported.
  * 
+ * @deprecated Use {@link Function} instead with the updated API format
  * @author Sky Swimmer
  *
  */
 @Target(METHOD)
 @Retention(RUNTIME)
-public @interface Function {
+@Deprecated
+public @interface LegacyFunction {
 	public String value() default ("<auto>");
 
 	public String[] allowedMethods() default { "GET", "POST" };

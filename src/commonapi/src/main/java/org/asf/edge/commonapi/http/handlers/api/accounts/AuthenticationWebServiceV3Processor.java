@@ -7,9 +7,9 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.tokens.SessionToken;
@@ -21,7 +21,7 @@ import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
 import org.asf.edge.commonapi.xmls.auth.ParentLoginData;
 import org.asf.edge.commonapi.xmls.auth.ParentLoginResponseData;
 
-public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeCommonApiServer> {
+public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeCommonApiServer> {
 
 	private static AccountManager manager;
 	private static HashMap<String, Integer> usernameLock = new HashMap<String, Integer>();
@@ -79,8 +79,8 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getRules(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getRules(LegacyFunctionInfo func) throws IOException {
 		// Handle rules request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
@@ -101,8 +101,8 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		setResponseContent("text/xml", encrypted);
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void authenticateUser(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void authenticateUser(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -132,8 +132,8 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		setResponseContent(req.generateXmlValue("boolean", true));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void loginGuest(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void loginGuest(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -166,6 +166,7 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 			if (login.userPolicy == null || !login.userPolicy.termsAndConditions || !login.userPolicy.privacyPolicy) {
 				// Error
 				ParentLoginResponseData resp = new ParentLoginResponseData();
+				resp.userID = "00000000-0000-0000-0000-000000000000";
 				resp.status = LoginStatusType.UserPolicyNotAccepted;
 				setResponseContent("text/xml",
 						req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
@@ -229,8 +230,8 @@ public class AuthenticationWebServiceV3Processor extends BaseApiHandler<EdgeComm
 		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void loginParent(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void loginParent(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 

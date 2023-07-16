@@ -4,12 +4,12 @@ import java.io.IOException;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 
-public class ConfigurationWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServer> {
+public class ConfigurationWebServiceProcessor extends EdgeWebService<EdgeCommonApiServer> {
 
 	public ConfigurationWebServiceProcessor(EdgeCommonApiServer server) {
 		super(server);
@@ -33,8 +33,8 @@ public class ConfigurationWebServiceProcessor extends BaseApiHandler<EdgeCommonA
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getMMOServerInfoWithZone(FunctionInfo info) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getMMOServerInfoWithZone(LegacyFunctionInfo info) throws IOException {
 		// Handle server list request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)

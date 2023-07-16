@@ -5,13 +5,14 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
@@ -23,7 +24,7 @@ import org.asf.edge.commonapi.xmls.registration.ParentRegistrationData;
 
 import com.google.gson.JsonPrimitive;
 
-public class RegistrationWebServiceV3Processor extends BaseApiHandler<EdgeCommonApiServer> {
+public class RegistrationWebServiceV3Processor extends EdgeWebService<EdgeCommonApiServer> {
 
 	private static AccountManager manager;
 	public static final int COST_DELETE_PROFILE = 50;
@@ -50,8 +51,8 @@ public class RegistrationWebServiceV3Processor extends BaseApiHandler<EdgeCommon
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void deleteProfile(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void deleteProfile(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -106,8 +107,8 @@ public class RegistrationWebServiceV3Processor extends BaseApiHandler<EdgeCommon
 		setResponseContent("text/xml", req.generateXmlValue("DeleteProfileStatus", "SUCCESS"));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void registerParent(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void registerParent(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -152,7 +153,15 @@ public class RegistrationWebServiceV3Processor extends BaseApiHandler<EdgeCommon
 		}
 
 		// Check filters
-		// FIXME: IMPLEMENT THIS
+		if (TextFilterService.getInstance().isFiltered(registration.childList[0].childName,
+				registration.childList[0].age < 13)) {
+			// Error
+			RegistrationResultData resp = new RegistrationResultData();
+			resp.status = LoginStatusType.InvalidUserName;
+			setResponseContent("text/xml",
+					req.generateEncryptedResponse(req.generateXmlValue("RegistrationResult", resp)));
+			return;
+		}
 
 		// Check password validity
 		if (!manager.isValidPassword(registration.password)) {

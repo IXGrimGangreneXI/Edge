@@ -5,6 +5,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -15,14 +17,15 @@ import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
@@ -33,6 +36,7 @@ import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
 import org.asf.edge.gameplayapi.xmls.avatars.SetAvatarResultData;
 import org.asf.edge.gameplayapi.xmls.avatars.SetDisplayNameRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.CreatePetResponseData;
+import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetCreateRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
@@ -61,7 +65,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApiServer> {
+public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApiServer> {
 
 	private static AccountManager manager;
 	private static ItemManager itemManager;
@@ -90,8 +94,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getGameData(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getGameData(LegacyFunctionInfo func) throws IOException {
 		// Handle game data request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
@@ -112,8 +116,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		setResponseContent("text/xml", "<GetGameDataResponse />");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void setTaskState(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void setTaskState(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -175,8 +179,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		}
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getUserMissionState(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getUserMissionState(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -307,8 +311,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		}
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getUserCompletedMissionState(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getUserCompletedMissionState(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -359,8 +363,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		}
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getUserActiveMissionState(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getUserActiveMissionState(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -411,8 +415,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		}
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getUserUpcomingMissionState(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getUserUpcomingMissionState(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -464,8 +468,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		}
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void setDisplayName(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void setDisplayName(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -521,22 +525,30 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		// Find name
 		String name = request.displayName;
 
+		// Check validity
+		if (!manager.isValidUsername(name)) {
+			// Invalid name
+			SetAvatarResultData resp = new SetAvatarResultData();
+			resp.success = false;
+			resp.statusCode = 10;
+			resp.suggestions = null;
+			setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
+			return;
+		}
+
+		// Check filters
+		if (TextFilterService.getInstance().isFiltered(name, account.isStrictChatFilterEnabled())) {
+			// Invalid name
+			SetAvatarResultData resp = new SetAvatarResultData();
+			resp.success = false;
+			resp.statusCode = 10;
+			resp.suggestions = null;
+			setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
+			return;
+		}
+
 		// Check if not the same
 		if (!name.equalsIgnoreCase(save.getUsername())) {
-			// Check validity
-			if (!manager.isValidUsername(name)) {
-				// Invalid name
-				SetAvatarResultData resp = new SetAvatarResultData();
-				resp.success = false;
-				resp.statusCode = 10;
-				resp.suggestions = null;
-				setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
-				return;
-			}
-
-			// Check filters
-			// FIXME: implement this, use the same error response as invalid names for this
-
 			// Check if in use
 			boolean inUse = false;
 			if (!account.getUsername().equalsIgnoreCase(name) && manager.isUsernameTaken(name)) {
@@ -625,8 +637,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void setAvatar(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void setAvatar(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -657,22 +669,30 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		// Find name
 		String name = aviData.get("DisplayName").asText();
 
+		// Check validity
+		if (!manager.isValidUsername(name)) {
+			// Invalid name
+			SetAvatarResultData resp = new SetAvatarResultData();
+			resp.success = false;
+			resp.statusCode = 10;
+			resp.suggestions = null;
+			setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
+			return;
+		}
+
+		// Check filters
+		if (TextFilterService.getInstance().isFiltered(name, account.isStrictChatFilterEnabled())) {
+			// Invalid name
+			SetAvatarResultData resp = new SetAvatarResultData();
+			resp.success = false;
+			resp.statusCode = 10;
+			resp.suggestions = null;
+			setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
+			return;
+		}
+
 		// Check if not the same
 		if (!name.equalsIgnoreCase(save.getUsername())) {
-			// Check validity
-			if (!manager.isValidUsername(name)) {
-				// Invalid name
-				SetAvatarResultData resp = new SetAvatarResultData();
-				resp.success = false;
-				resp.statusCode = 10;
-				resp.suggestions = null;
-				setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
-				return;
-			}
-
-			// Check filters
-			// FIXME: implement this, use the same error response as invalid names for this
-
 			// Check if in use
 			boolean inUse = false;
 			if (!account.getUsername().equalsIgnoreCase(name) && manager.isUsernameTaken(name)) {
@@ -745,8 +765,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void validateName(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void validateName(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -788,27 +808,45 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 			}
 		} else if (request.category == 3) {
 			// Group
-			// FIXME: implement this!
 
-			// Check existence etc and filters
+			// Check filters
+			if (TextFilterService.getInstance().isFiltered(request.name, true)) {
+				// Invalid
+				resp.result = 2;
+				resp.errorMessage = "Invalid";
+				setResponseContent("text/xml", req.generateXmlValue("NameValidationResponse", resp));
+				return;
+			}
 		} else if (request.category == 2) {
 			// Dragon
-			// FIXME: implement this!
 
-			// Check filters etc
+			// Check filters
+			if (TextFilterService.getInstance().isFiltered(request.name, true)) {
+				// Invalid
+				resp.result = 2;
+				resp.errorMessage = "Invalid";
+				setResponseContent("text/xml", req.generateXmlValue("NameValidationResponse", resp));
+				return;
+			}
 		} else if (request.category == 4) {
 			// Default
-			// FIXME: implement this!
 
-			// Check filters etc
+			// Check filters
+			if (TextFilterService.getInstance().isFiltered(request.name, true)) {
+				// Invalid
+				resp.result = 2;
+				resp.errorMessage = "Invalid";
+				setResponseContent("text/xml", req.generateXmlValue("NameValidationResponse", resp));
+				return;
+			}
 		}
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("NameValidationResponse", resp));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void createPet(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void createPet(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -927,8 +965,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		setResponseContent("text/xml", req.generateXmlValue("CPR", resp));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getCommonInventory(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getCommonInventory(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -1002,8 +1040,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		setResponseContent("text/xml", req.generateXmlValue("CI", resp));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getAllActivePetsByuserId(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getAllActivePetsByuserId(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -1043,18 +1081,44 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 				data.setEntry("dragonlist", dragonIds);
 
 			// Prepare response
-			ArrayList<ObjectNode> dragons = new ArrayList<ObjectNode>();
+			ArrayList<DragonData> dragons = new ArrayList<DragonData>();
 
 			// Populate list
 			for (JsonElement ele : dragonIds) {
 				String id = ele.getAsString();
-				dragons.add(req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(), ObjectNode.class));
+				if (data.getEntry("dragon-" + id) != null) {
+					DragonData dragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(),
+							DragonData.class);
+
+					// Check filter
+					if (TextFilterService.getInstance().isFiltered(dragon.name, account.isStrictChatFilterEnabled())) {
+						// Filtered
+
+						// Reset name
+						dragon.name = TextFilterService.getInstance().filterString(dragon.name,
+								account.isStrictChatFilterEnabled());
+
+						// Force rename
+						ArrayList<ObjectNode> attrs = new ArrayList<ObjectNode>(List.of(dragon.attributes));
+						Optional<ObjectNode> att = attrs.stream()
+								.filter(t -> t.get("k").asText().equalsIgnoreCase("NameCustomized")).findFirst();
+						if (att.isPresent())
+							attrs.remove(att.get());
+						dragon.attributes = attrs.toArray(t -> new ObjectNode[t]);
+
+						// Save
+						data.setEntry("dragon-" + id, new JsonPrimitive(req.generateXmlValue("RaisedPetData", dragon)));
+					}
+
+					// Add dragon
+					dragons.add(dragon);
+				}
 			}
 
 			// Set response
 			if (dragons.size() != 0) {
 				DragonListData ls = new DragonListData();
-				ls.dragons = dragons.toArray(t -> new ObjectNode[t]);
+				ls.dragons = dragons.toArray(t -> new DragonData[t]);
 				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", ls));
 			} else
 				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", null));
@@ -1063,8 +1127,8 @@ public class ContentWebServiceV2Processor extends BaseApiHandler<EdgeGameplayApi
 		}
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void purchaseItems(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void purchaseItems(LegacyFunctionInfo func) throws IOException {
 		// Handle quest data request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)

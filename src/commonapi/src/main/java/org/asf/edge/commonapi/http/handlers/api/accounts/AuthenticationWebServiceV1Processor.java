@@ -7,9 +7,9 @@ import java.util.TimeZone;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -18,7 +18,7 @@ import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.xmls.auth.UserInfoData;
 
-public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeCommonApiServer> {
+public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeCommonApiServer> {
 
 	private static AccountManager manager;
 
@@ -44,8 +44,8 @@ public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeComm
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void isValidApiToken_V2(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void isValidApiToken_V2(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -83,8 +83,8 @@ public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeComm
 		}
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void loginChild(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void loginChild(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -131,8 +131,8 @@ public class AuthenticationWebServiceV1Processor extends BaseApiHandler<EdgeComm
 		setResponseContent("text/xml", req.generateEncryptedResponse(getUtilities().encodeToken(tkn.toTokenString())));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getUserInfoByApiToken(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getUserInfoByApiToken(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 

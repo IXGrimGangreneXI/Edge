@@ -7,12 +7,13 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
@@ -21,7 +22,7 @@ import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
 import org.asf.edge.commonapi.xmls.auth.RegistrationResultData;
 import org.asf.edge.commonapi.xmls.auth.RegistrationResultData.SuggestionResultBlock;
 
-public class RegistrationWebServiceV4Processor extends BaseApiHandler<EdgeCommonApiServer> {
+public class RegistrationWebServiceV4Processor extends EdgeWebService<EdgeCommonApiServer> {
 
 	private static AccountManager manager;
 
@@ -47,8 +48,8 @@ public class RegistrationWebServiceV4Processor extends BaseApiHandler<EdgeCommon
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void registerChild(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void registerChild(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
@@ -88,7 +89,15 @@ public class RegistrationWebServiceV4Processor extends BaseApiHandler<EdgeCommon
 		}
 
 		// Check filters
-		// FIXME: implement this, use the same error response as invalid names for this
+		if (TextFilterService.getInstance().isFiltered(reg.name, account.isStrictChatFilterEnabled())) {
+			// Invalid name
+			RegistrationResultData resp = new RegistrationResultData();
+			resp.suggestions = null;
+			resp.status = LoginStatusType.InvalidChildUserName;
+			setResponseContent("text/xml",
+					req.generateEncryptedResponse(req.generateXmlValue("RegistrationResult", resp)));
+			return;
+		}
 
 		// Check if in use
 		boolean inUse = false;

@@ -9,14 +9,15 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
@@ -31,7 +32,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 
-public class ContentWebServiceV3Processor extends BaseApiHandler<EdgeGameplayApiServer> {
+public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApiServer> {
 
 	private static AccountManager manager;
 	private static ItemManager itemManager;
@@ -58,8 +59,8 @@ public class ContentWebServiceV3Processor extends BaseApiHandler<EdgeGameplayApi
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void setRaisedPet(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void setRaisedPet(LegacyFunctionInfo func) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -110,6 +111,15 @@ public class ContentWebServiceV3Processor extends BaseApiHandler<EdgeGameplayApi
 			return;
 		}
 
+		// Check filter
+		if (TextFilterService.getInstance().isFiltered(request.dragonData.name, account.isStrictChatFilterEnabled())) {
+			// Error
+			resp.raisedPetSetResult = 4;
+			resp.errorMessage = "Invalid name";
+			setResponseContent("text/xml", req.generateXmlValue("SetRaisedPetResponse", resp));
+			return;
+		}
+
 		// Read dragon data
 		DragonData cdragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(), DragonData.class);
 		if (!cdragon.name.equals(request.dragonData.name)) {
@@ -122,9 +132,6 @@ public class ContentWebServiceV3Processor extends BaseApiHandler<EdgeGameplayApi
 				setResponseContent("text/xml", req.generateXmlValue("SetRaisedPetResponse", resp));
 				return;
 			}
-
-			// Check filter
-			// FIXME: implement this
 		}
 
 		// Fill fields

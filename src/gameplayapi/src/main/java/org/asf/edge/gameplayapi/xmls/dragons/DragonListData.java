@@ -16,6 +16,6 @@ public class DragonListData {
 	@JsonInclude(Include.NON_NULL)
 	@JsonProperty("RaisedPetData")
 	@JacksonXmlElementWrapper(useWrapping = false)
-	public ObjectNode[] dragons;
+	public DragonData[] dragons;
 
 }

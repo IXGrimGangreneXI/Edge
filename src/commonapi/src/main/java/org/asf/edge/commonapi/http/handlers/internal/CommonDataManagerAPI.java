@@ -3,9 +3,9 @@ package org.asf.edge.commonapi.http.handlers.internal;
 import java.io.IOException;
 
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
@@ -15,7 +15,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
-public class CommonDataManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
+public class CommonDataManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 
 	private CommonDataManager manager;
 
@@ -33,8 +33,8 @@ public class CommonDataManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		return "/commondatamanager";
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void setupContainer(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void setupContainer(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = CommonDataManager.getInstance();
@@ -57,8 +57,8 @@ public class CommonDataManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = CommonDataManager.getInstance();
@@ -87,8 +87,8 @@ public class CommonDataManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void setDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void setDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = CommonDataManager.getInstance();
@@ -115,8 +115,8 @@ public class CommonDataManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void createDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void createDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = CommonDataManager.getInstance();
@@ -143,8 +143,8 @@ public class CommonDataManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void dataEntryExists(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void dataEntryExists(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = CommonDataManager.getInstance();
@@ -170,8 +170,8 @@ public class CommonDataManagerAPI extends BaseApiHandler<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void deleteDataEntry(FunctionInfo func) throws JsonSyntaxException, IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void deleteDataEntry(LegacyFunctionInfo func) throws JsonSyntaxException, IOException {
 		// Load manager
 		if (manager == null)
 			manager = CommonDataManager.getInstance();

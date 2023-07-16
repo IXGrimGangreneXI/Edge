@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.commands.IEdgeServerCommand;
 import org.asf.edge.gameplayapi.permissions.PermissionLevel;
@@ -43,6 +44,10 @@ public class ReloadCommand implements IEdgeServerCommand {
 			Map<String, String> dataBlobs) throws Exception {
 		// Start reload
 		outputWriteLineCallback.accept("Reloading... this can take a while...");
+
+		// Reload ranks
+		logger.info("Reloading text filter...");
+		TextFilterService.getInstance().reload();
 
 		// Reload quests
 		logger.info("Reloading quest manager...");

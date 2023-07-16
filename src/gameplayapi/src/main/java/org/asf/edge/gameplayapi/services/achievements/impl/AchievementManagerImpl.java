@@ -10,6 +10,9 @@ import java.util.HashMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.connective.tasks.AsyncTaskManager;
+import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.gameplayapi.entities.achivements.RankInfo;
 import org.asf.edge.gameplayapi.events.achievements.AchievementManagerLoadEvent;
 import org.asf.edge.gameplayapi.services.achievements.AchievementManager;
@@ -23,15 +26,47 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 
 public class AchievementManagerImpl extends AchievementManager {
 
 	private Logger logger;
 	private HashMap<Integer, RankInfo> ranks = new HashMap<Integer, RankInfo>();
 
+	private long lastReloadTime;
+
 	@Override
 	public void initService() {
-		logger = LogManager.getLogger("RankManager");
+		logger = LogManager.getLogger("AchievementManager");
+
+		// Start reload watchdog
+		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("ACHIEVEMENTMANAGER");
+		try {
+			if (!cont.entryExists("lastreload")) {
+				lastReloadTime = System.currentTimeMillis();
+				cont.setEntry("lastreload", new JsonPrimitive(lastReloadTime));
+			} else
+				lastReloadTime = cont.getEntry("lastreload").getAsLong();
+		} catch (IOException e) {
+		}
+		AsyncTaskManager.runAsync(() -> {
+			while (true) {
+				// Check reload
+				try {
+					long reload = cont.getEntry("lastreload").getAsLong();
+					if (reload > lastReloadTime) {
+						// Trigger reload
+						lastReloadTime = reload;
+						loadData();
+					}
+				} catch (IOException e) {
+				}
+				try {
+					Thread.sleep(30000);
+				} catch (InterruptedException e) {
+				}
+			}
+		});
 
 		// Load data
 		loadData();

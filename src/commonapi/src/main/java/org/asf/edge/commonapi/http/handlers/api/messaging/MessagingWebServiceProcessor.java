@@ -4,10 +4,10 @@ import java.io.IOException;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 
-public class MessagingWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServer> {
+public class MessagingWebServiceProcessor extends EdgeWebService<EdgeCommonApiServer> {
 
 	public MessagingWebServiceProcessor(EdgeCommonApiServer server) {
 		super(server);

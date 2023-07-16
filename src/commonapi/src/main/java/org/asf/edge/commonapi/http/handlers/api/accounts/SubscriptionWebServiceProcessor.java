@@ -4,10 +4,10 @@ import java.io.IOException;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 
-public class SubscriptionWebServiceProcessor extends BaseApiHandler<EdgeCommonApiServer> {
+public class SubscriptionWebServiceProcessor extends EdgeWebService<EdgeCommonApiServer> {
 
 	public SubscriptionWebServiceProcessor(EdgeCommonApiServer server) {
 		super(server);

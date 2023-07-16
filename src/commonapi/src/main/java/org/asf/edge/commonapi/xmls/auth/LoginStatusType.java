@@ -7,6 +7,8 @@ public enum LoginStatusType
 	InvalidPassword,
 	InvalidEmail,
 	
+	UsernameRestriction,
+	UsernameContainsBadWord,
 	NoChildData,
 	
 	GuestAccountNotFound,

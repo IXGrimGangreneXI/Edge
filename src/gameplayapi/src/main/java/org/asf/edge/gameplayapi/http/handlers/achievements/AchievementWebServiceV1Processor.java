@@ -13,9 +13,9 @@ import java.util.Date;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.BaseApiHandler;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
+import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -34,7 +34,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class AchievementWebServiceV1Processor extends BaseApiHandler<EdgeGameplayApiServer> {
+public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGameplayApiServer> {
 
 	private static AchievementManager achievementManager;
 
@@ -60,8 +60,8 @@ public class AchievementWebServiceV1Processor extends BaseApiHandler<EdgeGamepla
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getAllRanks(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getAllRanks(LegacyFunctionInfo func) throws IOException {
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
 
@@ -82,8 +82,8 @@ public class AchievementWebServiceV1Processor extends BaseApiHandler<EdgeGamepla
 		setResponseContent("text/xml", req.generateXmlValue("ArrayOfUserRank", lst));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getAchievementTaskInfo(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getAchievementTaskInfo(LegacyFunctionInfo func) throws IOException {
 		// Handle time request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
@@ -99,8 +99,8 @@ public class AchievementWebServiceV1Processor extends BaseApiHandler<EdgeGamepla
 		setResponseContent("text/xml", data);
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getPetAchievementsByUserID(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getPetAchievementsByUserID(LegacyFunctionInfo func) throws IOException {
 		// Handle time request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
@@ -130,8 +130,8 @@ public class AchievementWebServiceV1Processor extends BaseApiHandler<EdgeGamepla
 				req.generateXmlValue("ArrayOfUserAchievementInfo", new EmptyAchievementInfoList()));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getAchievementsByUserID(FunctionInfo func) throws IOException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getAchievementsByUserID(LegacyFunctionInfo func) throws IOException {
 		// Handle time request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
@@ -159,8 +159,8 @@ public class AchievementWebServiceV1Processor extends BaseApiHandler<EdgeGamepla
 				req.generateXmlValue("ArrayOfUserAchievementInfo", new EmptyAchievementInfoList()));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public void getAllRewardTypeMultiplier(FunctionInfo func) throws IOException, ParseException {
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getAllRewardTypeMultiplier(LegacyFunctionInfo func) throws IOException, ParseException {
 		// Handle time request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
