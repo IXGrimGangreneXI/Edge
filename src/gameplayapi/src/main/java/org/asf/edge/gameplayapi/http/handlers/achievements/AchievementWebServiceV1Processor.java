@@ -6,6 +6,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.TimeZone;
+import java.util.stream.IntStream;
 import java.util.Date;
 
 import org.asf.connective.processors.HttpPushProcessor;
@@ -29,7 +30,13 @@ import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.xmls.multipliers.RewardTypeMultiplierData;
 import org.asf.edge.gameplayapi.xmls.multipliers.RewardTypeMultiplierListData;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
@@ -80,14 +87,37 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		if (req == null)
 			return response(400, "Bad request");
 
-		// FIXME: implement properly
-		// Needs filtering
+		// Load request
+		int[] ids = req.parseXmlValue(req.payload.get("achievementTaskIDList"), int[].class);
 
 		// Load XML
 		InputStream strm = getClass().getClassLoader().getResourceAsStream("achievementdata/achievementtasks.xml");
-		String data = new String(strm.readAllBytes(), "UTF-8");
+		ObjectNode[] achievementTasks = req.parseXmlValue(new String(strm.readAllBytes(), "UTF-8"), ObjectNode[].class);
 		strm.close();
-		return ok("text/xml", data);
+
+		// Build result
+		ArrayList<ObjectNode> tasks = new ArrayList<ObjectNode>();
+		for (ObjectNode tsk : achievementTasks) {
+			if (ids.length == 0 || IntStream.of(ids).anyMatch(t -> t == tsk.get("AchievementTaskID").asInt())) {
+				tasks.add(tsk);
+			}
+		}
+		AchievementTaskInfoList lst = new AchievementTaskInfoList();
+		lst.achievementTasks = tasks.toArray(t -> new ObjectNode[t]);
+		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementTaskInfo", lst));
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
+	private static class AchievementTaskInfoList {
+
+		@JacksonXmlProperty(localName = "xmlns", isAttribute = true)
+		private final String xmlns = "http://api.jumpstart.com/";
+
+		@JsonProperty("AchievementTaskInfo")
+		@JacksonXmlElementWrapper(useWrapping = false)
+		public ObjectNode[] achievementTasks;
+
 	}
 
 	@Function(allowedMethods = { "POST" })
