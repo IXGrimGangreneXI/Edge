@@ -10,7 +10,8 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.entities.items.PlayerInventoryItem;
+import org.asf.edge.common.entities.achivements.EntityRankInfo;
+import org.asf.edge.common.entities.achivements.RankMultiplierInfo;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
@@ -18,6 +19,7 @@ import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
@@ -34,8 +36,6 @@ import org.asf.edge.commonapi.xmls.data.ProfileDataList;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
@@ -317,20 +317,16 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 			profile.coinCount = currency.getEntry("coins").getAsInt();
 		}
 
-		// Load reward multipliers
+		// Load reward multipliers if needed
 		if (!minimal) {
+			// Load reward multipliers
 			ArrayList<RewardMultiplierBlock> multipliers = new ArrayList<RewardMultiplierBlock>();
-			AccountDataContainer rewardMultipliers = data.getChildContainer("reward_multipliers");
-			if (!rewardMultipliers.entryExists("active"))
-				rewardMultipliers.setEntry("active", new JsonArray());
-			for (JsonElement ele : rewardMultipliers.getEntry("active").getAsJsonArray()) {
-				JsonObject multiplierInfo = ele.getAsJsonObject();
-
+			for (RankMultiplierInfo m : AchievementManager.getInstance().getServerwideRankMultipliers()) {
 				// Add
 				RewardMultiplierBlock multiplier = new RewardMultiplierBlock();
-				multiplier.expiryTime = fmt.format(new Date(multiplierInfo.get("expiry").getAsLong()));
-				multiplier.multiplierFactor = multiplierInfo.get("factor").getAsInt();
-				multiplier.typeID = multiplierInfo.get("typeID").getAsInt();
+				multiplier.expiryTime = fmt.format(new Date(m.getExpiryTime()));
+				multiplier.multiplierFactor = m.getMultiplicationFactor();
+				multiplier.typeID = m.getPointType().getPointTypeID();
 				multipliers.add(multiplier);
 			}
 			profile.avatar.rewardMultipliers = multipliers.toArray(t -> new RewardMultiplierBlock[t]);
@@ -342,16 +338,17 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 			profile.avatar.subscription.accountID = account.getAccountID();
 		}
 
-		// Create default achievement block
-		profile.avatar.achievements = new AchievementBlock[1];
-		profile.avatar.achievements[0] = new AchievementBlock();
-		profile.avatar.achievements[0].saveID = save.getSaveID();
-		profile.avatar.achievements[0].rankID = 1;
-		profile.avatar.achievements[0].pointTypeID = 1;
-		profile.avatar.achievementInfo = new AchievementBlock();
-		profile.avatar.achievementInfo.saveID = save.getSaveID();
-		profile.avatar.achievementInfo.rankID = 1;
-		profile.avatar.achievementInfo.pointTypeID = 1;
+		// Load ranks
+		ArrayList<AchievementBlock> ranks = new ArrayList<AchievementBlock>();
+		for (EntityRankInfo rank : AchievementManager.getInstance().getRanks(save, saveID)) {
+			AchievementBlock block = new AchievementBlock();
+			block.saveID = rank.getEntityID();
+			block.pointsTotal = rank.getTotalScore();
+			block.pointTypeID = rank.getTypeID().getPointTypeID();
+			block.rank = AchievementManager.getInstance().getRankIndex(rank.getRank()) + 1;
+			ranks.add(block);
+		}
+		profile.avatar.achievements = ranks.toArray(t -> new AchievementBlock[t]);
 
 		// Create answer data
 		if (!minimal) {

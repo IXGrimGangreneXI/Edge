@@ -1,4 +1,4 @@
-package org.asf.edge.gameplayapi.xmls.achievements;
+package org.asf.edge.common.xmls.achievements;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
@@ -22,20 +23,50 @@ public class AchievementInfoList {
 	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 	public static class AchievementBlock {
 
+		public static class StringWrapper {
+			public StringWrapper() {
+			}
+
+			public StringWrapper(String value) {
+				this.value = value;
+			}
+
+			@JacksonXmlProperty(isAttribute = true)
+			public String xmlns = "";
+
+			@JacksonXmlText
+			public String value;
+		}
+
+		public static class IntWrapper {
+			public IntWrapper() {
+			}
+
+			public IntWrapper(int value) {
+				this.value = value;
+			}
+
+			@JacksonXmlProperty(isAttribute = true)
+			public String xmlns = "";
+
+			@JacksonXmlText
+			public int value;
+		}
+
 		@JsonProperty("u")
-		public String userID;
+		public StringWrapper userID;
 
 		@JsonProperty("n")
-		public String saveName;
+		public StringWrapper saveName;
 
 		@JsonProperty("a")
-		public int pointsTotal;
+		public IntWrapper pointsTotal;
 
 		@JsonProperty("r")
-		public int rankID;
+		public IntWrapper rank;
 
 		@JsonProperty("p")
-		public int pointTypeID;
+		public IntWrapper pointTypeID;
 
 	}
 }

@@ -25,6 +25,8 @@ import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.services.achievements.AchievementManager;
+import org.asf.edge.common.services.achievements.impl.AchievementManagerImpl;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.commonapi.config.CommonApiServerConfig;
@@ -179,6 +181,12 @@ public class EdgeCommonApiServer implements IBaseServer {
 		logger.debug("Configuring internal server request handlers...");
 		internalServer.registerProcessor(new AccountManagerAPI(this));
 		internalServer.registerProcessor(new CommonDataManagerAPI(this));
+
+		// Select achievement manager
+		logger.info("Setting up achievement manager...");
+		ServiceManager.registerServiceImplementation(AchievementManager.class, new AchievementManagerImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(AchievementManager.class);
 
 		// Select item manager
 		logger.info("Setting up item manager...");

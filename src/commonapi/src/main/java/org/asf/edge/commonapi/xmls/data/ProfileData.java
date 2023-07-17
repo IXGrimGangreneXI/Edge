@@ -52,8 +52,6 @@ public class ProfileData {
 		@JsonProperty("UserSubscriptionInfo")
 		public SubscriptionBlock subscription;
 
-		public AchievementBlock achievementInfo;
-
 		@JacksonXmlElementWrapper(useWrapping = false)
 		public AchievementBlock[] achievements;
 
@@ -71,7 +69,7 @@ public class ProfileData {
 			public int pointsTotal;
 
 			@JsonProperty("r")
-			public int rankID;
+			public int rank;
 
 			@JsonProperty("p")
 			public int pointTypeID;

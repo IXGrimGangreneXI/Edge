@@ -10,8 +10,6 @@ import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.gameplayapi.http.*;
 import org.asf.edge.gameplayapi.http.handlers.gameplayapi.*;
 import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
-import org.asf.edge.gameplayapi.services.achievements.AchievementManager;
-import org.asf.edge.gameplayapi.services.achievements.impl.AchievementManagerImpl;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
@@ -24,6 +22,8 @@ import org.asf.edge.common.CommonInit;
 import org.asf.edge.common.IBaseServer;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.services.achievements.AchievementManager;
+import org.asf.edge.common.services.achievements.impl.AchievementManagerImpl;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
@@ -168,8 +168,8 @@ public class EdgeGameplayApiServer implements IBaseServer {
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(QuestManager.class);
 
-		// Select rank manager
-		logger.info("Setting up rank manager...");
+		// Select achievement manager
+		logger.info("Setting up achievement manager...");
 		ServiceManager.registerServiceImplementation(AchievementManager.class, new AchievementManagerImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(AchievementManager.class);

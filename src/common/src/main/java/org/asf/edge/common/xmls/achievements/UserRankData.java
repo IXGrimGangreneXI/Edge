@@ -1,4 +1,6 @@
-package org.asf.edge.gameplayapi.xmls.achievements;
+package org.asf.edge.common.xmls.achievements;
+
+import org.asf.edge.common.xmls.achievements.UserRankData;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

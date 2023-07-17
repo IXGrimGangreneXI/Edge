@@ -1,6 +1,6 @@
-package org.asf.edge.gameplayapi.entities.achivements;
+package org.asf.edge.common.entities.achivements;
 
-import org.asf.edge.gameplayapi.xmls.achievements.UserRankData;
+import org.asf.edge.common.xmls.achievements.UserRankData;
 
 /**
  * 

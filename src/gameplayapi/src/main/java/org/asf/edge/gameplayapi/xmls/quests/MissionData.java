@@ -183,8 +183,7 @@ public class MissionData {
 		public int maxAmount = -1;
 
 		@JsonProperty("cid")
-		@JsonInclude(Include.NON_DEFAULT)
-		public int uniqueRewardItemID = -1;
+		public int uniqueRewardItemID = 0;
 
 		@JsonProperty("ui")
 		@JsonInclude(Include.NON_NULL)

@@ -1,7 +1,7 @@
-package org.asf.edge.gameplayapi.events.achievements;
+package org.asf.edge.common.events.achievements;
 
-import org.asf.edge.gameplayapi.events.GameplayApiServerEvent;
-import org.asf.edge.gameplayapi.services.achievements.AchievementManager;
+import org.asf.edge.common.services.achievements.AchievementManager;
+import org.asf.edge.modules.eventbus.EventObject;
 import org.asf.edge.modules.eventbus.EventPath;
 
 /**
@@ -13,7 +13,7 @@ import org.asf.edge.modules.eventbus.EventPath;
  *
  */
 @EventPath("achievements.achievementmanager.load")
-public class AchievementManagerLoadEvent extends GameplayApiServerEvent {
+public class AchievementManagerLoadEvent extends EventObject {
 
 	private AchievementManager achievementManager;
 

@@ -456,6 +456,8 @@ public class EdgeContentServerDumper {
 										.substring(line.indexOf("<BkgIconRes>") + "<BkgIconRes>".length());
 								promoUrl = promoUrl.substring(0, promoUrl.indexOf("</BkgIconRes>"));
 								promoUrl = decodeXML(promoUrl);
+								if (promoUrl.startsWith("RS_DATA/Content/"))
+									promoUrl = server + "/" + promoUrl.substring("RS_DATA/".length());
 								if (!promoUrl.startsWith("http"))
 									continue;
 								URL dataUrl = new URL(conf.dataURL[0].replace("{Version}", version));
@@ -467,6 +469,8 @@ public class EdgeContentServerDumper {
 								String promoUrl = line.substring(line.indexOf("<IconRes>") + "<IconRes>".length());
 								promoUrl = promoUrl.substring(0, promoUrl.indexOf("</IconRes>"));
 								promoUrl = decodeXML(promoUrl);
+								if (promoUrl.startsWith("RS_DATA/Content/"))
+									promoUrl = server + "/" + promoUrl.substring("RS_DATA/".length());
 								if (!promoUrl.startsWith("http"))
 									continue;
 								URL dataUrl = new URL(conf.dataURL[0].replace("{Version}", version));
@@ -478,6 +482,8 @@ public class EdgeContentServerDumper {
 								String promoUrl = line.substring(line.indexOf("<ImageRes>") + "<ImageRes>".length());
 								promoUrl = promoUrl.substring(0, promoUrl.indexOf("</ImageRes>"));
 								promoUrl = decodeXML(promoUrl);
+								if (promoUrl.startsWith("RS_DATA/Content/"))
+									promoUrl = server + "/" + promoUrl.substring("RS_DATA/".length());
 								if (!promoUrl.startsWith("http"))
 									continue;
 								URL dataUrl = new URL(conf.dataURL[0].replace("{Version}", version));
