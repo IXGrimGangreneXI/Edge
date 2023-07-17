@@ -101,7 +101,6 @@ public abstract class AchievementManager extends AbstractService {
 	 * 
 	 * @param save     Account save
 	 * @param entityID Entity ID
-	 * @param type     Rank type ID
 	 * @return Array of EntityRankInfo instance
 	 */
 	public EntityRankInfo[] getRanks(AccountSaveContainer save, String entityID) {
