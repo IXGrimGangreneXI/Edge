@@ -186,8 +186,10 @@ public class MissionData {
 		public int uniqueRewardItemID = 0;
 
 		@JsonProperty("ui")
-		@JsonInclude(Include.NON_NULL)
 		public ItemBlock rewardItem;
+
+		@JsonProperty("d")
+		public String date = null;
 
 		public AchievementRewardBlock copy() {
 			AchievementRewardBlock cp = new AchievementRewardBlock();

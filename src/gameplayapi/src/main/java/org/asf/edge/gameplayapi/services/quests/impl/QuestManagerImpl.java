@@ -1200,6 +1200,7 @@ public class QuestManagerImpl extends QuestManager {
 
 							// Copy
 							reward = reward.copy();
+							reward.allowMultiple = false;
 
 							// Set ID
 							reward.entityID = UUID.fromString(save.getSaveID());
@@ -1231,6 +1232,7 @@ public class QuestManagerImpl extends QuestManager {
 								// Check
 								String userID = rankUserID(save, id);
 								reward.entityID = UUID.fromString(userID);
+								reward.achievementID = 0;
 
 								// Add XP
 								if (userID != null)
