@@ -147,7 +147,7 @@ public class ServerCommandTerminal {
 		AccountManager.getInstance().loadManager();
 		logger.debug("Loading common data manager implementations...");
 		CommonDataManager.initCommonDataManagerServices(ServiceImplementationPriorityLevels.NORMAL,
-				ServiceImplementationPriorityLevels.DEFAULT);
+				ServiceImplementationPriorityLevels.DEFAULT, -5);
 		logger.debug("Selecting common data manager implementation...");
 		ServiceManager.selectServiceImplementation(CommonDataManager.class);
 		logger.debug("Loading common data manager...");

@@ -14,17 +14,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.commondata.impl.db.DatabaseCommonDataManager;
 import org.asf.edge.common.services.commondata.impl.db.DatabaseRequest;
+import org.postgresql.util.PGobject;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
-public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager {
+public class PostgresDatabaseCommonDataManager extends DatabaseCommonDataManager {
 
 	private String url;
 	private Properties props;
 	private Logger logger = LogManager.getLogger("CommonDataManager");
+	private Connection conn;
 
 	@Override
 	public void initService() {
@@ -45,13 +47,13 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 			}
 		}
 		JsonObject databaseManagerConfig = new JsonObject();
-		if (!commonDataManagerConfig.has("databaseManager")) {
-			databaseManagerConfig.addProperty("url", "jdbc:mysql://localhost/edge");
+		if (!commonDataManagerConfig.has("postgreSQL")) {
+			databaseManagerConfig.addProperty("url", "jdbc:postgresql://localhost/edge");
 			JsonObject props = new JsonObject();
 			props.addProperty("user", "edge");
 			props.addProperty("password", "edgesodserver");
 			databaseManagerConfig.add("properties", props);
-			commonDataManagerConfig.add("databaseManager", databaseManagerConfig);
+			commonDataManagerConfig.add("postgreSQL", databaseManagerConfig);
 
 			// Write config
 			try {
@@ -62,7 +64,7 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 				return;
 			}
 		} else
-			databaseManagerConfig = commonDataManagerConfig.get("databaseManager").getAsJsonObject();
+			databaseManagerConfig = commonDataManagerConfig.get("postgreSQL").getAsJsonObject();
 
 		// Load url
 		url = databaseManagerConfig.get("url").getAsString();
@@ -75,12 +77,10 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 
 		try {
 			// Load drivers
-			Class.forName("com.mysql.cj.jdbc.Driver");
-			Class.forName("org.asf.edge.common.jdbc.LoggingProxyDriver");
-			Class.forName("org.asf.edge.common.jdbc.LockingDriver");
+			Class.forName("org.postgresql.Driver");
 
 			// Test connection
-			DriverManager.getConnection(url, props).close();
+			conn = DriverManager.getConnection(url, props);
 		} catch (SQLException | ClassNotFoundException e) {
 			logger.error("Failed to connect to database!", e);
 			System.exit(1);
@@ -96,7 +96,7 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 			try {
 				Statement statement = conn.createStatement();
 				statement.executeUpdate("CREATE TABLE IF NOT EXISTS CDC2_" + rootNodeName
-						+ " (DATAKEY varchar(64), PARENT varchar(64), PARENTCONTAINER varchar(256), DATA LONGTEXT)");
+						+ " (DATAKEY varchar(64), PARENT varchar(64), PARENTCONTAINER varchar(256), DATA JSONB)");
 			} finally {
 				conn.close();
 			}
@@ -108,8 +108,15 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 
 	@Override
 	public DatabaseRequest createRequest() throws SQLException {
-		Connection conn = DriverManager.getConnection(url, props);
 		return new DatabaseRequest() {
+
+			@Override
+			public void setDataObject(int i, String obj, PreparedStatement st) throws SQLException {
+				PGobject o = new PGobject();
+				o.setType("jsonb");
+				o.setValue(obj);
+				st.setObject(i, o);
+			}
 
 			@Override
 			public PreparedStatement createPreparedStatement(String query) throws SQLException {
@@ -118,7 +125,6 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 
 			@Override
 			public void finish() throws SQLException {
-				conn.close();
 			}
 		};
 	}

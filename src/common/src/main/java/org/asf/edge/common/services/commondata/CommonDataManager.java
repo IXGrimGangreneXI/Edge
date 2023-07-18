@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.AbstractService;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.commondata.impl.DefaultDatabaseCommonDataManager;
+import org.asf.edge.common.services.commondata.impl.PostgresDatabaseCommonDataManager;
 import org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager;
 
 import com.google.gson.Gson;
@@ -42,7 +43,7 @@ public abstract class CommonDataManager extends AbstractService {
 	/**
 	 * Internal
 	 */
-	public static void initCommonDataManagerServices(int priorityRemote, int priorityDatabase) {
+	public static void initCommonDataManagerServices(int priorityRemote, int priorityDatabase, int priorityPostgres) {
 		if (initedServices)
 			return;
 		initedServices = true;
@@ -79,6 +80,16 @@ public abstract class CommonDataManager extends AbstractService {
 			changed = true;
 		} else
 			databaseManagerConfig = commonDataManagerConfig.get("databaseManager").getAsJsonObject();
+		JsonObject postgresManagerConfig = new JsonObject();
+		if (!commonDataManagerConfig.has("postgreSQL")) {
+			postgresManagerConfig.addProperty("priority", priorityPostgres);
+			postgresManagerConfig.addProperty("url", "jdbc:postgresql://localhost/edge");
+			JsonObject props = new JsonObject();
+			postgresManagerConfig.add("properties", props);
+			commonDataManagerConfig.add("postgreSQL", postgresManagerConfig);
+			changed = true;
+		} else
+			postgresManagerConfig = commonDataManagerConfig.get("postgreSQL").getAsJsonObject();
 		if (changed) {
 			// Write config
 			try {
@@ -95,6 +106,8 @@ public abstract class CommonDataManager extends AbstractService {
 				remoteManagerConfig.get("priority").getAsInt());
 		ServiceManager.registerServiceImplementation(CommonDataManager.class, new DefaultDatabaseCommonDataManager(),
 				databaseManagerConfig.get("priority").getAsInt());
+		ServiceManager.registerServiceImplementation(CommonDataManager.class, new PostgresDatabaseCommonDataManager(),
+				postgresManagerConfig.get("priority").getAsInt());
 	}
 
 	/**

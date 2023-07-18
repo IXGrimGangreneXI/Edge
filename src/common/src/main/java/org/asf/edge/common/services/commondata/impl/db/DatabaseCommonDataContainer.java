@@ -87,7 +87,7 @@ public class DatabaseCommonDataContainer extends CommonDataContainer {
 				// Create prepared statement
 				var statement = req.createPreparedStatement(
 						"UPDATE " + table + " SET DATA = ? WHERE DATAKEY = ? AND PARENT = ? AND PARENTCONTAINER = ?");
-				statement.setString(1, value.toString());
+				req.setDataObject(1, value.toString(), statement);
 				statement.setString(2, key);
 				statement.setString(3, parent);
 				statement.setString(4, parentContainer);
@@ -126,7 +126,7 @@ public class DatabaseCommonDataContainer extends CommonDataContainer {
 				statement.setString(1, key);
 				statement.setString(2, parent);
 				statement.setString(3, parentContainer);
-				statement.setString(4, value.toString());
+				req.setDataObject(4, value.toString(), statement);
 				statement.execute();
 			} finally {
 				req.finish();

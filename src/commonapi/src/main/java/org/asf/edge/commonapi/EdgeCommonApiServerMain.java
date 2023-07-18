@@ -134,7 +134,7 @@ public class EdgeCommonApiServerMain {
 		AccountManager.getInstance().loadManager();
 		logger.debug("Loading common data manager implementations...");
 		CommonDataManager.initCommonDataManagerServices(ServiceImplementationPriorityLevels.DEFAULT,
-				ServiceImplementationPriorityLevels.NORMAL);
+				ServiceImplementationPriorityLevels.NORMAL, -5);
 		logger.debug("Selecting common data manager implementation...");
 		ServiceManager.selectServiceImplementation(CommonDataManager.class);
 		logger.debug("Loading common data manager...");

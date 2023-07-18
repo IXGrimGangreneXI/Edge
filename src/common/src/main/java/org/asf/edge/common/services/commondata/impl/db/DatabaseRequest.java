@@ -14,6 +14,10 @@ public abstract class DatabaseRequest {
 
 	public abstract PreparedStatement createPreparedStatement(String query) throws SQLException;
 
+	public void setDataObject(int i, String obj, PreparedStatement st) throws SQLException {
+		st.setString(i, obj);
+	}
+
 	public abstract void finish() throws SQLException;
 
 }
