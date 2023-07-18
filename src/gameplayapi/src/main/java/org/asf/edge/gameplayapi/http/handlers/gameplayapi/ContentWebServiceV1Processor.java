@@ -309,32 +309,21 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Retrieve container info
 		AccountDataContainer data = account.getAccountData();
-		String containerID = req.payload.get("ContainerId");
-		data = data.getChildContainer("commoninventories").getChildContainer(containerID);
+		int containerID = Integer.parseInt(req.payload.get("ContainerId"));
 
 		// Retrieve container
 		CommonInventoryData resp = new CommonInventoryData();
 		resp.userID = account.getAccountID();
 
 		// Find items
-		JsonElement e = data.getEntry("itemlist");
-		if (e == null) {
-			e = new JsonArray();
-			data.setEntry("itemlist", e);
-		}
 		ArrayList<ItemBlock> items = new ArrayList<ItemBlock>();
-		for (JsonElement itemDefEle : e.getAsJsonArray()) {
-			int uniqueID = itemDefEle.getAsInt();
-
-			// Locate item
-			JsonObject itm = data.getEntry("item-" + uniqueID).getAsJsonObject();
-
+		for (PlayerInventoryItem itm : itemManager.getCommonInventory(data).getContainer(containerID).getItems()) {
 			// Add item
 			ItemBlock block = new ItemBlock();
-			block.itemID = itm.get("id").getAsInt();
-			block.quantity = itm.get("quantity").getAsInt();
-			block.uses = itm.get("uses").getAsInt();
-			block.uniqueItemID = uniqueID;
+			block.itemID = itm.getItemDefID();
+			block.quantity = itm.getQuantity();
+			block.uses = itm.getUses();
+			block.uniqueItemID = itm.getUniqueID();
 			// TODO: stats and attributes
 
 			// Add data info from item manager
@@ -346,30 +335,19 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		if (tkn.saveID != null) {
 			// Pull account-wide inventory, for compatibility with legacy versions
 			data = account.getSave(tkn.saveID).getSaveData();
-			data = data.getChildContainer("commoninventories").getChildContainer(containerID);
 
 			// Retrieve container
 			resp = new CommonInventoryData();
-			resp.userID = account.getAccountID();
+			resp.userID = account.getAccountID(); // FIXME: may break
 
 			// Find items
-			e = data.getEntry("itemlist");
-			if (e == null) {
-				e = new JsonArray();
-				data.setEntry("itemlist", e);
-			}
-			for (JsonElement itemDefEle : e.getAsJsonArray()) {
-				int uniqueID = itemDefEle.getAsInt();
-
-				// Locate item
-				JsonObject itm = data.getEntry("item-" + uniqueID).getAsJsonObject();
-
+			for (PlayerInventoryItem itm : itemManager.getCommonInventory(data).getContainer(containerID).getItems()) {
 				// Add item
 				ItemBlock block = new ItemBlock();
-				block.itemID = itm.get("id").getAsInt();
-				block.quantity = itm.get("quantity").getAsInt();
-				block.uses = itm.get("uses").getAsInt();
-				block.uniqueItemID = uniqueID;
+				block.itemID = itm.getItemDefID();
+				block.quantity = itm.getQuantity();
+				block.uses = itm.getUses();
+				block.uniqueItemID = itm.getUniqueID();
 				// TODO: stats and attributes
 
 				// Add data info from item manager

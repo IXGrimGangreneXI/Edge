@@ -1,8 +1,5 @@
 package org.asf.edge.common.entities.items;
 
-import java.util.Optional;
-import java.util.stream.Stream;
-
 /**
  * 
  * Player inventory container
@@ -71,9 +68,7 @@ public abstract class PlayerInventoryContainer {
 	 * @param defID Item DefID
 	 * @return Array of PlayerInventoryItem instances
 	 */
-	public PlayerInventoryItem[] find(int defID) {
-		return Stream.of(getItems()).filter(t -> t.getItemDefID() == defID).toArray(t -> new PlayerInventoryItem[t]);
-	}
+	public abstract PlayerInventoryItem[] find(int defID);
 
 	/**
 	 * Finds the first item of the given ID
@@ -81,12 +76,7 @@ public abstract class PlayerInventoryContainer {
 	 * @param defID Item DefID
 	 * @return PlayerInventoryItem instance or null
 	 */
-	public PlayerInventoryItem findFirst(int defID) {
-		Optional<PlayerInventoryItem> opt = Stream.of(getItems()).filter(t -> t.getItemDefID() == defID).findFirst();
-		if (!opt.isPresent())
-			return null;
-		return opt.get();
-	}
+	public abstract PlayerInventoryItem findFirst(int defID);
 
 	/**
 	 * Retrieves all items

@@ -11,7 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
-import org.asf.edge.common.services.accounts.impl.DatabaseAccountManager;
+import org.asf.edge.common.services.accounts.impl.DefaultDatabaseAccountManager;
 import org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager;
 import org.asf.edge.common.tokens.TokenParseResult;
 
@@ -92,7 +92,7 @@ public abstract class AccountManager extends AbstractService {
 		// Register default account managers
 		ServiceManager.registerServiceImplementation(AccountManager.class, new RemoteHttpAccountManager(),
 				remoteManagerConfig.get("priority").getAsInt());
-		ServiceManager.registerServiceImplementation(AccountManager.class, new DatabaseAccountManager(),
+		ServiceManager.registerServiceImplementation(AccountManager.class, new DefaultDatabaseAccountManager(),
 				databaseManagerConfig.get("priority").getAsInt());
 	}
 

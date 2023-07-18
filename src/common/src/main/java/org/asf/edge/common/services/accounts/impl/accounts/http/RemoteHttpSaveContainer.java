@@ -1,4 +1,4 @@
-package org.asf.edge.common.services.accounts.impl.accounts;
+package org.asf.edge.common.services.accounts.impl.accounts.http;
 
 import java.io.IOException;
 

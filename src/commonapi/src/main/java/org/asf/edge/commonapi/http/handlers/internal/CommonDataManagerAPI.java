@@ -203,7 +203,7 @@ public class CommonDataManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
-	@Function
+	@Function(allowedMethods = { "POST" })
 	public FunctionResult deleteContainer(FunctionInfo func) throws IOException {
 		// Load manager
 		if (manager == null)
@@ -229,7 +229,7 @@ public class CommonDataManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		return ok("text/json", resp.toString());
 	}
 
-	@Function
+	@Function(allowedMethods = { "POST" })
 	public FunctionResult getChildContainers(FunctionInfo func) throws IOException {
 		// Load manager
 		if (manager == null)
@@ -259,7 +259,7 @@ public class CommonDataManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		return ok("text/json", resp.toString());
 	}
 
-	@Function
+	@Function(allowedMethods = { "POST" })
 	public FunctionResult getEntryKeys(FunctionInfo func) throws IOException {
 		// Load manager
 		if (manager == null)

@@ -1,4 +1,4 @@
-package org.asf.edge.common.services.accounts.impl.accounts;
+package org.asf.edge.common.services.accounts.impl.accounts.http;
 
 import java.io.IOException;
 
@@ -9,6 +9,7 @@ import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -62,13 +63,14 @@ public class RemoteHttpDataContainer extends AccountDataContainer {
 	}
 
 	@Override
-	protected void create(String key, JsonElement value) throws IOException {
+	protected void create(String key, String root, JsonElement value) throws IOException {
 		// Request
 		try {
 			// Build payload
 			JsonObject payload = new JsonObject();
 			payload.addProperty("id", id);
 			payload.addProperty("key", key);
+			payload.addProperty("root", root);
 			payload.add("value", value);
 			JsonObject response = mgr.accountManagerRequest("accounts/createDataEntry", payload);
 			if (!response.get("success").getAsBoolean())
@@ -118,6 +120,68 @@ public class RemoteHttpDataContainer extends AccountDataContainer {
 	@Override
 	public AccountSaveContainer getSave() {
 		return null;
+	}
+
+	@Override
+	protected String[] getEntryKeys(String key) throws IOException {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("key", key);
+			JsonObject response = mgr.accountManagerRequest("accounts/getEntryKeys", payload);
+			if (!response.get("success").getAsBoolean())
+				throw new IOException("Server returned success=false");
+			JsonArray arr = response.get("result").getAsJsonArray();
+			String[] res = new String[arr.size()];
+			int i = 0;
+			for (JsonElement ele : arr)
+				res[i++] = ele.getAsString();
+			return res;
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getEntryKeys!", e);
+			return new String[0];
+		}
+	}
+
+	@Override
+	protected String[] getChildContainers(String key) throws IOException {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("key", key);
+			JsonObject response = mgr.accountManagerRequest("accounts/getChildContainers", payload);
+			if (!response.get("success").getAsBoolean())
+				throw new IOException("Server returned success=false");
+			JsonArray arr = response.get("result").getAsJsonArray();
+			String[] res = new String[arr.size()];
+			int i = 0;
+			for (JsonElement ele : arr)
+				res[i++] = ele.getAsString();
+			return res;
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in getChildContainers!", e);
+			return new String[0];
+		}
+	}
+
+	@Override
+	protected void deleteContainer(String root) throws IOException {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("root", root);
+			JsonObject response = mgr.accountManagerRequest("accounts/deleteContainer", payload);
+			if (!response.get("success").getAsBoolean())
+				throw new IOException("Server returned success=false");
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in deleteContainer!", e);
+		}
 	}
 
 }

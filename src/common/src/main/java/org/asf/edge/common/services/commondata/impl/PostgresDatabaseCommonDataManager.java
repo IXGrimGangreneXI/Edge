@@ -97,6 +97,7 @@ public class PostgresDatabaseCommonDataManager extends DatabaseCommonDataManager
 				Statement statement = conn.createStatement();
 				statement.executeUpdate("CREATE TABLE IF NOT EXISTS CDC2_" + rootNodeName
 						+ " (DATAKEY varchar(64), PARENT varchar(64), PARENTCONTAINER varchar(256), DATA JSONB)");
+				statement.close();
 			} finally {
 				conn.close();
 			}

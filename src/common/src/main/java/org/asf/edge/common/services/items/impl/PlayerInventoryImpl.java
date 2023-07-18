@@ -1,15 +1,13 @@
 package org.asf.edge.common.services.items.impl;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest.DefaultItemBlock;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonArray;
 
 public class PlayerInventoryImpl extends PlayerInventory {
 
@@ -41,18 +39,15 @@ public class PlayerInventoryImpl extends PlayerInventory {
 	public int[] getContainerIDs() {
 		try {
 			// Find containers
-			JsonArray containerList = new JsonArray();
-			if (data.entryExists("containerlist"))
-				containerList = data.getEntry("containerlist").getAsJsonArray();
-			else
-				data.setEntry("containerlist", containerList);
-
-			// Create list
-			int[] ids = new int[containerList.size()];
-			int i = 0;
-			for (JsonElement ele : containerList) {
-				ids[i++] = ele.getAsInt();
-			}
+			ArrayList<Integer> containers = new ArrayList<Integer>();
+			for (String key : data.getChildContainers())
+				if (key.startsWith("c-")) {
+					int id = Integer.parseInt(key.substring("c-".length()));
+					containers.add(id);
+				}
+			int[] ids = new int[containers.size()];
+			for (int i = 0; i < containers.size(); i++)
+				ids[i] = containers.get(i);
 			return ids;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -61,25 +56,7 @@ public class PlayerInventoryImpl extends PlayerInventory {
 
 	@Override
 	public PlayerInventoryContainer getContainer(int id) {
-		try {
-			// Find containers
-			JsonArray containerList = new JsonArray();
-			if (data.entryExists("containerlist"))
-				containerList = data.getEntry("containerlist").getAsJsonArray();
-
-			// Check if present
-			for (JsonElement ele : containerList) {
-				if (ele.getAsInt() == id)
-					return new PlayerInventoryContainerImpl(data, this, account, id);
-			}
-
-			// Add
-			containerList.add(id);
-			data.setEntry("containerList", containerList);
-			return new PlayerInventoryContainerImpl(data, this, account, id);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		return new PlayerInventoryContainerImpl(data, this, account, id);
 	}
 
 }

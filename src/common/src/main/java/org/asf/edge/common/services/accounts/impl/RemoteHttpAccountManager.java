@@ -12,8 +12,8 @@ import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
-import org.asf.edge.common.services.accounts.impl.accounts.RemoteHttpAccountObject;
-import org.asf.edge.common.services.accounts.impl.accounts.RemoteHttpSaveContainer;
+import org.asf.edge.common.services.accounts.impl.accounts.http.RemoteHttpAccountObject;
+import org.asf.edge.common.services.accounts.impl.accounts.http.RemoteHttpSaveContainer;
 import org.asf.edge.common.tokens.TokenParseResult;
 
 import com.google.gson.Gson;

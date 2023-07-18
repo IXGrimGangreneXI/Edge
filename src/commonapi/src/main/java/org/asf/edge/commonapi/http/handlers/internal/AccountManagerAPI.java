@@ -5,6 +5,9 @@ import java.util.Base64;
 
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.Function;
+import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
@@ -401,7 +404,7 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 			return;
 		}
 		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
-		if (!payload.has("id") || !payload.has("key") || !payload.has("value")) {
+		if (!payload.has("id") || !payload.has("key") || !payload.has("root") || !payload.has("value")) {
 			getResponse().setResponseStatus(400, "Bad request");
 			return;
 		}
@@ -410,7 +413,8 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
 		JsonObject resp = new JsonObject();
 		if (acc != null) {
-			acc.getAccountData().unsafeAccessor().create(payload.get("key").getAsString(), payload.get("value"));
+			acc.getAccountData().unsafeAccessor().create(payload.get("key").getAsString(),
+					payload.get("root").getAsString(), payload.get("value"));
 			resp.addProperty("success", true);
 		} else
 			resp.addProperty("success", false);
@@ -470,6 +474,93 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		} else
 			resp.addProperty("success", false);
 		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/deleteContainer")
+	public FunctionResult deleteContainer(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("root")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			acc.getAccountData().unsafeAccessor().deleteContainer(payload.get("root").getAsString());
+			resp.addProperty("success", true);
+		} else
+			resp.addProperty("success", false);
+		return ok("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/getChildContainers")
+	public FunctionResult getChildContainers(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("key")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			String[] containers = acc.getAccountData().unsafeAccessor()
+					.getChildContainers(payload.get("key").getAsString());
+			JsonArray arr = new JsonArray();
+			for (String cont : containers)
+				arr.add(cont);
+			resp.addProperty("success", true);
+			resp.add("result", arr);
+		} else
+			resp.addProperty("success", false);
+		return ok("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/getEntryKeys")
+	public FunctionResult getEntryKeys(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("key")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			String[] keys = acc.getAccountData().unsafeAccessor().getEntryKeys(payload.get("key").getAsString());
+			JsonArray arr = new JsonArray();
+			for (String cont : keys)
+				arr.add(cont);
+			resp.addProperty("success", true);
+			resp.add("result", arr);
+		} else
+			resp.addProperty("success", false);
+		return ok("text/json", resp.toString());
 	}
 
 	@LegacyFunction(allowedMethods = { "POST" }, value = "accounts/deleteAccount")
@@ -1120,7 +1211,8 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 			return;
 		}
 		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
-		if (!payload.has("id") || !payload.has("save") || !payload.has("key") || !payload.has("value")) {
+		if (!payload.has("id") || !payload.has("save") || !payload.has("root") || !payload.has("key")
+				|| !payload.has("value")) {
 			getResponse().setResponseStatus(400, "Bad request");
 			return;
 		}
@@ -1131,7 +1223,8 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		if (acc != null) {
 			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
 			if (cont != null) {
-				cont.getSaveData().unsafeAccessor().create(payload.get("key").getAsString(), payload.get("value"));
+				cont.getSaveData().unsafeAccessor().create(payload.get("key").getAsString(),
+						payload.get("root").getAsString(), payload.get("value"));
 				resp.addProperty("success", true);
 			} else
 				resp.addProperty("success", false);
@@ -1202,6 +1295,105 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		} else
 			resp.addProperty("success", false);
 		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/deleteSaveContainer")
+	public FunctionResult deleteSaveContainer(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save") || !payload.has("root")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+			if (cont != null) {
+				cont.getSaveData().unsafeAccessor().deleteContainer(payload.get("root").getAsString());
+				resp.addProperty("success", true);
+			} else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		return ok("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/getChildSaveContainers")
+	public FunctionResult getChildSaveContainers(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save") || !payload.has("key")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+			if (cont != null) {
+				String[] containers = cont.getSaveData().unsafeAccessor()
+						.getChildContainers(payload.get("key").getAsString());
+				JsonArray arr = new JsonArray();
+				for (String conta : containers)
+					arr.add(conta);
+				resp.addProperty("success", true);
+				resp.add("result", arr);
+			} else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		return ok("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/getSaveEntryKeys")
+	public FunctionResult getSaveEntryKeys(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save") || !payload.has("key")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+			if (cont != null) {
+				String[] keys = acc.getAccountData().unsafeAccessor().getEntryKeys(payload.get("key").getAsString());
+				JsonArray arr = new JsonArray();
+				for (String conta : keys)
+					arr.add(conta);
+				resp.addProperty("success", true);
+				resp.add("result", arr);
+			} else
+				resp.addProperty("success", false);
+		} else
+			resp.addProperty("success", false);
+		return ok("text/json", resp.toString());
 	}
 
 	@LegacyFunction(allowedMethods = { "POST" })

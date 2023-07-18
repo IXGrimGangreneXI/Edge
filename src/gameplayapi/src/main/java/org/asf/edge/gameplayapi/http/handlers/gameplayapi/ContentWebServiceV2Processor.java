@@ -17,6 +17,7 @@ import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
+import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
@@ -996,7 +997,6 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		AccountDataContainer data = account.getAccountData();
 		if (tkn.saveID != null)
 			data = account.getSave(tkn.saveID).getSaveData();
-		data = data.getChildContainer("commoninventories").getChildContainer(Integer.toString(request.containerID));
 
 		// Retrieve container
 		CommonInventoryData resp = new CommonInventoryData();
@@ -1005,27 +1005,15 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			resp.userID = tkn.saveID;
 
 		// Find items
-		JsonElement e = data.getEntry("itemlist");
-		if (e == null) {
-			e = new JsonArray();
-			data.setEntry("itemlist", e);
-		}
 		ArrayList<ItemBlock> items = new ArrayList<ItemBlock>();
-		for (JsonElement itemDefEle : e.getAsJsonArray()) {
-			int uniqueID = itemDefEle.getAsInt();
-
-			// Locate item
-			JsonElement ent = data.getEntry("item-" + uniqueID);
-			if (ent == null)
-				continue;
-			JsonObject itm = ent.getAsJsonObject();
-
+		for (PlayerInventoryItem itm : itemManager.getCommonInventory(data).getContainer(request.containerID)
+				.getItems()) {
 			// Add item
 			ItemBlock block = new ItemBlock();
-			block.itemID = itm.get("id").getAsInt();
-			block.quantity = itm.get("quantity").getAsInt();
-			block.uses = itm.get("uses").getAsInt();
-			block.uniqueItemID = uniqueID;
+			block.itemID = itm.getItemDefID();
+			block.quantity = itm.getQuantity();
+			block.uses = itm.getUses();
+			block.uniqueItemID = itm.getUniqueID();
 			// TODO: stats and attributes
 
 			// Add data info from item manager

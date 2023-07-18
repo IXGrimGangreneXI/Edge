@@ -1,6 +1,7 @@
 package org.asf.edge.common.services.items.impl;
 
 import java.io.IOException;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.asf.edge.common.entities.items.PlayerInventory;
@@ -13,7 +14,6 @@ import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.modules.eventbus.EventBus;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -51,13 +51,12 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 			lastUpdate = System.currentTimeMillis();
 
 			// Find item
-			JsonElement ele = data.getEntry("item-" + uniqueID);
+			JsonElement ele = data.getChildContainer("d-" + defID).getEntry("u-" + uniqueID);
 			if (ele == null)
 				return;
 
 			// Load item object
 			JsonObject itm = ele.getAsJsonObject();
-			defID = itm.get("id").getAsInt();
 			quantity = itm.get("quantity").getAsInt();
 			uses = itm.get("uses").getAsInt();
 		} catch (IOException e) {
@@ -70,10 +69,9 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 		try {
 			// Save
 			JsonObject itm = new JsonObject();
-			itm.addProperty("id", defID);
 			itm.addProperty("quantity", quantity);
 			itm.addProperty("uses", uses);
-			data.setEntry("item-" + uniqueID, itm);
+			data.getChildContainer("d-" + defID).setEntry("u-" + uniqueID, itm);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -139,26 +137,16 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 	public void delete() {
 		try {
 			// Remove item
-			data.deleteEntry("item-" + uniqueID);
+			AccountDataContainer cont = data.getChildContainer("d-" + defID);
+			cont.deleteEntry("u-" + uniqueID);
+			if (Stream.of(cont.getEntryKeys()).filter(t -> t.startsWith("u-")).count() <= 0)
+				cont.deleteContainer();
+
+			// Remove pointer
+			data.deleteEntry("u-" + uniqueID);
 
 			// Dispatch event
-			EventBus.getInstance().dispatchEvent(new InventoryItemDeleteEvent(this, account, data, inv, cont));
-
-			// Update item list
-			JsonElement e = data.getEntry("itemlist");
-			if (e != null) {
-				JsonArray lst = e.getAsJsonArray();
-				for (JsonElement ele : lst) {
-					if (ele.getAsInt() == uniqueID) {
-						// Remove
-						lst.remove(ele);
-
-						// Save
-						data.setEntry("itemlist", lst);
-						break;
-					}
-				}
-			}
+			EventBus.getInstance().dispatchEvent(new InventoryItemDeleteEvent(this, account, data, inv, this.cont));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

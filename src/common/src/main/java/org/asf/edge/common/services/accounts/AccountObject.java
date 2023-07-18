@@ -1,6 +1,7 @@
 package org.asf.edge.common.services.accounts;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.services.items.ItemManager;
@@ -13,6 +14,41 @@ import org.asf.edge.common.services.items.ItemManager;
  *
  */
 public abstract class AccountObject {
+
+	private HashMap<String, Object> sessionMemory = new HashMap<String, Object>();
+
+	/**
+	 * Retrieves session memory objects
+	 * 
+	 * @param <T>  Object type
+	 * @param type Object class
+	 * @return Object instance or null
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> T getSessionObject(Class<T> type) {
+		return (T) sessionMemory.get(type.getTypeName());
+	}
+
+	/**
+	 * Stores session memory objects
+	 * 
+	 * @param <T>    Object type
+	 * @param type   Object class
+	 * @param object Object instance
+	 */
+	public <T> void setSessionObject(Class<T> type, T object) {
+		sessionMemory.put(type.getTypeName(), object);
+	}
+
+	/**
+	 * Removes session memory objects
+	 * 
+	 * @param <T>  Object type
+	 * @param type Object class
+	 */
+	public <T> void removeSessionObject(Class<T> type) {
+		sessionMemory.remove(type.getTypeName());
+	}
 
 	/**
 	 * Retrieves the account username
