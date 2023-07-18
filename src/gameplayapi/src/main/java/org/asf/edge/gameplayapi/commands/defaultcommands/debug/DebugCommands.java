@@ -80,8 +80,21 @@ public class DebugCommands extends TaskBasedCommand {
 						try {
 							CommonDataManager.getInstance().getContainer("test").setEntry("test",
 									new JsonPrimitive("abc"));
-							return (CommonDataManager.getInstance().getContainer("test").getEntry("test").getAsString()
-									.equals("abc") ? "Test passed" : "Test failed");
+							CommonDataManager.getInstance().getContainer("test").getChildContainer("test1")
+									.getChildContainer("test2").getChildContainer("test3")
+									.setEntry("abc3", new JsonPrimitive("def"));
+							CommonDataManager.getInstance().getContainer("test").getChildContainer("test3")
+									.setEntry("abc3", new JsonPrimitive("def2"));
+							CommonDataManager.getInstance().getContainer("test").getChildContainer("test1")
+									.getChildContainer("test2").getChildContainers();
+							CommonDataManager.getInstance().getContainer("test").getChildContainer("test1")
+									.getChildContainers();
+							CommonDataManager.getInstance().getContainer("test").getChildContainers();
+							CommonDataManager.getInstance().getContainer("test").getChildContainer("test1")
+									.getChildContainer("test2").getChildContainer("test3").getEntryKeys();
+							String r = (CommonDataManager.getInstance().getContainer("test").getEntry("test")
+									.getAsString().equals("abc") ? "Test passed" : "Test failed");
+							return r;
 						} catch (Exception e) {
 						}
 						return "Test errored";

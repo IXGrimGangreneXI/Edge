@@ -1,4 +1,4 @@
-package org.asf.edge.common.services.commondata.impl;
+package org.asf.edge.common.services.commondata.impl.http;
 
 import java.io.File;
 import java.io.IOException;

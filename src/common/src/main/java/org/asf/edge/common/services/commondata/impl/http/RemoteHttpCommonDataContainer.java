@@ -1,4 +1,4 @@
-package org.asf.edge.common.services.commondata.impl;
+package org.asf.edge.common.services.commondata.impl.http;
 
 import java.io.IOException;
 
@@ -9,6 +9,7 @@ import org.asf.edge.common.services.commondata.CommonDataContainer;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
 
 public class RemoteHttpCommonDataContainer extends CommonDataContainer {
 
@@ -58,13 +59,14 @@ public class RemoteHttpCommonDataContainer extends CommonDataContainer {
 	}
 
 	@Override
-	protected void create(String key, JsonElement value) throws IOException {
+	protected void create(String key, String parent, JsonElement value) throws IOException {
 		// Request
 		try {
 			// Build payload
 			JsonObject payload = new JsonObject();
 			payload.addProperty("node", rootNodeName);
 			payload.addProperty("key", key);
+			payload.addProperty("parent", parent);
 			payload.add("value", value);
 			JsonObject response = mgr.commonDataManagerRequest("createDataEntry", payload);
 			if (!response.get("success").getAsBoolean())
@@ -103,6 +105,68 @@ public class RemoteHttpCommonDataContainer extends CommonDataContainer {
 				throw new IOException("Server returned success=false");
 		} catch (IOException e) {
 			logger.error("Common data manager server query failure occurred in deleteDataEntry!", e);
+		}
+	}
+
+	@Override
+	protected String[] getEntryKeys(String key) throws IOException {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("node", rootNodeName);
+			payload.addProperty("key", key);
+			JsonObject response = mgr.commonDataManagerRequest("getEntryKeys", payload);
+			if (!response.get("success").getAsBoolean())
+				throw new IOException("Server returned success=false");
+			JsonArray arr = response.get("result").getAsJsonArray();
+			String[] res = new String[arr.size()];
+			int i = 0;
+			for (JsonElement ele : arr)
+				res[i++] = ele.getAsString();
+			return res;
+		} catch (IOException e) {
+			logger.error("Common data manager server query failure occurred in getEntryKeys!", e);
+			return new String[0];
+		}
+	}
+
+	@Override
+	protected String[] getChildContainers(String key) throws IOException {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("node", rootNodeName);
+			payload.addProperty("key", key);
+			JsonObject response = mgr.commonDataManagerRequest("getChildContainers", payload);
+			if (!response.get("success").getAsBoolean())
+				throw new IOException("Server returned success=false");
+			JsonArray arr = response.get("result").getAsJsonArray();
+			String[] res = new String[arr.size()];
+			int i = 0;
+			for (JsonElement ele : arr)
+				res[i++] = ele.getAsString();
+			return res;
+		} catch (IOException e) {
+			logger.error("Common data manager server query failure occurred in getChildContainers!", e);
+			return new String[0];
+		}
+	}
+
+	@Override
+	protected void deleteContainer(String root) throws IOException {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("node", rootNodeName);
+			payload.addProperty("root", root);
+			JsonObject response = mgr.commonDataManagerRequest("deleteContainer", payload);
+			if (!response.get("success").getAsBoolean())
+				throw new IOException("Server returned success=false");
+		} catch (IOException e) {
+			logger.error("Common data manager server query failure occurred in deleteContainer!", e);
 		}
 	}
 

@@ -202,6 +202,4 @@ public abstract class AccountObject {
 	public void ping(boolean addIfNeeded) {
 	}
 
-	// TODO
-
 }

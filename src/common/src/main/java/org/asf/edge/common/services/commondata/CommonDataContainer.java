@@ -1,8 +1,8 @@
 package org.asf.edge.common.services.commondata;
 
 import java.io.IOException;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 
 /**
  * 
@@ -25,8 +25,8 @@ public abstract class CommonDataContainer {
 			CommonDataContainer.this.set(key, value);
 		}
 
-		public void create(String key, JsonElement value) throws IOException {
-			CommonDataContainer.this.create(key, value);
+		public void create(String key, String root, JsonElement value) throws IOException {
+			CommonDataContainer.this.create(key, root, value);
 		}
 
 		public boolean exists(String key) throws IOException {
@@ -35,6 +35,18 @@ public abstract class CommonDataContainer {
 
 		public void delete(String key) throws IOException {
 			CommonDataContainer.this.delete(key);
+		}
+
+		public void deleteContainer(String root) throws IOException {
+			CommonDataContainer.this.deleteContainer(root);
+		}
+
+		public String[] getEntryKeys(String key) throws IOException {
+			return CommonDataContainer.this.getEntryKeys(key);
+		}
+
+		public String[] getChildContainers(String key) throws IOException {
+			return CommonDataContainer.this.getChildContainers(key);
 		}
 	}
 
@@ -77,10 +89,11 @@ public abstract class CommonDataContainer {
 	 * Called to create elements
 	 * 
 	 * @param key   Element key
+	 * @param root  Root key
 	 * @param value Value to assign
 	 * @throws IOException If the entry cannot be assigned
 	 */
-	protected abstract void create(String key, JsonElement value) throws IOException;
+	protected abstract void create(String key, String root, JsonElement value) throws IOException;
 
 	/**
 	 * Called to check if keys exist
@@ -99,9 +112,35 @@ public abstract class CommonDataContainer {
 	 */
 	protected abstract void delete(String key) throws IOException;
 
+	/**
+	 * Called to retrieve entry keys
+	 * 
+	 * @param key Parent container key
+	 * @return Array of container strings
+	 * @throws IOException If retrieval fails
+	 */
+	protected abstract String[] getEntryKeys(String key) throws IOException;
+
+	/**
+	 * Called to retrieve child containers
+	 * 
+	 * @param key Parent container key
+	 * @return Array of container strings
+	 * @throws IOException If retrieval fails
+	 */
+	protected abstract String[] getChildContainers(String key) throws IOException;
+
+	/**
+	 * Called to delete containers
+	 * 
+	 * @param root Root key
+	 * @throws IOException If deletion fails
+	 */
+	protected abstract void deleteContainer(String root) throws IOException;
+
 	private boolean validName(String key) {
 		// Check if internal
-		if (key.equalsIgnoreCase("datamap") || key.contains("/"))
+		if (key.contains("/") || key.equals("chholder"))
 			return false;
 
 		// Check validity
@@ -160,14 +199,7 @@ public abstract class CommonDataContainer {
 		if (existed)
 			set(key, value);
 		else
-			create(key, value);
-
-		// Add to registry table if new
-		if (!existed) {
-			JsonArray table = retrieveRegistry();
-			table.add(key);
-			set("datamap", table);
-		}
+			create(key, "", value);
 	}
 
 	/**
@@ -184,15 +216,6 @@ public abstract class CommonDataContainer {
 		if (exists(key)) {
 			// Delete
 			delete(key);
-
-			// Remove from registry table
-			JsonArray table = retrieveRegistry();
-			for (JsonElement ele : table)
-				if (ele.getAsString().equals(key)) {
-					table.remove(ele);
-					break;
-				}
-			set("datamap", table);
 		}
 	}
 
@@ -217,66 +240,60 @@ public abstract class CommonDataContainer {
 	}
 
 	/**
+	 * Retrieves entry keys
+	 * 
+	 * @return Array of entry key strings
+	 * @throws IOException If retrieval fails
+	 */
+	public String[] getEntryKeys() throws IOException {
+		return getEntryKeys("");
+	}
+
+	/**
+	 * Retrieves child containers
+	 * 
+	 * @return Array of child container name strings
+	 * @throws IOException If retrieval fails
+	 */
+	public String[] getChildContainers() throws IOException {
+		return getChildContainers("");
+	}
+
+	/**
 	 * Deletes the data container
 	 * 
 	 * @throws IOException If deletion fails
 	 */
 	public void deleteContainer() throws IOException {
-		// If there is a parent container, if there is we need to remove this container
-		// from it, else there will be a ghost entry
-		CommonDataContainer parent = getParent();
-		if (parent != null) {
-			JsonArray reg = parent.retrieveRegistry();
-			for (JsonElement elem : reg) {
-				if (elem.getAsString().equals(name + "/")) {
-					reg.remove(elem);
-					parent.set("datamap", reg);
-					break;
-				}
-			}
-		}
-
-		// Find map
-		JsonElement ele = get("datamap");
-		if (ele == null) {
-			// No data map, nothing to delete in this container
-			return;
-		}
-
-		// Load data array
-		JsonArray dataMap = ele.getAsJsonArray();
-
-		// Delete entries
-		for (JsonElement elem : dataMap.deepCopy()) {
-			if (elem.getAsString().endsWith("/")) {
-				// Child container
-				getChildContainer(elem.getAsString().substring(0, elem.getAsString().length() - 1)).deleteContainer();
-				continue;
-			}
-			delete(elem.getAsString());
-		}
-
-		// Delete data map
-		delete("datamap");
+		deleteContainer("");
 	}
 
-	protected JsonArray retrieveRegistry() throws IOException {
-		JsonElement ele = get("datamap");
-		if (ele == null) {
-			ele = new JsonArray();
-			create("datamap", ele);
-		}
-		return ele.getAsJsonArray();
+	protected void initIfNeeded() throws IOException {
 	}
 
 	private class ChildDataContainer extends CommonDataContainer {
 
-		private boolean registryChecked;
+		private boolean inited = false;
 
 		public ChildDataContainer(String path, String name, CommonDataContainer parent) {
 			this.path = path;
 			this.parent = parent;
 			this.name = name;
+		}
+
+		@Override
+		protected void initIfNeeded() throws IOException {
+			// Check
+			if (inited)
+				return;
+			inited = true;
+
+			// Create holder
+			if (!exists("chholder"))
+				create("chholder", "", new JsonPrimitive(true));
+
+			// Call parent
+			parent.initIfNeeded();
 		}
 
 		@Override
@@ -292,11 +309,13 @@ public abstract class CommonDataContainer {
 		@Override
 		protected void set(String key, JsonElement value) throws IOException {
 			parent.set(name + "/" + key, value);
+			initIfNeeded();
 		}
 
 		@Override
-		protected void create(String key, JsonElement value) throws IOException {
-			parent.create(name + "/" + key, value);
+		protected void create(String key, String root, JsonElement value) throws IOException {
+			parent.create(name + "/" + key, name + (root.isEmpty() ? "" : "/" + root), value);
+			initIfNeeded();
 		}
 
 		@Override
@@ -305,27 +324,18 @@ public abstract class CommonDataContainer {
 		}
 
 		@Override
-		protected JsonArray retrieveRegistry() throws IOException {
-			// Check if it exists in the parent
-			if (!registryChecked) {
-				registryChecked = true;
+		protected String[] getEntryKeys(String key) throws IOException {
+			return parent.getEntryKeys(name + (key.isEmpty() ? "" : "/" + key));
+		}
 
-				// Verify existence, and if needed, create the container
-				JsonArray table = parent.retrieveRegistry();
-				boolean found = false;
-				for (JsonElement ele : table) {
-					if (ele.getAsString().equals(name + "/")) {
-						found = true;
-						break;
-					}
-				}
-				if (!found) {
-					// Add to table
-					table.add(name + "/");
-					set("datamap", table);
-				}
-			}
-			return super.retrieveRegistry();
+		@Override
+		protected String[] getChildContainers(String key) throws IOException {
+			return parent.getChildContainers(name + (key.isEmpty() ? "" : "/" + key));
+		}
+
+		@Override
+		protected void deleteContainer(String root) throws IOException {
+			parent.deleteContainer(name + (root.isEmpty() ? "" : "/" + root));
 		}
 
 	}

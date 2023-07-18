@@ -4,12 +4,16 @@ import java.io.IOException;
 
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.Function;
+import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -127,7 +131,7 @@ public class CommonDataManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 			return;
 		}
 		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
-		if (!payload.has("node") || !payload.has("key") || !payload.has("value")) {
+		if (!payload.has("node") || !payload.has("key") || !payload.has("parent") || !payload.has("value")) {
 			getResponse().setResponseStatus(400, "Bad request");
 			return;
 		}
@@ -136,7 +140,8 @@ public class CommonDataManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		CommonDataContainer data = manager.getContainer(payload.get("node").getAsString());
 		JsonObject resp = new JsonObject();
 		if (data != null) {
-			data.unsafeAccessor().create(payload.get("key").getAsString(), payload.get("value"));
+			data.unsafeAccessor().create(payload.get("key").getAsString(), payload.get("parent").getAsString(),
+					payload.get("value"));
 			resp.addProperty("success", true);
 		} else
 			resp.addProperty("success", false);
@@ -196,6 +201,92 @@ public class CommonDataManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		} else
 			resp.addProperty("success", false);
 		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function
+	public FunctionResult deleteContainer(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = CommonDataManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("node") || !payload.has("root")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		CommonDataContainer data = manager.getContainer(payload.get("node").getAsString());
+		JsonObject resp = new JsonObject();
+		if (data != null) {
+			data.unsafeAccessor().deleteContainer(payload.get("root").getAsString());
+			resp.addProperty("success", true);
+		} else
+			resp.addProperty("success", false);
+		return ok("text/json", resp.toString());
+	}
+
+	@Function
+	public FunctionResult getChildContainers(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = CommonDataManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("node") || !payload.has("key")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		CommonDataContainer data = manager.getContainer(payload.get("node").getAsString());
+		JsonObject resp = new JsonObject();
+		if (data != null) {
+			String[] containers = data.unsafeAccessor().getChildContainers(payload.get("key").getAsString());
+			JsonArray arr = new JsonArray();
+			for (String cont : containers)
+				arr.add(cont);
+			resp.addProperty("success", true);
+			resp.add("result", arr);
+		} else
+			resp.addProperty("success", false);
+		return ok("text/json", resp.toString());
+	}
+
+	@Function
+	public FunctionResult getEntryKeys(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = CommonDataManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("node") || !payload.has("key")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		CommonDataContainer data = manager.getContainer(payload.get("node").getAsString());
+		JsonObject resp = new JsonObject();
+		if (data != null) {
+			String[] keys = data.unsafeAccessor().getEntryKeys(payload.get("key").getAsString());
+			JsonArray arr = new JsonArray();
+			for (String cont : keys)
+				arr.add(cont);
+			resp.addProperty("success", true);
+			resp.add("result", arr);
+		} else
+			resp.addProperty("success", false);
+		return ok("text/json", resp.toString());
 	}
 
 }

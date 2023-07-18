@@ -266,8 +266,10 @@ public class ItemManagerImpl extends ItemManager {
 							ArrayList<ItemSaleInfo> upcomingRandomSales = new ArrayList<ItemSaleInfo>();
 							for (int cat : categoryIds) {
 								// Add to list
-								SaleInfoBlock b = mapper.readValue(cont.getEntry("current-" + cat).toString(),
-										SaleInfoBlock.class);
+								JsonElement ent = cont.getEntry("current-" + cat);
+								if (ent == null)
+									continue;
+								SaleInfoBlock b = mapper.readValue(ent.toString(), SaleInfoBlock.class);
 								currentRandomSales.add(new ItemSaleInfo(b.name, b.startTime, b.endTime, b.saleModifier,
 										b.categories, b.itemIDs, b.memberOnly));
 								b = mapper.readValue(cont.getEntry("next-" + cat).toString(), SaleInfoBlock.class);

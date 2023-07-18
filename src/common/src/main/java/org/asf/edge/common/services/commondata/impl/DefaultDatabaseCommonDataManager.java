@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
@@ -13,13 +14,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
+import org.asf.edge.common.services.commondata.impl.db.DatabaseCommonDataContainer;
+import org.asf.edge.common.services.commondata.impl.db.DatabaseCommonDataManager;
+import org.asf.edge.common.services.commondata.impl.db.DatabaseRequest;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
-public class DatabaseCommonDataManager extends CommonDataManager {
+public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager {
 
 	private String url;
 	private Properties props;
@@ -87,11 +91,6 @@ public class DatabaseCommonDataManager extends CommonDataManager {
 	}
 
 	@Override
-	protected CommonDataContainer getContainerInternal(String rootNodeName) {
-		return new DatabaseCommonDataContainer(url, props, "CDC_" + rootNodeName);
-	}
-
-	@Override
 	protected void setupContainer(String rootNodeName) {
 		// Create if needed
 		try {
@@ -99,8 +98,8 @@ public class DatabaseCommonDataManager extends CommonDataManager {
 			Connection conn = DriverManager.getConnection(url, props);
 			try {
 				Statement statement = conn.createStatement();
-				statement.executeUpdate(
-						"CREATE TABLE IF NOT EXISTS CDC_" + rootNodeName + " (PATH varchar(256), DATA LONGTEXT)");
+				statement.executeUpdate("CREATE TABLE IF NOT EXISTS CDC2_" + rootNodeName
+						+ " (DATAKEY varchar(64), PARENT varchar(64), PARENTCONTAINER varchar(256), DATA LONGTEXT)");
 			} finally {
 				conn.close();
 			}
@@ -108,6 +107,23 @@ public class DatabaseCommonDataManager extends CommonDataManager {
 			logger.error("Failed to execute database query request while trying to prepare data container '"
 					+ rootNodeName + "'", e);
 		}
+	}
+
+	@Override
+	public DatabaseRequest createRequest() throws SQLException {
+		Connection conn = DriverManager.getConnection(url, props);
+		return new DatabaseRequest() {
+
+			@Override
+			public PreparedStatement createPreparedStatement(String query) throws SQLException {
+				return conn.prepareStatement(query);
+			}
+
+			@Override
+			public void finish() throws SQLException {
+				conn.close();
+			}
+		};
 	}
 
 }
