@@ -150,6 +150,17 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 		return false;
 	}
 
+	/**
+	 * Called to delete saves
+	 */
+	protected abstract void doDeleteSave();
+
+	@Override
+	public void deleteSave() {
+		doDeleteSave();
+		acc.refreshSaveList();
+	}
+
 	@Override
 	public AccountDataContainer getSaveData() {
 		if (data == null)

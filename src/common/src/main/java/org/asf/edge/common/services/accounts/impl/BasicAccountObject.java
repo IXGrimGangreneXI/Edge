@@ -354,15 +354,20 @@ public abstract class BasicAccountObject extends AccountObject {
 		}
 	}
 
+	private Object saveCreateLock = new Object();
 	private String[] saveIDs;
 
 	@Override
 	public String[] getSaveIDs() {
 		if (saveIDs != null)
 			return saveIDs;
-		String[] ids = retrieveSaveIDs();
-		saveIDs = ids;
-		return ids;
+		synchronized (saveCreateLock) {
+			if (saveIDs != null)
+				return saveIDs;
+			String[] ids = retrieveSaveIDs();
+			saveIDs = ids;
+			return ids;
+		}
 	}
 
 	@Override
@@ -390,7 +395,24 @@ public abstract class BasicAccountObject extends AccountObject {
 		}
 
 		// Create save
-		return performCreateSave(saveID, username);
+		AccountSaveContainer sv = performCreateSave(saveID, username);
+		if (sv != null) {
+			// Add to save list
+			synchronized (saveCreateLock) {
+				if (saveIDs == null) {
+					String[] ids = retrieveSaveIDs();
+					saveIDs = ids;
+				}
+				String[] newIds = new String[saveIDs.length + 1];
+				for (int i = 0; i < newIds.length; i++)
+					if (i == saveIDs.length)
+						newIds[i] = sv.getSaveID();
+					else
+						newIds[i] = saveIDs[i];
+				saveIDs = newIds;
+			}
+		}
+		return sv;
 	}
 
 	private HashMap<String, AccountSaveContainer> saves = new HashMap<String, AccountSaveContainer>();
@@ -418,6 +440,11 @@ public abstract class BasicAccountObject extends AccountObject {
 				saves.put(id, sv);
 			return sv;
 		}
+	}
+
+	public void refreshSaveList() {
+		saveIDs = null;
+		getSaveIDs();
 	}
 
 	// Salt and hash

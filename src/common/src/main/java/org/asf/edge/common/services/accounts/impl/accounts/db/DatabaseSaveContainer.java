@@ -87,7 +87,7 @@ public class DatabaseSaveContainer extends BasicAccountSaveContainer {
 	}
 
 	@Override
-	public void deleteSave() {
+	public void doDeleteSave() {
 		try {
 			DatabaseRequest conn = manager.createRequest();
 			try {
