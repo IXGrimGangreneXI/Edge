@@ -257,7 +257,7 @@ public class EdgeGlobalServerMain {
 		logger.info("Setting up servers...");
 		logger.debug("Loading account manager implementations...");
 		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.DEFAULT,
-				ServiceImplementationPriorityLevels.NORMAL);
+				ServiceImplementationPriorityLevels.NORMAL, -5);
 		logger.debug("Selecting account manager implementation...");
 		ServiceManager.selectServiceImplementation(AccountManager.class);
 		logger.debug("Loading account manager...");

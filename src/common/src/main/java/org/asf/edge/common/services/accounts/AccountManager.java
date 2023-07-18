@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.impl.DefaultDatabaseAccountManager;
+import org.asf.edge.common.services.accounts.impl.PostgresDatabaseAccountManager;
 import org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager;
 import org.asf.edge.common.tokens.TokenParseResult;
 
@@ -42,7 +43,7 @@ public abstract class AccountManager extends AbstractService {
 	/**
 	 * Internal
 	 */
-	public static void initAccountManagerServices(int priorityRemote, int priorityDatabase) {
+	public static void initAccountManagerServices(int priorityRemote, int priorityDatabase, int priorityPostgres) {
 		if (initedServices)
 			return;
 		initedServices = true;
@@ -78,6 +79,16 @@ public abstract class AccountManager extends AbstractService {
 			changed = true;
 		} else
 			databaseManagerConfig = accountManagerConfig.get("databaseManager").getAsJsonObject();
+		JsonObject postgresManagerConfig = new JsonObject();
+		if (!accountManagerConfig.has("postgreSQL")) {
+			postgresManagerConfig.addProperty("priority", priorityPostgres);
+			postgresManagerConfig.addProperty("url", "jdbc:postgresql://localhost/edge");
+			JsonObject props = new JsonObject();
+			postgresManagerConfig.add("properties", props);
+			accountManagerConfig.add("postgreSQL", postgresManagerConfig);
+			changed = true;
+		} else
+			postgresManagerConfig = accountManagerConfig.get("postgreSQL").getAsJsonObject();
 		if (changed) {
 			// Write config
 			try {
@@ -94,6 +105,8 @@ public abstract class AccountManager extends AbstractService {
 				remoteManagerConfig.get("priority").getAsInt());
 		ServiceManager.registerServiceImplementation(AccountManager.class, new DefaultDatabaseAccountManager(),
 				databaseManagerConfig.get("priority").getAsInt());
+		ServiceManager.registerServiceImplementation(AccountManager.class, new PostgresDatabaseAccountManager(),
+				postgresManagerConfig.get("priority").getAsInt());
 	}
 
 	/**

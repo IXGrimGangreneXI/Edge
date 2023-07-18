@@ -127,7 +127,7 @@ public class EdgeCommonApiServerMain {
 		logger.info("Setting up the server...");
 		logger.debug("Loading account manager implementations...");
 		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.DEFAULT,
-				ServiceImplementationPriorityLevels.NORMAL);
+				ServiceImplementationPriorityLevels.NORMAL, -5);
 		logger.debug("Selecting account manager implementation...");
 		ServiceManager.selectServiceImplementation(AccountManager.class);
 		logger.debug("Loading account manager...");

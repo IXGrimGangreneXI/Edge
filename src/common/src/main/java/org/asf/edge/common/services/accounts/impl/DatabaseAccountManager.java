@@ -367,7 +367,7 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 				// Insert save
 				statement = conn.prepareStatement("INSERT INTO SAVEMAP_V2 VALUES(?, ?)");
 				statement.setString(1, id);
-				statement.setString(2, "[]");
+				conn.setDataObject(2, "[]", statement);
 				statement.execute();
 				statement.close();
 			} finally {
@@ -407,7 +407,7 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 				// Insert save
 				statement = conn.prepareStatement("INSERT INTO SAVEMAP_V2 VALUES(?, ?)");
 				statement.setString(1, accID);
-				statement.setString(2, "[]");
+				conn.setDataObject(2, "[]", statement);
 				statement.execute();
 				statement.close();
 			} finally {

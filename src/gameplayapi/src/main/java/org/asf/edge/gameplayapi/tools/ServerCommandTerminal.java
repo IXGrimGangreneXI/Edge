@@ -140,7 +140,7 @@ public class ServerCommandTerminal {
 		logger.info("Setting up the terminal...");
 		logger.debug("Loading account manager implementations...");
 		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.NORMAL,
-				ServiceImplementationPriorityLevels.DEFAULT);
+				ServiceImplementationPriorityLevels.DEFAULT, -5);
 		logger.debug("Selecting account manager implementation...");
 		ServiceManager.selectServiceImplementation(AccountManager.class);
 		logger.debug("Loading account manager...");

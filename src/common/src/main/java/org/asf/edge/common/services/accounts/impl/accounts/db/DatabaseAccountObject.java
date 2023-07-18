@@ -187,7 +187,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 
 				// Write to db
 				statement = conn.prepareStatement("UPDATE SAVEMAP_V2 SET SAVES = ? WHERE ACCID = ?");
-				statement.setString(1, saves.toString());
+				conn.setDataObject(1, saves.toString(), statement);
 				statement.setString(2, getAccountID());
 				statement.execute();
 				statement.close();
