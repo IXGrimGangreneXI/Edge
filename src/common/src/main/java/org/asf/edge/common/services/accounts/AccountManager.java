@@ -5,6 +5,7 @@ import org.asf.edge.common.services.AbstractService;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
@@ -277,6 +278,14 @@ public abstract class AccountManager extends AbstractService {
 	public AccountObject[] getOnlinePlayers() {
 		return Stream.of(getOnlinePlayerIDs()).map(t -> getAccount(t)).toArray(t -> new AccountObject[t]);
 	}
+
+	/**
+	 * Runs functions for all accounts
+	 * 
+	 * @param func Function to run (return true to proceed to the next account,
+	 *             return false to stop iterating)
+	 */
+	public abstract void runForAllAccounts(Function<AccountObject, Boolean> func);
 
 	/**
 	 * Called to initialize the account manager

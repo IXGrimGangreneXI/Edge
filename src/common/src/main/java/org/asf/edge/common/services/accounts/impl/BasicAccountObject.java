@@ -88,7 +88,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	 * 
 	 * @return AccountDataContainer instance
 	 */
-	protected abstract AccountDataContainer retrieveAccountData();
+	public abstract AccountDataContainer retrieveAccountData();
 
 	/**
 	 * Called to retrieve save IDs
@@ -104,7 +104,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	 * @param username Save username
 	 * @return AccountSaveContainer instance or null if errored
 	 */
-	protected abstract AccountSaveContainer performCreateSave(String saveID, String username);
+	public abstract BasicAccountSaveContainer performCreateSave(String saveID, String username);
 
 	/**
 	 * Called to find saves
@@ -112,7 +112,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	 * @param saveID Save ID
 	 * @return AccountSaveContainer instance or null
 	 */
-	protected abstract AccountSaveContainer findSave(String saveID);
+	public abstract BasicAccountSaveContainer findSave(String saveID);
 
 	@Override
 	public void ping(boolean addIfNeeded) {

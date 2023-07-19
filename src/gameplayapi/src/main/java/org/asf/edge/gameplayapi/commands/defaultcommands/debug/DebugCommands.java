@@ -142,6 +142,43 @@ public class DebugCommands extends TaskBasedCommand {
 
 					@Override
 					public String id() {
+						return "runforallaccs";
+					}
+
+					@Override
+					public String syntax(CommandContext ctx) {
+						return null;
+					}
+
+					@Override
+					public String description(CommandContext ctx) {
+						return "Test command for account management";
+					}
+
+					@Override
+					public PermissionLevel permLevel() {
+						return PermissionLevel.OPERATOR;
+					}
+
+					@Override
+					public String permNode() {
+						return "commands.operator.debugcommands";
+					}
+
+					@Override
+					public String run(String[] args, CommandContext ctx, Logger logger,
+							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs) {
+						AccountManager.getInstance().runForAllAccounts(t -> {
+							outputWriteLineCallback.accept(t.getUsername());
+							return true;
+						});
+						return "Done";
+					}
+
+				}, new IEdgeServerCommand() {
+
+					@Override
+					public String id() {
 						return "itemtestadd";
 					}
 

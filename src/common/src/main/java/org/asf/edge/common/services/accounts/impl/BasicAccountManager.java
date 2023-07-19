@@ -152,9 +152,9 @@ public abstract class BasicAccountManager extends AccountManager {
 	 * 
 	 * @param accID   Account ID that was allocated
 	 * @param guestID Guest account ID
-	 * @return AccountObject instance or null
+	 * @return BasicAccountObject instance or null
 	 */
-	protected abstract AccountObject registerGuest(String accID, String guestID);
+	public abstract BasicAccountObject registerGuest(String accID, String guestID);
 
 	/**
 	 * Called to register accounts
@@ -163,9 +163,9 @@ public abstract class BasicAccountManager extends AccountManager {
 	 * @param email    Account email
 	 * @param username Account login name
 	 * @param cred     Account credential bytes
-	 * @return AccountObject instance or null
+	 * @return BasicAccountObject instance or null
 	 */
-	protected abstract AccountObject registerAccount(String accID, String email, String username, byte[] cred);
+	public abstract BasicAccountObject registerAccount(String accID, String email, String username, byte[] cred);
 
 	@Override
 	public boolean isUsernameTaken(String username) {

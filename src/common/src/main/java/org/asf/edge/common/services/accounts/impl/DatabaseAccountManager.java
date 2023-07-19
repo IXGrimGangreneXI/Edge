@@ -2,6 +2,8 @@ package org.asf.edge.common.services.accounts.impl;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.function.Function;
+
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.accounts.db.DatabaseAccountObject;
@@ -179,6 +181,42 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 	}
 
 	@Override
+	public void runForAllAccounts(Function<AccountObject, Boolean> func) {
+		try {
+			// Create prepared statement
+			DatabaseRequest conn = createRequest();
+			try {
+				var statement = conn.prepareStatement("SELECT ID, USERNAME FROM USERMAP_V2");
+				ResultSet res = statement.executeQuery();
+				while (res.next()) {
+					String id = res.getString("ID");
+					if (id == null) {
+						res.close();
+						statement.close();
+						return;
+					}
+					DatabaseAccountObject acc = new DatabaseAccountObject(id, res.getString("USERNAME"), this);
+
+					// Run function
+					try {
+						if (!func.apply(acc))
+							break;
+					} catch (Exception e) {
+						logger.error("Exception occurred while running runForAllAccounts!", e);
+						break;
+					}
+				}
+				res.close();
+				statement.close();
+			} finally {
+				conn.close();
+			}
+		} catch (SQLException e) {
+			logger.error("Failed to execute database query request while trying to run a function for all accounts", e);
+		}
+	}
+
+	@Override
 	public boolean accountExists(String id) {
 		try {
 			// Create prepared statement
@@ -348,8 +386,8 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 	}
 
 	@Override
-	protected AccountObject registerGuest(String id, String guestID) {
-		AccountObject obj = null;
+	public BasicAccountObject registerGuest(String id, String guestID) {
+		BasicAccountObject obj = null;
 		try {
 			// Insert information
 			DatabaseRequest conn = createRequest();
@@ -381,8 +419,8 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 	}
 
 	@Override
-	protected AccountObject registerAccount(String accID, String email, String username, byte[] cred) {
-		AccountObject obj = null;
+	public BasicAccountObject registerAccount(String accID, String email, String username, byte[] cred) {
+		BasicAccountObject obj = null;
 		try {
 			DatabaseRequest conn = createRequest();
 			try {
@@ -390,14 +428,16 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 				obj = new DatabaseAccountObject(accID, username, this);
 
 				// Insert email
-				var statement = conn.prepareStatement("INSERT INTO EMAILMAP_V2 VALUES(?, ?)");
-				statement.setString(1, email);
-				statement.setString(2, accID);
-				statement.execute();
-				statement.close();
+				if (email != null) {
+					var statement = conn.prepareStatement("INSERT INTO EMAILMAP_V2 VALUES(?, ?)");
+					statement.setString(1, email);
+					statement.setString(2, accID);
+					statement.execute();
+					statement.close();
+				}
 
 				// Insert user
-				statement = conn.prepareStatement("INSERT INTO USERMAP_V2 VALUES(?, ?, ?)");
+				var statement = conn.prepareStatement("INSERT INTO USERMAP_V2 VALUES(?, ?, ?)");
 				statement.setString(1, username);
 				statement.setString(2, accID);
 				statement.setBytes(3, cred);

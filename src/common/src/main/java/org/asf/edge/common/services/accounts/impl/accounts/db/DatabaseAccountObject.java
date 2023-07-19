@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.BasicAccountObject;
+import org.asf.edge.common.services.accounts.impl.BasicAccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.DatabaseAccountManager;
 
 import com.google.gson.JsonArray;
@@ -117,7 +118,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 	}
 
 	@Override
-	protected AccountDataContainer retrieveAccountData() {
+	public AccountDataContainer retrieveAccountData() {
 		return new DatabaseAccountDataContainer(this, getAccountID(), manager);
 	}
 
@@ -156,8 +157,9 @@ public class DatabaseAccountObject extends BasicAccountObject {
 	}
 
 	@Override
-	protected AccountSaveContainer performCreateSave(String saveID, String username) {
-		try {// Create object
+	public BasicAccountSaveContainer performCreateSave(String saveID, String username) {
+		try {
+			// Create object
 			JsonObject saveObj = new JsonObject();
 			saveObj.addProperty("id", saveID);
 			saveObj.addProperty("username", username);
@@ -213,7 +215,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 	}
 
 	@Override
-	protected AccountSaveContainer findSave(String saveID) {
+	public BasicAccountSaveContainer findSave(String saveID) {
 		// Add
 		try {
 			JsonArray saves;
@@ -239,7 +241,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 				if (saveObj.get("id").getAsString().equals(saveID)) {
 					// Found it
 					String username = saveObj.get("username").getAsString();
-					AccountSaveContainer save = new DatabaseSaveContainer(saveID,
+					BasicAccountSaveContainer save = new DatabaseSaveContainer(saveID,
 							saveObj.get("creationTime").getAsLong(), username, saveID, manager, this);
 					return save;
 				}

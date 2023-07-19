@@ -1,9 +1,12 @@
 package org.asf.edge.commonapi.http.handlers.internal;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Base64;
+import java.util.UUID;
 
 import org.asf.connective.processors.HttpPushProcessor;
+import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -13,6 +16,7 @@ import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.util.SimpleBinaryMessageClient;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 
 import com.google.gson.JsonArray;
@@ -1561,6 +1565,89 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		} else
 			resp.addProperty("result", false);
 		setResponseContent("text/json", resp.toString());
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult runForAllAccounts(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Check headers
+		if (!getRequest().hasHeader("Upgrade")
+				|| !getRequest().getHeaderValue("Upgrade").equals("EDGEBINPROT/ACCMANAGER/RUNFORALLACCOUNTS")) {
+			return response(400, "Bad request");
+		}
+
+		// Set headers
+		setResponseHeader("X-Response-ID", UUID.randomUUID().toString());
+		setResponseHeader("Upgrade", "EDGEBINPROT/ACCMANAGER/RUNFORALLACCOUNTS");
+
+		// Setup
+		AsyncTaskManager.runAsync(() -> {
+			// Wait for upgrade
+			while (func.getClient().isConnected()) {
+				// Check
+				if (func.getResponse().hasHeader("Upgraded")
+						&& func.getResponse().getHeaderValue("Upgraded").equalsIgnoreCase("true"))
+					break;
+
+				// Wait
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+
+			// Check
+			if ((func.getClient().isConnected())) {
+				// Upgraded
+				SimpleBinaryMessageClient client = new SimpleBinaryMessageClient((packet, cl) -> {
+					AccFuncResult res = new AccFuncResult();
+					res.continueRun = packet.data[0] == 1 ? true : false;
+					cl.container = res;
+					return true;
+				}, func.getClient().getInputStream(), func.getClient().getOutputStream());
+				client.startAsync();
+				manager.runForAllAccounts(t -> {
+					boolean res = true;
+
+					// Run
+					client.container = null;
+					try {
+						client.send(t.getAccountID().getBytes("UTF-8"));
+					} catch (IOException e) {
+						return false;
+					}
+
+					// Wait
+					while (client.container == null && client.isConnected()) {
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+							break;
+						}
+					}
+					if (client.container == null)
+						return false;
+
+					// Set result
+					res = ((AccFuncResult) client.container).continueRun;
+
+					// Return result
+					return res;
+				});
+				client.stop();
+			}
+		});
+
+		// Send response
+		return response(101, "Switching Protocols");
+	}
+
+	private static class AccFuncResult {
+		public boolean continueRun;
 	}
 
 }

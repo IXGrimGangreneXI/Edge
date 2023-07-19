@@ -36,6 +36,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 
 	@Override
 	protected JsonElement get(String key) throws IOException {
+		String keyF = key;
 		while (true) {
 			try {
 				if (dataCache.containsKey(key))
@@ -77,20 +78,20 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 					if (!res.next()) {
 						res.close();
 						statement.close();
-						dataCache.put(key, null);
+						dataCache.put(keyF, null);
 						return null;
 					}
 					String data = res.getString("DATA");
 					if (data == null) {
 						res.close();
 						statement.close();
-						dataCache.put(key, null);
+						dataCache.put(keyF, null);
 						return null;
 					}
 					res.close();
 					statement.close();
 					JsonElement r = JsonParser.parseString(data);
-					dataCache.put(key, r);
+					dataCache.put(keyF, r);
 					return r;
 				} finally {
 					req.close();
@@ -105,6 +106,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 
 	@Override
 	protected void set(String key, JsonElement value) throws IOException {
+		String keyF = key;
 		try {
 			DatabaseRequest req = manager.createRequest();
 			try {
@@ -132,7 +134,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 				statement.setString(5, id);
 				statement.execute();
 				statement.close();
-				dataCache.put(key, value);
+				dataCache.put(keyF, value);
 			} finally {
 				req.close();
 			}
@@ -145,6 +147,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 
 	@Override
 	protected void create(String key, String root, JsonElement value) throws IOException {
+		String keyF = key;
 		try {
 			DatabaseRequest req = manager.createRequest();
 			try {
@@ -171,7 +174,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 				req.setDataObject(5, value.toString(), statement);
 				statement.execute();
 				statement.close();
-				dataCache.put(key, value);
+				dataCache.put(keyF, value);
 			} finally {
 				req.close();
 			}
@@ -184,6 +187,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 
 	@Override
 	protected boolean exists(String key) throws IOException {
+		String keyF = key;
 		while (true) {
 			try {
 				if (dataCache.containsKey(key))
@@ -221,11 +225,11 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 				ResultSet res = statement.executeQuery();
 				boolean r = res.next();
 				if (!r)
-					dataCache.put(key, null);
+					dataCache.put(keyF, null);
 				else {
 					// Check
 					if (res.getString("DATA") == null)
-						dataCache.put(key, null);
+						dataCache.put(keyF, null);
 				}
 				res.close();
 				statement.close();
@@ -242,6 +246,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 
 	@Override
 	protected void delete(String key) throws IOException {
+		String keyF = key;
 		try {
 			DatabaseRequest req = manager.createRequest();
 			try {
@@ -268,7 +273,7 @@ public class DatabaseSaveDataContainer extends AccountDataContainer {
 				statement.setString(4, id);
 				statement.execute();
 				statement.close();
-				dataCache.remove(key);
+				dataCache.remove(keyF);
 			} finally {
 				req.close();
 			}
