@@ -187,7 +187,7 @@ public class LegacyAccountDataConverter {
 									+ saveData.size() + "] Converting save " + svName + "...");
 
 							// Create save
-							BasicAccountSaveContainer sv = account.performCreateSave(svID, name);
+							BasicAccountSaveContainer sv = account.performCreateSave(svID, svName);
 							if (sv == null) {
 								logger.error("Migration failure! Save creation failure!");
 								System.exit(1);
