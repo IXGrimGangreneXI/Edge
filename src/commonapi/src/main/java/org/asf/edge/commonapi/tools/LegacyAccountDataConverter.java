@@ -12,7 +12,6 @@ import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.CommonInit;
-import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
@@ -28,6 +27,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 
 public class LegacyAccountDataConverter {
@@ -245,8 +245,6 @@ public class LegacyAccountDataConverter {
 
 				// Retrieve new inventory
 				AccountDataContainer oldC = legacyData.getChildContainer(container);
-				PlayerInventoryContainer cont = ItemManager.getInstance().getCommonInventory(accountData)
-						.getContainer(containerID);
 
 				// Migrate data
 				String[] k = oldC.getEntryKeys();
@@ -257,10 +255,24 @@ public class LegacyAccountDataConverter {
 
 						// Read item
 						JsonObject itm = oldC.getEntry(key).getAsJsonObject();
-						itm = itm;
+						int defID = itm.get("id").getAsInt();
+						int quantity = itm.get("quantity").getAsInt();
+						int uses = itm.get("uses").getAsInt();
+
+						// Save
+						itm = new JsonObject();
+						itm.addProperty("quantity", quantity);
+						itm.addProperty("uses", uses);
+						accountData.getChildContainer("commoninventories").getChildContainer("c-" + containerID)
+								.getChildContainer("d-" + defID).setEntry("u-" + uniqueID, itm);
+
+						// Write def ID
+						accountData.getChildContainer("commoninventories").getChildContainer("c-" + containerID)
+								.setEntry("u-" + uniqueID, new JsonPrimitive(defID));
 					}
 				}
 			}
+			legacyData.deleteContainer();
 		} catch (IOException e) {
 			logger.error("Failed to migrate legacy inventories!", e);
 		}
@@ -305,7 +317,7 @@ public class LegacyAccountDataConverter {
 						if (rs3.next()) {
 							logger.info(logPrefix + "Converting data key " + pth + "...");
 							try {
-								saveData.setEntry(key, JsonParser.parseString(rs2.getString("DATA")));
+								saveData.setEntry(key, JsonParser.parseString(rs3.getString("DATA")));
 							} catch (JsonSyntaxException | IOException e) {
 								logger.error("Failed to migrate data key " + pth + " (" + table + ")", e);
 							}
