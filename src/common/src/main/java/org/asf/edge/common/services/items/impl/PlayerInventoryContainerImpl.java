@@ -45,7 +45,8 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 					int defID = Integer.parseInt(ent.substring(2));
 
 					// Find items
-					for (String ent2 : data.getChildContainer("d-" + defID).getEntryKeys()) {
+					AccountDataContainer cont = data.getChildContainer("d-" + defID);
+					for (String ent2 : cont.getEntryKeys()) {
 						if (ent2.startsWith("u-")) {
 							// Parse item ID
 							int uniqueID = Integer.parseInt(ent2.substring(2));
@@ -54,6 +55,13 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 							if (!data.entryExists("u-" + uniqueID)) {
 								// Add so it doesnt break down
 								data.setEntry("u-" + uniqueID, new JsonPrimitive(defID));
+							}
+							if (cont.getEntry("u-" + uniqueID) == null) {
+								// Item damaged
+								JsonObject newI = new JsonObject();
+								newI.addProperty("quantitiy", 1);
+								newI.addProperty("uses", -1);
+								cont.setEntry("u-" + uniqueID, newI);
 							}
 
 							// Add
@@ -81,7 +89,8 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 					int defID = Integer.parseInt(ent.substring(2));
 
 					// Find items
-					for (String ent2 : data.getChildContainer("d-" + defID).getEntryKeys()) {
+					AccountDataContainer cont = data.getChildContainer("d-" + defID);
+					for (String ent2 : cont.getEntryKeys()) {
 						if (ent2.startsWith("u-")) {
 							// Parse item ID
 							int uniqueID = Integer.parseInt(ent2.substring(2));
@@ -91,10 +100,16 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 								// Add so it doesnt break down
 								data.setEntry("u-" + uniqueID, new JsonPrimitive(defID));
 							}
+							if (cont.getEntry("u-" + uniqueID) == null) {
+								// Item damaged
+								JsonObject newI = new JsonObject();
+								newI.addProperty("quantitiy", 1);
+								newI.addProperty("uses", -1);
+								cont.setEntry("u-" + uniqueID, newI);
+							}
 
 							// Load item object
-							JsonObject itmO = data.getChildContainer("d-" + defID).getEntry("u-" + uniqueID)
-									.getAsJsonObject();
+							JsonObject itmO = cont.getEntry("u-" + uniqueID).getAsJsonObject();
 							int quantity = itmO.get("quantity").getAsInt();
 							int uses = itmO.get("uses").getAsInt();
 							itms.add(new PlayerInventoryItemImpl(data, uniqueID, defID, quantity, uses, account, inv,
