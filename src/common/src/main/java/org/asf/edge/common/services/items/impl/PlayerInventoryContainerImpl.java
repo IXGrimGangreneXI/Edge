@@ -97,7 +97,7 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 
 			// Generate item id
 			int uniqueID = rnd.nextInt(0, 1000000000);
-			while (item.entryExists("u-" + uniqueID))
+			while (data.entryExists("u-" + uniqueID))
 				uniqueID = rnd.nextInt(0, 1000000000);
 
 			// Write item
