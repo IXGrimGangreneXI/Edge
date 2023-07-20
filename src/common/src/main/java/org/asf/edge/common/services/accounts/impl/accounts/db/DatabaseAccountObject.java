@@ -241,7 +241,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 					// Found it
 					String username = saveObj.get("username").getAsString();
 					BasicAccountSaveContainer save = new DatabaseSaveContainer(saveID,
-							saveObj.get("creationTime").getAsLong(), username, saveID, manager, this);
+							saveObj.get("creationTime").getAsLong(), username, getAccountID(), manager, this);
 					return save;
 				}
 			}
