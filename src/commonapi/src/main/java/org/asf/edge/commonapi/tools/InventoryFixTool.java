@@ -59,12 +59,12 @@ public class InventoryFixTool {
 		logger.info("Repairing data of " + accountCount + " accounts...");
 		AccountManager.getInstance().runForAllAccounts(acc -> {
 			index++;
-			logger.info("[ " + index + " / " + accountCount + "] Repairing data of " + acc.getUsername());
+			logger.info("[ " + index + " / " + accountCount + " ] Repairing data of " + acc.getUsername());
 			repairInventories(acc.getAccountData(), logger);
-			logger.info("[ " + index + " / " + accountCount + "] Repairing data of all saves of " + acc.getUsername());
+			logger.info("[ " + index + " / " + accountCount + " ] Repairing data of all saves of " + acc.getUsername());
 			for (String id : acc.getSaveIDs()) {
 				AccountSaveContainer save = acc.getSave(id);
-				logger.info("[ " + index + " / " + accountCount + "] Repairing data of save " + save.getUsername());
+				logger.info("[ " + index + " / " + accountCount + " ] Repairing data of save " + save.getUsername());
 				repairInventories(save.getSaveData(), logger);
 			}
 			return true;
