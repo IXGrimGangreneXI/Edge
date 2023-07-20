@@ -59,7 +59,7 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 							if (cont.getEntry("u-" + uniqueID) == null) {
 								// Item damaged
 								JsonObject newI = new JsonObject();
-								newI.addProperty("quantitiy", 1);
+								newI.addProperty("quantity", 1);
 								newI.addProperty("uses", -1);
 								cont.setEntry("u-" + uniqueID, newI);
 							}
@@ -103,13 +103,18 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 							if (cont.getEntry("u-" + uniqueID) == null) {
 								// Item damaged
 								JsonObject newI = new JsonObject();
-								newI.addProperty("quantitiy", 1);
+								newI.addProperty("quantity", 1);
 								newI.addProperty("uses", -1);
 								cont.setEntry("u-" + uniqueID, newI);
 							}
 
 							// Load item object
 							JsonObject itmO = cont.getEntry("u-" + uniqueID).getAsJsonObject();
+							if (itmO.get("quantity") == null) {
+								// Item damaged
+								itmO.addProperty("quantity", 1);
+								cont.setEntry("u-" + uniqueID, itmO);
+							}
 							int quantity = itmO.get("quantity").getAsInt();
 							int uses = itmO.get("uses").getAsInt();
 							itms.add(new PlayerInventoryItemImpl(data, uniqueID, defID, quantity, uses, account, inv,
@@ -234,6 +239,11 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 					// Load item object
 					JsonObject itmO = ele.getAsJsonObject();
 					int quantity = itmO.get("quantity").getAsInt();
+					if (itmO.get("quantity") == null) {
+						// Item damaged
+						itmO.addProperty("quantity", 1);
+						data.getChildContainer("d-" + defID).setEntry("u-" + uniqueID, itmO);
+					}
 					int uses = itmO.get("uses").getAsInt();
 					return new PlayerInventoryItemImpl(data, uniqueID, defID, quantity, uses, account, inv, this);
 				}
