@@ -684,6 +684,8 @@ public class TextFilterServiceImpl extends TextFilterService {
 											}
 										}
 									}
+									if (i != variantWords.length)
+										match = false;
 									if (!match)
 										break;
 								}
