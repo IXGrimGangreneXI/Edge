@@ -47,8 +47,16 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 					// Find items
 					for (String ent2 : data.getChildContainer("d-" + defID).getEntryKeys()) {
 						if (ent2.startsWith("u-")) {
-							// Add item ID
+							// Parse item ID
 							int uniqueID = Integer.parseInt(ent2.substring(2));
+
+							// Check
+							if (!data.entryExists("u-" + uniqueID)) {
+								// Add so it doesnt break down
+								data.setEntry("u-" + uniqueID, new JsonPrimitive(defID));
+							}
+
+							// Add
 							ids.add(uniqueID);
 						}
 					}
@@ -58,6 +66,44 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 			for (int i2 = 0; i2 < i.length; i2++)
 				i[i2] = ids.get(i2);
 			return i;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public PlayerInventoryItem[] getItems() {
+		try {
+			// Create list
+			ArrayList<PlayerInventoryItem> itms = new ArrayList<PlayerInventoryItem>();
+			for (String ent : data.getChildContainers()) {
+				if (ent.startsWith("d-")) {
+					int defID = Integer.parseInt(ent.substring(2));
+
+					// Find items
+					for (String ent2 : data.getChildContainer("d-" + defID).getEntryKeys()) {
+						if (ent2.startsWith("u-")) {
+							// Parse item ID
+							int uniqueID = Integer.parseInt(ent2.substring(2));
+
+							// Check
+							if (!data.entryExists("u-" + uniqueID)) {
+								// Add so it doesnt break down
+								data.setEntry("u-" + uniqueID, new JsonPrimitive(defID));
+							}
+
+							// Load item object
+							JsonObject itmO = data.getChildContainer("d-" + defID).getEntry("u-" + uniqueID)
+									.getAsJsonObject();
+							int quantity = itmO.get("quantity").getAsInt();
+							int uses = itmO.get("uses").getAsInt();
+							itms.add(new PlayerInventoryItemImpl(data, uniqueID, defID, quantity, uses, account, inv,
+									this));
+						}
+					}
+				}
+			}
+			return itms.toArray(t -> new PlayerInventoryItem[t]);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
