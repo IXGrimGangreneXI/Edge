@@ -26,7 +26,6 @@ public class PostgresDatabaseCommonDataManager extends DatabaseCommonDataManager
 	private String url;
 	private Properties props;
 	private Logger logger = LogManager.getLogger("CommonDataManager");
-	private Connection conn;
 
 	@Override
 	public void initService() {
@@ -80,7 +79,7 @@ public class PostgresDatabaseCommonDataManager extends DatabaseCommonDataManager
 			Class.forName("org.postgresql.Driver");
 
 			// Test connection
-			conn = DriverManager.getConnection(url, props);
+			DriverManager.getConnection(url, props).close();
 		} catch (SQLException | ClassNotFoundException e) {
 			logger.error("Failed to connect to database!", e);
 			System.exit(1);
@@ -109,6 +108,7 @@ public class PostgresDatabaseCommonDataManager extends DatabaseCommonDataManager
 
 	@Override
 	public DatabaseRequest createRequest() throws SQLException {
+		Connection conn = DriverManager.getConnection(url, props);
 		return new DatabaseRequest() {
 
 			@Override
@@ -126,6 +126,7 @@ public class PostgresDatabaseCommonDataManager extends DatabaseCommonDataManager
 
 			@Override
 			public void finish() throws SQLException {
+				conn.close();
 			}
 		};
 	}

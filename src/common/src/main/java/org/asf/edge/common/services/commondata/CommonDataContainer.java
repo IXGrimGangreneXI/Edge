@@ -1,6 +1,9 @@
 package org.asf.edge.common.services.commondata;
 
 import java.io.IOException;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 
@@ -47,6 +50,18 @@ public abstract class CommonDataContainer {
 
 		public String[] getChildContainers(String key) throws IOException {
 			return CommonDataContainer.this.getChildContainers(key);
+		}
+
+		public JsonElement find(BiFunction<String, JsonElement, Boolean> function, String root) throws IOException {
+			return CommonDataContainer.this.find(function, root);
+		}
+
+		public void runFor(BiFunction<String, JsonElement, Boolean> function, String root) throws IOException {
+			CommonDataContainer.this.runFor(function, root);
+		}
+
+		public void runForChildren(Function<String, Boolean> function, String root) throws IOException {
+			CommonDataContainer.this.runForChildren(function, root);
 		}
 	}
 
@@ -137,6 +152,36 @@ public abstract class CommonDataContainer {
 	 * @throws IOException If deletion fails
 	 */
 	protected abstract void deleteContainer(String root) throws IOException;
+
+	/**
+	 * Runs a function for all entries, returns the entry if the function returns
+	 * true
+	 * 
+	 * @param function Function to run
+	 * @param root     Root key
+	 * @return JsonElement instance or null
+	 * @throws IOException If processing fails
+	 */
+	protected abstract JsonElement find(BiFunction<String, JsonElement, Boolean> function, String root)
+			throws IOException;
+
+	/**
+	 * Runs a function for all entries
+	 * 
+	 * @param function Function to run
+	 * @param root     Root key
+	 * @throws IOException If processing fails
+	 */
+	protected abstract void runFor(BiFunction<String, JsonElement, Boolean> function, String root) throws IOException;
+
+	/**
+	 * Runs a function for all child containers
+	 * 
+	 * @param function Function to run
+	 * @param root     Root key
+	 * @throws IOException If processing fails
+	 */
+	protected abstract void runForChildren(Function<String, Boolean> function, String root) throws IOException;
 
 	private boolean validName(String key) {
 		// Check if internal
@@ -260,6 +305,39 @@ public abstract class CommonDataContainer {
 	}
 
 	/**
+	 * Runs a function for all entries, returns the entry if the function returns
+	 * true
+	 * 
+	 * @param function Function to run (if it returns true the entry is a match and
+	 *                 will be returned, iterates until it returns true)
+	 * @return JsonElement instance or null
+	 * @throws IOException If processing fails
+	 */
+	public JsonElement findEntry(BiFunction<String, JsonElement, Boolean> function) throws IOException {
+		return find(function, "");
+	}
+
+	/**
+	 * Runs a function for all entries
+	 * 
+	 * @param function Function to run (iterates until it returns false)
+	 * @throws IOException If processing fails
+	 */
+	public void runForEntries(BiFunction<String, JsonElement, Boolean> function) throws IOException {
+		runFor(function, "");
+	}
+
+	/**
+	 * Runs a function for all child containers
+	 * 
+	 * @param function Function to run (iterates until it returns false)
+	 * @throws IOException If processing fails
+	 */
+	public void runForChildContainers(Function<String, Boolean> function) throws IOException {
+		runForChildren(function, "");
+	}
+
+	/**
 	 * Deletes the data container
 	 * 
 	 * @throws IOException If deletion fails
@@ -336,6 +414,21 @@ public abstract class CommonDataContainer {
 		@Override
 		protected void deleteContainer(String root) throws IOException {
 			parent.deleteContainer(name + (root.isEmpty() ? "" : "/" + root));
+		}
+
+		@Override
+		protected JsonElement find(BiFunction<String, JsonElement, Boolean> function, String root) throws IOException {
+			return parent.find(function, name + (root.isEmpty() ? "" : "/" + root));
+		}
+
+		@Override
+		protected void runFor(BiFunction<String, JsonElement, Boolean> function, String root) throws IOException {
+			parent.runFor(function, name + (root.isEmpty() ? "" : "/" + root));
+		}
+
+		@Override
+		protected void runForChildren(Function<String, Boolean> function, String root) throws IOException {
+			parent.runForChildren(function, name + (root.isEmpty() ? "" : "/" + root));
 		}
 
 	}

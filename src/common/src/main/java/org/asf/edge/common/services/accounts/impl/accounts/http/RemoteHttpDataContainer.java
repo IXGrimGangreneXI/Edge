@@ -1,6 +1,11 @@
 package org.asf.edge.common.services.accounts.impl.accounts.http;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -8,10 +13,12 @@ import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager;
+import org.asf.edge.common.util.SimpleBinaryMessageClient;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class RemoteHttpDataContainer extends AccountDataContainer {
 
@@ -181,6 +188,137 @@ public class RemoteHttpDataContainer extends AccountDataContainer {
 				throw new IOException("Server returned success=false");
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in deleteContainer!", e);
+		}
+	}
+
+	private class ResultContainer {
+		public Object res;
+	}
+
+	@Override
+	protected JsonElement find(BiFunction<String, JsonElement, Boolean> function, String root) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("root", root);
+			Socket conn = mgr.accountManagerUpgradeRequest("runForDataEntries", payload,
+					"EDGEBINPROT/ACCMANAGER/RUNFOR", "EDGEBINPROT/ACCMANAGER/RUNFOR");
+
+			// Run function
+			ResultContainer cont = new ResultContainer();
+			SimpleBinaryMessageClient binH = new SimpleBinaryMessageClient((packet, client) -> {
+				// Read message
+				try {
+					// Parse
+					ByteArrayInputStream bIn = new ByteArrayInputStream(packet.data);
+					byte[] nameB = bIn.readNBytes(ByteBuffer.wrap(bIn.readNBytes(4)).getInt());
+					String name = new String(nameB, "UTF-8");
+					byte[] dataB = bIn.readNBytes(ByteBuffer.wrap(bIn.readNBytes(4)).getInt());
+					String data = new String(dataB, "UTF-8");
+
+					// Handle
+					JsonElement d = JsonParser.parseString(data);
+					boolean res = function.apply(name, d);
+					if (res)
+						cont.res = d;
+
+					// Send response
+					client.send(new byte[] { !res ? (byte) 1 : (byte) 0 });
+					if (!res)
+						return false;
+				} catch (Exception e) {
+					logger.error("Exception occurred while running findDataEntry!", e);
+					return false;
+				}
+				return true;
+			}, conn.getInputStream(), conn.getOutputStream());
+			binH.start();
+			conn.close();
+			return (JsonElement) cont.res;
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in findDataEntry!", e);
+		}
+		return null;
+	}
+
+	@Override
+	protected void runFor(BiFunction<String, JsonElement, Boolean> function, String root) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("root", root);
+			Socket conn = mgr.accountManagerUpgradeRequest("runForDataEntries", payload,
+					"EDGEBINPROT/ACCMANAGER/RUNFOR", "EDGEBINPROT/ACCMANAGER/RUNFOR");
+
+			// Run function
+			SimpleBinaryMessageClient binH = new SimpleBinaryMessageClient((packet, client) -> {
+				// Read message
+				try {
+					// Parse
+					ByteArrayInputStream bIn = new ByteArrayInputStream(packet.data);
+					byte[] nameB = bIn.readNBytes(ByteBuffer.wrap(bIn.readNBytes(4)).getInt());
+					String name = new String(nameB, "UTF-8");
+					byte[] dataB = bIn.readNBytes(ByteBuffer.wrap(bIn.readNBytes(4)).getInt());
+					String data = new String(dataB, "UTF-8");
+
+					// Handle
+					boolean res = function.apply(name, JsonParser.parseString(data));
+
+					// Send response
+					client.send(new byte[] { res ? (byte) 1 : (byte) 0 });
+					if (!res)
+						return false;
+				} catch (Exception e) {
+					logger.error("Exception occurred while running runForDataEntries!", e);
+					return false;
+				}
+				return true;
+			}, conn.getInputStream(), conn.getOutputStream());
+			binH.start();
+			conn.close();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in runForDataEntries!", e);
+		}
+	}
+
+	@Override
+	protected void runForChildren(Function<String, Boolean> function, String root) {
+		// Request
+		try {
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("id", id);
+			payload.addProperty("root", root);
+			Socket conn = mgr.accountManagerUpgradeRequest("runForDataChildren", payload,
+					"EDGEBINPROT/ACCMANAGER/RUNFORCHILDREN", "EDGEBINPROT/ACCMANAGER/RUNFORCHILDREN");
+
+			// Run function
+			SimpleBinaryMessageClient binH = new SimpleBinaryMessageClient((packet, client) -> {
+				// Read message
+				try {
+					String name = new String(packet.data, "UTF-8");
+
+					// Handle
+					boolean res = function.apply(name);
+
+					// Send response
+					client.send(new byte[] { res ? (byte) 1 : (byte) 0 });
+					if (!res)
+						return false;
+				} catch (Exception e) {
+					logger.error("Exception occurred while running runForDataChildren!", e);
+					return false;
+				}
+				return true;
+			}, conn.getInputStream(), conn.getOutputStream());
+			binH.start();
+			conn.close();
+		} catch (IOException e) {
+			logger.error("Account server query failure occurred in runForDataChildren!", e);
 		}
 	}
 

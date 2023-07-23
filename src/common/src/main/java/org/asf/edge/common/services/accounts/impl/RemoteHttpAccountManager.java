@@ -1,22 +1,17 @@
 package org.asf.edge.common.services.accounts.impl;
 
-import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.file.Files;
-import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
-
-import javax.net.ssl.SSLContext;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,6 +21,7 @@ import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.accounts.http.RemoteHttpAccountObject;
 import org.asf.edge.common.services.accounts.impl.accounts.http.RemoteHttpSaveContainer;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.util.HttpUpgradeUtil;
 import org.asf.edge.common.util.SimpleBinaryMessageClient;
 
 import com.google.gson.Gson;
@@ -114,6 +110,27 @@ public class RemoteHttpAccountManager extends AccountManager {
 		} catch (Exception e) {
 			throw new IOException("Server returned a non-json response");
 		}
+	}
+
+	/**
+	 * Creates account data manager protocol upgrade requests
+	 * 
+	 * @param function Function name
+	 * @param payload  Payload json
+	 * @return Socket instance
+	 * @throws IOException If contacting the server fails
+	 */
+	public Socket accountManagerUpgradeRequest(String function, JsonObject payload, String upgradeProtocol,
+			String expectedResponseProtocol) throws IOException {
+		// Build url
+		String url = urlBase;
+		url += function;
+
+		// Open connection
+		byte[] body = payload.toString().getBytes("UTF-8");
+		return HttpUpgradeUtil.upgradeRequest(url, "POST", new ByteArrayInputStream(body), body.length,
+				Map.of("X-Request-ID", UUID.randomUUID().toString()), new HashMap<String, String>(), upgradeProtocol,
+				expectedResponseProtocol);
 	}
 
 	@Override
@@ -400,44 +417,9 @@ public class RemoteHttpAccountManager extends AccountManager {
 			url += "runForAllAccounts";
 
 			// Open connection
-			URL u = new URL(url);
-			if (!u.getProtocol().equals("http") && !u.getProtocol().equals("https"))
-				throw new IOException(
-						"Unsupported protocol for protocol Upgrade to binary communication: " + u.getProtocol());
-			Socket conn = (u.getProtocol().equals("http") ? new Socket(u.getHost(), u.getPort())
-					: SSLContext.getInstance("TLS").getSocketFactory().createSocket(u.getHost(), u.getPort()));
-
-			// Write first request
-			conn.getOutputStream()
-					.write(("POST " + URLEncoder.encode(u.getFile(), "UTF-8") + " HTTP/1.1\r\n").getBytes("UTF-8"));
-			conn.getOutputStream().write(("Host: " + u.getHost() + "\r\n").getBytes("UTF-8"));
-			conn.getOutputStream().write(("X-Request-ID: " + UUID.randomUUID().toString() + "\r\n").getBytes("UTF-8"));
-			conn.getOutputStream().write(("Upgrade: EDGEBINPROT/ACCMANAGER/RUNFORALLACCOUNTS\r\n").getBytes("UTF-8"));
-			conn.getOutputStream().write("\r\n".getBytes("UTF-8"));
-
-			// Check response
-			HashMap<String, String> headers = new HashMap<String, String>();
-			String line = readStreamLine(conn.getInputStream());
-			String statusLine = line;
-			if (!line.startsWith("HTTP/1.1 ")) {
-				conn.close();
-				throw new IOException("Server returned invalid protocol");
-			}
-			while (true) {
-				line = readStreamLine(conn.getInputStream());
-				if (line.equals(""))
-					break;
-				String key = line.substring(0, line.indexOf(": "));
-				String value = line.substring(line.indexOf(": ") + 2);
-				headers.put(key, value);
-			}
-			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-			transferRequestBody(headers, conn.getInputStream(), buffer);
-			int status = Integer.parseInt(statusLine.split(" ")[1]);
-			if (status != 101) {
-				conn.close();
-				throw new IOException("Server returned HTTP " + line.substring("HTTP/1.1 ".length()));
-			}
+			Socket conn = HttpUpgradeUtil.upgradeRequest(url, "POST", null, -1,
+					Map.of("X-Request-ID", UUID.randomUUID().toString()), new HashMap<String, String>(),
+					"EDGEBINPROT/ACCMANAGER/RUNFORALLACCOUNTS", "EDGEBINPROT/ACCMANAGER/RUNFORALLACCOUNTS");
 
 			// Handle
 			SimpleBinaryMessageClient binH = new SimpleBinaryMessageClient((packet, client) -> {
@@ -460,42 +442,8 @@ public class RemoteHttpAccountManager extends AccountManager {
 			}, conn.getInputStream(), conn.getOutputStream());
 			binH.start();
 			conn.close();
-		} catch (IOException | NoSuchAlgorithmException e) {
+		} catch (IOException e) {
 			logger.error("Account server query failure occured in runForAllAccounts!", e);
-		}
-	}
-
-	private String readStreamLine(InputStream strm) throws IOException {
-		String buffer = "";
-		while (true) {
-			char ch = (char) strm.read();
-			if (ch == (char) -1)
-				return null;
-			if (ch == '\n') {
-				return buffer;
-			} else if (ch != '\r') {
-				buffer += ch;
-			}
-		}
-	}
-
-	private void transferRequestBody(HashMap<String, String> headers, InputStream bodyStream, OutputStream output)
-			throws IOException {
-		if (headers.containsKey("Content-Length")) {
-			long length = Long.valueOf(headers.get("Content-Length"));
-			int tr = 0;
-			for (long i = 0; i < length; i += tr) {
-				tr = Integer.MAX_VALUE / 1000;
-				if ((length - (long) i) < tr) {
-					tr = bodyStream.available();
-					if (tr == 0) {
-						output.write(bodyStream.read());
-						i += 1;
-					}
-					tr = bodyStream.available();
-				}
-				output.write(bodyStream.readNBytes(tr));
-			}
 		}
 	}
 

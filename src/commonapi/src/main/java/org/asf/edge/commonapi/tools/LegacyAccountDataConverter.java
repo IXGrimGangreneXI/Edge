@@ -32,7 +32,7 @@ import com.google.gson.JsonSyntaxException;
 
 public class LegacyAccountDataConverter {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws ClassNotFoundException {
 		// Usage:
 		// <old database url> ["<key>" "<value>"...]
 		if (args.length < 1) {
@@ -53,6 +53,10 @@ public class LegacyAccountDataConverter {
 
 		// Setup
 		CommonInit.initAll();
+		Class.forName("com.mysql.cj.jdbc.Driver");
+		Class.forName("org.mariadb.jdbc.Driver");
+		Class.forName("org.asf.edge.common.jdbc.LoggingProxyDriver");
+		Class.forName("org.asf.edge.common.jdbc.LockingDriver");
 
 		// Logger
 		Logger logger = LogManager.getLogger("CONVERTER");

@@ -6,6 +6,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
@@ -426,6 +429,165 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 	@Override
 	public AccountSaveContainer getSave() {
 		return null;
+	}
+
+	@Override
+	protected JsonElement find(BiFunction<String, JsonElement, Boolean> function, String root) throws IOException {
+		JsonElement resO = null;
+
+		// Parse key
+		String parent = root;
+		String parentContainer = "";
+
+		// Check for inner parent
+		if (parent.contains("/")) {
+			parentContainer = parent.substring(0, parent.lastIndexOf("/"));
+			parent = parent.substring(parent.lastIndexOf("/") + 1);
+		}
+
+		// Prepare
+		ArrayList<String> keys = new ArrayList<String>();
+
+		// Find all keys
+		try {
+			DatabaseRequest req = mgr.createRequest();
+			try {
+				// Create prepared statement
+				var statement = req.prepareStatement(
+						"SELECT * FROM ACCOUNTWIDEPLAYERDATA_V2 WHERE PARENT = ? AND PARENTCONTAINER = ? AND ACCID = ?");
+				statement.setString(1, parent);
+				statement.setString(2, parentContainer);
+				statement.setString(3, id);
+				ResultSet res = statement.executeQuery();
+
+				// Find results
+				while (res.next()) {
+					// Add container
+					String cont = res.getString("DATAKEY");
+					String data = res.getString("DATA");
+					if (!cont.isEmpty() && !keys.contains(cont)) {
+						keys.add(cont);
+
+						// Run function
+						JsonElement d = JsonParser.parseString(data);
+						if (function.apply(cont, d)) {
+							resO = d;
+							break;
+						}
+					}
+				}
+				res.close();
+				statement.close();
+			} finally {
+				req.close();
+			}
+		} catch (SQLException e) {
+			logger.error(
+					"Failed to execute database query request while trying to retrieve child containers of save data container '"
+							+ root + "' of ID '" + id + "'",
+					e);
+			throw new IOException("SQL error", e);
+		}
+
+		// Return
+		return resO;
+	}
+
+	@Override
+	protected void runFor(BiFunction<String, JsonElement, Boolean> function, String root) throws IOException {
+		// Parse key
+		String parent = root;
+		String parentContainer = "";
+
+		// Check for inner parent
+		if (parent.contains("/")) {
+			parentContainer = parent.substring(0, parent.lastIndexOf("/"));
+			parent = parent.substring(parent.lastIndexOf("/") + 1);
+		}
+
+		// Prepare
+		ArrayList<String> keys = new ArrayList<String>();
+
+		// Find all keys
+		try {
+			DatabaseRequest req = mgr.createRequest();
+			try {
+				// Create prepared statement
+				var statement = req.prepareStatement(
+						"SELECT * FROM ACCOUNTWIDEPLAYERDATA_V2 WHERE PARENT = ? AND PARENTCONTAINER = ? AND ACCID = ?");
+				statement.setString(1, parent);
+				statement.setString(2, parentContainer);
+				statement.setString(3, id);
+				ResultSet res = statement.executeQuery();
+
+				// Find results
+				while (res.next()) {
+					// Add container
+					String cont = res.getString("DATAKEY");
+					String data = res.getString("DATA");
+					if (!cont.isEmpty() && !keys.contains(cont)) {
+						keys.add(cont);
+
+						// Run function
+						JsonElement d = JsonParser.parseString(data);
+						if (!function.apply(cont, d))
+							break;
+					}
+				}
+				res.close();
+				statement.close();
+			} finally {
+				req.close();
+			}
+		} catch (SQLException e) {
+			logger.error(
+					"Failed to execute database query request while trying to retrieve child containers of save data container '"
+							+ root + "' of ID '" + id + "'",
+					e);
+			throw new IOException("SQL error", e);
+		}
+	}
+
+	@Override
+	protected void runForChildren(Function<String, Boolean> function, String root) throws IOException {
+		// Prepare
+		ArrayList<String> containers = new ArrayList<String>();
+
+		// Find all containers
+		try {
+			DatabaseRequest req = mgr.createRequest();
+			try {
+				// Create prepared statement
+				var statement = req.prepareStatement(
+						"SELECT PARENT FROM ACCOUNTWIDEPLAYERDATA_V2 WHERE PARENTCONTAINER = ? AND ACCID = ?");
+				statement.setString(1, root);
+				statement.setString(2, id);
+				ResultSet res = statement.executeQuery();
+
+				// Find results
+				while (res.next()) {
+					// Add container
+					String cont = res.getString("PARENT");
+					if (!cont.isEmpty() && !containers.contains(cont)) {
+						containers.add(cont);
+
+						// Run function
+						if (!function.apply(cont))
+							break;
+					}
+				}
+				res.close();
+				statement.close();
+			} finally {
+				req.close();
+			}
+		} catch (SQLException e) {
+			logger.error(
+					"Failed to execute database query request while trying to retrieve child containers of save data container '"
+							+ root + "' of ID '" + id + "'",
+					e);
+			throw new IOException("SQL error", e);
+		}
 	}
 
 }

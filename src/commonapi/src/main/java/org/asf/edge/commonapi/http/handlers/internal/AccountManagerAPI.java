@@ -1,7 +1,9 @@
 package org.asf.edge.commonapi.http.handlers.internal;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.UUID;
 
@@ -16,6 +18,7 @@ import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.util.SimpleBinaryMessageClient;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 
@@ -478,32 +481,6 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		} else
 			resp.addProperty("success", false);
 		setResponseContent("text/json", resp.toString());
-	}
-
-	@Function(allowedMethods = { "POST" }, value = "accounts/deleteContainer")
-	public FunctionResult deleteContainer(FunctionInfo func) throws IOException {
-		// Load manager
-		if (manager == null)
-			manager = AccountManager.getInstance();
-
-		// Read payload
-		if (!getRequest().hasRequestBody()) {
-			return response(400, "Bad request");
-		}
-		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
-		if (!payload.has("id") || !payload.has("root")) {
-			return response(400, "Bad request");
-		}
-
-		// Send response
-		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
-		JsonObject resp = new JsonObject();
-		if (acc != null) {
-			acc.getAccountData().unsafeAccessor().deleteContainer(payload.get("root").getAsString());
-			resp.addProperty("success", true);
-		} else
-			resp.addProperty("success", false);
-		return ok("text/json", resp.toString());
 	}
 
 	@Function(allowedMethods = { "POST" }, value = "accounts/getChildContainers")
@@ -1567,6 +1544,10 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		setResponseContent("text/json", resp.toString());
 	}
 
+	private class FuncResult {
+		public boolean continueRun;
+	}
+
 	@Function(allowedMethods = { "POST" })
 	public FunctionResult runForAllAccounts(FunctionInfo func) throws IOException {
 		// Load manager
@@ -1604,7 +1585,7 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 			if ((func.getClient().isConnected())) {
 				// Upgraded
 				SimpleBinaryMessageClient client = new SimpleBinaryMessageClient((packet, cl) -> {
-					AccFuncResult res = new AccFuncResult();
+					FuncResult res = new FuncResult();
 					res.continueRun = packet.data[0] == 1 ? true : false;
 					cl.container = res;
 					return true;
@@ -1633,7 +1614,7 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 						return false;
 
 					// Set result
-					res = ((AccFuncResult) client.container).continueRun;
+					res = ((FuncResult) client.container).continueRun;
 
 					// Return result
 					return res;
@@ -1646,8 +1627,433 @@ public class AccountManagerAPI extends EdgeWebService<EdgeCommonApiServer> {
 		return response(101, "Switching Protocols");
 	}
 
-	private static class AccFuncResult {
-		public boolean continueRun;
+	@Function(allowedMethods = { "POST" }, value = "accounts/runForDataChildren")
+	public FunctionResult runForDataChildren(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Check headers
+		if (!getRequest().hasHeader("Upgrade")
+				|| !getRequest().getHeaderValue("Upgrade").equals("EDGEBINPROT/ACCMANAGER/RUNFORCHILDREN")) {
+			return response(400, "Bad request");
+		}
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("root")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		if (acc == null)
+			return response(404, "Account not found");
+
+		// Set headers
+		setResponseHeader("X-Response-ID", UUID.randomUUID().toString());
+		setResponseHeader("Upgrade", "EDGEBINPROT/ACCMANAGER/RUNFORCHILDREN");
+
+		// Setup
+		AsyncTaskManager.runAsync(() -> {
+			// Wait for upgrade
+			while (func.getClient().isConnected()) {
+				// Check
+				if (func.getResponse().hasHeader("Upgraded")
+						&& func.getResponse().getHeaderValue("Upgraded").equalsIgnoreCase("true"))
+					break;
+
+				// Wait
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+
+			// Check
+			if ((func.getClient().isConnected())) {
+				// Upgraded
+				SimpleBinaryMessageClient client = new SimpleBinaryMessageClient((packet, cl) -> {
+					FuncResult res = new FuncResult();
+					res.continueRun = packet.data[0] == 1 ? true : false;
+					cl.container = res;
+					return true;
+				}, func.getClient().getInputStream(), func.getClient().getOutputStream());
+				client.startAsync();
+				try {
+					acc.getAccountData().unsafeAccessor().runForChildren(t -> {
+						boolean res = true;
+
+						// Run
+						client.container = null;
+						try {
+							client.send(t.getBytes("UTF-8"));
+						} catch (IOException e) {
+							return false;
+						}
+
+						// Wait
+						while (client.container == null && client.isConnected()) {
+							try {
+								Thread.sleep(100);
+							} catch (InterruptedException e) {
+								break;
+							}
+						}
+						if (client.container == null)
+							return false;
+
+						// Set result
+						res = ((FuncResult) client.container).continueRun;
+
+						// Return result
+						return res;
+					}, payload.get("root").getAsString());
+				} catch (IOException e) {
+				}
+				client.stop();
+			}
+		});
+
+		// Send response
+		return response(101, "Switching Protocols");
 	}
 
+	@Function(allowedMethods = { "POST" }, value = "accounts/runForDataEntries")
+	public FunctionResult runForDataEntries(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Check headers
+		if (!getRequest().hasHeader("Upgrade")
+				|| !getRequest().getHeaderValue("Upgrade").equals("EDGEBINPROT/ACCMANAGER/RUNFOR")) {
+			return response(400, "Bad request");
+		}
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("root")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		if (acc == null)
+			return response(404, "Account not found");
+
+		// Set headers
+		setResponseHeader("X-Response-ID", UUID.randomUUID().toString());
+		setResponseHeader("Upgrade", "EDGEBINPROT/ACCMANAGER/RUNFOR");
+
+		// Setup
+		AsyncTaskManager.runAsync(() -> {
+			// Wait for upgrade
+			while (func.getClient().isConnected()) {
+				// Check
+				if (func.getResponse().hasHeader("Upgraded")
+						&& func.getResponse().getHeaderValue("Upgraded").equalsIgnoreCase("true"))
+					break;
+
+				// Wait
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+
+			// Check
+			if ((func.getClient().isConnected())) {
+				// Upgraded
+				SimpleBinaryMessageClient client = new SimpleBinaryMessageClient((packet, cl) -> {
+					FuncResult res = new FuncResult();
+					res.continueRun = packet.data[0] == 1 ? true : false;
+					cl.container = res;
+					return true;
+				}, func.getClient().getInputStream(), func.getClient().getOutputStream());
+				client.startAsync();
+				try {
+					acc.getAccountData().unsafeAccessor().runFor((name, data) -> {
+						boolean res = true;
+
+						// Run
+						client.container = null;
+						try {
+							ByteArrayOutputStream resD = new ByteArrayOutputStream();
+							byte[] b = name.getBytes("UTF-8");
+							resD.write(ByteBuffer.allocate(4).putInt(b.length).array());
+							resD.write(b);
+							b = data.toString().getBytes("UTF-8");
+							resD.write(ByteBuffer.allocate(4).putInt(b.length).array());
+							resD.write(b);
+							client.send(resD.toByteArray());
+						} catch (IOException e) {
+							return false;
+						}
+
+						// Wait
+						while (client.container == null && client.isConnected()) {
+							try {
+								Thread.sleep(100);
+							} catch (InterruptedException e) {
+								break;
+							}
+						}
+						if (client.container == null)
+							return false;
+
+						// Set result
+						res = ((FuncResult) client.container).continueRun;
+
+						// Return result
+						return res;
+					}, payload.get("root").getAsString());
+				} catch (IOException e) {
+				}
+				client.stop();
+			}
+		});
+
+		// Send response
+		return response(101, "Switching Protocols");
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/runForSaveDataChildren")
+	public FunctionResult runForSaveDataChildren(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Check headers
+		if (!getRequest().hasHeader("Upgrade")
+				|| !getRequest().getHeaderValue("Upgrade").equals("EDGEBINPROT/ACCMANAGER/RUNFORCHILDREN")) {
+			return response(400, "Bad request");
+		}
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("root")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		if (acc == null)
+			return response(404, "Account not found");
+		AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+		if (cont == null)
+			return response(404, "Save not found");
+
+		// Set headers
+		setResponseHeader("X-Response-ID", UUID.randomUUID().toString());
+		setResponseHeader("Upgrade", "EDGEBINPROT/ACCMANAGER/RUNFORCHILDREN");
+
+		// Setup
+		AsyncTaskManager.runAsync(() -> {
+			// Wait for upgrade
+			while (func.getClient().isConnected()) {
+				// Check
+				if (func.getResponse().hasHeader("Upgraded")
+						&& func.getResponse().getHeaderValue("Upgraded").equalsIgnoreCase("true"))
+					break;
+
+				// Wait
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+
+			// Check
+			if ((func.getClient().isConnected())) {
+				// Upgraded
+				SimpleBinaryMessageClient client = new SimpleBinaryMessageClient((packet, cl) -> {
+					FuncResult res = new FuncResult();
+					res.continueRun = packet.data[0] == 1 ? true : false;
+					cl.container = res;
+					return true;
+				}, func.getClient().getInputStream(), func.getClient().getOutputStream());
+				client.startAsync();
+				try {
+					cont.getSaveData().unsafeAccessor().runForChildren(t -> {
+						boolean res = true;
+
+						// Run
+						client.container = null;
+						try {
+							client.send(t.getBytes("UTF-8"));
+						} catch (IOException e) {
+							return false;
+						}
+
+						// Wait
+						while (client.container == null && client.isConnected()) {
+							try {
+								Thread.sleep(100);
+							} catch (InterruptedException e) {
+								break;
+							}
+						}
+						if (client.container == null)
+							return false;
+
+						// Set result
+						res = ((FuncResult) client.container).continueRun;
+
+						// Return result
+						return res;
+					}, payload.get("root").getAsString());
+				} catch (IOException e) {
+				}
+				client.stop();
+			}
+		});
+
+		// Send response
+		return response(101, "Switching Protocols");
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/runForSaveDataEntries")
+	public FunctionResult runForSaveDataEntries(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Check headers
+		if (!getRequest().hasHeader("Upgrade")
+				|| !getRequest().getHeaderValue("Upgrade").equals("EDGEBINPROT/ACCMANAGER/RUNFOR")) {
+			return response(400, "Bad request");
+		}
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("save") || !payload.has("root")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		if (acc == null)
+			return response(404, "Account not found");
+		AccountSaveContainer cont = acc.getSave(payload.get("save").getAsString());
+		if (cont == null)
+			return response(404, "Save not found");
+
+		// Set headers
+		setResponseHeader("X-Response-ID", UUID.randomUUID().toString());
+		setResponseHeader("Upgrade", "EDGEBINPROT/ACCMANAGER/RUNFOR");
+
+		// Setup
+		AsyncTaskManager.runAsync(() -> {
+			// Wait for upgrade
+			while (func.getClient().isConnected()) {
+				// Check
+				if (func.getResponse().hasHeader("Upgraded")
+						&& func.getResponse().getHeaderValue("Upgraded").equalsIgnoreCase("true"))
+					break;
+
+				// Wait
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+
+			// Check
+			if ((func.getClient().isConnected())) {
+				// Upgraded
+				SimpleBinaryMessageClient client = new SimpleBinaryMessageClient((packet, cl) -> {
+					FuncResult res = new FuncResult();
+					res.continueRun = packet.data[0] == 1 ? true : false;
+					cl.container = res;
+					return true;
+				}, func.getClient().getInputStream(), func.getClient().getOutputStream());
+				client.startAsync();
+				try {
+					cont.getSaveData().unsafeAccessor().runFor((name, data) -> {
+						boolean res = true;
+
+						// Run
+						client.container = null;
+						try {
+							ByteArrayOutputStream resD = new ByteArrayOutputStream();
+							byte[] b = name.getBytes("UTF-8");
+							resD.write(ByteBuffer.allocate(4).putInt(b.length).array());
+							resD.write(b);
+							b = data.toString().getBytes("UTF-8");
+							resD.write(ByteBuffer.allocate(4).putInt(b.length).array());
+							resD.write(b);
+							client.send(resD.toByteArray());
+						} catch (IOException e) {
+							return false;
+						}
+
+						// Wait
+						while (client.container == null && client.isConnected()) {
+							try {
+								Thread.sleep(100);
+							} catch (InterruptedException e) {
+								break;
+							}
+						}
+						if (client.container == null)
+							return false;
+
+						// Set result
+						res = ((FuncResult) client.container).continueRun;
+
+						// Return result
+						return res;
+					}, payload.get("root").getAsString());
+				} catch (IOException e) {
+				}
+				client.stop();
+			}
+		});
+
+		// Send response
+		return response(101, "Switching Protocols");
+	}
+
+	@Function(allowedMethods = { "POST" }, value = "accounts/deleteContainer")
+	public FunctionResult deleteContainer(FunctionInfo func) throws IOException {
+		// Load manager
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Read payload
+		if (!getRequest().hasRequestBody()) {
+			return response(400, "Bad request");
+		}
+		JsonObject payload = JsonParser.parseString(getRequestBodyAsString()).getAsJsonObject();
+		if (!payload.has("id") || !payload.has("root")) {
+			return response(400, "Bad request");
+		}
+
+		// Send response
+		AccountObject acc = manager.getAccount(payload.get("id").getAsString());
+		JsonObject resp = new JsonObject();
+		if (acc != null) {
+			acc.getAccountData().unsafeAccessor().deleteContainer(payload.get("root").getAsString());
+			resp.addProperty("success", true);
+		} else
+			resp.addProperty("success", false);
+		return ok("text/json", resp.toString());
+	}
 }

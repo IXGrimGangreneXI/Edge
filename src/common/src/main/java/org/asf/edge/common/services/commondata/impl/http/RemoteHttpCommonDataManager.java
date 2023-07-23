@@ -1,15 +1,21 @@
 package org.asf.edge.common.services.commondata.impl.http;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.Socket;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
+import org.asf.edge.common.util.HttpUpgradeUtil;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -18,7 +24,7 @@ import com.google.gson.JsonSyntaxException;
 
 public class RemoteHttpCommonDataManager extends CommonDataManager {
 
-	private String urlBase = "http://127.0.0.1:5324/commondatamanager/";
+	public String urlBase = "http://127.0.0.1:5324/commondatamanager/";
 	private Logger logger = LogManager.getLogger("CommonDataManager");
 
 	@Override
@@ -96,6 +102,27 @@ public class RemoteHttpCommonDataManager extends CommonDataManager {
 		} catch (Exception e) {
 			throw new IOException("Server returned a non-json response");
 		}
+	}
+
+	/**
+	 * Creates common data manager protocol upgrade requests
+	 * 
+	 * @param function Function name
+	 * @param payload  Payload json
+	 * @return Socket instance
+	 * @throws IOException If contacting the server fails
+	 */
+	public Socket commonDataManagerUpgradeRequest(String function, JsonObject payload, String upgradeProtocol,
+			String expectedResponseProtocol) throws IOException {
+		// Build url
+		String url = urlBase;
+		url += function;
+
+		// Open connection
+		byte[] body = payload.toString().getBytes("UTF-8");
+		return HttpUpgradeUtil.upgradeRequest(url, "POST", new ByteArrayInputStream(body), body.length,
+				Map.of("X-Request-ID", UUID.randomUUID().toString()), new HashMap<String, String>(), upgradeProtocol,
+				expectedResponseProtocol);
 	}
 
 	@Override

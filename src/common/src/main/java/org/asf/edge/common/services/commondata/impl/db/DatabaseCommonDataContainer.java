@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -346,6 +348,162 @@ public class DatabaseCommonDataContainer extends CommonDataContainer {
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to delete common data container '"
 					+ (root.isEmpty() ? "<root>" : root) + "' from table '" + table + "'", e);
+			throw new IOException("SQL error", e);
+		}
+	}
+
+	@Override
+	protected JsonElement find(BiFunction<String, JsonElement, Boolean> function, String root) throws IOException {
+		JsonElement resO = null;
+
+		// Parse key
+		String parent = root;
+		String parentContainer = "";
+
+		// Check for inner parent
+		if (parent.contains("/")) {
+			parentContainer = parent.substring(0, parent.lastIndexOf("/"));
+			parent = parent.substring(parent.lastIndexOf("/") + 1);
+		}
+
+		// Prepare
+		ArrayList<String> keys = new ArrayList<String>();
+
+		// Find all keys
+		try {
+			DatabaseRequest req = mgr.createRequest();
+			try {
+				// Create prepared statement
+				var statement = req.createPreparedStatement(
+						"SELECT * FROM " + table + " WHERE PARENT = ? AND PARENTCONTAINER = ?");
+				statement.setString(1, parent);
+				statement.setString(2, parentContainer);
+				ResultSet res = statement.executeQuery();
+
+				// Find results
+				while (res.next()) {
+					// Add container
+					String cont = res.getString("DATAKEY");
+					String data = res.getString("DATA");
+					if (!cont.isEmpty() && !keys.contains(cont)) {
+						keys.add(cont);
+
+						// Run function
+						JsonElement d = JsonParser.parseString(data);
+						if (function.apply(cont, d)) {
+							resO = d;
+							break;
+						}
+					}
+				}
+				res.close();
+				statement.close();
+			} finally {
+				req.finish();
+			}
+		} catch (SQLException e) {
+			logger.error(
+					"Failed to execute database query request while trying to retrieve child containers of common data container '"
+							+ root + "' from table '" + table + "'",
+					e);
+			throw new IOException("SQL error", e);
+		}
+
+		// Return
+		return resO;
+	}
+
+	@Override
+	protected void runFor(BiFunction<String, JsonElement, Boolean> function, String root) throws IOException {
+		// Parse key
+		String parent = root;
+		String parentContainer = "";
+
+		// Check for inner parent
+		if (parent.contains("/")) {
+			parentContainer = parent.substring(0, parent.lastIndexOf("/"));
+			parent = parent.substring(parent.lastIndexOf("/") + 1);
+		}
+
+		// Prepare
+		ArrayList<String> keys = new ArrayList<String>();
+
+		// Find all keys
+		try {
+			DatabaseRequest req = mgr.createRequest();
+			try {
+				// Create prepared statement
+				var statement = req.createPreparedStatement(
+						"SELECT * FROM " + table + " WHERE PARENT = ? AND PARENTCONTAINER = ?");
+				statement.setString(1, parent);
+				statement.setString(2, parentContainer);
+				ResultSet res = statement.executeQuery();
+
+				// Find results
+				while (res.next()) {
+					// Add container
+					String cont = res.getString("DATAKEY");
+					String data = res.getString("DATA");
+					if (!cont.isEmpty() && !keys.contains(cont)) {
+						keys.add(cont);
+
+						// Run function
+						JsonElement d = JsonParser.parseString(data);
+						if (!function.apply(cont, d))
+							break;
+					}
+				}
+				res.close();
+				statement.close();
+			} finally {
+				req.finish();
+			}
+		} catch (SQLException e) {
+			logger.error(
+					"Failed to execute database query request while trying to retrieve child containers of common data container '"
+							+ root + "' from table '" + table + "'",
+					e);
+			throw new IOException("SQL error", e);
+		}
+	}
+
+	@Override
+	protected void runForChildren(Function<String, Boolean> function, String root) throws IOException {
+		// Prepare
+		ArrayList<String> containers = new ArrayList<String>();
+
+		// Find all containers
+		try {
+			DatabaseRequest req = mgr.createRequest();
+			try {
+				// Create prepared statement
+				var statement = req
+						.createPreparedStatement("SELECT PARENT FROM " + table + " WHERE PARENTCONTAINER = ?");
+				statement.setString(1, root);
+				ResultSet res = statement.executeQuery();
+
+				// Find results
+				while (res.next()) {
+					// Add container
+					String cont = res.getString("PARENT");
+					if (!cont.isEmpty() && !containers.contains(cont)) {
+						containers.add(cont);
+
+						// Run function
+						if (!function.apply(cont))
+							break;
+					}
+				}
+				res.close();
+				statement.close();
+			} finally {
+				req.finish();
+			}
+		} catch (SQLException e) {
+			logger.error(
+					"Failed to execute database query request while trying to retrieve child containers of common data container '"
+							+ root + "' from table '" + table + "'",
+					e);
 			throw new IOException("SQL error", e);
 		}
 	}

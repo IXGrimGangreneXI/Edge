@@ -19,6 +19,7 @@ import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 
 public class DebugCommands extends TaskBasedCommand {
@@ -132,6 +133,57 @@ public class DebugCommands extends TaskBasedCommand {
 							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs) {
 						try {
 							CommonDataManager.getInstance().getContainer("test").deleteContainer();
+							return "Test passed";
+						} catch (Exception e) {
+						}
+						return "Test errored";
+					}
+
+				}, new IEdgeServerCommand() {
+
+					@Override
+					public String id() {
+						return "commondatatest3";
+					}
+
+					@Override
+					public String syntax(CommandContext ctx) {
+						return null;
+					}
+
+					@Override
+					public String description(CommandContext ctx) {
+						return "Test command for common data management";
+					}
+
+					@Override
+					public PermissionLevel permLevel() {
+						return PermissionLevel.OPERATOR;
+					}
+
+					@Override
+					public String permNode() {
+						return "commands.operator.debugcommands";
+					}
+
+					@Override
+					public String run(String[] args, CommandContext ctx, Logger logger,
+							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs) {
+						try {
+							CommonDataManager.getInstance().getContainer("test").runForEntries((key, value) -> {
+
+								return true;
+							});
+							CommonDataManager.getInstance().getContainer("test").runForChildContainers(name -> {
+
+								return true;
+							});
+							JsonElement e = CommonDataManager.getInstance().getContainer("test")
+									.findEntry((key, value) -> {
+										return true;
+									});
+							if (e == null)
+								return "Test failed";
 							return "Test passed";
 						} catch (Exception e) {
 						}
