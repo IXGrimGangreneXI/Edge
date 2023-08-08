@@ -741,9 +741,7 @@ public class EdgeContentServerDumper {
 			System.err.println("");
 			System.err.println("");
 			System.err.println("There were failed downloads!");
-			for (
-
-			String url : failed)
+			for (String url : failed)
 				System.err.println(" - " + url);
 			System.err.println("");
 			System.err.println("");

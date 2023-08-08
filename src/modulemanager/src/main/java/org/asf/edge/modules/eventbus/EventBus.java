@@ -1,5 +1,7 @@
 package org.asf.edge.modules.eventbus;
 
+import java.util.function.Consumer;
+
 import org.asf.edge.modules.eventbus.impl.EventBusImpl;
 
 /**
@@ -23,11 +25,29 @@ public abstract class EventBus {
 	}
 
 	/**
+	 * Adds event handlers
+	 * 
+	 * @param <T>          Event type
+	 * @param eventClass   Event class
+	 * @param eventHandler Event handler to remove
+	 */
+	public abstract <T extends EventObject> void addEventHandler(Class<T> eventClass, Consumer<T> eventHandler);
+
+	/**
+	 * Removes event handlers
+	 * 
+	 * @param <T>          Event type
+	 * @param eventClass   Event class
+	 * @param eventHandler Event handler to add
+	 */
+	public abstract <T extends EventObject> void removeEventHandler(Class<T> eventClass, Consumer<T> eventHandler);
+
+	/**
 	 * Subscribes all events in a IEventReceiver object
 	 * 
 	 * @param receiver IEventReceiver to add
 	 */
-	public abstract void addEventReceiver(IEventReceiver receiver);
+	public abstract void addAllEventsFromReceiver(IEventReceiver receiver);
 
 	/**
 	 * Dispatches a event
@@ -35,5 +55,12 @@ public abstract class EventBus {
 	 * @param event Event to dispatch
 	 */
 	public abstract void dispatchEvent(EventObject event);
+
+	/**
+	 * Creates a new event bus
+	 * 
+	 * @return New EventBus instance
+	 */
+	public abstract EventBus createBus();
 
 }

@@ -22,7 +22,6 @@ public class PostgresDatabaseAccountManager extends DatabaseAccountManager {
 
 	private String url;
 	private Properties props;
-	private Connection conn;
 
 	@Override
 	protected void managerLoaded() {
@@ -74,17 +73,22 @@ public class PostgresDatabaseAccountManager extends DatabaseAccountManager {
 			Class.forName("org.asf.edge.common.jdbc.LockingDriver");
 
 			// Create tables
-			conn = DriverManager.getConnection(url, props);
-			Statement statement = conn.createStatement();
-			statement.executeUpdate("CREATE TABLE IF NOT EXISTS EMAILMAP_V2 (EMAIL TEXT, ID CHAR(36))");
-			statement.executeUpdate("CREATE TABLE IF NOT EXISTS USERMAP_V2 (USERNAME TEXT, ID CHAR(36), CREDS bytea)");
-			statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEUSERNAMEMAP_V2 (USERNAME TEXT, ID CHAR(36))");
-			statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEMAP_V2 (ACCID CHAR(36), SAVES JSONB)");
-			statement.executeUpdate(
-					"CREATE TABLE IF NOT EXISTS ACCOUNTWIDEPLAYERDATA_V2 (ACCID CHAR(36), DATAKEY varchar(64), PARENT varchar(64), PARENTCONTAINER varchar(256), DATA JSONB)");
-			statement.executeUpdate(
-					"CREATE TABLE IF NOT EXISTS SAVESPECIFICPLAYERDATA_V2 (SVID CHAR(36), DATAKEY varchar(64), PARENT varchar(64), PARENTCONTAINER varchar(256), DATA JSONB)");
-			statement.close();
+			Connection conn = DriverManager.getConnection(url, props);
+			try {
+				Statement statement = conn.createStatement();
+				statement.executeUpdate("CREATE TABLE IF NOT EXISTS EMAILMAP_V2 (EMAIL TEXT, ID CHAR(36))");
+				statement.executeUpdate(
+						"CREATE TABLE IF NOT EXISTS USERMAP_V2 (USERNAME TEXT, ID CHAR(36), CREDS bytea)");
+				statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEUSERNAMEMAP_V2 (USERNAME TEXT, ID CHAR(36))");
+				statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEMAP_V2 (ACCID CHAR(36), SAVES JSONB)");
+				statement.executeUpdate(
+						"CREATE TABLE IF NOT EXISTS ACCOUNTWIDEPLAYERDATA_V2 (ACCID CHAR(36), DATAKEY varchar(64), PARENT varchar(64), PARENTCONTAINER varchar(256), DATA JSONB)");
+				statement.executeUpdate(
+						"CREATE TABLE IF NOT EXISTS SAVESPECIFICPLAYERDATA_V2 (SVID CHAR(36), DATAKEY varchar(64), PARENT varchar(64), PARENTCONTAINER varchar(256), DATA JSONB)");
+				statement.close();
+			} finally {
+				conn.close();
+			}
 		} catch (SQLException | ClassNotFoundException e) {
 			logger.error("Failed to connect to database!", e);
 			System.exit(1);
@@ -93,6 +97,7 @@ public class PostgresDatabaseAccountManager extends DatabaseAccountManager {
 
 	@Override
 	public DatabaseRequest createRequest() throws SQLException {
+		Connection conn = DriverManager.getConnection(url, props);
 		return new DatabaseRequest() {
 
 			@Override
@@ -110,6 +115,7 @@ public class PostgresDatabaseAccountManager extends DatabaseAccountManager {
 
 			@Override
 			public void close() throws SQLException {
+				conn.close();
 			}
 		};
 	}

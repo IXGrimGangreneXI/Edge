@@ -13,8 +13,8 @@ import org.asf.edge.commonapi.http.handlers.api.accounts.*;
 import org.asf.edge.commonapi.http.handlers.api.avatars.*;
 import org.asf.edge.commonapi.http.handlers.api.messaging.*;
 import org.asf.edge.commonapi.http.handlers.internal.*;
-import org.asf.edge.commonapi.events.server.*;
 import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.edge.commonapi.events.server.*;
 
 import com.google.gson.JsonPrimitive;
 

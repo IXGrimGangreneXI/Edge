@@ -129,7 +129,7 @@ public class ServiceManager {
 				.sorted((t1, t2) -> -Integer.compare(t1.priority, t2.priority)).toArray(t -> new RegistrationInfo[t]);
 		if (i.length >= 1) {
 			// Attach events, register, initialize and return
-			EventBus.getInstance().addEventReceiver(i[0].implementation);
+			EventBus.getInstance().addAllEventsFromReceiver(i[0].implementation);
 			services.put(service.getTypeName(), i[0].implementation);
 			logger.debug("Service implementation selected for " + service.getTypeName() + ": "
 					+ i[0].implementation.getClass().getTypeName());

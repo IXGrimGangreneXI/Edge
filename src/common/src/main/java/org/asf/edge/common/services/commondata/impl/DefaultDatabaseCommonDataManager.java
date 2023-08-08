@@ -25,6 +25,7 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 	private String url;
 	private Properties props;
 	private Logger logger = LogManager.getLogger("CommonDataManager");
+	private Connection conn;
 
 	@Override
 	public void initService() {
@@ -80,7 +81,11 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 			Class.forName("org.asf.edge.common.jdbc.LockingDriver");
 
 			// Test connection
-			DriverManager.getConnection(url, props).close();
+			Connection conn = DriverManager.getConnection(url, props);
+			if (url.startsWith("jdbc:sqlite:"))
+				this.conn = conn;
+			else
+				conn.close();
 		} catch (SQLException | ClassNotFoundException e) {
 			logger.error("Failed to connect to database!", e);
 			System.exit(1);
@@ -92,14 +97,18 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 		// Create if needed
 		try {
 			// Create prepared statement
-			Connection conn = DriverManager.getConnection(url, props);
+			Connection conn = this.conn;
+			boolean nonSingle = conn == null;
+			if (nonSingle)
+				conn = DriverManager.getConnection(url, props);
 			try {
 				Statement statement = conn.createStatement();
 				statement.executeUpdate("CREATE TABLE IF NOT EXISTS CDC2_" + rootNodeName
 						+ " (DATAKEY varchar(64), PARENT varchar(64), PARENTCONTAINER varchar(256), DATA LONGTEXT)");
 				statement.close();
 			} finally {
-				conn.close();
+				if (!nonSingle)
+					conn.close();
 			}
 		} catch (SQLException e) {
 			logger.error("Failed to execute database query request while trying to prepare data container '"
@@ -109,17 +118,22 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 
 	@Override
 	public DatabaseRequest createRequest() throws SQLException {
-		Connection conn = DriverManager.getConnection(url, props);
+		Connection conn = this.conn;
+		boolean nonSingle = conn == null;
+		if (nonSingle)
+			conn = DriverManager.getConnection(url, props);
+		Connection connF = conn;
 		return new DatabaseRequest() {
 
 			@Override
 			public PreparedStatement createPreparedStatement(String query) throws SQLException {
-				return conn.prepareStatement(query);
+				return connF.prepareStatement(query);
 			}
 
 			@Override
 			public void finish() throws SQLException {
-				conn.close();
+				if (!nonSingle)
+					connF.close();
 			}
 		};
 	}

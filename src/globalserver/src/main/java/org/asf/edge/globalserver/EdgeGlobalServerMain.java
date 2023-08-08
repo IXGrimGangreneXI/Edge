@@ -18,6 +18,10 @@ import org.asf.edge.contentserver.events.config.ContentServerConfigLoadedEvent;
 import org.asf.edge.contentserver.events.config.ContentServerConfigPresetupEvent;
 import org.asf.edge.gameplayapi.events.config.GameplayApiServerConfigLoadedEvent;
 import org.asf.edge.gameplayapi.events.config.GameplayApiServerConfigPresetupEvent;
+import org.asf.edge.mmoserver.EdgeMMOServer;
+import org.asf.edge.mmoserver.config.MMOServerConfig;
+import org.asf.edge.mmoserver.events.config.MMOServerConfigPresetupEvent;
+import org.asf.edge.mmoserver.events.config.MMOServerConfigLoadedEvent;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
 import org.asf.edge.commonapi.events.config.CommonApiServerConfigLoadedEvent;
@@ -52,6 +56,7 @@ public class EdgeGlobalServerMain {
 		logger.info("Content server version: " + EdgeContentServer.CONTENT_SERVER_VERSION);
 		logger.info("Common API version: " + EdgeCommonApiServer.COMMON_API_VERSION);
 		logger.info("Gameplay API server version: " + EdgeGameplayApiServer.GAMEPLAY_API_VERSION);
+		logger.info("MMO server version: " + EdgeMMOServer.MMO_SERVER_VERSION);
 		logger.info("Global server version: " + GLOBAL_SERVER_VERSION);
 		logger.info("Preparing to start...");
 
@@ -65,6 +70,8 @@ public class EdgeGlobalServerMain {
 		EventBus.getInstance().dispatchEvent(new GameplayApiServerConfigPresetupEvent(gpApiConfig));
 		CommonApiServerConfig cApiConfig = new CommonApiServerConfig();
 		EventBus.getInstance().dispatchEvent(new CommonApiServerConfigPresetupEvent(cApiConfig));
+		MMOServerConfig mmoSrvConfig = new MMOServerConfig();
+		EventBus.getInstance().dispatchEvent(new MMOServerConfigPresetupEvent(mmoSrvConfig));
 
 		// Load configuration
 		logger.info("Loading server configuration...");
@@ -120,6 +127,17 @@ public class EdgeGlobalServerMain {
 					+ "        \"httpsInternal\": false,\n" // use https?
 					+ "        \"tlsKeystoreInternal\": null,\n" // keystore file
 					+ "        \"tlsKeystorePasswordInternal\": null\n" // keystore password
+					+ "    },\n" //
+					+ "\n" //
+					+ "    \"mmoServer\": {\n" //
+					+ "        \"disabled\": false,\n" // defines if the server is disabled
+					+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
+					+ "        \"listenPort\": 5323,\n" // port to listen on
+					+ "\n" //
+					+ "        \"discoveryAddress\": \"localhost\",\n" // discovery Address
+					+ "        \"discoveryPort\": 5323,\n" // discovery port
+					+ "\n" //
+					+ "        \"commonApiUplinkURL\": \"http://127.0.0.1:5324/\"\n" // uplink URL
 					+ "    },\n" //
 					+ "\n" //
 					+ "    \"modules\": {\n" //
@@ -229,6 +247,22 @@ public class EdgeGlobalServerMain {
 			}
 		}
 
+		// MMO server
+		logger.debug("Configuring MMO server settings...");
+		JsonObject mmoSrvJson = configData.get("mmoServer").getAsJsonObject();
+		boolean mmoSrvDisabled = mmoSrvJson.has("disabled") && mmoSrvJson.get("disabled").getAsBoolean();
+		if (!mmoSrvDisabled) {
+			if (mmoSrvConfig.server == null) {
+				logger.debug("Loading listening settings...");
+				mmoSrvConfig.listenAddress = mmoSrvJson.get("listenAddress").getAsString();
+				mmoSrvConfig.listenPort = mmoSrvJson.get("listenPort").getAsInt();
+			}
+			logger.debug("Loading discovery settings...");
+			mmoSrvConfig.discoveryAddress = mmoSrvJson.get("discoveryAddress").getAsString();
+			mmoSrvConfig.discoveryPort = mmoSrvJson.get("discoveryPort").getAsInt();
+			mmoSrvConfig.commonApiUplinkURL = mmoSrvJson.get("commonApiUplinkURL").getAsString();
+		}
+
 		// Load module settings
 		if (configData.has("modules")) {
 			logger.debug("Loading module configurations...");
@@ -252,6 +286,8 @@ public class EdgeGlobalServerMain {
 			EventBus.getInstance().dispatchEvent(new GameplayApiServerConfigLoadedEvent(gpApiConfig));
 		if (!gapiDisabled)
 			EventBus.getInstance().dispatchEvent(new CommonApiServerConfigLoadedEvent(cApiConfig));
+		if (!mmoSrvDisabled)
+			EventBus.getInstance().dispatchEvent(new MMOServerConfigLoadedEvent(mmoSrvConfig));
 
 		// Setup servers
 		logger.info("Setting up servers...");
@@ -294,6 +330,14 @@ public class EdgeGlobalServerMain {
 			gpApiSrv.setupServer();
 		}
 
+		// MMO server
+		EdgeMMOServer mmoSrv = null;
+		if (!mmoSrvDisabled) {
+			logger.info("Setting up the MMO server...");
+			mmoSrv = new EdgeMMOServer(mmoSrvConfig);
+			mmoSrv.setupServer();
+		}
+
 		// Start servers
 		if (!contentDisabled)
 			contSrv.startServer();
@@ -301,6 +345,8 @@ public class EdgeGlobalServerMain {
 			cApiSrv.startServer();
 		if (!gapiDisabled)
 			gpApiSrv.startServer();
+		if (!mmoSrvDisabled)
+			mmoSrv.startServer();
 
 		// Call post-init
 		ModuleManager.runModulePostInit();
@@ -311,6 +357,8 @@ public class EdgeGlobalServerMain {
 			cApiSrv.waitForExit();
 		if (!gapiDisabled)
 			gpApiSrv.waitForExit();
+		if (!mmoSrvDisabled)
+			mmoSrv.waitForExit();
 		if (CommonInit.restartPending)
 			System.exit(237);
 		else

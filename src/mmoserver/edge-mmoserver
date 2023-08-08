@@ -1,0 +1,23 @@
+#!/bin/bash
+function start() {
+	libs=$(find libs/ -name '*.jar' -exec echo -n :{} \;)
+	libs=$libs:$(find . -maxdepth 1 -name '*.jar' -exec echo -n :{} \;)
+	libs=${libs:1}
+	
+	java -cp "$libs" org.asf.edge.mmoserver.EdgeMMOServerMain "$@"
+	code=$?
+	if [ "$code" == "237" ]; then
+		start
+		return
+	fi
+	if [ "$code" == "0" ] && [ -f gameplayapiupdater.jar ]; then
+		java -cp "mmoserverupdater.jar" org.asf.edge.mmoserver.EdgeMMOServerUpdater --update
+		rm mmoserverupdater.jar
+		echo
+		start
+		return
+	fi
+	exit $code
+}
+
+start

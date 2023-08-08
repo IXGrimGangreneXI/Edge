@@ -34,9 +34,9 @@ import org.asf.edge.gameplayapi.util.inventory.defaultvalidators.BundleSecurityV
 import org.asf.edge.gameplayapi.util.inventory.defaultvalidators.MysteryBoxSecurityValidator;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
-import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.CurrencyUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.PrizeItemInfo;
+import org.asf.edge.modules.eventbus.EventBus;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;

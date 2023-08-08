@@ -49,7 +49,8 @@ dependencies {
 	
 	implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.0'
 	implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.0'
-	
+	implementation group: 'org.bouncycastle', name: 'bcpkix-jdk14', version: '1.73'
+
 	implementation 'org.ow2.asm:asm:9.1'
 	implementation 'org.ow2.asm:asm-tree:9.1'
 	implementation 'org.ow2.asm:asm-commons:9.1'
@@ -59,11 +60,11 @@ dependencies {
 
 	implementation group: 'javax.activation', name: 'activation', version: '1.1.1'
 	
+	implementation group: 'com.mysql', name: 'mysql-connector-j', version: '8.0.33'
+	implementation group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '3.1.4'
+	implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.42.0.0'
+		
 	implementation project(":src:common")
-	implementation project(":src:contentserver")
-	implementation project(":src:commonapi")
-	implementation project(":src:gameplayapi")
-	implementation project(":src:mmoserver")
 	implementation project(":src:modulemanager")
 }
 
@@ -72,9 +73,9 @@ project.configurations.implementation.canBeResolved = true
 task installation () {
 	doLast {
 		copy {
-			from "edge"
-			from "edge.bat"
-			into "../../build/pkg"
+			from "edge-mmoserver"
+			from "edge-mmoserver.bat"
+			into "../../build/mmoserver"
 		}
 		for (ResolvedArtifact arti : project.configurations.implementation.resolvedConfiguration.getResolvedArtifacts()) {
 			if (arti.getClassifier() != null)
@@ -82,7 +83,7 @@ task installation () {
 			copy {
 				from arti.file
 				rename arti.file.getName(), arti.name + (arti.getClassifier() != null && !arti.getClassifier().isEmpty() ? "-" + arti.getClassifier() : "") + "." + arti.getExtension()
-				into "../../build/pkg/libs"
+				into "../../build/mmoserver/libs"
 			}
 		}
 		for (def task : project.tasks) {
@@ -93,7 +94,7 @@ task installation () {
 				copy {
 					from task.getArchiveFile().get()
 					rename task.getArchiveFile().get().getAsFile().getName(), task.getArchiveBaseName().get() + (task.getArchiveClassifier().get() != null && !task.getArchiveClassifier().get().isEmpty() ? "-" + task.getArchiveClassifier().get() : "") + "." + task.getArchiveExtension().get()
-					into "../../build/pkg"
+					into "../../build/mmoserver"
 				}
 			}
 		}

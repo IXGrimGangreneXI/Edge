@@ -17,11 +17,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.cyan.fluid.DynamicClassLoader;
 import org.asf.cyan.fluid.bytecode.FluidClassPool;
-import org.asf.edge.modules.eventbus.EventBus;
 import org.objectweb.asm.tree.ClassNode;
-
 import org.asf.edge.modules.dependencies.IMavenRepositoryProvider;
 import org.asf.edge.modules.dependencies.IModuleMavenDependencyProvider;
+import org.asf.edge.modules.eventbus.EventBus;
 
 /**
  * 
@@ -316,7 +315,7 @@ public class ModuleManager {
 							modInst.preInit();
 
 							// Attach events
-							EventBus.getInstance().addEventReceiver(modInst);
+							EventBus.getInstance().addAllEventsFromReceiver(modInst);
 						} catch (Exception e) {
 							logger.error("Failed to pre-initialize module: " + modInst.moduleID()
 									+ ", module source file: "
