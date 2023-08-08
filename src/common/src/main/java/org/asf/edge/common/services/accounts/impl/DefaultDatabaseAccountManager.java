@@ -21,6 +21,7 @@ public class DefaultDatabaseAccountManager extends DatabaseAccountManager {
 
 	private String url;
 	private Properties props;
+	private Connection conn;
 
 	@Override
 	protected void managerLoaded() {
@@ -73,6 +74,8 @@ public class DefaultDatabaseAccountManager extends DatabaseAccountManager {
 
 			// Create tables
 			Connection conn = DriverManager.getConnection(url, props);
+			if (url.startsWith("jdbc:sqlite:"))
+				this.conn = conn;
 			try {
 				Statement statement = conn.createStatement();
 				statement.executeUpdate("CREATE TABLE IF NOT EXISTS EMAILMAP_V2 (EMAIL TEXT, ID CHAR(36))");
@@ -86,7 +89,8 @@ public class DefaultDatabaseAccountManager extends DatabaseAccountManager {
 						"CREATE TABLE IF NOT EXISTS SAVESPECIFICPLAYERDATA_V2 (SVID CHAR(36), DATAKEY varchar(64), PARENT varchar(64), PARENTCONTAINER varchar(256), DATA LONGTEXT)");
 				statement.close();
 			} finally {
-				conn.close();
+				if (!url.startsWith("jdbc:sqlite:"))
+					conn.close();
 			}
 		} catch (SQLException | ClassNotFoundException e) {
 			logger.error("Failed to connect to database!", e);
@@ -96,17 +100,25 @@ public class DefaultDatabaseAccountManager extends DatabaseAccountManager {
 
 	@Override
 	public DatabaseRequest createRequest() throws SQLException {
-		Connection conn = DriverManager.getConnection(url, props);
+		boolean nonSingle = false;
+		Connection conn = this.conn;
+		if (conn == null) {
+			nonSingle = true;
+			conn = DriverManager.getConnection(url, props);
+		}
+		Connection connF = conn;
+		boolean nonSingleF = nonSingle;
 		return new DatabaseRequest() {
 
 			@Override
 			public PreparedStatement prepareStatement(String query) throws SQLException {
-				return conn.prepareStatement(query);
+				return connF.prepareStatement(query);
 			}
 
 			@Override
 			public void close() throws SQLException {
-				conn.close();
+				if (!nonSingleF)
+					connF.close();
 			}
 		};
 	}
