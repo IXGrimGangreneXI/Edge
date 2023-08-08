@@ -36,6 +36,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 public class EdgeContentServerDumper {
 
 	private static String[] tdEncryptedFiles = new String[] { "DWADragonsMain.xml" };
+	private static String[] retainFiles = new String[0];
 
 	private static String versionSecretFile = "\n" + "#\n"
 			+ "# This file defines the secret used to encrypt the manifest sent to the client\n"
@@ -45,7 +46,7 @@ public class EdgeContentServerDumper {
 		// Check arguments
 		if (args.length < 7) {
 			System.err.println(
-					"Missing arguments: \"<server>\" \"<version>\" \"<platform>\" \"<key>\" \"<output>\" \"<new-server-url>\" <overwrite true/false>");
+					"Missing arguments: \"<server>\" \"<version>\" \"<platform>\" \"<key>\" \"<output>\" \"<new-server-url>\" <overwrite true/false> [\"<file name to retain>\" ...]");
 			System.err.println(
 					"Example arguments: \"http://media.jumpstart.com/\" \"3.31.0\" \"WIN\" \"C92EC1AA-54CD-4D0C-A8D5-403FCCF1C0BD\" \"asset-archive\" \"https://example.com/sod-archive/\" true");
 			System.err.println("");
@@ -61,6 +62,10 @@ public class EdgeContentServerDumper {
 			args[0] += "/";
 		if (!args[5].endsWith("/"))
 			args[5] += "/";
+		retainFiles = new String[args.length - 7];
+		for (int i = 7; i < args.length; i++) {
+			retainFiles[i - 7] = args[i];
+		}
 
 		// Create output
 		System.out.println("Creating output...");
@@ -89,7 +94,7 @@ public class EdgeContentServerDumper {
 
 		// Download manifest
 		System.out.println("Downloading manifest...");
-		downloadFile(args[0], args[1], args[2], args[3], output, "DWADragonsMain.xml", "",
+		downloadFile(args[0], args[1], args[2], args[3], output, "DWADragonsMain.xml", "", "",
 				args[6].equalsIgnoreCase("true"));
 
 		// Read XML into memory
@@ -152,10 +157,10 @@ public class EdgeContentServerDumper {
 		// Download main asset
 		if (conf.manifests != null && conf.manifests.length != 0) {
 			System.out.println("Downloading main assets...");
-			downloadFileEachQuality(args[0], args[1], args[2], args[3], output, "dwadragonsmain",
+			downloadFileEachQuality(args[0], args[1], args[2], args[3], output, "dwadragonsmain", "",
 					"?v=00000000000000000000000000000000", args[6].equalsIgnoreCase("true"));
 			for (String man : conf.manifests)
-				downloadFileEachQuality(args[0], args[1], args[2], args[3], output, man,
+				downloadFileEachQuality(args[0], args[1], args[2], args[3], output, man, "",
 						"?v=00000000000000000000000000000000", args[6].equalsIgnoreCase("true"));
 		}
 
@@ -337,19 +342,27 @@ public class EdgeContentServerDumper {
 			manifest = manifest.substring(1);
 		// Load asset manifest
 		String manData;
+		File manFile;
+		File newManFile;
 		try {
 			System.out.println(
 					"Downloading asset list file... Downloading " + manifest.replace("/Mid/", "/" + level + "/"));
-			downloadFile(server, version, platform, key, output, manifest.replace("/Mid/", "/" + level + "/"),
+			downloadFile(server, version, platform, key, output, manifest.replace("/Mid/", "/" + level + "/"), ".new",
 					"?v=00000000000000000000000000000000", true);
 			System.out.println(
 					"Parsing asset list... Reading file " + manifest.replace("/Mid/", "/" + level + "/") + "...");
-			manData = Files.readString(new File(output, manifest.replace("/Mid/", "/" + level + "/")).toPath());
+			manData = Files
+					.readString(new File(output, manifest.replace("/Mid/", "/" + level + "/") + ".new").toPath());
+			newManFile = new File(output, manifest.replace("/Mid/", "/" + level + "/") + ".new");
+			manFile = new File(output, manifest.replace("/Mid/", "/" + level + "/"));
 		} catch (IOException e) {
 			System.out.println("Downloading asset list file... Downloading " + manifest);
-			downloadFile(server, version, platform, key, output, manifest, "?v=00000000000000000000000000000000", true);
+			downloadFile(server, version, platform, key, output, manifest, "?v=00000000000000000000000000000000",
+					".new", true);
 			System.out.println("Parsing asset list... Reading file " + manifest + "...");
-			manData = Files.readString(new File(output, manifest).toPath());
+			manData = Files.readString(new File(output, manifest + ".new").toPath());
+			manFile = new File(output, manifest);
+			newManFile = new File(output, manifest + ".new");
 		}
 		AssetVersionManifestData assetData = mapper.readValue(manData, AssetVersionManifestData.class);
 
@@ -382,13 +395,70 @@ public class EdgeContentServerDumper {
 			assetData.assets = assets.values().toArray(t -> new AssetVersionBlock[t]);
 		}
 
+		// Read old data
+		AssetVersionManifestData oldData = null;
+		if (manFile.exists()) {
+			oldData = mapper.readValue(Files.readString(manFile.toPath()), AssetVersionManifestData.class);
+
+			// Map legacy versions
+			if (oldData.assets == null && oldData.legacyData != null) {
+				HashMap<String, AssetVersionBlock> assets = new HashMap<String, AssetVersionBlock>();
+				for (AssetBlockLegacy legacyBlock : oldData.legacyData) {
+					AssetVersionBlock block = null;
+					if (assets.containsKey(legacyBlock.assetName)) {
+						block = assets.get(legacyBlock.assetName);
+					} else {
+						block = new AssetVersionBlock();
+						block.name = legacyBlock.assetName;
+						block.variants = new AssetVersionBlock.AssetVariantBlock[0];
+						assets.put(block.name, block);
+					}
+
+					// Create variant
+					AssetVersionBlock.AssetVariantBlock var = new AssetVersionBlock.AssetVariantBlock();
+					var.locale = null;
+					var.version = legacyBlock.version;
+					var.size = legacyBlock.size;
+
+					// Add to array
+					ArrayList<AssetVersionBlock.AssetVariantBlock> lst = new ArrayList<AssetVersionBlock.AssetVariantBlock>(
+							Arrays.asList(block.variants));
+					lst.add(var);
+					block.variants = lst.toArray(t -> new AssetVersionBlock.AssetVariantBlock[t]);
+				}
+				oldData.assets = assets.values().toArray(t -> new AssetVersionBlock[t]);
+			}
+		} else
+			Files.copy(newManFile.toPath(), manFile.toPath()); // First time
+
 		// Download all assets
 		ArrayList<String> failed = new ArrayList<String>();
 		for (AssetVersionManifestData.AssetVersionBlock asset : assetData.assets) {
-			// Build url
 			for (AssetVersionManifestData.AssetVersionBlock.AssetVariantBlock variant : asset.variants) {
 				String url = asset.name;
 				url = asset.name;
+
+				// Find old
+				AssetVersionManifestData.AssetVersionBlock.AssetVariantBlock old = null;
+				if (oldData != null) {
+					for (AssetVersionManifestData.AssetVersionBlock a2 : assetData.assets) {
+						if (a2.name.equalsIgnoreCase(asset.name)) {
+							// Found the asset
+							for (AssetVersionManifestData.AssetVersionBlock.AssetVariantBlock v2 : asset.variants) {
+								// Check variant
+								if ((v2.locale == null && variant.locale == null) || (v2.locale != null
+										&& variant.locale != null && v2.locale.equalsIgnoreCase(variant.locale))) {
+									// Found it
+									old = v2;
+									break;
+								}
+							}
+							break;
+						}
+					}
+				}
+
+				// Build url
 				if (url.startsWith("RS_CONTENT/"))
 					url = conf.contentDataURL[0].replace("/Mid/", "/" + level + "/").replace("{Version}", version)
 							+ url.substring("RS_CONTENT".length());
@@ -584,7 +654,8 @@ public class EdgeContentServerDumper {
 
 				// Compute output
 				File outputFile = new File(output, path);
-				if (!overwrite && (outputFile.exists() && outputFile.length() == variant.size)) {
+				if ((!overwrite && (outputFile.exists() && (old != null && old.version == variant.version)))
+						|| Stream.of(retainFiles).anyMatch(t -> t.equalsIgnoreCase(outputFile.getName()))) {
 					System.out.println("Skipped: " + url);
 					continue;
 				}
@@ -637,22 +708,22 @@ public class EdgeContentServerDumper {
 
 						// Read XML into memory
 						String xml = Files.readString(outputFile.toPath());
-						if (path.endsWith("/DailyBonusAndPromoDO.xml")) {
-							// Swap out media URLS
-							for (String u2 : urlsToSwap) {
-								if (xml.contains(u2)) {
-									// Swap it for our new server
-									xml = xml.replace(u2, "RS_DATA/");
-								}
-							}
-						} else {
-							for (String u2 : urlsToSwap) {
-								if (xml.contains(u2)) {
-									// Swap it for our new server
-									xml = xml.replace(u2, newServerURL);
-								}
+//						if (path.endsWith("/DailyBonusAndPromoDO.xml")) { // FIXME: this is currently broken
+//							// Swap out media URLS
+//							for (String u2 : urlsToSwap) {
+//								if (xml.contains(u2)) {
+//									// Swap it for our new server
+//									xml = xml.replace(u2, "RS_DATA/");
+//								}
+//							}
+//						} else {
+						for (String u2 : urlsToSwap) {
+							if (xml.contains(u2)) {
+								// Swap it for our new server
+								xml = xml.replace(u2, newServerURL);
 							}
 						}
+//						}
 
 						// Save
 						Files.writeString(outputFile.toPath(), xml);
@@ -677,20 +748,27 @@ public class EdgeContentServerDumper {
 			System.err.println("");
 			System.err.println("");
 		}
+
+		// Apply
+		if (manFile.exists())
+			manFile.delete();
+		newManFile.renameTo(manFile);
 	}
 
 	private static void downloadFileEachQuality(String server, String version, String platform, String key, File output,
-			String file, String query, boolean overwrite) throws MalformedURLException, IOException {
-		downloadFile(server, version, platform, key, output, "Low/" + file, query, overwrite);
-		downloadFile(server, version, platform, key, output, "Mid/" + file, query, overwrite);
-		downloadFile(server, version, platform, key, output, "High/" + file, query, overwrite);
+			String file, String outputSuffix, String query, boolean overwrite)
+			throws MalformedURLException, IOException {
+		downloadFile(server, version, platform, key, output, "Low/" + file, outputSuffix, query, overwrite);
+		downloadFile(server, version, platform, key, output, "Mid/" + file, outputSuffix, query, overwrite);
+		downloadFile(server, version, platform, key, output, "High/" + file, outputSuffix, query, overwrite);
 	}
 
 	private static void downloadFile(String server, String version, String platform, String key, File output,
-			String file, String query, boolean overwrite) throws MalformedURLException, IOException {
+			String file, String outputSuffix, String query, boolean overwrite)
+			throws MalformedURLException, IOException {
 		// Build url
 		String url = server + "DWADragonsUnity/" + platform + "/" + version + "/" + file + query;
-		File outputFile = new File(output, file);
+		File outputFile = new File(output, file + outputSuffix);
 		if (!overwrite && outputFile.exists()) {
 			System.out.println("Skipped: " + url);
 			return;
