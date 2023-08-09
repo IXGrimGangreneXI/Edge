@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.stream.Stream;
 
 import javax.activation.FileTypeMap;
 import javax.activation.MimetypesFileTypeMap;
@@ -228,13 +229,39 @@ public class ContentServerRequestHandler extends HttpPushProcessor {
 			// Directory
 			// Check server settings
 			if (server.getConfiguration().allowIndexingAssets) {
-				// Index
-				CommonIndexPage.index(requestedFile, getRequest(), getResponse());
+				// Find index page
+
+				// Find one by extension
+				File indexPage = null;
+				if (indexPage == null) {
+					// Find in directory
+					File[] files = requestedFile.listFiles(t -> !t.isDirectory() && t.getName().startsWith("index.")
+							&& !t.getName().substring("index.".length()).contains("."));
+					if (files.length != 0) {
+						if (Stream.of(files).anyMatch(t -> t.getName().equals("index.html")))
+							indexPage = new File(requestedFile, "index.html");
+						else if (Stream.of(files).anyMatch(t -> t.getName().equals("index.htm")))
+							indexPage = new File(requestedFile, "index.htm");
+						else
+							indexPage = files[0];
+					}
+				}
+
+				// Check
+				if (indexPage != null) {
+					// Assign new page
+					requestedFile = indexPage;
+					path = path + "/" + indexPage.getName();
+				} else {
+					// Index
+					CommonIndexPage.index(requestedFile, getRequest(), getResponse());
+					return;
+				}
 			} else {
 				// Not found
 				setResponseStatus(404, "Not found");
+				return;
 			}
-			return;
 		}
 
 		// Find type

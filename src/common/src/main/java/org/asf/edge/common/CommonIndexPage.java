@@ -3,6 +3,7 @@ package org.asf.edge.common;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.stream.Stream;
 
 import org.asf.connective.objects.HttpRequest;
 import org.asf.connective.objects.HttpResponse;
@@ -17,8 +18,9 @@ public class CommonIndexPage {
 			// Process and set body
 			response.setContent("text/html",
 					processIndex(new String(strm.readAllBytes(), "UTF-8"), request.getRequestPath(),
-							requestedFile.getName(), null, requestedFile.listFiles(t -> t.isDirectory()),
-							requestedFile.listFiles(t -> t.isFile())));
+							requestedFile.getName(), null,
+							Stream.of(requestedFile.listFiles(t -> t.isDirectory())).sorted().toArray(t -> new File[t]),
+							Stream.of(requestedFile.listFiles(t -> t.isFile())).sorted().toArray(t -> new File[t])));
 		} catch (IOException e) {
 		}
 	}
