@@ -102,11 +102,11 @@ public class ServerDownPreprocessor implements IPreProcessor {
 					fmt.setTimeZone(TimeZone.getTimeZone("PST"));
 					start = fmt.parse(startTime).getTime();
 					if (fmt.getTimeZone().inDaylightTime(new Date(start)))
-						start -= 1 * 60 * 60 * 1000;
+						start += 1 * 60 * 60 * 1000;
 					if (endTime != null) {
 						end = fmt.parse(endTime).getTime();
 						if (fmt.getTimeZone().inDaylightTime(new Date(end)))
-							end -= 1 * 60 * 60 * 1000;
+							end += 1 * 60 * 60 * 1000;
 					}
 					if (System.currentTimeMillis() >= start && (end == -1 || System.currentTimeMillis() < end)) {
 						// Modify
