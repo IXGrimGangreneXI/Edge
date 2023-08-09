@@ -284,7 +284,7 @@ public class SmartfoxNetworkObjectUtil {
 					if (str.length() > Short.MAX_VALUE)
 						throw new IOException("String '" + str + "' too long, max length is " + Short.MAX_VALUE);
 				types[i++] = 16;
-			} else if (value instanceof Map[])
+			} else if (value instanceof Object[])
 				types[i++] = 17;
 			else if (value instanceof Map) {
 				Map<String, Object> mp = (Map<String, Object>) value;
@@ -530,7 +530,7 @@ public class SmartfoxNetworkObjectUtil {
 						if (str.length() > Short.MAX_VALUE)
 							throw new IOException("String '" + str + "' too long, max length is " + Short.MAX_VALUE);
 					t = 16;
-				} else if (value instanceof Map[])
+				} else if (value instanceof Object[])
 					t = 17;
 				else if (value instanceof Map) {
 					Map<String, Object> mp = (Map<String, Object>) value;

@@ -52,8 +52,8 @@ public class EdgeContentServerMain {
 						+ "    \"allowIndexingAssets\": true,\n" // Defines if indexing is enabled
 						+ "\n" //
 						+ "    \"serverTestEndpoint\": null,\n" // test endpoint
-						+ "    \"assetProxyServerEndpoint\": null,\n" // proxy endpoint
-						+ "    \"assetProxyManifestModifications\": {},\n" // proxy modifications
+						+ "    \"fallbackAssetServerEndpoint\": null,\n" // proxy endpoint
+						+ "    \"fallbackAssetServerManifestModifications\": {},\n" // proxy modifications
 						+ "\n" //
 						+ "    \"storeFallbackAssetDownloads\": false," // downloading fallback to disk
 						+ "\n" //
@@ -110,7 +110,7 @@ public class EdgeContentServerMain {
 		if (configData.has("storeFallbackAssetDownloads")
 				&& !configData.get("storeFallbackAssetDownloads").isJsonNull())
 			config.storeFallbackAssetDownloads = configData.get("storeFallbackAssetDownloads").getAsBoolean();
-		if (configData.has("serverTestEndpoint"))
+		if (configData.has("serverTestEndpoint") && !configData.get("serverTestEndpoint").isJsonNull())
 			config.serverTestEndpoint = configData.get("serverTestEndpoint").getAsString();
 		if (config.server == null) {
 			logger.debug("Loading encryption settings...");
