@@ -700,7 +700,7 @@ public class AccountDownloader {
 				output.close();
 				fO.close();
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			logger.info("An error occurred while downloading account data", e);
 			JOptionPane.showMessageDialog(frmEdgeAccountDownloader, "An error occurred while downloading account data!",
 					"Error", JOptionPane.ERROR_MESSAGE);
