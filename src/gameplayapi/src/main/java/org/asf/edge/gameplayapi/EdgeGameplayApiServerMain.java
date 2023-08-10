@@ -115,6 +115,13 @@ public class EdgeGameplayApiServerMain {
 		EventBus.getInstance().dispatchEvent(new GameplayApiServerConfigLoadedEvent(config));
 
 		// Prepare services
+		logger.debug("Loading common data manager implementations...");
+		CommonDataManager.initCommonDataManagerServices(ServiceImplementationPriorityLevels.NORMAL,
+				ServiceImplementationPriorityLevels.DEFAULT, -5);
+		logger.debug("Selecting common data manager implementation...");
+		ServiceManager.selectServiceImplementation(CommonDataManager.class);
+		logger.debug("Loading common data manager...");
+		CommonDataManager.getInstance().loadManager();
 		logger.info("Setting up the server...");
 		logger.debug("Loading account manager implementations...");
 		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.NORMAL,
@@ -123,13 +130,6 @@ public class EdgeGameplayApiServerMain {
 		ServiceManager.selectServiceImplementation(AccountManager.class);
 		logger.debug("Loading account manager...");
 		AccountManager.getInstance().loadManager();
-		logger.debug("Loading common data manager implementations...");
-		CommonDataManager.initCommonDataManagerServices(ServiceImplementationPriorityLevels.NORMAL,
-				ServiceImplementationPriorityLevels.DEFAULT, -5);
-		logger.debug("Selecting common data manager implementation...");
-		ServiceManager.selectServiceImplementation(CommonDataManager.class);
-		logger.debug("Loading common data manager...");
-		CommonDataManager.getInstance().loadManager();
 
 		// Setup server
 		EdgeGameplayApiServer server = new EdgeGameplayApiServer(config);

@@ -73,7 +73,7 @@ public abstract class CommonDataManager extends AbstractService {
 		JsonObject databaseManagerConfig = new JsonObject();
 		if (!commonDataManagerConfig.has("databaseManager")) {
 			databaseManagerConfig.addProperty("priority", priorityDatabase);
-			databaseManagerConfig.addProperty("url", "jdbc:locking:sqlite:common-data.db");
+			databaseManagerConfig.addProperty("url", "jdbc:sqlite:common-data.db");
 			JsonObject props = new JsonObject();
 			databaseManagerConfig.add("properties", props);
 			commonDataManagerConfig.add("databaseManager", databaseManagerConfig);

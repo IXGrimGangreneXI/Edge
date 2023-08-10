@@ -291,13 +291,6 @@ public class EdgeGlobalServerMain {
 
 		// Setup servers
 		logger.info("Setting up servers...");
-		logger.debug("Loading account manager implementations...");
-		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.DEFAULT,
-				ServiceImplementationPriorityLevels.NORMAL, -5);
-		logger.debug("Selecting account manager implementation...");
-		ServiceManager.selectServiceImplementation(AccountManager.class);
-		logger.debug("Loading account manager...");
-		AccountManager.getInstance().loadManager();
 		logger.debug("Loading common data manager implementations...");
 		CommonDataManager.initCommonDataManagerServices(ServiceImplementationPriorityLevels.DEFAULT,
 				ServiceImplementationPriorityLevels.NORMAL, -5);
@@ -305,6 +298,13 @@ public class EdgeGlobalServerMain {
 		ServiceManager.selectServiceImplementation(CommonDataManager.class);
 		logger.debug("Loading common data manager...");
 		CommonDataManager.getInstance().loadManager();
+		logger.debug("Loading account manager implementations...");
+		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.DEFAULT,
+				ServiceImplementationPriorityLevels.NORMAL, -5);
+		logger.debug("Selecting account manager implementation...");
+		ServiceManager.selectServiceImplementation(AccountManager.class);
+		logger.debug("Loading account manager...");
+		AccountManager.getInstance().loadManager();
 
 		// Content server
 		EdgeContentServer contSrv = null;
