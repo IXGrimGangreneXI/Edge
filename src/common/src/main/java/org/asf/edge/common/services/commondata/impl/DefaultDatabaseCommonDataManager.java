@@ -107,7 +107,7 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 						+ " (DATAKEY varchar(64), PARENT varchar(64), PARENTCONTAINER varchar(256), DATA LONGTEXT)");
 				statement.close();
 			} finally {
-				if (!nonSingle)
+				if (nonSingle)
 					conn.close();
 			}
 		} catch (SQLException e) {
@@ -132,7 +132,7 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 
 			@Override
 			public void finish() throws SQLException {
-				if (!nonSingle)
+				if (nonSingle)
 					connF.close();
 			}
 		};

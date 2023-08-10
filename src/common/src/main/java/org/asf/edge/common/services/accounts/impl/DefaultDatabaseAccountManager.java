@@ -117,7 +117,7 @@ public class DefaultDatabaseAccountManager extends DatabaseAccountManager {
 
 			@Override
 			public void close() throws SQLException {
-				if (!nonSingleF)
+				if (nonSingleF)
 					connF.close();
 			}
 		};
