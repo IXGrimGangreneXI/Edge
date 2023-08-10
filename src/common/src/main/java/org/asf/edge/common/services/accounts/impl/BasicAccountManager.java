@@ -28,11 +28,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.events.accounts.AccountManagerLoadEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonPrimitive;
 
@@ -228,6 +230,9 @@ public abstract class BasicAccountManager extends AccountManager {
 
 		// Call load
 		managerLoaded();
+
+		// Call event
+		EventBus.getInstance().dispatchEvent(new AccountManagerLoadEvent(this));
 	}
 
 	@Override
@@ -387,6 +392,17 @@ public abstract class BasicAccountManager extends AccountManager {
 
 		// Return
 		return obj;
+	}
+
+	public byte[] createCredBytesWithPassword(char[] password) {
+		byte[] salt = salt();
+		byte[] hash = getHash(salt, password);
+		byte[] cred = new byte[48];
+		for (int i = 0; i < 32; i++)
+			cred[i] = salt[i];
+		for (int i = 32; i < 48; i++)
+			cred[i] = hash[i - 32];
+		return cred;
 	}
 
 	// Salt and hash

@@ -72,7 +72,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	 * @param name New account username
 	 * @return True if successful, false otherwise
 	 */
-	protected abstract boolean performUpdateUsername(String name);
+	public abstract boolean performUpdateUsername(String name);
 
 	/**
 	 * Called to update account passwords
@@ -81,7 +81,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	 *             rewrite</i>)
 	 * @return True if successful, false otherwise
 	 */
-	protected abstract boolean performUpdatePassword(byte[] cred);
+	public abstract boolean performUpdatePassword(byte[] cred);
 
 	/**
 	 * Called to retrieve the account data container

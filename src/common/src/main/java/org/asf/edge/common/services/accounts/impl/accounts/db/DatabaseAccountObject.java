@@ -51,7 +51,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 	}
 
 	@Override
-	protected boolean performUpdateUsername(String name) {
+	public boolean performUpdateUsername(String name) {
 		try {
 			DatabaseRequest conn = manager.createRequest();
 			try {
@@ -73,7 +73,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 	}
 
 	@Override
-	protected boolean performUpdatePassword(byte[] cred) {
+	public boolean performUpdatePassword(byte[] cred) {
 		try {
 			// Create prepared statement
 			DatabaseRequest conn = manager.createRequest();

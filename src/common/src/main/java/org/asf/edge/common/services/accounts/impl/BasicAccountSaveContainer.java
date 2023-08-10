@@ -83,7 +83,7 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 	 * @param name New save username
 	 * @return True if successful, false otherwise
 	 */
-	protected abstract boolean performUpdateUsername(String name);
+	public abstract boolean performUpdateUsername(String name);
 
 	/**
 	 * Called to retrieve the save data container

@@ -31,7 +31,7 @@ public class DatabaseSaveContainer extends BasicAccountSaveContainer {
 	}
 
 	@Override
-	protected boolean performUpdateUsername(String name) {
+	public boolean performUpdateUsername(String name) {
 		try {
 			DatabaseRequest conn = manager.createRequest();
 			try {
