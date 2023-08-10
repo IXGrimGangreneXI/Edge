@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,6 +39,9 @@ public class EdgeGlobalServerMain {
 	public static final String GLOBAL_SERVER_VERSION = "1.0.0.A1";
 
 	public static void main(String[] args) throws IOException {
+		// Set locale
+		Locale.setDefault(Locale.ENGLISH);
+		 
 		// Print splash
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
