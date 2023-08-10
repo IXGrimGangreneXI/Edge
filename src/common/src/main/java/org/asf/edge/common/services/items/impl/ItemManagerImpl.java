@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -376,7 +378,9 @@ public class ItemManagerImpl extends ItemManager {
 						randomSaleConfig.randomMaximalModifier);
 
 				// Round the modifier
-				modifier = Float.parseFloat(new DecimalFormat("0.000").format(modifier));
+				DecimalFormatSymbols format = DecimalFormatSymbols.getInstance();
+				format.setDecimalSeparator('.');
+				modifier = Float.parseFloat(new DecimalFormat("0.000", format).format(modifier));
 
 				// Create sale object
 				int[] itemIdArr = new int[itemIDs.size()];
