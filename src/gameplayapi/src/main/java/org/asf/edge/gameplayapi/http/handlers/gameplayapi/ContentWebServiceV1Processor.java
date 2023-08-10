@@ -872,7 +872,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 				DragonData dragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(), DragonData.class);
 
 				// Check filter
-				if (TextFilterService.getInstance().isFiltered(dragon.name, account.isStrictChatFilterEnabled())) {
+				if (TextFilterService.getInstance().isFiltered(dragon.name, true)) {
 					// Filtered
 
 					// Reset name
@@ -1023,7 +1023,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 				DragonData dragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(), DragonData.class);
 
 				// Check filter
-				if (TextFilterService.getInstance().isFiltered(dragon.name, account.isStrictChatFilterEnabled())) {
+				if (TextFilterService.getInstance().isFiltered(dragon.name, true)) {
 					// Filtered
 
 					// Reset name

@@ -538,7 +538,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Check filters
-		if (TextFilterService.getInstance().isFiltered(name, account.isStrictChatFilterEnabled())) {
+		if (TextFilterService.getInstance().isFiltered(name, true)) {
 			// Invalid name
 			SetAvatarResultData resp = new SetAvatarResultData();
 			resp.success = false;
@@ -682,7 +682,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Check filters
-		if (TextFilterService.getInstance().isFiltered(name, account.isStrictChatFilterEnabled())) {
+		if (TextFilterService.getInstance().isFiltered(name, true)) {
 			// Invalid name
 			SetAvatarResultData resp = new SetAvatarResultData();
 			resp.success = false;
@@ -1079,7 +1079,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 							DragonData.class);
 
 					// Check filter
-					if (TextFilterService.getInstance().isFiltered(dragon.name, account.isStrictChatFilterEnabled())) {
+					if (TextFilterService.getInstance().isFiltered(dragon.name, true)) {
 						// Filtered
 
 						// Reset name

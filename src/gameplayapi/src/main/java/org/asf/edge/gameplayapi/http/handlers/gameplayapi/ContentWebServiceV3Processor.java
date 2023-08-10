@@ -112,7 +112,7 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Check filter
-		if (TextFilterService.getInstance().isFiltered(request.dragonData.name, account.isStrictChatFilterEnabled())) {
+		if (TextFilterService.getInstance().isFiltered(request.dragonData.name, true)) {
 			// Error
 			resp.raisedPetSetResult = 4;
 			resp.errorMessage = "Invalid name";

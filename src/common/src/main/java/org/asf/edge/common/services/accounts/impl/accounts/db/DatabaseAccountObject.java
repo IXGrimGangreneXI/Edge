@@ -97,6 +97,23 @@ public class DatabaseAccountObject extends BasicAccountObject {
 	@Override
 	public boolean updateEmail(String email) {
 		try {
+			if (getAccountEmail() == null) {
+				// Insert instead
+				DatabaseRequest conn = manager.createRequest();
+				try {
+					// Create prepared statement
+					var statement = conn.prepareStatement("INSERT INTO EMAILMAP_V2 VALUES (?, ?)");
+					statement.setString(1, email);
+					statement.setString(2, getAccountID());
+					statement.execute();
+					statement.close();
+					return true;
+				} finally {
+					conn.close();
+				}
+			}
+
+			// Update
 			DatabaseRequest conn = manager.createRequest();
 			try {
 				// Create prepared statement

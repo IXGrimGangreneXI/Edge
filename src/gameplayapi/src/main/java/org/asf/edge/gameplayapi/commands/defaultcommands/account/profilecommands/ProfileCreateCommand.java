@@ -82,7 +82,7 @@ public class ProfileCreateCommand implements IEdgeServerCommand {
 		}
 
 		// Check filters
-		if (TextFilterService.getInstance().isFiltered(username, account.isStrictChatFilterEnabled())) {
+		if (TextFilterService.getInstance().isFiltered(username, true)) {
 			// Invalid name
 			outputWriteLineCallback.accept("Error: invalid profile name");
 			return null;

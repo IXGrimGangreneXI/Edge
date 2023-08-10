@@ -98,7 +98,7 @@ public class ProfileRenameCommand implements IEdgeServerCommand {
 		}
 
 		// Check filters
-		if (TextFilterService.getInstance().isFiltered(username, acc.isStrictChatFilterEnabled())) {
+		if (TextFilterService.getInstance().isFiltered(username, true)) {
 			// Invalid name
 			outputWriteLineCallback.accept("Error: invalid profile name");
 			return null;

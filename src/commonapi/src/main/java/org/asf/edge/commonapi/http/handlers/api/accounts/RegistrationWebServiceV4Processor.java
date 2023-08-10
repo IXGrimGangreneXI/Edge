@@ -89,7 +89,7 @@ public class RegistrationWebServiceV4Processor extends EdgeWebService<EdgeCommon
 		}
 
 		// Check filters
-		if (TextFilterService.getInstance().isFiltered(reg.name, account.isStrictChatFilterEnabled())) {
+		if (TextFilterService.getInstance().isFiltered(reg.name, true)) {
 			// Invalid name
 			RegistrationResultData resp = new RegistrationResultData();
 			resp.suggestions = null;

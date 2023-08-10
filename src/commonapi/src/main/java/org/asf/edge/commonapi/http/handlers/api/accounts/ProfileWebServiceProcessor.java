@@ -155,8 +155,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 		ProfileData profile = getProfile(tkn.saveID, account, req, false);
 
 		// Check filter
-		if (TextFilterService.getInstance().isFiltered(account.getSave(profile.id).getUsername(),
-				account.isStrictChatFilterEnabled())) {
+		if (TextFilterService.getInstance().isFiltered(account.getSave(profile.id).getUsername(), true)) {
 			// Filtered
 			if (profile.avatar.avatarData.has("DisplayName"))
 				profile.avatar.avatarData.remove("DisplayName");
@@ -203,7 +202,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 			ProfileData profile = getProfile(save.getSaveID(), save.getAccount(), req, true);
 
 			// Check filter
-			if (TextFilterService.getInstance().isFiltered(save.getUsername(), account.isStrictChatFilterEnabled())) {
+			if (TextFilterService.getInstance().isFiltered(save.getUsername(), true)) {
 				// Filtered
 				if (profile.avatar.avatarData.has("DisplayName"))
 					profile.avatar.avatarData.set("DisplayName", new TextNode(TextFilterService.getInstance()
@@ -219,8 +218,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 		ProfileData profile = getProfile(save.getSaveID(), account, req, false);
 
 		// Check filter
-		if (TextFilterService.getInstance().isFiltered(account.getSave(profile.id).getUsername(),
-				account.isStrictChatFilterEnabled())) {
+		if (TextFilterService.getInstance().isFiltered(account.getSave(profile.id).getUsername(), true)) {
 			// Filtered
 			if (profile.avatar.avatarData.has("DisplayName"))
 				profile.avatar.avatarData.remove("DisplayName");
@@ -370,7 +368,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 		}
 
 		// Check filter
-		if (TextFilterService.getInstance().isFiltered(save.getUsername(), account.isStrictChatFilterEnabled())) {
+		if (TextFilterService.getInstance().isFiltered(save.getUsername(), true)) {
 			// Force name change
 			if (profile.avatar.avatarData != null && profile.avatar.avatarData.has("DisplayName"))
 				profile.avatar.avatarData.set("DisplayName", new TextNode("Viking-" + save.getSaveID()));

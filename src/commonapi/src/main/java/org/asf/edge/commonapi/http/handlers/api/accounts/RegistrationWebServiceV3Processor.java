@@ -153,8 +153,7 @@ public class RegistrationWebServiceV3Processor extends EdgeWebService<EdgeCommon
 		}
 
 		// Check filters
-		if (TextFilterService.getInstance().isFiltered(registration.childList[0].childName,
-				registration.childList[0].age < 13)) {
+		if (TextFilterService.getInstance().isFiltered(registration.childList[0].childName, true)) {
 			// Error
 			RegistrationResultData resp = new RegistrationResultData();
 			resp.status = LoginStatusType.InvalidUserName;
@@ -227,13 +226,35 @@ public class RegistrationWebServiceV3Processor extends EdgeWebService<EdgeCommon
 		}
 
 		// Check if name is taken
-		if (manager.isUsernameTaken(registration.childList[0].childName)) {
-			// Error
-			RegistrationResultData resp = new RegistrationResultData();
-			resp.status = LoginStatusType.DuplicateUserName;
-			setResponseContent("text/xml",
-					req.generateEncryptedResponse(req.generateXmlValue("RegistrationResult", resp)));
-			return;
+		if (guestID != null) {
+			// Check guest account profiles
+			AccountObject guestAcc = manager.getGuestAccount(guestID);
+			boolean nameFound = false;
+			for (String id : guestAcc.getSaveIDs()) {
+				if (guestAcc.getSave(id).getUsername().equalsIgnoreCase(registration.childList[0].childName)) {
+					nameFound = true;
+					break;
+				}
+			}
+			if (!nameFound) {
+				if (manager.isUsernameTaken(registration.childList[0].childName)) {
+					// Error
+					RegistrationResultData resp = new RegistrationResultData();
+					resp.status = LoginStatusType.DuplicateUserName;
+					setResponseContent("text/xml",
+							req.generateEncryptedResponse(req.generateXmlValue("RegistrationResult", resp)));
+					return;
+				}
+			}
+		} else {
+			if (manager.isUsernameTaken(registration.childList[0].childName)) {
+				// Error
+				RegistrationResultData resp = new RegistrationResultData();
+				resp.status = LoginStatusType.DuplicateUserName;
+				setResponseContent("text/xml",
+						req.generateEncryptedResponse(req.generateXmlValue("RegistrationResult", resp)));
+				return;
+			}
 		}
 
 		// Find guest account

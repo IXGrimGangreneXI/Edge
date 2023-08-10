@@ -348,7 +348,7 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 			try {
 				// Create prepared statement
 				var statement = conn.prepareStatement(
-						"SELECT DATA FROM SAVESPECIFICPLAYERDATA WHERE SVID = ? AND DATAKEY = ? AND PARENT = ? AND PARENTCONTAINER = ?");
+						"SELECT DATA FROM SAVESPECIFICPLAYERDATA_V2 WHERE SVID = ? AND DATAKEY = ? AND PARENT = ? AND PARENTCONTAINER = ?");
 				statement.setString(1, id);
 				statement.setString(2, "accountid");
 				statement.setString(3, "");

@@ -111,12 +111,14 @@ public class HttpUpgradeUtil {
 		if (responseHeadersOutput.containsKey("Upgrade")
 				&& !responseHeadersOutput.get("Upgrade").equals(expectedResponseProtocol)) {
 			conn.close();
-			throw new IOException("Server response used an invalid protocol: " + expectedResponseProtocol + ".");
+			throw new IOException(
+					"Server response used an invalid protocol: " + responseHeadersOutput.get("Upgrade") + ".");
 		}
 		if (responseHeadersOutput.containsKey("upgrade")
 				&& !responseHeadersOutput.get("upgrade").equals(expectedResponseProtocol)) {
 			conn.close();
-			throw new IOException("Server response used an invalid protocol: " + expectedResponseProtocol + ".");
+			throw new IOException(
+					"Server response used an invalid protocol: " + responseHeadersOutput.get("upgrade") + ".");
 		}
 
 		// Return connection

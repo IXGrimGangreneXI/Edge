@@ -139,7 +139,7 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 		}
 
 		// Check filters
-		if (TextFilterService.getInstance().isFiltered(name, acc.isStrictChatFilterEnabled()))
+		if (TextFilterService.getInstance().isFiltered(name, true))
 			return false;
 
 		// Perform update

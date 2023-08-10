@@ -225,7 +225,7 @@ public abstract class BasicAccountObject extends AccountObject {
 		}
 
 		// Check filters
-		if (TextFilterService.getInstance().isFiltered(name, isStrictChatFilterEnabled()))
+		if (TextFilterService.getInstance().isFiltered(name, true))
 			return false;
 
 		// Actually update
@@ -285,7 +285,7 @@ public abstract class BasicAccountObject extends AccountObject {
 			return false;
 
 		// Check filters
-		if (TextFilterService.getInstance().isFiltered(newName, isStrictChatFilterEnabled()))
+		if (TextFilterService.getInstance().isFiltered(newName, true))
 			return false;
 
 		// Update username
@@ -381,7 +381,7 @@ public abstract class BasicAccountObject extends AccountObject {
 			return null;
 
 		// Check filters
-		if (TextFilterService.getInstance().isFiltered(username, isStrictChatFilterEnabled()))
+		if (TextFilterService.getInstance().isFiltered(username, true))
 			return null;
 
 		// Generate save ID
