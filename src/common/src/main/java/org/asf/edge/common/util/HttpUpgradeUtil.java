@@ -7,11 +7,10 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 
 public class HttpUpgradeUtil {
 
@@ -36,13 +35,8 @@ public class HttpUpgradeUtil {
 		if (!u.getProtocol().equals("http") && !u.getProtocol().equals("https"))
 			throw new IOException(
 					"Unsupported protocol for protocol Upgrade to binary communication: " + u.getProtocol());
-		Socket conn;
-		try {
-			conn = (u.getProtocol().equals("http") ? new Socket(u.getHost(), u.getPort())
-					: SSLContext.getInstance("TLS").getSocketFactory().createSocket(u.getHost(), u.getPort()));
-		} catch (NoSuchAlgorithmException e) {
-			throw new IOException("Failed to setup encryption", e);
-		}
+		Socket conn = (u.getProtocol().equals("http") ? new Socket(u.getHost(), u.getPort())
+				: SSLSocketFactory.getDefault().createSocket(u.getHost(), u.getPort()));
 
 		// Set content-length header if needed
 		if (body != null && length != -1) {
