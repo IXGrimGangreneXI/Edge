@@ -319,7 +319,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 		if (!minimal) {
 			// Load reward multipliers
 			ArrayList<RewardMultiplierBlock> multipliers = new ArrayList<RewardMultiplierBlock>();
-			for (RankMultiplierInfo m : AchievementManager.getInstance().getServerwideRankMultipliers()) {
+			for (RankMultiplierInfo m : AchievementManager.getInstance().getUserRankMultipliers(save)) {
 				// Add
 				RewardMultiplierBlock multiplier = new RewardMultiplierBlock();
 				multiplier.expiryTime = fmt.format(new Date(m.getExpiryTime()));
