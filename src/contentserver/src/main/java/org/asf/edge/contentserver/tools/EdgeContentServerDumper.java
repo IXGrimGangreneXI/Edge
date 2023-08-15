@@ -38,6 +38,9 @@ public class EdgeContentServerDumper {
 	private static String[] tdEncryptedFiles = new String[] { "DWADragonsMain.xml" };
 	private static String[] retainFiles = new String[0];
 
+	private static boolean dryRun = false;
+	private static ArrayList<String> assetsToDownload = new ArrayList<String>();
+
 	private static String versionSecretFile = "\n" + "#\n"
 			+ "# This file defines the secret used to encrypt the manifest sent to the client\n"
 			+ "# Its version-specific likely, for %ver% its %secret%\n" + "#\n" + "\n" + "xmlsecret=%secret%";
@@ -46,9 +49,9 @@ public class EdgeContentServerDumper {
 		// Check arguments
 		if (args.length < 7) {
 			System.err.println(
-					"Missing arguments: \"<server>\" \"<version>\" \"<platform>\" \"<key>\" \"<output>\" \"<new-server-url>\" <overwrite true/false> [\"<file name to retain>\" ...]");
+					"Missing arguments: \"<server>\" \"<version>\" \"<platform>\" \"<key>\" \"<output>\" \"<new-server-url>\" <overwrite true/false> [<dry run true/false>] [\"<file name to retain>\" ...]");
 			System.err.println(
-					"Example arguments: \"http://media.jumpstart.com/\" \"3.31.0\" \"WIN\" \"C92EC1AA-54CD-4D0C-A8D5-403FCCF1C0BD\" \"asset-archive\" \"https://example.com/sod-archive/\" true");
+					"Example arguments: \"http://media.jumpstart.com/\" \"3.31.0\" \"WIN\" \"C92EC1AA-54CD-4D0C-A8D5-403FCCF1C0BD\" \"asset-archive\" \"https://example.com/sod-archive/\" false false");
 			System.err.println("");
 			System.err.println(
 					"The server url can be found in the client's resources.assets, the url before 'DWADragonsMain_SodStaging' is where the DWADragonsMain.xml file is pulled from.");
@@ -62,40 +65,54 @@ public class EdgeContentServerDumper {
 			args[0] += "/";
 		if (!args[5].endsWith("/"))
 			args[5] += "/";
-		retainFiles = new String[args.length - 7];
-		for (int i = 7; i < args.length; i++) {
-			retainFiles[i - 7] = args[i];
+		if (args.length >= 8)
+			dryRun = args[7].equalsIgnoreCase("true");
+		retainFiles = new String[args.length - 8];
+		for (int i = 8; i < args.length; i++) {
+			retainFiles[i - 8] = args[i];
 		}
 
 		// Create output
-		System.out.println("Creating output...");
+		if (!dryRun)
+			System.out.println("Creating output...");
 		File output = new File(args[4], "DWADragonsUnity/" + args[2] + "/" + args[1]);
-		output.mkdirs();
-		System.out.println("Saving to " + output.getPath() + "!");
-		System.out.println("Saving key...");
-		Files.writeString(new File(output, "versionxmlsecret.conf").toPath(),
-				versionSecretFile.replace("%secret%", args[3]).replace("%plat%", args[2]).replace("%ver%", args[1]));
+		if (!dryRun)
+			output.mkdirs();
+		if (!dryRun)
+			System.out.println("Saving to " + output.getPath() + "!");
+		else
+			System.out.println("Output is " + output.getPath() + "!");
+		if (!dryRun) {
+			System.out.println("Saving key...");
+			Files.writeString(new File(output, "versionxmlsecret.conf").toPath(), versionSecretFile
+					.replace("%secret%", args[3]).replace("%plat%", args[2]).replace("%ver%", args[1]));
+		}
 
 		// Download serverdown
 		File serverDown = new File(args[4], "ServerDown.xml");
 		if (!serverDown.exists()) {
-			// Build url
-			String url = args[0] + "ServerDown.xml";
-			File outputFile = serverDown;
-			outputFile.getParentFile().mkdirs();
-			System.out.println("Downloading: " + url + " -> " + outputFile.getPath());
+			if (!dryRun) {
+				// Build url
+				String url = args[0] + "ServerDown.xml";
+				File outputFile = serverDown;
+				outputFile.getParentFile().mkdirs();
+				System.out.println("Downloading: " + url + " -> " + outputFile.getPath());
 
-			// Open output
-			InputStream strm = new URL(url).openStream();
-			FileOutputStream fO = new FileOutputStream(outputFile);
-			strm.transferTo(fO);
-			fO.close();
+				// Open output
+				InputStream strm = new URL(url).openStream();
+				FileOutputStream fO = new FileOutputStream(outputFile);
+				strm.transferTo(fO);
+				fO.close();
+			} else
+				assetsToDownload.add("ServerDown.xml");
 		}
 
 		// Download manifest
-		System.out.println("Downloading manifest...");
-		downloadFile(args[0], args[1], args[2], args[3], output, "DWADragonsMain.xml", "", "",
-				args[6].equalsIgnoreCase("true"));
+		if (!dryRun)
+			System.out.println("Downloading manifests...");
+		else
+			System.out.println("Verifying manifests...");
+		String manifest = downloadString(args[0], args[1], args[2], args[3], "DWADragonsMain.xml", "");
 
 		// Read XML into memory
 		System.out.println("Loading manifest...");
@@ -114,7 +131,7 @@ public class EdgeContentServerDumper {
 				args[5]
 
 		};
-		String xml = Files.readString(new File(output, "DWADragonsMain.xml").toPath());
+		String xml = manifest;
 		for (String u2 : urlsToSwap) {
 			if (xml.contains(u2)) {
 				xml = xml.replace(u2, args[0]);
@@ -127,7 +144,7 @@ public class EdgeContentServerDumper {
 
 		// Modify
 		System.out.println("Modifying manifest...");
-		xml = Files.readString(new File(output, "DWADragonsMain.xml").toPath());
+		xml = manifest;
 		urlsToSwap = new String[] {
 
 				// HTTPS JS media
@@ -151,12 +168,15 @@ public class EdgeContentServerDumper {
 		}
 
 		// Save
-		if (!new File(output, "DWADragonsMain.xml").exists())
+		if (!dryRun && !new File(output, "DWADragonsMain.xml").exists())
 			Files.writeString(new File(output, "DWADragonsMain.xml").toPath(), xml);
 
 		// Download main asset
 		if (conf.manifests != null && conf.manifests.length != 0) {
-			System.out.println("Downloading main assets...");
+			if (!dryRun)
+				System.out.println("Downloading main assets...");
+			else
+				System.out.println("Verifying main assets...");
 			downloadFileEachQuality(args[0], args[1], args[2], args[3], output, "dwadragonsmain", "",
 					"?v=00000000000000000000000000000000", args[6].equalsIgnoreCase("true"));
 			for (String man : conf.manifests)
@@ -175,10 +195,10 @@ public class EdgeContentServerDumper {
 				conf, new File(args[4]), args[5], args[6].equalsIgnoreCase("true"));
 
 		// Download question files
-		System.out.println("Downloading questiondata assets...");
-
-		// Download item assets
-		System.out.println("Downloading item assets...");
+		if (!dryRun)
+			System.out.println("Downloading questiondata assets...");
+		else
+			System.out.println("Verifying questiondata assets...");
 		InputStream strm = EdgeContentServerDumper.class.getClassLoader().getResourceAsStream("questiondata.xml");
 		String data = new String(strm.readAllBytes(), "UTF-8");
 		strm.close();
@@ -201,6 +221,12 @@ public class EdgeContentServerDumper {
 			}
 		}
 
+		// Download item data
+		if (!dryRun)
+			System.out.println("Downloading item assets...");
+		else
+			System.out.println("Verifying item assets...");
+
 		// Load XML
 		strm = ItemManagerImpl.class.getClassLoader().getResourceAsStream("itemdata/itemdefs.xml");
 		data = new String(strm.readAllBytes(), "UTF-8");
@@ -222,7 +248,17 @@ public class EdgeContentServerDumper {
 		}
 
 		// Done!
-		System.out.println("Finished!");
+		if (!dryRun)
+			System.out.println("Finished!");
+		else {
+			System.out.println();
+			System.out.println(assetsToDownload.size() + " files to download:");
+			for (String file : assetsToDownload) {
+				if (file.startsWith("/"))
+					file = file.substring(1);
+				System.out.println(" - " + file);
+			}
+		}
 	}
 
 	private static void downloadAsset(String asset, String server, File outputRoot, String version, String platform,
@@ -244,20 +280,34 @@ public class EdgeContentServerDumper {
 			File outputFile = new File(outputRoot, path2 + ".tmp");
 
 			// Download image
-			System.out.println("Downloading: " + asset + " -> " + new File(outputRoot, path2).getPath());
-			try {
-				outputFile.getParentFile().mkdirs();
-				InputStream strmI = asU.openStream();
-				FileOutputStream fO = new FileOutputStream(outputFile);
-				strmI.transferTo(fO);
-				fO.close();
+			if (dryRun) {
+				System.out.println("Will download: " + asset + " -> " + dest.getPath());
+				if (asset.startsWith("https://media.jumpstart.com/"))
+					assetsToDownload.add(asset.substring("https://media.jumpstart.com/".length()));
+				else if (asset.startsWith("http://media.jumpstart.com/"))
+					assetsToDownload.add(asset.substring("http://media.jumpstart.com/".length()));
+				else if (asset.startsWith("https://media.schoolofdragons.com/"))
+					assetsToDownload.add(asset.substring("https://media.schoolofdragons.com/".length()));
+				else if (asset.startsWith("http://media.schoolofdragons.com/"))
+					assetsToDownload.add(asset.substring("http://media.schoolofdragons.com/".length()));
+				else if (asset.startsWith(server))
+					assetsToDownload.add(asset.substring(server.length()));
+			} else {
+				System.out.println("Downloading: " + asset + " -> " + dest.getPath());
+				try {
+					outputFile.getParentFile().mkdirs();
+					InputStream strmI = asU.openStream();
+					FileOutputStream fO = new FileOutputStream(outputFile);
+					strmI.transferTo(fO);
+					fO.close();
 
-				// Finish
-				if (dest.exists())
-					dest.delete();
-				outputFile.renameTo(dest);
-			} catch (IOException e) {
-				System.err.println("Failure! " + asset + " was not downloaded!");
+					// Finish
+					if (dest.exists())
+						dest.delete();
+					outputFile.renameTo(dest);
+				} catch (IOException e) {
+					System.err.println("Failure! " + asset + " was not downloaded!");
+				}
 			}
 
 			// Download for each quality level
@@ -265,61 +315,76 @@ public class EdgeContentServerDumper {
 					+ ("/" + path).replace("/Mid/", "/Low/") + "/" + path2 + ".tmp");
 			dest = new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version
 					+ ("/" + path).replace("/Mid/", "/Low/") + "/" + path2);
-			System.out.println("Downloading: " + asset + " -> " + new File(outputRoot, "DWADragonsUnity/" + platform
-					+ "/" + version + ("/" + path).replace("/Mid/", "/Low/") + "/" + path2).getPath());
-			try {
-				outputFile.getParentFile().mkdirs();
-				InputStream strmI = asU.openStream();
-				FileOutputStream fO = new FileOutputStream(outputFile);
-				strmI.transferTo(fO);
-				fO.close();
+			if (dryRun) {
+				System.out.println("Will download: " + asset + " -> " + dest.getPath());
+				assetsToDownload.add("DWADragonsUnity/" + platform + "/" + version
+						+ ("/" + path).replace("/Mid/", "/Low/") + "/" + path2);
+			} else {
+				System.out.println("Downloading: " + asset + " -> " + dest.getPath());
+				try {
+					outputFile.getParentFile().mkdirs();
+					InputStream strmI = asU.openStream();
+					FileOutputStream fO = new FileOutputStream(outputFile);
+					strmI.transferTo(fO);
+					fO.close();
 
-				// Finish
-				if (dest.exists())
-					dest.delete();
-				outputFile.renameTo(dest);
-			} catch (IOException e) {
-				System.err.println("Failure! " + asset + " was not downloaded!");
+					// Finish
+					if (dest.exists())
+						dest.delete();
+					outputFile.renameTo(dest);
+				} catch (IOException e) {
+					System.err.println("Failure! " + asset + " was not downloaded!");
+				}
 			}
 			outputFile = new File(outputRoot,
 					"DWADragonsUnity/" + platform + "/" + version + "/" + path + "/" + path2 + ".tmp");
 			dest = new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version + "/" + path + "/" + path2);
-			System.out.println("Downloading: " + asset + " -> "
-					+ new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version + "/" + path + "/" + path2)
-							.getPath());
-			try {
-				outputFile.getParentFile().mkdirs();
-				InputStream strmI = asU.openStream();
-				FileOutputStream fO = new FileOutputStream(outputFile);
-				strmI.transferTo(fO);
-				fO.close();
+			if (dryRun) {
+				System.out.println("Will download: " + asset + " -> " + dest.getPath());
+				assetsToDownload.add("DWADragonsUnity/" + platform + "/" + version + "/" + path + "/" + path2);
+			} else {
+				System.out.println("Downloading: " + asset + " -> "
+						+ new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version + "/" + path + "/" + path2)
+								.getPath());
+				try {
+					outputFile.getParentFile().mkdirs();
+					InputStream strmI = asU.openStream();
+					FileOutputStream fO = new FileOutputStream(outputFile);
+					strmI.transferTo(fO);
+					fO.close();
 
-				// Finish
-				if (dest.exists())
-					dest.delete();
-				outputFile.renameTo(dest);
-			} catch (IOException e) {
-				System.err.println("Failure! " + asset + " was not downloaded!");
+					// Finish
+					if (dest.exists())
+						dest.delete();
+					outputFile.renameTo(dest);
+				} catch (IOException e) {
+					System.err.println("Failure! " + asset + " was not downloaded!");
+				}
 			}
 			outputFile = new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version
 					+ ("/" + path).replace("/Mid/", "/High/") + "/" + path2 + ".tmp");
 			dest = new File(outputRoot, "DWADragonsUnity/" + platform + "/" + version
 					+ ("/" + path).replace("/Mid/", "/High/") + "/" + path2);
-			System.out.println("Downloading: " + asset + " -> " + new File(outputRoot, "DWADragonsUnity/" + platform
-					+ "/" + version + ("/" + path).replace("/Mid/", "/High/") + "/" + path2).getPath());
-			try {
-				outputFile.getParentFile().mkdirs();
-				InputStream strmI = asU.openStream();
-				FileOutputStream fO = new FileOutputStream(outputFile);
-				strmI.transferTo(fO);
-				fO.close();
+			if (dryRun) {
+				System.out.println("Will download: " + asset + " -> " + dest.getPath());
+				assetsToDownload.add("DWADragonsUnity/" + platform + "/" + version
+						+ ("/" + path).replace("/Mid/", "/High/") + "/" + path2);
+			} else {
+				System.out.println("Downloading: " + asset + " -> " + dest.getPath());
+				try {
+					outputFile.getParentFile().mkdirs();
+					InputStream strmI = asU.openStream();
+					FileOutputStream fO = new FileOutputStream(outputFile);
+					strmI.transferTo(fO);
+					fO.close();
 
-				// Finish
-				if (dest.exists())
-					dest.delete();
-				outputFile.renameTo(dest);
-			} catch (IOException e) {
-				System.err.println("Failure! " + asset + " was not downloaded!");
+					// Finish
+					if (dest.exists())
+						dest.delete();
+					outputFile.renameTo(dest);
+				} catch (IOException e) {
+					System.err.println("Failure! " + asset + " was not downloaded!");
+				}
 			}
 		}
 	}
@@ -343,26 +408,22 @@ public class EdgeContentServerDumper {
 		// Load asset manifest
 		String manData;
 		File manFile;
-		File newManFile;
 		try {
 			System.out.println(
 					"Downloading asset list file... Downloading " + manifest.replace("/Mid/", "/" + level + "/"));
-			downloadFile(server, version, platform, key, output, manifest.replace("/Mid/", "/" + level + "/"), ".new",
-					"?v=00000000000000000000000000000000", true);
+			String assetListManTxt = downloadString(server, version, platform, key,
+					manifest.replace("/Mid/", "/" + level + "/"), "?v=00000000000000000000000000000000");
 			System.out.println(
 					"Parsing asset list... Reading file " + manifest.replace("/Mid/", "/" + level + "/") + "...");
-			manData = Files
-					.readString(new File(output, manifest.replace("/Mid/", "/" + level + "/") + ".new").toPath());
-			newManFile = new File(output, manifest.replace("/Mid/", "/" + level + "/") + ".new");
+			manData = assetListManTxt;
 			manFile = new File(output, manifest.replace("/Mid/", "/" + level + "/"));
 		} catch (IOException e) {
 			System.out.println("Downloading asset list file... Downloading " + manifest);
-			downloadFile(server, version, platform, key, output, manifest, "?v=00000000000000000000000000000000",
-					".new", true);
+			String assetListManTxt = downloadString(server, version, platform, key, manifest,
+					"?v=00000000000000000000000000000000");
 			System.out.println("Parsing asset list... Reading file " + manifest + "...");
-			manData = Files.readString(new File(output, manifest + ".new").toPath());
+			manData = assetListManTxt;
 			manFile = new File(output, manifest);
-			newManFile = new File(output, manifest + ".new");
 		}
 		AssetVersionManifestData assetData = mapper.readValue(manData, AssetVersionManifestData.class);
 
@@ -428,8 +489,8 @@ public class EdgeContentServerDumper {
 				}
 				oldData.assets = assets.values().toArray(t -> new AssetVersionBlock[t]);
 			}
-		} else
-			Files.copy(newManFile.toPath(), manFile.toPath()); // First time
+		} else if (!dryRun)
+			Files.writeString(manFile.toPath(), manData); // First time
 
 		// Download all assets
 		ArrayList<String> failed = new ArrayList<String>();
@@ -582,18 +643,22 @@ public class EdgeContentServerDumper {
 								File outputFile = new File(outputRoot, path2 + ".tmp");
 
 								// Download image
-								System.out.println(
-										"Downloading: " + screenU + " -> " + new File(outputRoot, path2).getPath());
-								outputFile.getParentFile().mkdirs();
-								InputStream strmI = screenU.openStream();
-								FileOutputStream fO = new FileOutputStream(outputFile);
-								strmI.transferTo(fO);
-								fO.close();
+								if (dryRun) {
+									System.out.println("Will download: " + screenU + " -> " + dest.getPath());
+									assetsToDownload.add(path2);
+								} else {
+									System.out.println("Downloading: " + screenU + " -> " + dest.getPath());
+									outputFile.getParentFile().mkdirs();
+									InputStream strmI = screenU.openStream();
+									FileOutputStream fO = new FileOutputStream(outputFile);
+									strmI.transferTo(fO);
+									fO.close();
 
-								// Finish
-								if (dest.exists())
-									dest.delete();
-								outputFile.renameTo(dest);
+									// Finish
+									if (dest.exists())
+										dest.delete();
+									outputFile.renameTo(dest);
+								}
 							} catch (IOException e) {
 								System.err.println("Failure! " + block.name + " was not downloaded!");
 								failed.add(block.name);
@@ -627,17 +692,22 @@ public class EdgeContentServerDumper {
 									File outputFile = new File(outputRoot, path2 + ".tmp");
 
 									// Download image
-									System.out.println("Downloading: " + promoUrl + " -> " + outputFile.getPath());
-									outputFile.getParentFile().mkdirs();
-									InputStream strmI = new URL(promoUrl).openStream();
-									FileOutputStream fO = new FileOutputStream(outputFile);
-									strmI.transferTo(fO);
-									fO.close();
+									if (dryRun) {
+										System.out.println("Will download: " + promoUrl + " -> " + dest.getPath());
+										assetsToDownload.add(path2);
+									} else {
+										System.out.println("Downloading: " + promoUrl + " -> " + dest.getPath());
+										outputFile.getParentFile().mkdirs();
+										InputStream strmI = new URL(promoUrl).openStream();
+										FileOutputStream fO = new FileOutputStream(outputFile);
+										strmI.transferTo(fO);
+										fO.close();
 
-									// Finish
-									if (dest.exists())
-										dest.delete();
-									outputFile.renameTo(dest);
+										// Finish
+										if (dest.exists())
+											dest.delete();
+										outputFile.renameTo(dest);
+									}
 								} catch (IOException e) {
 									System.err.println("Failure! " + promoUrl + " was not downloaded!");
 									failed.add(promoUrl);
@@ -654,10 +724,16 @@ public class EdgeContentServerDumper {
 
 				// Compute output
 				File outputFile = new File(output, path);
-				if ((!overwrite && (outputFile.exists() && (old != null && old.version < variant.version)))
-						|| Stream.of(retainFiles).anyMatch(t -> t.equalsIgnoreCase(outputFile.getName()))) {
+				if ((!overwrite && (outputFile.exists() && (old != null && old.version <= variant.version)))
+						|| (outputFile.exists()
+								&& Stream.of(retainFiles).anyMatch(t -> t.equalsIgnoreCase(outputFile.getName())))) {
 					System.out.println("Skipped: " + url);
 					continue;
+				} else if (dryRun) {
+					assetsToDownload.add(new URL(url).getPath());
+					System.out.println("Will download: " + url + " -> " + outputFile.getPath());
+					continue;
+
 				}
 				outputFile.getParentFile().mkdirs();
 				System.out.println("Downloading: " + url + " -> " + outputFile.getPath());
@@ -748,9 +824,11 @@ public class EdgeContentServerDumper {
 		}
 
 		// Apply
-		if (manFile.exists())
-			manFile.delete();
-		newManFile.renameTo(manFile);
+		if (!dryRun) {
+			if (manFile.exists())
+				manFile.delete();
+			Files.writeString(manFile.toPath(), manData);
+		}
 	}
 
 	private static void downloadFileEachQuality(String server, String version, String platform, String key, File output,
@@ -761,6 +839,52 @@ public class EdgeContentServerDumper {
 		downloadFile(server, version, platform, key, output, "High/" + file, outputSuffix, query, overwrite);
 	}
 
+	private static String downloadString(String server, String version, String platform, String key, String file,
+			String query) throws MalformedURLException, IOException {
+		// Build url
+		String url = server + "DWADragonsUnity/" + platform + "/" + version + "/" + file + query;
+		System.out.println("Downloading: " + url);
+		if (dryRun)
+			assetsToDownload.add("DWADragonsUnity/" + platform + "/" + version + "/" + file);
+
+		// Download
+		String fileF = file;
+		InputStream strm = new URL(url).openStream();
+		if (Stream.of(tdEncryptedFiles).anyMatch(t -> t.equals(fileF))) {
+			// Check if this is a encrypted manifest
+			String man = new String(strm.readAllBytes(), "UTF-8");
+			strm.close();
+			if (man.matches("^([A-Za-z0-9+\\/]{4})*([A-Za-z0-9+\\/]{3}=|[A-Za-z0-9+\\/]{2}==)?$")) {
+				// Decrypt this file
+
+				// Compute key
+				byte[] keyHash;
+				try {
+					MessageDigest digest = MessageDigest.getInstance("MD5");
+					keyHash = digest.digest(key.getBytes("UTF-8"));
+				} catch (NoSuchAlgorithmException e) {
+					throw new RuntimeException(e);
+				}
+
+				// Read data
+				byte[] data = Base64.getDecoder().decode(man);
+				strm = new ByteArrayInputStream(TripleDesUtil.decrypt(data, keyHash));
+			} else {
+				// Mark exception for this file
+				strm = new ByteArrayInputStream(man.getBytes("UTF-8"));
+			}
+		}
+
+		// Read
+		byte[] data = strm.readAllBytes();
+
+		// Close stream
+		strm.close();
+
+		// Return
+		return new String(data, "UTF-8");
+	}
+
 	private static void downloadFile(String server, String version, String platform, String key, File output,
 			String file, String outputSuffix, String query, boolean overwrite)
 			throws MalformedURLException, IOException {
@@ -769,6 +893,10 @@ public class EdgeContentServerDumper {
 		File outputFile = new File(output, file + outputSuffix);
 		if (!overwrite && outputFile.exists()) {
 			System.out.println("Skipped: " + url);
+			return;
+		} else if (dryRun) {
+			System.out.println("Will download: " + url + " -> " + outputFile.getPath());
+			assetsToDownload.add("DWADragonsUnity/" + platform + "/" + version + "/" + file);
 			return;
 		}
 		outputFile.getParentFile().mkdirs();
