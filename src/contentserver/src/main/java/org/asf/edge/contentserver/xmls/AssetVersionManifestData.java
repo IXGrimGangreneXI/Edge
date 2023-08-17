@@ -57,7 +57,7 @@ public class AssetVersionManifestData {
 
 		public String locale;
 
-		@JacksonXmlProperty(localName = "FileSize", isAttribute = true)
+		@JsonProperty("FileSize")
 		public long size;
 
 	}

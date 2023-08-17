@@ -724,7 +724,7 @@ public class EdgeContentServerDumper {
 
 				// Compute output
 				File outputFile = new File(output, path);
-				if ((!overwrite && (outputFile.exists() && (old != null && old.version <= variant.version)))
+				if ((!overwrite && (outputFile.exists() && (old != null && old.version != variant.version)))
 						|| (outputFile.exists()
 								&& Stream.of(retainFiles).anyMatch(t -> t.equalsIgnoreCase(outputFile.getName())))) {
 					System.out.println("Skipped: " + url);

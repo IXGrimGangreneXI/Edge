@@ -124,7 +124,7 @@ public class EdgeContentServer implements IBaseServer {
 		logger.debug("Configuring server request handlers...");
 		server.registerProcessor(new ContentServerRequestHandler(dataPath, config.contentRequestListenPath,
 				new IPreProcessor[] { new ApplicationManifestPreProcessor(), new ServerDownPreprocessor(config) },
-				this));
+				this)); // TODO: allow expansion
 	}
 
 	/**

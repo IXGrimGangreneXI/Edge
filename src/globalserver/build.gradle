@@ -84,6 +84,11 @@ task installation () {
 				rename arti.file.getName(), arti.name + (arti.getClassifier() != null && !arti.getClassifier().isEmpty() ? "-" + arti.getClassifier() : "") + "." + arti.getExtension()
 				into "../../build/pkg/libs"
 			}
+			copy {
+				from arti.file
+				rename arti.file.getName(), arti.name + (arti.getClassifier() != null && !arti.getClassifier().isEmpty() ? "-" + arti.getClassifier() : "") + "." + arti.getExtension()
+				into "../../build/pkg-sentinel/baseserver/libs"
+			}
 		}
 		for (def task : project.tasks) {
 			if (task instanceof AbstractArchiveTask) {
@@ -94,6 +99,11 @@ task installation () {
 					from task.getArchiveFile().get()
 					rename task.getArchiveFile().get().getAsFile().getName(), task.getArchiveBaseName().get() + (task.getArchiveClassifier().get() != null && !task.getArchiveClassifier().get().isEmpty() ? "-" + task.getArchiveClassifier().get() : "") + "." + task.getArchiveExtension().get()
 					into "../../build/pkg"
+				}
+				copy {
+					from task.getArchiveFile().get()
+					rename task.getArchiveFile().get().getAsFile().getName(), task.getArchiveBaseName().get() + (task.getArchiveClassifier().get() != null && !task.getArchiveClassifier().get().isEmpty() ? "-" + task.getArchiveClassifier().get() : "") + "." + task.getArchiveExtension().get()
+					into "../../build/pkg-sentinel/baseserver"
 				}
 			}
 		}

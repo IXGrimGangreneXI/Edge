@@ -1,9 +1,12 @@
 package org.asf.edge.common;
 
+import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.UUID;
+
+import org.asf.edge.common.util.LogWindow;
 
 import com.google.gson.JsonParser;
 
@@ -87,6 +90,13 @@ public class CommonInit {
 			debugMode = true;
 		} else {
 			System.setProperty("log4j2.configurationFile", CommonInit.class.getResource("/log4j2.xml").toString());
+		}
+
+		// Open graphical
+		if (System.getProperty("openGuiLog") != null && !System.getProperty("openGuiLog").equalsIgnoreCase("false")) {
+			if (!GraphicsEnvironment.isHeadless()) {
+				LogWindow.WindowAppender.showWindow();
+			}
 		}
 	}
 

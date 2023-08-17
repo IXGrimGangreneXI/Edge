@@ -5,4 +5,6 @@ Commands to set up dependencies:
  - Connective:
    mkdir deps
    git clone https://github.com/SkySwimmer/connective-http deps/connective-http
- 
+ - Razorwhip:
+   mkdir deps
+   git clone https://github.com/SkySwimmer/Razorwhip deps/razorwhip
