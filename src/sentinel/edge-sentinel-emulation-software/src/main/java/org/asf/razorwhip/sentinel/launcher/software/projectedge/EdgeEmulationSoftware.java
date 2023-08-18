@@ -203,7 +203,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				errorCallback.accept("Remote server is not online.");
 				return;
 			}
-		} else if (launchMode.equals("remote-client")) {
+		} else if (launchMode.equals("local-client")) {
 			try {
 				// Open URL connection
 				HttpURLConnection conn = (HttpURLConnection) new URL(endpointsLocal.commonServiceEndpoint
