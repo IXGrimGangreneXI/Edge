@@ -96,6 +96,7 @@ public class CommonInit {
 		if (System.getProperty("openGuiLog") != null && !System.getProperty("openGuiLog").equalsIgnoreCase("false")) {
 			if (!GraphicsEnvironment.isHeadless()) {
 				LogWindow.WindowAppender.showWindow();
+				Runtime.getRuntime().addShutdownHook(new Thread(() -> LogWindow.WindowAppender.closeWindow()));
 			}
 		}
 	}
