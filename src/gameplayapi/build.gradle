@@ -75,7 +75,7 @@ task installation () {
 		copy {
 			from "edge-gameplayapi"
 			from "edge-gameplayapi.bat"
-			into "../../build/gameplayapi"
+			into "../../build/gameplayapi/" + project.version
 		}
 		for (ResolvedArtifact arti : project.configurations.implementation.resolvedConfiguration.getResolvedArtifacts()) {
 			if (arti.getClassifier() != null)
@@ -83,7 +83,7 @@ task installation () {
 			copy {
 				from arti.file
 				rename arti.file.getName(), arti.name + (arti.getClassifier() != null && !arti.getClassifier().isEmpty() ? "-" + arti.getClassifier() : "") + "." + arti.getExtension()
-				into "../../build/gameplayapi/libs"
+				into "../../build/gameplayapi/" + project.version + "/libs"
 			}
 		}
 		for (def task : project.tasks) {
@@ -94,12 +94,19 @@ task installation () {
 				copy {
 					from task.getArchiveFile().get()
 					rename task.getArchiveFile().get().getAsFile().getName(), task.getArchiveBaseName().get() + (task.getArchiveClassifier().get() != null && !task.getArchiveClassifier().get().isEmpty() ? "-" + task.getArchiveClassifier().get() : "") + "." + task.getArchiveExtension().get()
-					into "../../build/gameplayapi"
+					into "../../build/gameplayapi/" + project.version
 				}
 			}
 		}
 	}
 }
+
+task pkg(type: Zip, dependsOn: installation) {
+	from "../../build/" + project.name + "/" + project.version
+	destinationDir = file("../../build/packages")
+	archiveBaseName = project.name
+}
+installation.finalizedBy project.tasks.pkg
 
 installation.dependsOn project.tasks.build
 build.finalizedBy installation

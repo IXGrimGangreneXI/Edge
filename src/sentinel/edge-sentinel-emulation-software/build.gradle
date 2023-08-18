@@ -15,14 +15,16 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 
 repositories {
-    mavenCentral()
-    flatDir {
+	mavenCentral()
+	flatDir {
        dirs '../../../libraries', '../../../fluid', '../../../deps'
-   }
+	}
 }
 
 jar {
 	from "../../../build/pkg-sentinel"
+	destinationDir = file("../../../build/sentinal-images-unsigned")
+	archiveExtension = "svp"
 }
 
 dependencies {
