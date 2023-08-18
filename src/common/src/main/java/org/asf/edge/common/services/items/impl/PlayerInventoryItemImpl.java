@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
+import org.asf.edge.common.entities.achivements.RankMultiplierInfo;
+import org.asf.edge.common.entities.achivements.RankTypeID;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
@@ -12,6 +14,7 @@ import org.asf.edge.common.events.items.InventoryItemQuantityUpdateEvent;
 import org.asf.edge.common.events.items.InventoryItemUsesUpdateEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonElement;
@@ -77,6 +80,26 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 		}
 	}
 
+	private void runItem() {
+		// Run multipliers
+		if (getItemDef().hasAttribute("RewardMultiplier")
+				&& getItemDef().getAttribute("RewardMultiplier").getValue().asText().equalsIgnoreCase("true")
+				&& data.getSave() != null) {
+			// Load
+			int factor = getItemDef().getAttribute("MultiplierFactor").getValue().asInt();
+			int rewardType = getItemDef().getAttribute("MultiplierRewardType").getValue().asInt();
+			int effectTime = getItemDef().getAttribute("MultiplierEffectTime").getValue().asInt();
+
+			// Apply
+			AchievementManager.getInstance().addUserRankMultiplier(data.getSave(), new RankMultiplierInfo(
+					RankTypeID.getByTypeID(rewardType), factor, System.currentTimeMillis() + (effectTime * 1000)));
+		} else {
+			// Warn
+			LogManager.getLogger("ItemManager").warn(
+					"Item " + getItemDefID() + " was used but no known methods of item data execution were possible!");
+		}
+	}
+
 	@Override
 	public int getUniqueID() {
 		updateInfo();
@@ -131,6 +154,34 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 
 		// Write update
 		writeUpdate();
+	}
+
+	@Override
+	public boolean useItem(int uses) {
+		// Check
+		int usesLeft = getUses();
+		if (usesLeft == -1) {
+			usesLeft = 1;
+		}
+		if (uses > usesLeft)
+			return false; // Invalid
+
+		// Use the item
+		for (int i = 0; i < uses; i++) {
+			// Use the item
+			runItem();
+
+			// Remove item if no uses are left
+			usesLeft--;
+			if (usesLeft <= 0) {
+				remove(1);
+				if (quantity <= 0)
+					break;
+			}
+		}
+
+		// Return
+		return true;
 	}
 
 	@Override

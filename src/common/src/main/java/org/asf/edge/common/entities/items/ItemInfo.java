@@ -3,6 +3,7 @@ package org.asf.edge.common.entities.items;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -24,6 +25,7 @@ public class ItemInfo {
 	private String description;
 	private ObjectNode raw;
 	private ItemCategoryInfo[] categories;
+	private ItemAttributeInfo[] attributes;
 
 	private int costGems;
 	private int costCoins;
@@ -38,6 +40,33 @@ public class ItemInfo {
 		costGems = raw.get("ct2").asInt();
 
 		loadCategories();
+		loadAttributes();
+	}
+
+	private void loadAttributes() {
+		ObjectNode raw = getRawObject();
+		if (!raw.has("at")) {
+			attributes = new ItemAttributeInfo[0];
+			return;
+		}
+
+		// Go through attributes
+		ArrayList<ItemAttributeInfo> attrs = new ArrayList<ItemAttributeInfo>();
+		JsonNode node = raw.get("at");
+		if (node.isArray()) {
+			// Go through all nodes
+			for (JsonNode n : node) {
+				if (n.has("k") && n.has("v")) {
+					ItemAttributeInfo attr = new ItemAttributeInfo(n.get("k").asText(), n.get("v"));
+					attrs.add(attr);
+				}
+			}
+		} else if (node.has("k") && node.has("v")) {
+			// Go through single item
+			ItemAttributeInfo attr = new ItemAttributeInfo(node.get("k").asText(), node.get("v"));
+			attrs.add(attr);
+		}
+		attributes = attrs.toArray(t -> new ItemAttributeInfo[t]);
 	}
 
 	private void loadCategories() {
@@ -225,6 +254,38 @@ public class ItemInfo {
 	}
 
 	/**
+	 * Retrieves the item attributes
+	 * 
+	 * @return Array of ItemAttribute instances
+	 */
+	public ItemAttributeInfo[] getAttributes() {
+		return attributes;
+	}
+
+	/**
+	 * Checks if an attribute is present
+	 * 
+	 * @param key Attribute key
+	 * @return True if present, false otherwise
+	 */
+	public boolean hasAttribute(String key) {
+		return Stream.of(attributes).anyMatch(t -> t.getKey().equals(key));
+	}
+
+	/**
+	 * Retrieves attributes by key
+	 * 
+	 * @param key Attribute key
+	 * @return ItemAttributeInfo instance or null
+	 */
+	public ItemAttributeInfo getAttribute(String key) {
+		Optional<ItemAttributeInfo> attr = Stream.of(attributes).filter(t -> t.getKey().equals(key)).findFirst();
+		if (attr.isEmpty())
+			return null;
+		return attr.get();
+	}
+
+	/**
 	 * Retrieves the item ID
 	 * 
 	 * @return Item ID
@@ -270,5 +331,6 @@ public class ItemInfo {
 		costGems = raw.get("ct2").asInt();
 
 		loadCategories();
+		loadAttributes();
 	}
 }

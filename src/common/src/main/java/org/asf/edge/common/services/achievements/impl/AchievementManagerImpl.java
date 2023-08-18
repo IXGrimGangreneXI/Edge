@@ -346,11 +346,12 @@ public class AchievementManagerImpl extends AchievementManager {
 
 		// Go through each multiplier
 		for (RankMultiplierInfo m : getRankMultipliers(save)) {
-			if (m.isValid()) {
+			if (m.isValid() && m.getPointType().getPointTypeID() == type.getPointTypeID()) {
 				if (first)
 					factor = m.getMultiplicationFactor();
 				else
 					factor += m.getMultiplicationFactor();
+				first = false;
 			}
 		}
 
@@ -432,12 +433,28 @@ public class AchievementManagerImpl extends AchievementManager {
 				rewardMultipliers.setEntry("active", new JsonArray());
 
 			// Load multipliers
-			for (JsonElement ele : rewardMultipliers.getEntry("active").getAsJsonArray()) {
+			boolean edited = false;
+			JsonArray lst = rewardMultipliers.getEntry("active").getAsJsonArray();
+			ArrayList<JsonObject> multipliersToRemove = new ArrayList<JsonObject>();
+			for (JsonElement ele : lst) {
 				JsonObject multiplierInfo = ele.getAsJsonObject();
+
+				// Check expiry
+				if (multiplierInfo.get("expiry").getAsLong() < System.currentTimeMillis()) {
+					edited = true;
+					multipliersToRemove.add(multiplierInfo);
+				}
 
 				// Add
 				multipliers.add(new RankMultiplierInfo(RankTypeID.getByTypeID(multiplierInfo.get("typeID").getAsInt()),
 						multiplierInfo.get("factor").getAsInt(), multiplierInfo.get("expiry").getAsLong()));
+			}
+
+			// Save
+			if (edited) {
+				for (JsonObject m : multipliersToRemove)
+					lst.remove(m);
+				rewardMultipliers.setEntry("active", lst);
 			}
 		} catch (IOException e) {
 			logger.error("Failed to load user rank multipliers", e);
@@ -445,6 +462,40 @@ public class AchievementManagerImpl extends AchievementManager {
 
 		// Return
 		return multipliers.toArray(t -> new RankMultiplierInfo[t]);
+	}
+
+	@Override
+	public void addUserRankMultiplier(AccountSaveContainer save, RankMultiplierInfo multiplier) {
+		try {
+			AccountDataContainer rewardMultipliers = save.getSaveData().getChildContainer("reward_multipliers");
+			if (!rewardMultipliers.entryExists("active"))
+				rewardMultipliers.setEntry("active", new JsonArray());
+
+			// Find multiplier
+			JsonObject multiplierJ = null;
+			JsonArray lst = rewardMultipliers.getEntry("active").getAsJsonArray();
+			for (JsonElement ele : lst) {
+				JsonObject multiplierInfo = ele.getAsJsonObject();
+
+				// Check
+				if (multiplierInfo.get("typeID").getAsInt() == multiplier.getPointType().getPointTypeID())
+					multiplierJ = multiplierInfo;
+			}
+			if (multiplierJ == null) {
+				multiplierJ = new JsonObject();
+				lst.add(multiplierJ);
+			}
+
+			// Add fields
+			multiplierJ.addProperty("typeID", multiplier.getPointType().getPointTypeID());
+			multiplierJ.addProperty("factor", multiplier.getMultiplicationFactor());
+			multiplierJ.addProperty("expiry", multiplier.getExpiryTime());
+
+			// Save
+			rewardMultipliers.setEntry("active", lst);
+		} catch (IOException e) {
+			logger.error("Failed to add user rank multiplier", e);
+		}
 	}
 
 }

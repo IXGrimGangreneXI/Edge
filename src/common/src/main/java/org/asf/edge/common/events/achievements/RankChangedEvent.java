@@ -88,7 +88,9 @@ public class RankChangedEvent extends EventObject {
 	 * @return True if changed, false otherwise
 	 */
 	public boolean hasRankChanged() {
-		if (lastRank == null && newRank != null)
+		if (lastRank == null && newRank == null)
+			return false;
+		else if (lastRank == null && newRank != null)
 			return true;
 		else if (lastRank != null && newRank == null)
 			return true;

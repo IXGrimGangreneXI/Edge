@@ -973,6 +973,10 @@ public class QuestManagerImpl extends QuestManager {
 			// Update info
 			populateQuestInfoIfNeeded();
 
+			// Check
+			if (questInfoData.get("started").getAsBoolean())
+				return; // Already started but lets not cause sync errors
+
 			// Start quest
 			startQuest();
 
@@ -1114,7 +1118,7 @@ public class QuestManagerImpl extends QuestManager {
 
 			// Security checks
 			if (isCompleted() && (mission.repeatable == null || mission.repeatable.equalsIgnoreCase("false"))) {
-				// Invalid request
+				// Mission already completed
 				SetTaskStateResultData resp = new SetTaskStateResultData();
 				resp.success = false;
 				resp.status = SetTaskStateResultData.SetTaskStateResultStatuses.NON_REPEATABLE_MISSION;

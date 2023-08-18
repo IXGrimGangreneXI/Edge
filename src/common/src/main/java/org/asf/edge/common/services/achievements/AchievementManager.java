@@ -181,6 +181,14 @@ public abstract class AchievementManager extends AbstractService {
 	}
 
 	/**
+	 * Adds user-specific rank multipliers
+	 * 
+	 * @param save       User save
+	 * @param multiplier Multiplier to add
+	 */
+	public abstract void addUserRankMultiplier(AccountSaveContainer save, RankMultiplierInfo multiplier);
+
+	/**
 	 * Called to apply all rank modifiers
 	 * 
 	 * @param save  User save

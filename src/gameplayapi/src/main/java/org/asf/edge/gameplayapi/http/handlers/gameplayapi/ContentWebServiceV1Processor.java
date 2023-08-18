@@ -16,9 +16,14 @@ import org.asf.connective.RemoteClient;
 import org.asf.connective.TlsSecuredHttpServer;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.entities.items.ItemInfo;
+import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
+import org.asf.edge.common.entities.messages.WsMessage;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.Function;
+import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
@@ -26,9 +31,13 @@ import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.services.messages.PlayerMessenger;
+import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.xmls.messages.MessageInfoData;
+import org.asf.edge.common.xmls.messages.MessageInfoList;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
@@ -1360,6 +1369,94 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("CIRS", response));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult getDisplayNameByUserID(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Message queue request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return response(400, "Bad request");
+
+		// Load UUID
+		if (!req.payload.containsKey("userId"))
+			return ok("text/xml", req.generateXmlValue("string", "SYSTEM"));
+		String svID = req.payload.get("userId").toUpperCase();
+
+		// Find save
+		AccountSaveContainer save = manager.getSaveByID(svID);
+
+		// Get messenger
+		if (save == null)
+			return response(404, "Not found");
+
+		// Return
+		return ok("text/xml", req.generateXmlValue("string", save.getUsername()));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult useInventory(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Handle inventory request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return response(400, "Bad request");
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			return response(404, "Not found");
+		}
+
+		// Retrieve container info
+		AccountDataContainer data = account.getAccountData();
+		if (tkn.saveID != null)
+			data = account.getSave(tkn.saveID).getSaveData();
+
+		// Parse request
+		int itemUniqueID = Integer.parseInt(req.payload.get("userInventoryId"));
+		int uses = Integer.parseInt(req.payload.get("numberOfUses"));
+		int containerId = Integer.parseInt(req.payload.getOrDefault("ContainerId", "1"));
+
+		// Find item
+		PlayerInventory inv = itemManager.getCommonInventory(data);
+		PlayerInventoryContainer cont = inv.getContainer(containerId);
+		PlayerInventoryItem itm = cont.getItem(itemUniqueID);
+		if (itm == null) {
+			return ok("text/xml", req.generateXmlValue("boolean", false));
+		}
+
+		// Check uses
+		int usesLeft = itm.getUses();
+		if (usesLeft == -1) {
+			usesLeft = 1;
+		}
+
+		// Check
+		if (uses > usesLeft) {
+			// Not enough uses left
+			return ok("text/xml", req.generateXmlValue("boolean", false));
+		}
+
+		// Remove uses
+		if (!itm.useItem(uses)) {
+			// Failed to use item
+			return ok("text/xml", req.generateXmlValue("boolean", false));
+		}
+
+		// Return
+		return ok("text/xml", req.generateXmlValue("boolean", true));
 	}
 
 	private static ItemUpdateBlock[] appendTo(ItemUpdateBlock[] arr, ItemUpdateBlock block) {

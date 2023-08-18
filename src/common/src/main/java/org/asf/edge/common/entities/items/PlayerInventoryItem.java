@@ -85,4 +85,21 @@ public abstract class PlayerInventoryItem {
 		return ItemManager.getInstance().getItemDefinition(getItemDefID());
 	}
 
+	/**
+	 * Uses the item
+	 * 
+	 * @param uses Amount of times to use the item
+	 * @return True if successful, false otherwise
+	 */
+	public abstract boolean useItem(int uses);
+
+	/**
+	 * Uses the item
+	 * 
+	 * @return True if successful, false otherwise
+	 */
+	public boolean useItem() {
+		return useItem(1);
+	}
+
 }

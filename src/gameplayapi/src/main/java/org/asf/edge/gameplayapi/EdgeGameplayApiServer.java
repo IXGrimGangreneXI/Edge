@@ -34,6 +34,8 @@ import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
+import org.asf.edge.common.services.messages.WsMessageService;
+import org.asf.edge.common.services.messages.impl.WsMessageServiceImpl;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.util.LogWindow;
 import org.asf.edge.gameplayapi.http.handlers.edgespecific.EdgeApiService;
@@ -185,6 +187,12 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		ServiceManager.registerServiceImplementation(AchievementManager.class, new AchievementManagerImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(AchievementManager.class);
+
+		// Select message service
+		logger.info("Setting up message service...");
+		ServiceManager.registerServiceImplementation(WsMessageService.class, new WsMessageServiceImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(WsMessageService.class);
 
 		// Load filter
 		logger.info("Loading text filter...");

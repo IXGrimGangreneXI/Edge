@@ -5,10 +5,17 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.entities.achivements.RankTypeID;
+import org.asf.edge.common.entities.messages.defaultmessages.WsGenericMessage;
+import org.asf.edge.common.entities.messages.defaultmessages.WsPluginMessage;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.commondata.CommonDataManager;
+import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.common.services.textfilter.TextFilterService;
+import org.asf.edge.common.util.TaggedMessageUtils;
+import org.asf.edge.common.xmls.messages.MessageInfoData;
 import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.commands.IEdgeServerCommand;
 import org.asf.edge.gameplayapi.commands.TaskBasedCommand;
@@ -453,6 +460,185 @@ public class DebugCommands extends TaskBasedCommand {
 							throws IOException {
 						return "Response: "
 								+ TextFilterService.getInstance().isFiltered(args[0], args[1].equals("true"));
+					}
+
+				}, new IEdgeServerCommand() {
+
+					@Override
+					public String id() {
+						return "testmessages1";
+					}
+
+					@Override
+					public String syntax(CommandContext ctx) {
+						return "\"[message]\"";
+					}
+
+					@Override
+					public String description(CommandContext ctx) {
+						return "Test command for messaging";
+					}
+
+					@Override
+					public PermissionLevel permLevel() {
+						return PermissionLevel.OPERATOR;
+					}
+
+					@Override
+					public String permNode() {
+						return "commands.operator.debugcommands";
+					}
+
+					@Override
+					public String run(String[] args, CommandContext ctx, Logger logger,
+							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs)
+							throws IOException {
+						return "Result:\n" + new XmlMapper().writer().withDefaultPrettyPrinter()
+								.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL)
+								.withRootName("TaggedMessage")
+								.writeValueAsString(TaggedMessageUtils.parseTagged(args[0]));
+					}
+
+				}, new IEdgeServerCommand() {
+
+					@Override
+					public String id() {
+						return "testmessages2";
+					}
+
+					@Override
+					public String syntax(CommandContext ctx) {
+						return "";
+					}
+
+					@Override
+					public String description(CommandContext ctx) {
+						return "Test command for messaging";
+					}
+
+					@Override
+					public PermissionLevel permLevel() {
+						return PermissionLevel.OPERATOR;
+					}
+
+					@Override
+					public String permNode() {
+						return "commands.operator.debugcommands";
+					}
+
+					@Override
+					public String run(String[] args, CommandContext ctx, Logger logger,
+							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs)
+							throws IOException {
+						WsPluginMessage msg = new WsPluginMessage();
+						msg.messageData.put("abc", "def");
+						msg.messageData.put("e", "gh");
+						msg.messageData.put(";sl;sl;sl;", ";bb;bb;bb;bb;");
+						MessageInfoData obj = new MessageInfoData();
+						msg.serialize(obj);
+						WsPluginMessage rec = new WsPluginMessage();
+						rec.deserialize(obj);
+						return "Result:\n"
+								+ new XmlMapper().writer().withDefaultPrettyPrinter()
+										.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL)
+										.withRootName("PluginMessage").writeValueAsString(obj)
+								+ "\n\nDecoded: "
+								+ new XmlMapper().writer().withDefaultPrettyPrinter()
+										.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL)
+										.withRootName("PluginMessageData").writeValueAsString(rec.messageData);
+					}
+
+				}, new IEdgeServerCommand() {
+
+					@Override
+					public String id() {
+						return "sendmessage";
+					}
+
+					@Override
+					public String syntax(CommandContext ctx) {
+						return "\"<message>\"";
+					}
+
+					@Override
+					public String description(CommandContext ctx) {
+						return "Test command for messaging";
+					}
+
+					@Override
+					public PermissionLevel permLevel() {
+						return PermissionLevel.OPERATOR;
+					}
+
+					@Override
+					public String permNode() {
+						return "commands.operator.debugcommands";
+					}
+
+					@Override
+					public String run(String[] args, CommandContext ctx, Logger logger,
+							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs)
+							throws IOException {
+						// Check
+						WsGenericMessage msg = new WsGenericMessage();
+						msg.rawObject.typeID = 3;
+						msg.rawObject.messageContentMembers = args[0];
+						msg.rawObject.messageContentNonMembers = msg.rawObject.messageContentMembers;
+						WsMessageService.getInstance().getMessengerFor(ctx.getAccountObject()).sendSessionMessage(msg);
+						return "Sent";
+					}
+
+				}, new IEdgeServerCommand() {
+
+					@Override
+					public String id() {
+						return "addxp";
+					}
+
+					@Override
+					public String syntax(CommandContext ctx) {
+						return "<type> <amount>";
+					}
+
+					@Override
+					public String description(CommandContext ctx) {
+						return "Test command for XP";
+					}
+
+					@Override
+					public PermissionLevel permLevel() {
+						return PermissionLevel.OPERATOR;
+					}
+
+					@Override
+					public String permNode() {
+						return "commands.operator.debugcommands";
+					}
+
+					@Override
+					public String run(String[] args, CommandContext ctx, Logger logger,
+							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs)
+							throws IOException {
+						// Check
+						if (!ctx.getCommandMemory().containsKey("active_profile")) {
+							outputWriteLineCallback.accept(
+									"Error: no active profile, please use 'profiles select' before using this command");
+							return null;
+						}
+						AccountSaveContainer save = AccountManager.getInstance()
+								.getAccount(ctx.getCommandMemory().get("active_account").toString())
+								.getSave(ctx.getCommandMemory().get("active_profile").toString());
+						int type = Integer.parseInt(args[0]);
+						int amount = Integer.parseInt(args[1]);
+
+						// Show response
+						AchievementManager.getInstance().getRankForUser(save, RankTypeID.getByTypeID(type))
+								.addPoints(amount);
+						return "Response:\n" + new XmlMapper().writer().withDefaultPrettyPrinter()
+								.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL).withRootName("Rank")
+								.writeValueAsString(AchievementManager.getInstance().getRankForUser(save,
+										RankTypeID.getByTypeID(type)))
+								.trim();
 					}
 
 				}

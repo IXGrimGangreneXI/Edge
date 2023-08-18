@@ -22,6 +22,8 @@ import org.asf.edge.common.CommonInit;
 import org.asf.edge.common.IBaseServer;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
+import org.asf.edge.common.services.messages.WsMessageService;
+import org.asf.edge.common.services.messages.impl.WsMessageServiceImpl;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
@@ -193,6 +195,12 @@ public class EdgeCommonApiServer implements IBaseServer {
 		ServiceManager.registerServiceImplementation(ItemManager.class, new ItemManagerImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(ItemManager.class);
+
+		// Select message service
+		logger.info("Setting up message service...");
+		ServiceManager.registerServiceImplementation(WsMessageService.class, new WsMessageServiceImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(WsMessageService.class);
 
 		// Load filter
 		logger.info("Loading text filter...");

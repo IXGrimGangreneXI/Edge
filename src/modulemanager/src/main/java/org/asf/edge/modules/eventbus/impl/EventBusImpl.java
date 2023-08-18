@@ -20,9 +20,15 @@ public class EventBusImpl extends EventBus {
 	private EventBus parent;
 	private HashMap<String, ArrayList<Consumer<?>>> listeners = new HashMap<String, ArrayList<Consumer<?>>>();
 	private Logger eventLog = LogManager.getLogger("EVENTBUS");
+	private ArrayList<IEventReceiver> boundReceivers = new ArrayList<IEventReceiver>();
 
 	@Override
 	public void addAllEventsFromReceiver(IEventReceiver receiver) {
+		// Check
+		if (boundReceivers.contains(receiver))
+			return;
+		boundReceivers.add(receiver);
+
 		// Log subscription
 		eventLog.info("Registering all events in " + receiver.getClass().getTypeName() + "...");
 

@@ -183,7 +183,10 @@ public class LogWindow {
 					// Up
 					if (commandIndex < commandHistory.size()) {
 						commandIndex++;
-						textField.setText(commandHistory.get(commandIndex));
+						if (commandIndex < commandHistory.size())
+							textField.setText(commandHistory.get(commandIndex));
+						else
+							commandIndex--;
 					}
 					e.consume();
 				}
