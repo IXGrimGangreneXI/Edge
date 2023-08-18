@@ -202,7 +202,7 @@ public class CommandContext {
 		if (result != null) {
 			outputWriteLineCallback.accept(result);
 			if (logCommands)
-				logger.info(cmdStr + " (" + getAccountObject().getUsername() + ") : " + result);
+				logger.info(getAccountObject().getUsername() + " issued command: " + cmdStr + " : " + result);
 		}
 		return success;
 	}

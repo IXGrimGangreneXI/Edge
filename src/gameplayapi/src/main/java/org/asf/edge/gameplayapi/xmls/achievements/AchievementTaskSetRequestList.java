@@ -1,4 +1,4 @@
-package org.asf.edge.gameplayapi.xmls.dragons;
+package org.asf.edge.gameplayapi.xmls.achievements;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -10,11 +10,11 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-public class DragonListData {
+public class AchievementTaskSetRequestList {
 
 	@JsonInclude(Include.NON_NULL)
-	@JsonProperty("RaisedPetData")
+	@JsonProperty("as")
 	@JacksonXmlElementWrapper(useWrapping = false)
-	public DragonData[] dragons;
+	public AchievementTaskData[] requests;
 
 }

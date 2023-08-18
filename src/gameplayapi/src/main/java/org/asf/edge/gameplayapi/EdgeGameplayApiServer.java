@@ -1,7 +1,9 @@
 package org.asf.edge.gameplayapi;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -10,6 +12,8 @@ import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.gameplayapi.http.*;
 import org.asf.edge.gameplayapi.http.handlers.gameplayapi.*;
 import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
+import org.asf.edge.gameplayapi.permissions.PermissionContext;
+import org.asf.edge.gameplayapi.permissions.PermissionLevel;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
@@ -22,6 +26,8 @@ import org.asf.edge.common.CommonInit;
 import org.asf.edge.common.IBaseServer;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.achievements.impl.AchievementManagerImpl;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
@@ -29,9 +35,11 @@ import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.common.services.textfilter.TextFilterService;
+import org.asf.edge.common.util.LogWindow;
 import org.asf.edge.gameplayapi.http.handlers.edgespecific.EdgeApiService;
 import org.asf.edge.gameplayapi.events.server.GameplayApiServerSetupEvent;
 import org.asf.edge.gameplayapi.events.server.GameplayApiServerStartupEvent;
+import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
 
 /**
@@ -155,6 +163,10 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		server.registerProcessor(new AchievementWebServiceV2Processor(this));
 		server.registerProcessor(new EdgeApiService(this));
 
+		// Bind command handler
+		logger.info("Binding command handler to GUI terminal...");
+		LogWindow.commandCallback = t -> executeConsoleCommand(t);
+
 		// Select item manager
 		logger.info("Setting up item manager...");
 		ServiceManager.registerServiceImplementation(ItemManager.class, new ItemManagerImpl(),
@@ -223,6 +235,300 @@ public class EdgeGameplayApiServer implements IBaseServer {
 				}
 			}
 		});
+	}
+
+	private CommandContext cmdCtx;
+	private String accountID;
+
+	private void executeConsoleCommand(String command) {
+		if (command.isEmpty())
+			return;
+
+		// Check
+		AccountObject acc = null;
+		if (accountID != null) {
+			acc = AccountManager.getInstance().getAccount(accountID);
+		}
+		if (acc == null) {
+			accountID = null;
+			cmdCtx = null;
+		}
+
+		// Parse
+		List<String> args = parseCommand(command);
+		if (args.size() == 0)
+			return;
+		String cmd = args.remove(0);
+
+		// Check command
+		switch (cmd.toLowerCase()) {
+
+		// Make-admin
+		case "makeadmin": {
+			if (args.size() < 1) {
+				logger.error("Usage: makeadmin \"<username>\"");
+				return;
+			}
+
+			// Find by name
+			String id = AccountManager.getInstance().getAccountID(args.get(0));
+			if (id == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Load
+			AccountObject acc2 = AccountManager.getInstance().getAccount(id);
+			if (acc2 == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Get permission context
+			PermissionContext.getFor(acc2).setPermissionLevel(PermissionLevel.ADMINISTRATOR);
+			logger.info("Made " + acc2.getUsername() + " admin.");
+			if (acc.getAccountID().equals(acc2.getAccountID())) {
+				acc = acc2;
+				cmdCtx = CommandContext.getFor(acc);
+			}
+			break;
+		}
+
+		// Make-moderator
+		case "makemoderator": {
+			if (args.size() < 1) {
+				logger.error("Usage: makemoderator \"<username>\"");
+				return;
+			}
+
+			// Find by name
+			String id = AccountManager.getInstance().getAccountID(args.get(0));
+			if (id == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Load
+			AccountObject acc2 = AccountManager.getInstance().getAccount(id);
+			if (acc2 == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Get permission context
+			PermissionContext.getFor(acc2).setPermissionLevel(PermissionLevel.MODERATOR);
+			logger.info("Made " + acc2.getUsername() + " moderator.");
+			if (acc.getAccountID().equals(acc2.getAccountID())) {
+				acc = acc2;
+				cmdCtx = CommandContext.getFor(acc);
+			}
+			break;
+		}
+
+		// Make-trial-moderator
+		case "maketrialmod": {
+			if (args.size() < 1) {
+				logger.error("Usage: maketrialmod \"<username>\"");
+				return;
+			}
+
+			// Find by name
+			String id = AccountManager.getInstance().getAccountID(args.get(0));
+			if (id == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Load
+			AccountObject acc2 = AccountManager.getInstance().getAccount(id);
+			if (acc2 == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Get permission context
+			PermissionContext.getFor(acc2).setPermissionLevel(PermissionLevel.TRIAL_MODERATOR);
+			logger.info("Made " + acc2.getUsername() + " trial moderator.");
+			if (acc.getAccountID().equals(acc2.getAccountID())) {
+				acc = acc2;
+				cmdCtx = CommandContext.getFor(acc);
+			}
+			break;
+		}
+
+		// Make-developer
+		case "makedeveloper": {
+			if (args.size() < 1) {
+				logger.error("Usage: makedeveloper \"<username>\"");
+				return;
+			}
+
+			// Find by name
+			String id = AccountManager.getInstance().getAccountID(args.get(0));
+			if (id == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Load
+			AccountObject acc2 = AccountManager.getInstance().getAccount(id);
+			if (acc2 == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Get permission context
+			PermissionContext.getFor(acc2).setPermissionLevel(PermissionLevel.DEVELOPER);
+			logger.info("Made " + acc2.getUsername() + " developer.");
+			if (acc.getAccountID().equals(acc2.getAccountID())) {
+				acc = acc2;
+				cmdCtx = CommandContext.getFor(acc);
+			}
+			break;
+		}
+
+		// Make-operator
+		case "makeoperator": {
+			if (args.size() < 1) {
+				logger.error("Usage: makeoperator \"<username>\"");
+				return;
+			}
+
+			// Find by name
+			String id = AccountManager.getInstance().getAccountID(args.get(0));
+			if (id == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Load
+			AccountObject acc2 = AccountManager.getInstance().getAccount(id);
+			if (acc2 == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Get permission context
+			PermissionContext.getFor(acc2).setPermissionLevel(PermissionLevel.OPERATOR);
+			logger.info("Made " + acc2.getUsername() + " operator.");
+			if (acc.getAccountID().equals(acc2.getAccountID())) {
+				acc = acc2;
+				cmdCtx = CommandContext.getFor(acc);
+			}
+			break;
+		}
+
+		// Stripperms
+		case "stripperms": {
+			if (args.size() < 1) {
+				logger.error("Usage: stripperms \"<username>\"");
+				return;
+			}
+
+			// Find by name
+			String id = AccountManager.getInstance().getAccountID(args.get(0));
+			if (id == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Load
+			AccountObject acc2 = AccountManager.getInstance().getAccount(id);
+			if (acc2 == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Get permission context
+			PermissionContext.getFor(acc2)
+					.setPermissionLevel(acc2.isGuestAccount() ? PermissionLevel.GUEST : PermissionLevel.PLAYER);
+			logger.info("Stripped permissions of " + acc2.getUsername() + ".");
+			if (acc.getAccountID().equals(acc2.getAccountID())) {
+				acc = acc2;
+				cmdCtx = CommandContext.getFor(acc);
+			}
+			break;
+		}
+
+		// Login-as
+		case "login-as": {
+			if (args.size() < 1) {
+				logger.error("Usage: login-as \"<username>\"");
+				return;
+			}
+
+			// Find by name
+			String id = AccountManager.getInstance().getAccountID(args.get(0));
+			if (id == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Load
+			acc = AccountManager.getInstance().getAccount(id);
+			if (acc == null) {
+				logger.error("Username not recognized: " + args.get(0));
+				return;
+			}
+
+			// Assign
+			accountID = id;
+			cmdCtx = CommandContext.getFor(acc);
+			logger.info("Logged into the console as " + acc.getUsername());
+			logger.info("You have access to " + cmdCtx.getPermissions().getPermissionLevel().toString().toLowerCase()
+					+ " commands.");
+
+			break;
+		}
+
+		// Other commands
+		default: {
+			// Check
+			if (cmdCtx == null) {
+				logger.error("Please use 'login-as \"<username>\"' before using commands.");
+				return;
+			}
+
+			// Run
+			cmdCtx.runCommand(command, t -> {
+				logger.info(t);
+			});
+		}
+
+		}
+	}
+
+	private ArrayList<String> parseCommand(String args) {
+		ArrayList<String> args3 = new ArrayList<String>();
+		char[] argarray = args.toCharArray();
+		boolean ignorespaces = false;
+		boolean hasData = false;
+		String last = "";
+		int i = 0;
+		for (char c : args.toCharArray()) {
+			if (c == '"' && (i == 0 || argarray[i - 1] != '\\')) {
+				if (ignorespaces)
+					ignorespaces = false;
+				else {
+					hasData = true;
+					ignorespaces = true;
+				}
+			} else if (c == ' ' && !ignorespaces && (i == 0 || argarray[i - 1] != '\\')) {
+				if (hasData)
+					args3.add(last);
+				hasData = false;
+				last = "";
+			} else if (c != '\\' || (i + 1 < argarray.length && argarray[i + 1] != '"'
+					&& (argarray[i + 1] != ' ' || ignorespaces))) {
+				hasData = true;
+				last += c;
+			}
+
+			i++;
+		}
+		if (!last.isEmpty())
+			args3.add(last);
+		return args3;
 	}
 
 	private long lastRestartTime;

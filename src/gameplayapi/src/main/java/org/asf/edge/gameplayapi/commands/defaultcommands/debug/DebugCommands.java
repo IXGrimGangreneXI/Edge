@@ -376,7 +376,8 @@ public class DebugCommands extends TaskBasedCommand {
 					@Override
 					public String run(String[] args, CommandContext ctx, Logger logger,
 							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs) {
-						return TextFilterService.getInstance().filterString(args[0], args[1].equals("true"));
+						return TextFilterService.getInstance().filterString(args[0],
+								args.length > 1 ? args[1].equals("true") : false);
 					}
 
 				}, new IEdgeServerCommand() {

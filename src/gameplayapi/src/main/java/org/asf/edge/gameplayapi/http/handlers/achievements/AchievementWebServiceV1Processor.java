@@ -27,6 +27,7 @@ import org.asf.edge.common.xmls.achievements.AchievementInfoList;
 import org.asf.edge.common.xmls.achievements.UserRankData;
 import org.asf.edge.common.xmls.achievements.UserRankList;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
+import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardList;
 import org.asf.edge.gameplayapi.xmls.multipliers.RewardTypeMultiplierData;
 import org.asf.edge.gameplayapi.xmls.multipliers.RewardTypeMultiplierListData;
 
@@ -82,7 +83,7 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 
 	@Function(allowedMethods = { "POST" })
 	public FunctionResult getAchievementTaskInfo(FunctionInfo func) throws IOException {
-		// Handle time request
+		// Handle task request
 		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return response(400, "Bad request");
@@ -105,6 +106,59 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		AchievementTaskInfoList lst = new AchievementTaskInfoList();
 		lst.achievementTasks = tasks.toArray(t -> new ObjectNode[t]);
 		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementTaskInfo", lst));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult setUserAchievementAndGetReward(FunctionInfo func) throws IOException {
+		// Handle task reward request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return response(400, "Bad request");
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			return response(404, "Not found");
+		}
+
+		// Find save
+		AccountSaveContainer save = account.getSave(tkn.saveID);
+
+		// TODO: stubbed
+		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", new AchievementRewardList()));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult setAchievementByEntityIDs(FunctionInfo func) throws IOException {
+		// Handle task reward request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return response(400, "Bad request");
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			return response(404, "Not found");
+		}
+
+		// Find save
+		AccountSaveContainer save = account.getSave(tkn.saveID);
+
+		// Parse request
+		int achievementID = Integer.parseInt(req.payload.get("achievementID"));
+		String groupID = req.payload.getOrDefault("groupID", null);
+		String[] dragonIds = req.parseXmlValue(req.payload.get("petIDs"), String[].class);
+
+		// TODO: stubbed
+		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", new AchievementRewardList()));
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)

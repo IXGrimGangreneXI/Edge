@@ -107,6 +107,7 @@ public class ItemManagerImpl extends ItemManager {
 		loadData();
 
 		// Update active sales
+		logger.info("Updating sales...");
 		try {
 			// Find all categories
 			ArrayList<Integer> categoryIds = new ArrayList<Integer>();
