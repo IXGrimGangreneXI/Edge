@@ -83,7 +83,7 @@ public abstract class AchievementManager extends AbstractService {
 	 * 
 	 * @param save           Account save
 	 * @param dragonEntityID Dragon entity ID
-	 * @return {@link EntityRankInfo} instance
+	 * @return {@link EntityRankInfo} instance or null if the dragon does not exist
 	 */
 	public abstract EntityRankInfo getRankForDragon(AccountSaveContainer save, String dragonEntityID);
 
@@ -101,7 +101,7 @@ public abstract class AchievementManager extends AbstractService {
 	 * 
 	 * @param save     Account save
 	 * @param entityID Entity ID
-	 * @return Array of EntityRankInfo instance
+	 * @return Array of EntityRankInfo instance or null if the entity does not exist
 	 */
 	public EntityRankInfo[] getRanks(AccountSaveContainer save, String entityID) {
 		ArrayList<EntityRankInfo> ranks = new ArrayList<EntityRankInfo>();

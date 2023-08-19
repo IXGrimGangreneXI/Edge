@@ -329,7 +329,11 @@ public class AchievementManagerImpl extends AchievementManager {
 
 	@Override
 	public EntityRankInfo getRankForDragon(AccountSaveContainer save, String dragonEntityID) {
-		return new DragonRankContainer(save, dragonEntityID);
+		try {
+			return new DragonRankContainer(save, dragonEntityID);
+		} catch (IOException e) {
+			return null;
+		}
 	}
 
 	@Override

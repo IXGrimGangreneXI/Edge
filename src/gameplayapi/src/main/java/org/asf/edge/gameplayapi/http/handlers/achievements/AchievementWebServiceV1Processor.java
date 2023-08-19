@@ -13,6 +13,7 @@ import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.entities.achivements.RankInfo;
 import org.asf.edge.common.entities.achivements.RankMultiplierInfo;
+import org.asf.edge.common.entities.achivements.RankTypeID;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -58,6 +59,10 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	public String path() {
 		return "/AchievementWebService.asmx";
 	}
+
+	//
+	// Vanilla
+	//
 
 	@Function(allowedMethods = { "POST" })
 	public FunctionResult getAllRanks(FunctionInfo func) throws IOException {
@@ -381,6 +386,81 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		RewardTypeMultiplierListData resp = new RewardTypeMultiplierListData();
 		resp.multipliers = multipliers.toArray(t -> new RewardTypeMultiplierData[t]);
 		return ok("text/xml", req.generateXmlValue("ArrayOfRewardTypeMultiplier", resp));
+	}
+
+	//
+	// Dragonrescue import
+	//
+
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult setDragonXP(FunctionInfo func) throws IOException {
+		// Handle ranks request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return response(400, "Bad request");
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			return response(404, "Not found");
+		}
+
+		// Find save
+		AccountSaveContainer save = account.getSave(tkn.saveID);
+
+		// Load request
+		String dragonID = req.payload.get("dragonId");
+		int xpPoints = Integer.parseInt(req.payload.get("value"));
+
+		// Retrieve rank
+		EntityRankInfo rank = AchievementManager.getInstance().getRank(save, dragonID, RankTypeID.DRAGON);
+		if (rank == null)
+			return response(409, "Conflict", "Dragon not found");
+
+		// Assign
+		rank.setTotalScore(xpPoints);
+
+		// Set response
+		return ok("text/xml", "OK");
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult setPlayerXP(FunctionInfo func) throws IOException {
+		// Handle ranks request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return response(400, "Bad request");
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			return response(404, "Not found");
+		}
+
+		// Find save
+		AccountSaveContainer save = account.getSave(tkn.saveID);
+
+		// Load request
+		int pointType = Integer.parseInt(req.payload.get("type"));
+		int xpPoints = Integer.parseInt(req.payload.get("value"));
+
+		// Retrieve rank
+		EntityRankInfo rank = AchievementManager.getInstance().getRank(save, save.getSaveID(),
+				RankTypeID.getByTypeID(pointType));
+
+		// Assign
+		rank.setTotalScore(xpPoints);
+
+		// Set response
+		return ok("text/xml", "OK");
 	}
 
 }

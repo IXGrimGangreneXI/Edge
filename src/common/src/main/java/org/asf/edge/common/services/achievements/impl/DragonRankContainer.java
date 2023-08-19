@@ -11,6 +11,10 @@ import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.modules.eventbus.EventBus;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 
 public class DragonRankContainer extends EntityRankInfo {
@@ -19,7 +23,7 @@ public class DragonRankContainer extends EntityRankInfo {
 	private AccountDataContainer data;
 	private String dragonEntityID;
 
-	public DragonRankContainer(AccountSaveContainer save, String dragonEntityID) {
+	public DragonRankContainer(AccountSaveContainer save, String dragonEntityID) throws IOException {
 		this.save = save;
 		this.dragonEntityID = dragonEntityID;
 
@@ -27,6 +31,30 @@ public class DragonRankContainer extends EntityRankInfo {
 			data = save.getSaveData().getChildContainer("dragons").getChildContainer("dragonrank-" + dragonEntityID);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
+		}
+
+		// Check dragon existence
+		if (!data.entryExists("total")) {
+			// Find dragon
+			AccountDataContainer d = save.getSaveData().getChildContainer("dragons");
+			JsonArray dragonIds;
+			if (d.entryExists("dragonlist"))
+				dragonIds = d.getEntry("dragonlist").getAsJsonArray();
+			else
+				throw new IOException("Dragon not found");
+			boolean found = false;
+			for (JsonElement ele : dragonIds) {
+				String did = ele.getAsString();
+				ObjectNode dragon = new XmlMapper().readValue(data.getEntry("dragon-" + did).getAsString(),
+						ObjectNode.class);
+				String id = dragon.get("eid").asText();
+				if (id.equals(dragonEntityID)) {
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				throw new IOException("Dragon not found");
 		}
 	}
 
