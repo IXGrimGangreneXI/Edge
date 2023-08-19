@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 
 /**
@@ -158,6 +159,7 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 	@Override
 	public void deleteSave() {
 		doDeleteSave();
+		MinigameDataManager.getInstance().deleteDataFor(saveID);
 		acc.refreshSaveList();
 	}
 

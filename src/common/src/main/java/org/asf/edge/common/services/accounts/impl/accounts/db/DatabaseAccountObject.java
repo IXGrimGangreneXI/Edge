@@ -7,6 +7,7 @@ import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.impl.BasicAccountObject;
 import org.asf.edge.common.services.accounts.impl.BasicAccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.DatabaseAccountManager;
+import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -352,6 +353,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 				// Delete save
 				new DatabaseSaveDataContainer(this, getSave(saveObj.get("id").getAsString()), manager)
 						.deleteContainer();
+				MinigameDataManager.getInstance().deleteDataFor(saveObj.get("id").getAsString());
 			}
 		} catch (SQLException e) {
 			getLogger().error(

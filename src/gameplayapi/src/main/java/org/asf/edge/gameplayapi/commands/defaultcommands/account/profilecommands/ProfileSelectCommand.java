@@ -21,9 +21,9 @@ public class ProfileSelectCommand implements IEdgeServerCommand {
 	@Override
 	public String syntax(CommandContext ctx) {
 		if (ctx.getPermissions().hasPermission("commands.moderator.profiles.select", PermissionLevel.MODERATOR))
-			return "<id> \"[owner]\"";
+			return "\"<name>\" \"[owner]\"";
 		else
-			return "<id>";
+			return "\"<id>\"";
 	}
 
 	@Override
@@ -58,16 +58,22 @@ public class ProfileSelectCommand implements IEdgeServerCommand {
 			}
 			acc = AccountManager.getInstance().getAccount(id);
 		}
-		String id = null;
+		String n = null;
 		AccountSaveContainer save = null;
 		if (args.length >= 1) {
-			id = args[0];
-			save = acc.getSave(id);
+			n = args[0];
+			for (String sID : acc.getSaveIDs()) {
+				AccountSaveContainer sv = acc.getSave(sID);
+				if (sv.getUsername().equalsIgnoreCase(n)) {
+					save = sv;
+					break;
+				}
+			}
 			if (save == null)
-				id = null;
+				n = null;
 		}
-		if (id == null) {
-			outputWriteLineCallback.accept("Error: invalid profile");
+		if (n == null) {
+			outputWriteLineCallback.accept("Error: profile name not recognized");
 			return null;
 		}
 		ctx.getCommandMemory().put("active_account", acc.getAccountID());

@@ -39,16 +39,18 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 	protected JsonElement get(String key) throws IOException {
 		String keyF = key;
 
-		// Get
-		while (true) {
-			try {
-				if (dataCache.containsKey(key))
-					return dataCache.get(key) == null ? null : dataCache.get(key).deepCopy();
-				break;
-			} catch (ConcurrentModificationException e) {
+		// Check caching
+		if (!key.startsWith("accountdata/")) {
+			// Get
+			while (true) {
+				try {
+					if (dataCache.containsKey(key))
+						return dataCache.get(key) == null ? null : dataCache.get(key).deepCopy();
+					break;
+				} catch (ConcurrentModificationException e) {
+				}
 			}
 		}
-
 		// Add if needed
 		synchronized (dataCache) {
 			if (dataCache.containsKey(key))
@@ -94,7 +96,8 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 					res.close();
 					statement.close();
 					JsonElement r = JsonParser.parseString(data);
-					dataCache.put(keyF, r);
+					if (!key.startsWith("accountdata/"))
+						dataCache.put(keyF, r);
 					return r;
 				} finally {
 					req.close();
@@ -137,7 +140,8 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 				statement.setString(5, id);
 				statement.execute();
 				statement.close();
-				dataCache.put(keyF, value);
+				if (!key.startsWith("accountdata/"))
+					dataCache.put(keyF, value);
 			} finally {
 				req.close();
 			}
@@ -177,7 +181,8 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 				req.setDataObject(5, value.toString(), statement);
 				statement.execute();
 				statement.close();
-				dataCache.put(keyF, value);
+				if (!key.startsWith("accountdata/"))
+					dataCache.put(keyF, value);
 			} finally {
 				req.close();
 			}
@@ -191,12 +196,14 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 	@Override
 	protected boolean exists(String key) throws IOException {
 		String keyF = key;
-		while (true) {
-			try {
-				if (dataCache.containsKey(key))
-					return dataCache.get(key) != null;
-				break;
-			} catch (ConcurrentModificationException e) {
+		if (!key.startsWith("accountdata/")) {
+			while (true) {
+				try {
+					if (dataCache.containsKey(key))
+						return dataCache.get(key) != null;
+					break;
+				} catch (ConcurrentModificationException e) {
+				}
 			}
 		}
 
@@ -226,12 +233,14 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 				statement.setString(4, id);
 				ResultSet res = statement.executeQuery();
 				boolean r = res.next();
-				if (!r)
-					dataCache.put(keyF, null);
-				else {
-					// Check
-					if (res.getString("DATA") == null)
+				if (!key.startsWith("accountdata/")) {
+					if (!r)
 						dataCache.put(keyF, null);
+					else {
+						// Check
+						if (res.getString("DATA") == null)
+							dataCache.put(keyF, null);
+					}
 				}
 				res.close();
 				statement.close();
@@ -275,7 +284,8 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 				statement.setString(4, id);
 				statement.execute();
 				statement.close();
-				dataCache.remove(keyF);
+				if (!key.startsWith("accountdata/"))
+					dataCache.remove(keyF);
 			} finally {
 				req.close();
 			}

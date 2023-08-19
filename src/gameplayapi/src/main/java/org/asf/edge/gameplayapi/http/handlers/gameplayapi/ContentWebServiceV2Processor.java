@@ -1,11 +1,13 @@
 package org.asf.edge.gameplayapi.http.handlers.gameplayapi;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Random;
 import java.util.TimeZone;
@@ -18,7 +20,12 @@ import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
+import org.asf.edge.common.entities.minigamedata.MinigameData;
+import org.asf.edge.common.entities.minigamedata.MinigameDataRequest;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.Function;
+import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
@@ -26,6 +33,7 @@ import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
@@ -46,6 +54,7 @@ import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.items.ItemPurchaseRequestData;
+import org.asf.edge.gameplayapi.xmls.minigamedata.GameDataSummaryData;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData.SuggestionResultBlock;
 import org.asf.edge.gameplayapi.xmls.names.NameValidationRequest;
 import org.asf.edge.gameplayapi.xmls.names.NameValidationResponseData;
@@ -1180,4 +1189,81 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("CIRS", response));
 	}
+
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult getGameDataByGameForDateRange(FunctionInfo func) throws IOException, ParseException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Game data save request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return response(400, "Bad request");
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			return response(404, "Not found");
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userID);
+		if (save == null)
+			return response(404, "Not found");
+
+		// Parse start and end
+		SimpleDateFormat fmt = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss a", Locale.US);
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+		String sD = req.payload.get("startDate");
+		String eD = req.payload.get("endDate");
+
+		// Create request
+		MinigameDataRequest srq = new MinigameDataRequest();
+		srq.gameLevel = Integer.parseInt(req.payload.get("gameLevel"));
+		srq.difficulty = Integer.parseInt(req.payload.get("difficulty"));
+		srq.friendsOnly = req.payload.get("buddyFilter").equalsIgnoreCase("true");
+		srq.maxEntries = Integer.parseInt(req.payload.get("count"));
+		srq.key = req.payload.get("key");
+		srq.minimalPlayedAtTime = fmt.parse(sD).getTime();
+		srq.maximumPlayedAtTime = fmt.parse(eD).getTime();
+		MinigameData[] list = MinigameDataManager.getInstance().getAllGameData(userID,
+				Integer.parseInt(req.payload.get("gameId")), srq);
+
+		// Load other date format
+		fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+		// Prepare response
+		GameDataSummaryData resp = new GameDataSummaryData();
+		resp.gameID = Integer.parseInt(req.payload.get("gameId"));
+		resp.difficulty = srq.difficulty;
+		resp.isMultiplayer = req.payload.get("isMultiplayer").equalsIgnoreCase("true");
+		resp.key = srq.key;
+		resp.userPosition = -1;
+		resp.entries = new GameDataSummaryData.GameDataBlock[list.length];
+		for (int i = 0; i < resp.entries.length; i++) {
+			MinigameData data = list[i];
+			resp.entries[i] = new GameDataSummaryData.GameDataBlock();
+			resp.entries[i].datePlayed = fmt.format(new Date(data.timePlayed));
+			resp.entries[i].rankID = i + 1;
+			resp.entries[i].timesLost = data.timesLost;
+			resp.entries[i].timesWon = data.timesWon;
+			resp.entries[i].userID = data.userID;
+			resp.entries[i].userName = AccountManager.getInstance().getSaveByID(data.userID).getUsername();
+			resp.entries[i].value = data.value;
+			if (resp.entries[i].userID.equals(userID))
+				resp.userPosition = i;
+		}
+
+		// Return
+		return ok("text/xml", req.generateXmlValue("GameDataSummary", resp));
+	}
+
 }

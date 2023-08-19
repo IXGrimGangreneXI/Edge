@@ -34,8 +34,12 @@ import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
+import org.asf.edge.common.services.leaderboard.LeaderboardManager;
+import org.asf.edge.common.services.leaderboard.impl.LeaderboardManagerImpl;
 import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.common.services.messages.impl.WsMessageServiceImpl;
+import org.asf.edge.common.services.minigamedata.MinigameDataManager;
+import org.asf.edge.common.services.minigamedata.impl.MinigameDataManagerImpl;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.util.LogWindow;
 import org.asf.edge.gameplayapi.http.handlers.edgespecific.EdgeApiService;
@@ -193,6 +197,19 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		ServiceManager.registerServiceImplementation(WsMessageService.class, new WsMessageServiceImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(WsMessageService.class);
+
+		// Start leaderboard service
+		logger.info("Setting up leaderboard manager...");
+		ServiceManager.registerServiceImplementation(LeaderboardManager.class, new LeaderboardManagerImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(LeaderboardManager.class);
+		LeaderboardManager.getInstance().registerLeaderboard("UDT");
+
+		// Start game data service
+		logger.info("Setting up minigame data manager...");
+		ServiceManager.registerServiceImplementation(MinigameDataManager.class, new MinigameDataManagerImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(MinigameDataManager.class);
 
 		// Load filter
 		logger.info("Loading text filter...");

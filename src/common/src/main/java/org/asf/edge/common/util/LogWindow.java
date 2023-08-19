@@ -68,6 +68,8 @@ public class LogWindow {
 			String pref = "[" + timeStr;
 			pref += " ";
 			if (event.getLevel().toString().length() == 4)
+				pref += "  ";
+			else if (event.getLevel().toString().length() == 5)
 				pref += " ";
 			pref += event.getLevel().toString();
 			pref += "] - ";

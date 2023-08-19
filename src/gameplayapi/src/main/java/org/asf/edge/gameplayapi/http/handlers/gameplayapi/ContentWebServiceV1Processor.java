@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -20,6 +21,9 @@ import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.entities.messages.WsMessage;
+import org.asf.edge.common.entities.minigamedata.MinigameData;
+import org.asf.edge.common.entities.minigamedata.MinigameDataRequest;
+import org.asf.edge.common.entities.minigamedata.MinigameSaveRequest;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -33,6 +37,7 @@ import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.messages.PlayerMessenger;
 import org.asf.edge.common.services.messages.WsMessageService;
+import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
@@ -51,6 +56,7 @@ import org.asf.edge.gameplayapi.xmls.data.EmptyKeyValuePairSetData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.items.ItemRedeemRequestData;
+import org.asf.edge.gameplayapi.xmls.minigamedata.GameDataSummaryData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.CurrencyUpdateBlock;
@@ -1454,6 +1460,180 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			// Failed to use item
 			return ok("text/xml", req.generateXmlValue("boolean", false));
 		}
+
+		// Return
+		return ok("text/xml", req.generateXmlValue("boolean", true));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult getGameDataByUser(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Game data save request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return response(400, "Bad request");
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			return response(404, "Not found");
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userID);
+		if (save == null)
+			return response(404, "Not found");
+
+		// Create request
+		MinigameDataRequest srq = new MinigameDataRequest();
+		srq.gameLevel = Integer.parseInt(req.payload.get("gameLevel"));
+		srq.difficulty = Integer.parseInt(req.payload.get("difficulty"));
+		srq.friendsOnly = req.payload.get("buddyFilter").equalsIgnoreCase("true");
+		srq.maxEntries = Integer.parseInt(req.payload.get("count"));
+		srq.key = req.payload.get("key");
+		MinigameData data = MinigameDataManager.getInstance().getGameDataOf(save,
+				Integer.parseInt(req.payload.get("gameId")), srq);
+
+		// Prepare response
+		GameDataSummaryData resp = new GameDataSummaryData();
+		resp.gameID = Integer.parseInt(req.payload.get("gameId"));
+		resp.difficulty = srq.difficulty;
+		resp.isMultiplayer = req.payload.get("isMultiplayer").equalsIgnoreCase("true");
+		resp.userPosition = 0;
+		resp.key = srq.key;
+		resp.entries = new GameDataSummaryData.GameDataBlock[1];
+		resp.entries[0] = new GameDataSummaryData.GameDataBlock();
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+		resp.entries[0].datePlayed = fmt.format(new Date(data.timePlayed));
+		resp.entries[0].rankID = 1;
+		resp.entries[0].timesLost = data.timesLost;
+		resp.entries[0].timesWon = data.timesWon;
+		resp.entries[0].userID = data.userID;
+		resp.entries[0].userName = AccountManager.getInstance().getSaveByID(data.userID).getUsername();
+		resp.entries[0].value = data.value;
+
+		// Return
+		return ok("text/xml", req.generateXmlValue("GameDataSummary", resp));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult getGameDataByGame(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Game data save request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return response(400, "Bad request");
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			return response(404, "Not found");
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userID);
+		if (save == null)
+			return response(404, "Not found");
+
+		// Create request
+		MinigameDataRequest srq = new MinigameDataRequest();
+		srq.gameLevel = Integer.parseInt(req.payload.get("gameLevel"));
+		srq.difficulty = Integer.parseInt(req.payload.get("difficulty"));
+		srq.friendsOnly = req.payload.get("buddyFilter").equalsIgnoreCase("true");
+		srq.maxEntries = Integer.parseInt(req.payload.get("count"));
+		srq.key = req.payload.get("key");
+		MinigameData[] list = MinigameDataManager.getInstance().getAllGameData(userID,
+				Integer.parseInt(req.payload.get("gameId")), srq);
+
+		// Prepare response
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+		GameDataSummaryData resp = new GameDataSummaryData();
+		resp.gameID = Integer.parseInt(req.payload.get("gameId"));
+		resp.difficulty = srq.difficulty;
+		resp.isMultiplayer = req.payload.get("isMultiplayer").equalsIgnoreCase("true");
+		resp.key = srq.key;
+		resp.userPosition = -1;
+		resp.entries = new GameDataSummaryData.GameDataBlock[list.length];
+		for (int i = 0; i < resp.entries.length; i++) {
+			MinigameData data = list[i];
+			resp.entries[i] = new GameDataSummaryData.GameDataBlock();
+			resp.entries[i].datePlayed = fmt.format(new Date(data.timePlayed));
+			resp.entries[i].rankID = i + 1;
+			resp.entries[i].timesLost = data.timesLost;
+			resp.entries[i].timesWon = data.timesWon;
+			resp.entries[i].userID = data.userID;
+			resp.entries[i].userName = AccountManager.getInstance().getSaveByID(data.userID).getUsername();
+			resp.entries[i].value = data.value;
+			if (resp.entries[i].userID.equals(userID))
+				resp.userPosition = i;
+		}
+
+		// Return
+		return ok("text/xml", req.generateXmlValue("GameDataSummary", resp));
+	}
+
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult sendRawGameData(FunctionInfo func) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+
+		// Game data save request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return response(400, "Bad request");
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS) {
+			// Error
+			return response(404, "Not found");
+		}
+
+		// Parse request
+		String userID = req.payload.get("userId");
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userID);
+		if (save == null)
+			return ok("text/xml", req.generateXmlValue("boolean", false));
+
+		// Create request
+		MinigameSaveRequest srq = new MinigameSaveRequest();
+		srq.gameLevel = Integer.parseInt(req.payload.get("gameLevel"));
+		srq.difficulty = Integer.parseInt(req.payload.get("difficulty"));
+		srq.isLoss = req.payload.get("loss").equalsIgnoreCase("true");
+		srq.isWin = req.payload.get("win").equalsIgnoreCase("true");
+		srq.data = new HashMap<String, Integer>();
+		ObjectNode nd = req.parseXmlValue(req.payload.get("xmlDocumentData"), ObjectNode.class);
+		Iterator<String> names = nd.fieldNames();
+		while (names.hasNext()) {
+			String key = names.next();
+			srq.data.put(key, nd.get(key).asInt());
+		}
+		MinigameDataManager.getInstance().saveGameData(save, Integer.parseInt(req.payload.get("gameId")), srq);
 
 		// Return
 		return ok("text/xml", req.generateXmlValue("boolean", true));
