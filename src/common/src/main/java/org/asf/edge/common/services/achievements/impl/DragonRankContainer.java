@@ -45,12 +45,14 @@ public class DragonRankContainer extends EntityRankInfo {
 			boolean found = false;
 			for (JsonElement ele : dragonIds) {
 				String did = ele.getAsString();
-				ObjectNode dragon = new XmlMapper().readValue(data.getEntry("dragon-" + did).getAsString(),
-						ObjectNode.class);
-				String id = dragon.get("eid").asText();
-				if (id.equals(dragonEntityID)) {
-					found = true;
-					break;
+				if (d.entryExists("dragon-" + did)) {
+					ObjectNode dragon = new XmlMapper().readValue(d.getEntry("dragon-" + did).getAsString(),
+							ObjectNode.class);
+					String id = dragon.get("eid").asText();
+					if (id.equals(dragonEntityID)) {
+						found = true;
+						break;
+					}
 				}
 			}
 			if (!found)
