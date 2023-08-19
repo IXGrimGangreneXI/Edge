@@ -76,7 +76,7 @@ public class MinigameDataManagerImpl extends MinigameDataManager {
 			for (String key : saveRequest.data.keySet()) {
 				if (!key.equals("highscore") || !old.data.containsKey(key)
 						|| old.data.get(key) < saveRequest.data.get(key))
-					saveRequest.data.put(key, saveRequest.data.get(key));
+					old.data.put(key, saveRequest.data.get(key));
 			}
 			old.timePlayed = System.currentTimeMillis();
 			if (saveRequest.isLoss)
