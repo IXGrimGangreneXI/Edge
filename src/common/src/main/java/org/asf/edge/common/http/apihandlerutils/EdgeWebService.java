@@ -6,6 +6,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -17,13 +18,30 @@ import org.apache.logging.log4j.Logger;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.IBaseServer;
+import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireCapabilities;
+import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireCapability;
+import org.asf.edge.common.http.apihandlerutils.functions.SaveData;
+import org.asf.edge.common.http.apihandlerutils.functions.SaveInventory;
+import org.asf.edge.common.http.apihandlerutils.functions.SodEncryptedParam;
+import org.asf.edge.common.http.apihandlerutils.functions.SodRequest;
+import org.asf.edge.common.http.apihandlerutils.functions.SodRequestParam;
+import org.asf.edge.common.http.apihandlerutils.functions.SodTokenSecured;
+import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireSave;
+import org.asf.edge.common.http.apihandlerutils.functions.AccountData;
+import org.asf.edge.common.http.apihandlerutils.functions.AccountInventory;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
 import org.asf.edge.common.http.cookies.CookieContext;
 import org.asf.edge.common.http.cookies.CookieManager;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.tokens.SessionToken;
+import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.common.util.TripleDesUtil;
 import org.bouncycastle.util.encoders.Base32;
 
@@ -120,22 +138,26 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 						// Register
 						legacyFunctions.put(name.toLowerCase(), meth);
 					}
-				} else if (meth.getParameterCount() == 1
-						&& FunctionInfo.class.isAssignableFrom(meth.getParameterTypes()[0])
+				} else if ((meth.isAnnotationPresent(Function.class) || meth.isAnnotationPresent(SodRequest.class))
 						&& FunctionResult.class.isAssignableFrom(meth.getReturnType())) {
-					// Check annotation
+					// Check
+					if (!meth.isAnnotationPresent(SodRequest.class) && (meth.getParameterTypes().length != 1
+							|| !meth.getParameterTypes()[0].isAssignableFrom(FunctionInfo.class)))
+						continue;
+
+					// Load name
+					String name = meth.getName();
 					if (meth.isAnnotationPresent(Function.class)) {
 						Function funcAnno = meth.getAnnotation(Function.class);
-						String name = meth.getName();
 						if (!funcAnno.value().equals("<auto>"))
 							name = funcAnno.value();
-
-						// Make accessible
-						meth.setAccessible(true);
-
-						// Register
-						functions.put(name.toLowerCase(), meth);
 					}
+
+					// Make accessible
+					meth.setAccessible(true);
+
+					// Register
+					functions.put(name.toLowerCase(), meth);
 				}
 			}
 		}
@@ -177,84 +199,333 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 		}
 
 		// Find function
-		if (functions.containsKey(path.toLowerCase())) {
-			// Get function
-			Method mth = functions.get(path.toLowerCase());
-			Function anno = mth.getAnnotation(Function.class);
+		try {
+			if (functions.containsKey(path.toLowerCase())) {
+				// Get function
+				Method mth = functions.get(path.toLowerCase());
 
-			// Check method
-			boolean allowed = false;
-			for (String meth : anno.allowedMethods()) {
-				if (meth.equalsIgnoreCase(method)) {
-					allowed = true;
-					break;
-				}
-			}
-			if (!allowed) {
-				setResponseStatus(405, "Method not allowed");
-				return;
-			}
-
-			// Run function
-			try {
-				FunctionResult res = (FunctionResult) mth.invoke(this, new FunctionInfo(path, getRequest(),
-						getResponse(), getServer(), method, client, contentType, getCookies()));
-
-				// Set response
-				setResponseStatus(res.getStatusCode(), res.getStatusMessage());
-				if (res.hasResponseBody()) {
-					// Check response modes
-					if (res.getContentLength() != -1) {
-						// With length
-						if (res.getResponseMediaType() != null)
-							setResponseContent(res.getResponseMediaType(), res.getResponseBodyStream(),
-									res.getContentLength());
-						else
-							setResponseContent(res.getResponseBodyStream(), res.getContentLength());
-					} else {
-						// Without length
-						if (res.getResponseMediaType() != null)
-							setResponseContent(res.getResponseMediaType(), res.getResponseBodyStream());
-						else
-							setResponseContent(res.getResponseBodyStream());
+				// Check method
+				if (mth.isAnnotationPresent(Function.class)) {
+					Function anno = mth.getAnnotation(Function.class);
+					boolean allowed = false;
+					for (String meth : anno.allowedMethods()) {
+						if (meth.equalsIgnoreCase(method)) {
+							allowed = true;
+							break;
+						}
+					}
+					if (!allowed) {
+						setResponseStatus(405, "Method not allowed");
+						return;
 					}
 				}
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-				throw new RuntimeException(e);
-			}
-			return;
-		}
-		if (legacyFunctions.containsKey(path.toLowerCase())) {
-			// Get function
-			Method mth = legacyFunctions.get(path.toLowerCase());
-			LegacyFunction anno = mth.getAnnotation(LegacyFunction.class);
 
-			// Check method
-			boolean allowed = false;
-			for (String meth : anno.allowedMethods()) {
-				if (meth.equalsIgnoreCase(method)) {
-					allowed = true;
-					break;
+				// Run function
+				try {
+					// Create info
+					FunctionInfo fI = new FunctionInfo(path, getRequest(), getResponse(), getServer(), method, client,
+							contentType, getCookies());
+
+					// Check annotation
+					Object[] args = new Object[] { fI };
+					if (mth.isAnnotationPresent(SodRequest.class)) {
+						// Parse request
+						ServiceRequestInfo req = getUtilities()
+								.getServiceRequestPayload(getServerInstance().getLogger());
+						if (req == null) {
+							getResponse().setResponseStatus(400, "Bad request");
+							return;
+						}
+
+						// Populate arguments
+						args = populateArguments(mth, fI, req);
+					}
+
+					// Run
+					FunctionResult res = (FunctionResult) mth.invoke(this, args);
+
+					// Set response
+					setResponseStatus(res.getStatusCode(), res.getStatusMessage());
+					if (res.hasResponseBody()) {
+						// Check response modes
+						if (res.getContentLength() != -1) {
+							// With length
+							if (res.getResponseMediaType() != null)
+								setResponseContent(res.getResponseMediaType(), res.getResponseBodyStream(),
+										res.getContentLength());
+							else
+								setResponseContent(res.getResponseBodyStream(), res.getContentLength());
+						} else {
+							// Without length
+							if (res.getResponseMediaType() != null)
+								setResponseContent(res.getResponseMediaType(), res.getResponseBodyStream());
+							else
+								setResponseContent(res.getResponseBodyStream());
+						}
+					}
+				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+					throw new RuntimeException(e);
 				}
-			}
-			if (!allowed) {
-				setResponseStatus(405, "Method not allowed");
+				return;
+			} else if (legacyFunctions.containsKey(path.toLowerCase())) {
+				// Get function
+				Method mth = legacyFunctions.get(path.toLowerCase());
+				LegacyFunction anno = mth.getAnnotation(LegacyFunction.class);
+
+				// Check method
+				boolean allowed = false;
+				for (String meth : anno.allowedMethods()) {
+					if (meth.equalsIgnoreCase(method)) {
+						allowed = true;
+						break;
+					}
+				}
+				if (!allowed) {
+					setResponseStatus(405, "Method not allowed");
+					return;
+				}
+
+				// Run function
+				try {
+					mth.invoke(this, new LegacyFunctionInfo(path, getRequest(), getResponse(), getServer(), method,
+							client, contentType, getCookies()));
+				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+					throw new RuntimeException(e);
+				}
 				return;
 			}
 
-			// Run function
-			try {
-				mth.invoke(this, new LegacyFunctionInfo(path, getRequest(), getResponse(), getServer(), method, client,
-						contentType, getCookies()));
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-				throw new RuntimeException(e);
+			// Run processor
+			setResponseStatus(404, "Not found");
+			fallbackRequestProcessor(path, method, client, contentType);
+		} catch (HttpException e) {
+			setResponseStatus(e.getStatusCode(), e.getStatusMessage());
+			if (e.getBody() != null) {
+				if (e.getBodyMediaType() == null)
+					setResponseContent(e.getBody());
+				else
+					setResponseContent(e.getBodyMediaType(), e.getBody());
 			}
-			return;
+		}
+	}
+
+	private Object[] populateArguments(Method mth, FunctionInfo fI, EdgeWebService<T>.ServiceRequestInfo req)
+			throws IOException {
+		// Create array
+		Parameter[] params = mth.getParameters();
+		Object[] args = new Object[params.length];
+		HttpException pendingException = null;
+
+		// Check method
+		SessionToken tkn = null;
+		AccountObject account = null;
+		AccountSaveContainer save = null;
+		if (mth.isAnnotationPresent(SodTokenSecured.class)) {
+			// Check token
+			if (!req.payload.containsKey("apiToken"))
+				pendingException = new HttpException(400, "Bad request");
+			else {
+				// Retrieve token
+				String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+				// Read token
+				tkn = new SessionToken();
+				TokenParseResult res = tkn.parseToken(apiToken);
+				account = tkn.account;
+				if (res != TokenParseResult.SUCCESS) {
+					// Error
+					pendingException = new HttpException(401, "Unauthorized");
+					tkn = null;
+					account = null;
+				}
+
+				// Verify capabilities
+				if (tkn != null && mth.isAnnotationPresent(TokenRequireCapabilities.class)) {
+					TokenRequireCapabilities caps = mth.getAnnotation(TokenRequireCapabilities.class);
+					for (TokenRequireCapability c : caps.value()) {
+						if (!tkn.hasCapability(c.value())) {
+							pendingException = new HttpException(401, "Unauthorized");
+							account = null;
+							tkn = null;
+							break;
+						}
+					}
+				}
+
+				// Check
+				if (tkn != null) {
+					if (tkn.saveID != null)
+						save = account.getSave(tkn.saveID);
+					else if (mth.isAnnotationPresent(TokenRequireSave.class))
+						pendingException = new HttpException(401, "Unauthorized");
+				}
+			}
 		}
 
-		// Run processor
-		setResponseStatus(404, "Not found");
-		fallbackRequestProcessor(path, method, client, contentType);
+		// Go through parameters
+		for (int i = 0; i < args.length; i++) {
+			// Check
+			Parameter param = params[i];
+
+			// Check type
+			if (param.getType().isAssignableFrom(FunctionInfo.class))
+				args[i] = fI;
+			else if (param.getType().isAssignableFrom(ServiceRequestInfo.class))
+				args[i] = req;
+			else if (param.getType().isAssignableFrom(AccountObject.class))
+				args[i] = account;
+			else if (param.getType().isAssignableFrom(AccountSaveContainer.class))
+				args[i] = save;
+			else if (param.getType().isAssignableFrom(SessionToken.class))
+				args[i] = tkn;
+			else if (param.getType().isAssignableFrom(PlayerInventory.class)
+					&& param.isAnnotationPresent(SaveInventory.class)) {
+				if (save != null)
+					args[i] = save.getInventory();
+				else if (account != null)
+					args[i] = account.getInventory();
+			} else if (param.getType().isAssignableFrom(PlayerInventory.class)
+					&& param.isAnnotationPresent(AccountInventory.class)) {
+				if (save != null)
+					args[i] = save.getInventory();
+				else if (account != null)
+					pendingException = new HttpException(400, "Bad request");
+			} else if (param.getType().isAssignableFrom(PlayerInventory.class)) {
+				if (save != null)
+					args[i] = save.getInventory();
+				else
+					args[i] = account.getInventory();
+			} else if (param.getType().isAssignableFrom(AccountDataContainer.class)
+					&& param.isAnnotationPresent(AccountData.class)) {
+				if (account != null)
+					args[i] = account.getAccountData();
+				else
+					pendingException = new HttpException(400, "Bad request");
+			} else if (param.getType().isAssignableFrom(AccountDataContainer.class)
+					&& param.isAnnotationPresent(SaveData.class)) {
+				if (save != null)
+					args[i] = save.getSaveData();
+				else
+					pendingException = new HttpException(400, "Bad request");
+			} else if (param.isAnnotationPresent(SodRequestParam.class)) {
+				// Handle param
+				String name = param.getAnnotation(SodRequestParam.class).value();
+				if (name.isEmpty())
+					name = param.getName();
+
+				// Retrieve value
+				String val = req.payload.get(name);
+				if (val == null)
+					pendingException = new HttpException(400, "Bad request");
+				else {
+					// Decrypt if needed
+					try {
+						// Decrypt if needed
+						if (param.isAnnotationPresent(SodEncryptedParam.class))
+							val = req.decryptString(val);
+					} catch (Exception e) {
+						pendingException = new HttpException(400, "Bad request");
+					}
+
+					// Decode value
+					if (val != null) {
+						if (param.getType().isPrimitive()) {
+							// Decode primitive
+							switch (param.getType().getTypeName()) {
+
+							case "boolean": {
+								if (val.equalsIgnoreCase("true"))
+									args[i] = true;
+								else if (val.equalsIgnoreCase("false"))
+									args[i] = false;
+								else
+									pendingException = new HttpException(400, "Bad request");
+							}
+
+							case "byte": {
+								try {
+									args[i] = Byte.parseByte(val);
+								} catch (Exception e) {
+									pendingException = new HttpException(400, "Bad request");
+								}
+							}
+
+							case "char": {
+								try {
+									if (val.length() != 1)
+										throw new Exception();
+									args[i] = val.charAt(0);
+								} catch (Exception e) {
+									pendingException = new HttpException(400, "Bad request");
+								}
+							}
+
+							case "short": {
+								try {
+									args[i] = Short.parseShort(val);
+								} catch (Exception e) {
+									pendingException = new HttpException(400, "Bad request");
+								}
+							}
+
+							case "int": {
+								try {
+									args[i] = Integer.parseInt(val);
+								} catch (Exception e) {
+									pendingException = new HttpException(400, "Bad request");
+								}
+							}
+
+							case "long": {
+								try {
+									args[i] = Long.parseLong(val);
+								} catch (Exception e) {
+									pendingException = new HttpException(400, "Bad request");
+								}
+							}
+
+							case "float": {
+								try {
+									args[i] = Float.parseFloat(val);
+								} catch (Exception e) {
+									pendingException = new HttpException(400, "Bad request");
+								}
+							}
+
+							case "double": {
+								try {
+									args[i] = Double.parseDouble(val);
+								} catch (Exception e) {
+									pendingException = new HttpException(400, "Bad request");
+								}
+							}
+
+							}
+						} else {
+							if (param.getType().isAssignableFrom(String.class)) {
+								args[i] = val;
+							} else {
+								try {
+									args[i] = req.parseXmlValue(val, param.getType());
+								} catch (Exception e) {
+									pendingException = new HttpException(400, "Bad request");
+								}
+							}
+						}
+					}
+				}
+			} else
+				throw new RuntimeException("Invalid parameter " + param.getName() + " in method " + mth.getName()
+						+ " of " + getClass().getTypeName() + "!");
+		}
+
+		// Check exception
+		if (pendingException != null)
+			throw pendingException;
+
+		// Return
+		return args;
+
 	}
 
 	/**

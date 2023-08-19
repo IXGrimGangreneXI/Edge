@@ -15,9 +15,7 @@ import org.asf.edge.common.entities.achivements.RankInfo;
 import org.asf.edge.common.entities.achivements.RankMultiplierInfo;
 import org.asf.edge.common.entities.achivements.RankTypeID;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
+import org.asf.edge.common.http.apihandlerutils.functions.*;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -64,15 +62,10 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	// Vanilla
 	//
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getAllRanks(FunctionInfo func) throws IOException {
+	@SodRequest
+	public FunctionResult getAllRanks(FunctionInfo func, ServiceRequestInfo req) throws IOException {
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
-
-		// Handle rank request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
 
 		// Find all ranks
 		RankInfo[] ranks = achievementManager.getRankDefinitions();
@@ -86,12 +79,10 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfUserRank", lst));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getAchievementTaskInfo(FunctionInfo func) throws IOException {
-		// Handle task request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
+	@SodRequest
+	public FunctionResult getAchievementTaskInfo(FunctionInfo func, ServiceRequestInfo req) throws IOException {
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
 
 		// Load request
 		int[] ids = req.parseXmlValue(req.payload.get("achievementTaskIDList"), int[].class);
@@ -113,54 +104,30 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementTaskInfo", lst));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult setUserAchievementAndGetReward(FunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult setUserAchievementAndGetReward(FunctionInfo func, ServiceRequestInfo req,
+			AccountSaveContainer save) throws IOException {
 		// Handle task reward request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Find save
-		AccountSaveContainer save = account.getSave(tkn.saveID);
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
 
 		// TODO: stubbed
 		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", new AchievementRewardList()));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult setAchievementByEntityIDs(FunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult setAchievementByEntityIDs(FunctionInfo func, ServiceRequestInfo req,
+			AccountSaveContainer save, @SodRequestParam int achievementID, @SodRequestParam String groupID,
+			@SodRequestParam String[] petIDs) throws IOException {
 		// Handle task reward request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Find save
-		AccountSaveContainer save = account.getSave(tkn.saveID);
-
-		// Parse request
-		int achievementID = Integer.parseInt(req.payload.get("achievementID"));
-		String groupID = req.payload.getOrDefault("groupID", null);
-		String[] dragonIds = req.parseXmlValue(req.payload.get("petIDs"), String[].class);
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
 
 		// TODO: stubbed
 		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", new AchievementRewardList()));
@@ -179,26 +146,12 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getPetAchievementsByUserID(FunctionInfo func) throws IOException {
-		// Handle dragon ranks request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			return response(404, "Not found");
-		}
-
+	@SodRequest
+	@SodTokenSecured
+	public FunctionResult getPetAchievementsByUserID(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam String userId) throws IOException {
 		// Find save
-		String id = req.payload.get("userId");
-		AccountSaveContainer save = account.getSave(id);
+		AccountSaveContainer save = account.getSave(userId);
 		if (save == null) {
 			// Check token
 			if (tkn.saveID != null)
@@ -244,26 +197,12 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfUserAchievementInfo", lst));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getAchievementsByUserID(FunctionInfo func) throws IOException {
-		// Handle ranks request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			return response(404, "Not found");
-		}
-
+	@SodRequest
+	@SodTokenSecured
+	public FunctionResult getAchievementsByUserID(FunctionInfo func, SessionToken tkn, ServiceRequestInfo req,
+			AccountObject account, @SodRequestParam String userId) throws IOException {
 		// Find save
-		String id = req.payload.get("userId");
-		AccountSaveContainer save = account.getSave(id);
+		AccountSaveContainer save = account.getSave(userId);
 		if (save == null) {
 			// Check token
 			if (tkn.saveID != null)
@@ -279,10 +218,10 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		ArrayList<AchievementInfoList.AchievementBlock> ranks = new ArrayList<AchievementInfoList.AchievementBlock>();
 
 		// Get ranks
-		for (EntityRankInfo rank : AchievementManager.getInstance().getRanks(save, id)) {
+		for (EntityRankInfo rank : AchievementManager.getInstance().getRanks(save, userId)) {
 			// Add rank
 			AchievementInfoList.AchievementBlock r = new AchievementInfoList.AchievementBlock();
-			if (id.equals(save.getSaveID()))
+			if (userId.equals(save.getSaveID()))
 				r.saveName = new AchievementInfoList.AchievementBlock.StringWrapper(save.getUsername());
 			r.userID = new AchievementInfoList.AchievementBlock.StringWrapper(rank.getEntityID());
 			r.pointTypeID = new AchievementInfoList.AchievementBlock.IntWrapper(rank.getTypeID().getPointTypeID());
@@ -299,26 +238,12 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfUserAchievementInfo", lst));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getUserAchievements(FunctionInfo func) throws IOException {
-		// Handle ranks request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Find save
-		AccountSaveContainer save = account.getSave(tkn.saveID);
-
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult getUserAchievements(FunctionInfo func, SessionToken tkn, ServiceRequestInfo req,
+			AccountObject account, AccountSaveContainer save) throws IOException {
 		// Prepare response
 		AchievementInfoList lst = new AchievementInfoList();
 		ArrayList<AchievementInfoList.AchievementBlock> ranks = new ArrayList<AchievementInfoList.AchievementBlock>();
@@ -343,30 +268,12 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfUserAchievementInfo", lst));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getAllRewardTypeMultiplier(FunctionInfo func) throws IOException, ParseException {
-		// Handle time request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Find save
-		AccountSaveContainer save = account.getSave(tkn.saveID);
-		if (save == null) {
-			// Error
-			return response(404, "Not found");
-		}
-
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult getAllRewardTypeMultiplier(FunctionInfo func, SessionToken tkn, ServiceRequestInfo req,
+			AccountObject account, AccountSaveContainer save) throws IOException {
 		// Prepare multiplier list
 		ArrayList<RewardTypeMultiplierData> multipliers = new ArrayList<RewardTypeMultiplierData>();
 
@@ -392,75 +299,39 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	// Dragonrescue import
 	//
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult setDragonXP(FunctionInfo func) throws IOException {
-		// Handle ranks request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Find save
-		AccountSaveContainer save = account.getSave(tkn.saveID);
-
-		// Load request
-		String dragonID = req.payload.get("dragonId");
-		int xpPoints = Integer.parseInt(req.payload.get("value"));
-
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult setDragonXP(FunctionInfo func, ServiceRequestInfo req, AccountSaveContainer save,
+			@SodRequestParam String dragonId, @SodRequestParam int value) throws IOException {
 		// Retrieve rank
-		EntityRankInfo rank = AchievementManager.getInstance().getRank(save, dragonID, RankTypeID.DRAGON);
+		EntityRankInfo rank = AchievementManager.getInstance().getRank(save, dragonId, RankTypeID.DRAGON);
 		if (rank == null)
 			return response(409, "Conflict", "Dragon not found");
 
 		// Assign
-		rank.setTotalScore(xpPoints);
+		rank.setTotalScore(value);
 
 		// Set response
-		return ok("text/xml", "OK");
+		return ok("text/plain", "OK");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult setPlayerXP(FunctionInfo func) throws IOException {
-		// Handle ranks request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Find save
-		AccountSaveContainer save = account.getSave(tkn.saveID);
-
-		// Load request
-		int pointType = Integer.parseInt(req.payload.get("type"));
-		int xpPoints = Integer.parseInt(req.payload.get("value"));
-
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult setPlayerXP(AccountSaveContainer save, ServiceRequestInfo req, @SodRequestParam int type,
+			@SodRequestParam int value) throws IOException {
 		// Retrieve rank
 		EntityRankInfo rank = AchievementManager.getInstance().getRank(save, save.getSaveID(),
-				RankTypeID.getByTypeID(pointType));
+				RankTypeID.getByTypeID(type));
 
 		// Assign
-		rank.setTotalScore(xpPoints);
+		rank.setTotalScore(value);
 
 		// Set response
-		return ok("text/xml", "OK");
+		return ok("text/plain", "OK");
 	}
 
 }

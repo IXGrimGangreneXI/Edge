@@ -49,3 +49,13 @@ task installation () {
 
 installation.dependsOn project.tasks.build
 build.finalizedBy installation
+
+eclipse {
+  jdt {
+	  file {
+		  withProperties { properties ->
+			  properties.setProperty("org.eclipse.jdt.core.compiler.codegen.methodParameters", "generate")
+		  }
+	  }
+  }
+}

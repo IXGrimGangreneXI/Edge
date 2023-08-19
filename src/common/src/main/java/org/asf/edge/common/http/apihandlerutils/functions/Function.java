@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  * name, else the method name is used.<br/>
  * <br/>
  * <b>Note</b>: the annotated method must return a {@link FunctionResult} object
- * and its parameters must contain a {@link LegacyFunctionInfo} parameter, no other
+ * and its parameters must contain a {@link FunctionInfo} parameter, no other
  * parameters are supported.
  * 
  * @author Sky Swimmer

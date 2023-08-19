@@ -11,9 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
+import org.asf.edge.common.http.apihandlerutils.functions.*;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -53,34 +51,17 @@ public class AchievementWebServiceV2Processor extends EdgeWebService<EdgeGamepla
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult setUserAchievementTask(FunctionInfo func) throws IOException {
-		// Handle task reward request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Find save
-		AccountSaveContainer save = account.getSave(tkn.saveID);
-
-		// Parse request
-		String request = req.getEncryptedValue("achievementTaskSetRequest");
-		AchievementTaskSetRequestList lst = req.parseXmlValue(request, AchievementTaskSetRequestList.class);
-
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult setUserAchievementTask(FunctionInfo func, ServiceRequestInfo req, AccountSaveContainer save,
+			@SodEncryptedParam @SodRequestParam AchievementTaskSetRequestList achievementTaskSetRequest)
+			throws IOException {
 		// Prepare response
 		// TODO: stubbed
 		ArrayList<AchievementTaskSetResponseData> responses = new ArrayList<AchievementTaskSetResponseData>();
-		for (AchievementTaskData reqA : lst.requests) {
+		for (AchievementTaskData reqA : achievementTaskSetRequest.requests) {
 			// TODO: stubbed
 			AchievementTaskSetResponseData resp = new AchievementTaskSetResponseData();
 			resp.success = false;
@@ -93,30 +74,22 @@ public class AchievementWebServiceV2Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementTaskSetResponse", resp));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getTopAchievementPointUsers(FunctionInfo func) throws IOException {
-		// Handle task reward request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-
-		// Parse request
-		String request = req.payload.get("request");
-		UdtLeaderboardRequestData rq = req.parseXmlValue(request, UdtLeaderboardRequestData.class);
-
+	@SodRequest
+	public FunctionResult getTopAchievementPointUsers(FunctionInfo func, ServiceRequestInfo req,
+			@SodRequestParam UdtLeaderboardRequestData request) throws IOException {
 		// Prepare response
 		UdtLeaderboardResponseData resp = new UdtLeaderboardResponseData();
 		ArrayList<UdtLeaderboardResponseData.UdtLeaderboardEntryBlock> responses = new ArrayList<UdtLeaderboardResponseData.UdtLeaderboardEntryBlock>();
 
 		// Retrieve
-		if (rq.pointTypeID == 12) {
+		if (request.pointTypeID == 12) {
 			// UDT request
-			int offset = (rq.pageNumber - 1) * rq.pageSize;
-			int end = (rq.pageNumber * rq.pageSize) + 1;
+			int offset = (request.pageNumber - 1) * request.pageSize;
+			int end = (request.pageNumber * request.pageSize) + 1;
 			Leaderboard leaderboard = LeaderboardManager.getInstance().getLeaderboard("UDT");
 			Map<String, Integer> scores = Map.of();
 			Leaderboard.DateRange dateRange = null;
-			switch (rq.mode) {
+			switch (request.mode) {
 
 			// All time
 			case 1: {
@@ -167,7 +140,7 @@ public class AchievementWebServiceV2Processor extends EdgeWebService<EdgeGamepla
 					UdtLeaderboardResponseData.UdtLeaderboardEntryBlock entry = new UdtLeaderboardResponseData.UdtLeaderboardEntryBlock();
 					entry.userID = id;
 					entry.pointsTotal = scores.get(id);
-					entry.pointTypeID = rq.pointTypeID;
+					entry.pointTypeID = request.pointTypeID;
 					entry.userName = save.getUsername();
 					responses.add(entry);
 				}
@@ -190,7 +163,7 @@ public class AchievementWebServiceV2Processor extends EdgeWebService<EdgeGamepla
 		} else {
 			// Error
 			LogManager.getLogger("Leaderboards").error("Unable to retrieve leaderboard by point type ID "
-					+ rq.pointTypeID + " as Edge doesnt have support for this type ID.");
+					+ request.pointTypeID + " as Edge doesnt have support for this type ID.");
 		}
 
 		// Populate response

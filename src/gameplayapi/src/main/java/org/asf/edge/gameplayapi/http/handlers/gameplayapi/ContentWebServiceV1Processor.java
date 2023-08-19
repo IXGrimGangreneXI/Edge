@@ -30,6 +30,11 @@ import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.functions.SodRequest;
+import org.asf.edge.common.http.apihandlerutils.functions.SodRequestParam;
+import org.asf.edge.common.http.apihandlerutils.functions.SodTokenSecured;
+import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireCapability;
+import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireSave;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
@@ -1377,23 +1382,14 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		setResponseContent("text/xml", req.generateXmlValue("CIRS", response));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getDisplayNameByUserID(FunctionInfo func) throws IOException {
+	@SodRequest
+	public FunctionResult getDisplayNameByUserID(FunctionInfo func, ServiceRequestInfo req,
+			@SodRequestParam String userId) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
-		// Message queue request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-
-		// Load UUID
-		if (!req.payload.containsKey("userId"))
-			return ok("text/xml", req.generateXmlValue("string", "SYSTEM"));
-		String svID = req.payload.get("userId").toUpperCase();
-
 		// Find save
-		AccountSaveContainer save = manager.getSaveByID(svID);
+		AccountSaveContainer save = manager.getSaveByID(userId);
 
 		// Get messenger
 		if (save == null)
@@ -1403,27 +1399,16 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		return ok("text/xml", req.generateXmlValue("string", save.getUsername()));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult useInventory(FunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult useInventory(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam int userInventoryId, @SodRequestParam int uses) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
-
-		// Handle inventory request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			return response(404, "Not found");
-		}
 
 		// Retrieve container info
 		AccountDataContainer data = account.getAccountData();
@@ -1431,14 +1416,12 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			data = account.getSave(tkn.saveID).getSaveData();
 
 		// Parse request
-		int itemUniqueID = Integer.parseInt(req.payload.get("userInventoryId"));
-		int uses = Integer.parseInt(req.payload.get("numberOfUses"));
 		int containerId = Integer.parseInt(req.payload.getOrDefault("ContainerId", "1"));
 
 		// Find item
 		PlayerInventory inv = itemManager.getCommonInventory(data);
 		PlayerInventoryContainer cont = inv.getContainer(containerId);
-		PlayerInventoryItem itm = cont.getItem(itemUniqueID);
+		PlayerInventoryItem itm = cont.getItem(userInventoryId);
 		if (itm == null) {
 			return ok("text/xml", req.generateXmlValue("boolean", false));
 		}
@@ -1465,31 +1448,15 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		return ok("text/xml", req.generateXmlValue("boolean", true));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getGameDataByUser(FunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	public FunctionResult getGameDataByUser(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam String userId) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
-		// Game data save request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Parse request
-		String userID = req.payload.get("userId");
-
 		// Retrieve container
-		AccountSaveContainer save = account.getSave(userID);
+		AccountSaveContainer save = account.getSave(userId);
 		if (save == null)
 			return response(404, "Not found");
 
@@ -1526,31 +1493,15 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		return ok("text/xml", req.generateXmlValue("GameDataSummary", resp));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getGameDataByGame(FunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	public FunctionResult getGameDataByGame(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam String userId) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
-		// Game data save request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Parse request
-		String userID = req.payload.get("userId");
-
 		// Retrieve container
-		AccountSaveContainer save = account.getSave(userID);
+		AccountSaveContainer save = account.getSave(userId);
 		if (save == null)
 			return response(404, "Not found");
 
@@ -1561,7 +1512,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		srq.friendsOnly = req.payload.get("buddyFilter").equalsIgnoreCase("true");
 		srq.maxEntries = Integer.parseInt(req.payload.get("count"));
 		srq.key = req.payload.get("key");
-		MinigameData[] list = MinigameDataManager.getInstance().getAllGameData(userID,
+		MinigameData[] list = MinigameDataManager.getInstance().getAllGameData(userId,
 				Integer.parseInt(req.payload.get("gameId")), srq);
 
 		// Prepare response
@@ -1584,7 +1535,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			resp.entries[i].userID = data.userID;
 			resp.entries[i].userName = AccountManager.getInstance().getSaveByID(data.userID).getUsername();
 			resp.entries[i].value = data.value;
-			if (resp.entries[i].userID.equals(userID))
+			if (resp.entries[i].userID.equals(userId))
 				resp.userPosition = i;
 		}
 
@@ -1592,31 +1543,15 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		return ok("text/xml", req.generateXmlValue("GameDataSummary", resp));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult sendRawGameData(FunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	public FunctionResult sendRawGameData(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam String userId) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
-		// Game data save request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Parse request
-		String userID = req.payload.get("userId");
-
 		// Retrieve container
-		AccountSaveContainer save = account.getSave(userID);
+		AccountSaveContainer save = account.getSave(userId);
 		if (save == null)
 			return ok("text/xml", req.generateXmlValue("boolean", false));
 

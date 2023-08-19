@@ -28,6 +28,9 @@ import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.functions.SodRequest;
+import org.asf.edge.common.http.apihandlerutils.functions.SodRequestParam;
+import org.asf.edge.common.http.apihandlerutils.functions.SodTokenSecured;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
@@ -1190,31 +1193,15 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		setResponseContent("text/xml", req.generateXmlValue("CIRS", response));
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getGameDataByGameForDateRange(FunctionInfo func) throws IOException, ParseException {
+	@SodRequest
+	@SodTokenSecured
+	public FunctionResult getGameDataByGameForDateRange(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam String userId) throws IOException, ParseException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 
-		// Game data save request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Parse request
-		String userID = req.payload.get("userId");
-
 		// Retrieve container
-		AccountSaveContainer save = account.getSave(userID);
+		AccountSaveContainer save = account.getSave(userId);
 		if (save == null)
 			return response(404, "Not found");
 
@@ -1233,7 +1220,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		srq.key = req.payload.get("key");
 		srq.minimalPlayedAtTime = fmt.parse(sD).getTime();
 		srq.maximumPlayedAtTime = fmt.parse(eD).getTime();
-		MinigameData[] list = MinigameDataManager.getInstance().getAllGameData(userID,
+		MinigameData[] list = MinigameDataManager.getInstance().getAllGameData(userId,
 				Integer.parseInt(req.payload.get("gameId")), srq);
 
 		// Load other date format
@@ -1258,7 +1245,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			resp.entries[i].userID = data.userID;
 			resp.entries[i].userName = AccountManager.getInstance().getSaveByID(data.userID).getUsername();
 			resp.entries[i].value = data.value;
-			if (resp.entries[i].userID.equals(userID))
+			if (resp.entries[i].userID.equals(userId))
 				resp.userPosition = i;
 		}
 

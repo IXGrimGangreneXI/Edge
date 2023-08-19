@@ -186,7 +186,7 @@ public class LeaderboardImpl extends Leaderboard {
 					current.setEntry("dataholder", new JsonPrimitive(true));
 					current.setEntry("last_refresh", new JsonPrimitive(System.currentTimeMillis()));
 					current.setEntry("last_refresh_prev",
-							last.entryExists("last_refresh") ? last.getEntry("last_refresh_prev")
+							last.entryExists("last_refresh") ? last.getEntry("last_refresh")
 									: new JsonPrimitive(System.currentTimeMillis()));
 					for (String id : newScores.keySet().stream()
 							.sorted((t1, t2) -> -Integer.compare(newScores.get(t1), newScores.get(t2)))
@@ -269,7 +269,7 @@ public class LeaderboardImpl extends Leaderboard {
 					current.setEntry("dataholder", new JsonPrimitive(true));
 					current.setEntry("last_refresh", new JsonPrimitive(System.currentTimeMillis()));
 					current.setEntry("last_refresh_prev",
-							last.entryExists("last_refresh") ? last.getEntry("last_refresh_prev")
+							last.entryExists("last_refresh") ? last.getEntry("last_refresh")
 									: new JsonPrimitive(System.currentTimeMillis()));
 					for (String id : newScores.keySet().stream()
 							.sorted((t1, t2) -> -Integer.compare(newScores.get(t1), newScores.get(t2)))
@@ -352,7 +352,7 @@ public class LeaderboardImpl extends Leaderboard {
 					current.setEntry("dataholder", new JsonPrimitive(true));
 					current.setEntry("last_refresh", new JsonPrimitive(System.currentTimeMillis()));
 					current.setEntry("last_refresh_prev",
-							last.entryExists("last_refresh") ? last.getEntry("last_refresh_prev")
+							last.entryExists("last_refresh") ? last.getEntry("last_refresh")
 									: new JsonPrimitive(System.currentTimeMillis()));
 					for (String id : newScores.keySet().stream()
 							.sorted((t1, t2) -> -Integer.compare(newScores.get(t1), newScores.get(t2)))

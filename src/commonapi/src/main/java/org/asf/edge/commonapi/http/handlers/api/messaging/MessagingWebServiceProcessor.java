@@ -7,9 +7,7 @@ import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.common.entities.messages.WsMessage;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
+import org.asf.edge.common.http.apihandlerutils.functions.*;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.messages.PlayerMessenger;
@@ -44,26 +42,12 @@ public class MessagingWebServiceProcessor extends EdgeWebService<EdgeCommonApiSe
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getUserMessageQueue(FunctionInfo func) throws IOException {
-		// Message queue request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Find save
-		AccountSaveContainer save = account.getSave(tkn.saveID);
-
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult getUserMessageQueue(ServiceRequestInfo req, AccountObject account, AccountSaveContainer save)
+			throws IOException {
 		// Get messenger
 		CommonUpdater.warnPlayerIfUpdating(account);
 		PlayerMessenger messenger = WsMessageService.getInstance().getMessengerFor(account, save);
@@ -94,38 +78,20 @@ public class MessagingWebServiceProcessor extends EdgeWebService<EdgeCommonApiSe
 		return ok("text/xml", str);
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult saveMessage(FunctionInfo func) throws IOException {
-		// Message queue request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			return response(404, "Not found");
-		}
-
-		// Find save
-		AccountSaveContainer save = account.getSave(tkn.saveID);
-
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult saveMessage(ServiceRequestInfo req, AccountObject account, AccountSaveContainer save,
+			@SodRequestParam int userMessageQueueID, @SodRequestParam boolean isDeleted) throws IOException {
 		// Get messenger
 		PlayerMessenger messenger = WsMessageService.getInstance().getMessengerFor(account, save);
 
-		// Parse request
-		int id = Integer.parseInt(req.payload.get("userMessageQueueID"));
-		boolean delete = req.payload.get("isDeleted").equalsIgnoreCase("true");
-
 		// Handle
-		if (delete)
-			messenger.deleteMessage(id);
+		if (isDeleted)
+			messenger.deleteMessage(userMessageQueueID);
 		else
-			messenger.markMessageRead(id);
+			messenger.markMessageRead(userMessageQueueID);
 
 		// Return
 		return ok("text/xml", req.generateXmlValue("bool", true));

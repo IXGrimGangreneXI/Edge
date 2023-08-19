@@ -61,3 +61,13 @@ dependencies {
 }
 
 project.configurations.implementation.canBeResolved = true
+
+eclipse {
+  jdt {
+	  file {
+		  withProperties { properties ->
+			  properties.setProperty("org.eclipse.jdt.core.compiler.codegen.methodParameters", "generate")
+		  }
+	  }
+  }
+}

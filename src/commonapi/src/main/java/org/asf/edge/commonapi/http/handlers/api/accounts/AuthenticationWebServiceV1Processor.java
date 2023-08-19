@@ -8,11 +8,7 @@ import java.util.TimeZone;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
+import org.asf.edge.common.http.apihandlerutils.functions.*;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -48,23 +44,10 @@ public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeComm
 		setResponseStatus(404, "Not found");
 	}
 
-	@Function(value = "DeleteAccountNotification", allowedMethods = { "POST" })
-	public FunctionResult deleteAccount(FunctionInfo func) throws IOException {
-		// Handle login request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return response(400, "Bad request");
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			return response(404, "Not found");
-		}
-
+	@SodRequest
+	@SodTokenSecured
+	@Function(value = "DeleteAccountNotification")
+	public FunctionResult deleteAccount(ServiceRequestInfo req, AccountObject account) throws IOException {
 		// Delete account
 		account.deleteAccount();
 

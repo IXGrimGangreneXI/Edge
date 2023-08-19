@@ -147,3 +147,13 @@ task updateData () {
 
 updateData.dependsOn project.tasks.build
 build.finalizedBy updateData
+
+eclipse {
+  jdt {
+	  file {
+		  withProperties { properties ->
+			  properties.setProperty("org.eclipse.jdt.core.compiler.codegen.methodParameters", "generate")
+		  }
+	  }
+  }
+}
