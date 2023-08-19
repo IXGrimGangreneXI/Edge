@@ -2,6 +2,7 @@ package org.asf.edge.contentserver;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -9,6 +10,7 @@ import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
 
@@ -19,15 +21,19 @@ import org.asf.edge.contentserver.config.ContentServerConfig;
 import org.asf.edge.contentserver.events.config.*;
 
 public class EdgeContentServerMain {
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, URISyntaxException {
 		// Set locale
 		Locale.setDefault(Locale.ENGLISH);
-		 
+
 		// Splash
 		EdgeContentServer.printSplash();
 
 		// Common init
 		CommonInit.initAll();
+
+		// Run updater if needed
+		CommonUpdater.init("contentserver", "stable", EdgeContentServer.CONTENT_SERVER_VERSION,
+				new File(EdgeContentServerMain.class.getProtectionDomain().getCodeSource().getLocation().toURI()));
 
 		// Logger
 		Logger logger = LogManager.getLogger("CONTENTSERVER");

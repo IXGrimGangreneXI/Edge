@@ -6,8 +6,8 @@ plugins {
 version = "1.0.0.A1"
 group = "org.asf.edge"
 
-sourceCompatibility = '1.15'
-targetCompatibility = '1.15'
+sourceCompatibility = '1.17'
+targetCompatibility = '1.17'
 
 def authorname = "AerialWorks Software Foundation"
 
@@ -23,6 +23,7 @@ repositories {
 
 jar {
 	from "../../../build/pkg-sentinel"
+	from "sentinelfiles"
 	destinationDir = file("../../../build/sentinal-images-unsigned")
 	archiveExtension = "svp"
 }
@@ -30,6 +31,7 @@ jar {
 dependencies {
 	implementation project(":deps:connective-http")
 	implementation project(":src:modulemanager")
+	implementation project(":src:globalserver")
 	implementation project(":src:common")
 
 	implementation project(":deps:razorwhip:Sentinel Launcher:sentinel-launcher")

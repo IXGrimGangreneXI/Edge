@@ -1,7 +1,5 @@
 package org.asf.edge.gameplayapi.xmls.achievements;
 
-import org.asf.edge.gameplayapi.xmls.quests.MissionData.AchievementRewardBlock;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

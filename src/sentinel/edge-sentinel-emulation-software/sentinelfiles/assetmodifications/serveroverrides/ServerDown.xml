@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ServerDown>
+	<Down>false</Down>
+	<CudosDown>true</CudosDown>
+	<Message>
+	<ProductGroupID>9</ProductGroupID>
+    <Locale>en-US</Locale>
+	<Title>Server Maintenance</Title>
+	<!-->For Unplanned Maintenance -->
+    <Text><![CDATA[
+	Oh no, looks like the Terrible Terrors are at it again! We hid our servers to protect them.
+	
+	Check back soon.
+	]]>
+	</Text>
+	<!-- For Planned Maintenance
+    <Text><![CDATA[
+	The Edge servers are presently undergoing routine repairs and maintenance so that you and your dragons can explore better!
+	
+	We will be back soon!
+	]]>
+    </Text> -->
+  </Message> 
+  <Message>
+	<ProductGroupID>11</ProductGroupID>
+    <Locale>en-US</Locale>
+	<Title>Server Maintenance</Title>
+	<!-->For Unplanned Maintenance -->
+    <Text><![CDATA[
+	Oh no, looks like the Terrible Terrors are at it again! We hid our servers to protect them.
+
+	Check back soon.
+	]]>
+	</Text>
+	<!-- For Planned Maintenance
+    <Text><![CDATA[
+	The Edge servers are presently undergoing routine repairs and maintenance so that you and your dragons can explore better!
+
+	We will be back soon!
+	]]>
+    </Text> -->
+  </Message>
+  <Scheduled>
+  	<!-- Date format needs to be MM/dd/yyyy hh:mm AM/PM PST TimeZone -->
+	<StartTime>06/30/5023 11:59 PM</StartTime>
+	<EndTime>12/31/5035 12:00 AM</EndTime>
+	<!-- <StartTime>08/09/2023 02:00 AM</StartTime>
+	<EndTime>08/10/2023 02:00 AM</EndTime>
+	<EdgeStartTime>08/09/2023 02:00</EdgeStartTime>
+	<EdgeEndTime>08/10/2023 02:00</EdgeEndTime> -->
+	<!--<NoticeBeforeInDays>7</NoticeBeforeInDays>	-->
+	<ModifiedTime>08/08/2023 8:54 PM</ModifiedTime>
+	<NoticeBeforeInDays>10957280</NoticeBeforeInDays>
+	<DisplayCount>-1</DisplayCount>
+
+  	<Message>
+		<ProductGroupID>9</ProductGroupID>
+		<Locale>en-US</Locale>
+		<!-- maintenance warning
+		<Title>UPCOMING MAINTENANCE</Title>	
+		<Text><![CDATA[
+		Hello and welcome back to Project Edge!
+	
+		The servers are scheduled to go down for maintenance on {from} PST.
+		
+		Please note that during that time the game will be unavailable, maintenance should not take too long and we will be back soon!
+		]]></Text> -->
+		<!-- early alpha notice
+		<Title>EARLY ALPHA NOTICE</Title>	
+		<Text><![CDATA[
+		Welcome to Project Edge!
+		
+		Note that this server is still in very early stages of development, many features may be missing, things can break hard. Before reporting issues please check if the issue has already been reported before submitting support requests or bug reports. Welcome back to School of Dragons!
+		
+		Please note we are not associated with DreamWorks or Jumpstart Games, this is a fan-run project.
+		]]></Text>   -->
+		<!-- pre-alpha notice -->
+		<Title>EARLY PRE-ALPHA NOTICE</Title>	
+		<Text><![CDATA[
+		Welcome to Project Edge!
+		
+		Note that this server is still in very early stages of development, many features may be missing, things can break hard. Before reporting issues please check if the issue has already been reported before submitting support requests or bug reports. Welcome back to School of Dragons!
+		
+		While playing, please remember that this is a PRE-ALPHA build of Project Edge, this server is presently unstable and lacks critical features, you are allowed to use cheats for getting through missing features but please limit use of commands.
+		
+		We are not associated with nor endorsed by DreamWorks or Jumpstart Games, this is a fan-run project, this emulator uses the original game client, we do not claim the game as our own.
+		]]></Text>
+  	</Message>
+  	<Message>
+		<ProductGroupID>11</ProductGroupID>
+		<Locale>en-US</Locale>
+		<!-- maintenance warning
+		<Title>UPCOMING MAINTENANCE</Title>
+		<Text><![CDATA[
+		Hello and welcome back to Project Edge!
+
+		The servers are scheduled to go down for maintenance on {from} PST.
+
+		Please note that during that time the game will be unavailable, maintenance should not take too long and we will be back soon!
+		]]></Text> -->
+		<!-- early alpha notice
+		<Title>EARLY ALPHA NOTICE</Title>
+		<Text><![CDATA[
+		Welcome to Project Edge!
+
+		Note that this server is still in very early stages of development, many features may be missing, things can break hard. Before reporting issues please check if the issue has already been reported before submitting support requests or bug reports. Welcome back to School of Dragons!
+
+		Please note we are not associated with DreamWorks or Jumpstart Games, this is a fan-run project.
+		]]></Text>   -->
+		<!-- pre-alpha notice -->
+		<Title>EARLY PRE-ALPHA NOTICE</Title>
+		<Text><![CDATA[
+		Welcome to Project Edge!
+
+		Note that this server is still in very early stages of development, many features may be missing, things can break hard. Before reporting issues please check if the issue has already been reported before submitting support requests or bug reports. Welcome back to School of Dragons!
+
+		While playing, please remember that this is a PRE-ALPHA build of Project Edge, this server is presently unstable and lacks critical features, you are allowed to use cheats for getting through missing features but please limit use of commands.
+
+		We are not associated with nor endorsed by DreamWorks or Jumpstart Games, this is a fan-run project, this emulator uses the original game client, we do not claim the game as our own.
+		]]></Text>
+  	</Message>
+  </Scheduled>
+</ServerDown>
