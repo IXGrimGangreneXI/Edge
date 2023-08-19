@@ -25,7 +25,7 @@ import org.asf.edge.contentserver.config.ContentServerConfig;
  *
  */
 public class EdgeContentServer implements IBaseServer {
-	public static final String CONTENT_SERVER_VERSION = "1.0.0.A1";
+	public static final String CONTENT_SERVER_VERSION = "1.0.0.A2";
 
 	private Logger logger;
 	private ContentServerConfig config;
@@ -36,7 +36,7 @@ public class EdgeContentServer implements IBaseServer {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
 		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
-		System.out.println("               Content Server Version 1.0.0.A1               ");
+		System.out.println("               Content Server Version 1.0.0.A2               ");
 		System.out.println("                                                             ");
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("");

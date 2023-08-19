@@ -41,7 +41,7 @@ import org.asf.edge.commonapi.config.CommonApiServerConfig;
  *
  */
 public class EdgeCommonApiServer implements IBaseServer {
-	public static final String COMMON_API_VERSION = "1.0.0.A1";
+	public static final String COMMON_API_VERSION = "1.0.0.A2";
 
 	private Logger logger;
 	private CommonApiServerConfig config;
@@ -53,7 +53,7 @@ public class EdgeCommonApiServer implements IBaseServer {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
 		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
-		System.out.println("             Common API Server Version: 1.0.0.A1             ");
+		System.out.println("             Common API Server Version: 1.0.0.A2             ");
 		System.out.println("                                                             ");
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("");

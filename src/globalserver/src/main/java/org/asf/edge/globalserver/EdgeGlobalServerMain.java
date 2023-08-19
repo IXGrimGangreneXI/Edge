@@ -38,7 +38,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class EdgeGlobalServerMain {
-	public static final String GLOBAL_SERVER_VERSION = "1.0.0.A1";
+	public static final String GLOBAL_SERVER_VERSION = "1.0.0.A2";
 
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		// Set locale
@@ -48,7 +48,7 @@ public class EdgeGlobalServerMain {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
 		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
-		System.out.println("                Full Server Version: 1.0.0.A1                ");
+		System.out.println("                Full Server Version: 1.0.0.A2                ");
 		System.out.println("                                                             ");
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("");
