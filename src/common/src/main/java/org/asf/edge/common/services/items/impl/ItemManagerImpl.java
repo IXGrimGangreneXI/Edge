@@ -6,6 +6,7 @@ import org.asf.edge.common.events.items.ItemManagerLoadEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
+import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.util.RandomSelectorUtil;
 import org.asf.edge.common.xmls.items.ItemStoreDefinitionData;
@@ -32,7 +33,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
@@ -503,9 +503,8 @@ public class ItemManagerImpl extends ItemManager {
 		// Load sales
 		logger.info("Loading item sales...");
 		try {
-			File saleConfig = new File("salesettings.json");
 			SimpleDateFormat fmt = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-			if (!saleConfig.exists()) {
+			if (!ConfigProviderService.getInstance().configExists("server", "salesettings")) {
 				Calendar cal = Calendar.getInstance();
 				cal.set(Calendar.HOUR_OF_DAY, 12);
 				cal.set(Calendar.MINUTE, 00);
@@ -518,64 +517,51 @@ public class ItemManagerImpl extends ItemManager {
 				cal.add(Calendar.MONTH, 1);
 				Date end = cal.getTime();
 
-				Files.writeString(saleConfig.toPath(), "{\n" //
-						+ "    \"randomSales\": {\n" //
-						+ "        \"enabled\": true,\n" //
-						+ "        \n" //
-						+ "        \"__COMMENT1__\": \"The following settings control the interval and expiry for sales\",\n" //
-						+ "        \"__COMMENT2__\": \"The interval can be either daily, weekly, monthly or yearly, however make sure the expiry isnt too high else things can get weird\",\n" //
-						+ "        \n" //
-						+ "        \"saleTimeDays\": 20,\n" //
-						+ "        \"refreshInterval\": \"monthly\",\n" //
-						+ "        \n" //
-						+ "        \"__COMMENT3__\": \"The modifiers below control how much the random sales discount\",\n" //
-						+ "        \"randomMinimalModifier\": 0.1,\n" //
-						+ "        \"randomMaximalModifier\": 0.3,\n" //
-						+ "        \n" //
-						+ "        \"__COMMENT4__\": \"The sale count factor is used to determine how many items should be on sale per category\",\n" //
-						+ "        \"saleCountFactor\": 10,\n" //
-						+ "        \n" //
-						+ "        \"__COMMENT5__\": \"The following maximum value is used to limit the amount of sales per category\",\n" //
-						+ "        \"maximumSalesPerCategory\": 12\n" //
-						+ "    },\n" //
-						+ "    \n" //
-						+ "    \"sales\": [\n" //
-						+ "        {\n" //
-						+ "            \"name\": \"Example sale, eggs and hatch tickets at 95% discount\",\n" //
-						+ "            \n" //
-						+ "            \"__COMMENT6__\": \"Sale duration\",\n" //
-						+ "            \"start\": \"" + fmt.format(start) + "\",\n" //
-						+ "            \"end\": \"" + fmt.format(end) + "\",\n" //
-						+ "            \n" //
-						+ "            \"modifier\": 0.95,\n" //
-						+ "            \n" //
-						+ "            \"__COMMENT7__\": \"Adds dragon egg categories to sales, you can find category IDs in item definitions\",\n" //
-						+ "            \"categories\": [\n" //
-						+ "                456,\n" //
-						+ "                \n" //
-						+ "                545,\n" //
-						+ "                546,\n" //
-						+ "                547,\n" //
-						+ "                548,\n" //
-						+ "                549,\n" //
-						+ "                550,\n" //
-						+ "                551\n" //
-						+ "            ],\n" //
-						+ "            \n" //
-						+ "            \"__COMMENT8__\": \"Adds the instant hatch ticket to the sale\",\n" //
-						+ "            \"itemIDs\": [\n" //
-						+ "                18601\n" //
-						+ "            ],\n" //
-						+ "            \n" //
-						+ "            \"memberOnly\": false\n" //
-						+ "        }\n" //
-						+ "    ]\n" //
-						+ "}\n" //
-				);
+				JsonObject settings = new JsonObject();
+				JsonObject randomSales = new JsonObject();
+				randomSales.addProperty("__COMMENT1__",
+						"The following settings control the interval and expiry for sales");
+				randomSales.addProperty("__COMMENT2__",
+						"The interval can be either daily, weekly, monthly or yearly, however make sure the expiry isnt too high else things can get weird");
+				randomSales.addProperty("enabled", true);
+				randomSales.addProperty("saleTimeDays", 20);
+				randomSales.addProperty("refreshInterval", "monthly");
+				randomSales.addProperty("__COMMENT3__",
+						"The modifiers below control how much the random sales discount");
+				randomSales.addProperty("randomMinimalModifier", 0.1f);
+				randomSales.addProperty("randomMaximalModifier", 0.3f);
+				randomSales.addProperty("__COMMENT4__",
+						"The sale count factor is used to determine how many items should be on sale per category");
+				randomSales.addProperty("saleCountFactor", 10);
+				randomSales.addProperty("maximumSalesPerCategory", 12);
+				settings.add("randomSales", randomSales);
+				JsonArray s = new JsonArray();
+				JsonObject s1 = new JsonObject();
+				s1.addProperty("name", "Example sale, eggs and hatch tickets at 95% discount");
+				s1.addProperty("start", fmt.format(start));
+				s1.addProperty("end", fmt.format(end));
+				s1.addProperty("modifier", 0.95f);
+				JsonArray cats = new JsonArray();
+				cats.add(456);
+				cats.add(545);
+				cats.add(546);
+				cats.add(547);
+				cats.add(548);
+				cats.add(549);
+				cats.add(550);
+				cats.add(551);
+				s1.add("categories", cats);
+				JsonArray itemIDs = new JsonArray();
+				itemIDs.add(18601);
+				s1.add("itemIDs", itemIDs);
+				s1.addProperty("memberOnly", false);
+				s.add(s1);
+				settings.add("sales", s);
+				ConfigProviderService.getInstance().saveConfig("server", "salesettings", settings);
 			}
 
 			// Load config
-			JsonObject saleConf = JsonParser.parseString(Files.readString(saleConfig.toPath())).getAsJsonObject();
+			JsonObject saleConf = ConfigProviderService.getInstance().loadConfig("server", "salesettings");
 			RandomSaleConfig config = new RandomSaleConfig();
 
 			// Read properties

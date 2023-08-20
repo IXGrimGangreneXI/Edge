@@ -1,8 +1,6 @@
 package org.asf.edge.common.services.accounts.impl;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -11,12 +9,10 @@ import java.sql.Statement;
 import java.util.Properties;
 
 import org.asf.edge.common.services.accounts.impl.accounts.db.DatabaseRequest;
+import org.asf.edge.common.services.config.ConfigProviderService;
 import org.postgresql.util.PGobject;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 
 public class PostgresDatabaseAccountManager extends DatabaseAccountManager {
 
@@ -26,15 +22,15 @@ public class PostgresDatabaseAccountManager extends DatabaseAccountManager {
 	@Override
 	protected void managerLoaded() {
 		// Write/load config
-		File configFile = new File("accountmanager.json");
-		JsonObject accountManagerConfig = new JsonObject();
-		if (configFile.exists()) {
-			try {
-				accountManagerConfig = JsonParser.parseString(Files.readString(configFile.toPath())).getAsJsonObject();
-			} catch (JsonSyntaxException | IOException e) {
-				logger.error("Failed to load account manager configuration!", e);
-				return;
-			}
+		JsonObject accountManagerConfig;
+		try {
+			accountManagerConfig = ConfigProviderService.getInstance().loadConfig("server", "accountmanager");
+		} catch (IOException e) {
+			logger.error("Failed to load account manager configuration!", e);
+			return;
+		}
+		if (accountManagerConfig == null) {
+			accountManagerConfig = new JsonObject();
 		}
 		JsonObject databaseManagerConfig = new JsonObject();
 		if (!accountManagerConfig.has("postgreSQL")) {
@@ -47,8 +43,7 @@ public class PostgresDatabaseAccountManager extends DatabaseAccountManager {
 
 			// Write config
 			try {
-				Files.writeString(configFile.toPath(),
-						new Gson().newBuilder().setPrettyPrinting().create().toJson(accountManagerConfig));
+				ConfigProviderService.getInstance().saveConfig("server", "accountmanager", accountManagerConfig);
 			} catch (IOException e) {
 				logger.error("Failed to write the account manager configuration!", e);
 				return;

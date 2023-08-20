@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -27,6 +26,7 @@ import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
+import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.xmls.achievements.UserRankData;
 import org.asf.edge.common.xmls.achievements.UserRankList;
 import org.asf.edge.common.events.achievements.AchievementManagerLoadEvent;
@@ -366,9 +366,8 @@ public class AchievementManagerImpl extends AchievementManager {
 	@Override
 	public synchronized RankMultiplierInfo[] getServerwideRankMultipliers() {
 		// Load multipliers from disk
-		File multiplierConfig = new File("multipliers.json");
 		SimpleDateFormat fmt = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-		if (!multiplierConfig.exists()) {
+		if (!ConfigProviderService.getInstance().configExists("server", "multipliers")) {
 			Calendar cal = Calendar.getInstance();
 			cal.set(Calendar.HOUR, 12);
 			cal.set(Calendar.MINUTE, 00);
@@ -377,28 +376,28 @@ public class AchievementManagerImpl extends AchievementManager {
 
 			// Generate
 			try {
-				Files.writeString(multiplierConfig.toPath(), "{\n"
-						+ "    \"__COMMENT__\": \"This file defines the active multipliers used in the game.\",\n"
-						+ "    \"__COMMENT2_\": \"The example below is generated at first run and is configured to create 3 multipliers that are valid for 10 days.\",\n"
-						+ "\n" //
-						+ "    \"multipliers\": [\n" //
-						+ "        {\n" //
-						+ "            \"type\": 1,\n" //
-						+ "            \"factor\": 2,\n" //
-						+ "            \"expiry\": \"" + fmt.format(t) + "\"\n" //
-						+ "        },\n" //
-						+ "        {\n" //
-						+ "            \"type\": 12,\n" //
-						+ "            \"factor\": 2,\n" //
-						+ "            \"expiry\": \"" + fmt.format(t) + "\"\n" //
-						+ "        },\n"//
-						+ "        {\n" //
-						+ "            \"type\": 8,\n" //
-						+ "            \"factor\": 2,\n" //
-						+ "            \"expiry\": \"" + fmt.format(t) + "\"\n" //
-						+ "        }\n" //
-						+ "    ]\n" //
-						+ "}\n");
+				JsonObject conf = new JsonObject();
+				conf.addProperty("__COMMENT__", "This file defines the active multipliers used in the game.");
+				conf.addProperty("__COMMENT2__",
+						"The example below is generated at first run and is configured to create 3 multipliers that are valid for 10 days.");
+				JsonArray ml = new JsonArray();
+				conf.add("multipliers", ml);
+				JsonObject m1 = new JsonObject();
+				m1.addProperty("type", 1);
+				m1.addProperty("factor", 2);
+				m1.addProperty("expiry", fmt.format(t));
+				ml.add(m1);
+				JsonObject m2 = new JsonObject();
+				m2.addProperty("type", 12);
+				m2.addProperty("factor", 2);
+				m2.addProperty("expiry", fmt.format(t));
+				ml.add(m2);
+				JsonObject m3 = new JsonObject();
+				m3.addProperty("type", 8);
+				m3.addProperty("factor", 2);
+				m3.addProperty("expiry", fmt.format(t));
+				ml.add(m3);
+				ConfigProviderService.getInstance().saveConfig("server", "multipliers", conf);
 			} catch (IOException e) {
 				logger.error("Failed to save rank multipliers", e);
 			}
@@ -407,7 +406,7 @@ public class AchievementManagerImpl extends AchievementManager {
 		// Read config
 		ArrayList<RankMultiplierInfo> multipliers = new ArrayList<RankMultiplierInfo>();
 		try {
-			JsonObject conf = JsonParser.parseString(Files.readString(multiplierConfig.toPath())).getAsJsonObject();
+			JsonObject conf = ConfigProviderService.getInstance().loadConfig("server", "multipliers");
 			for (JsonElement ele : conf.get("multipliers").getAsJsonArray()) {
 				JsonObject m = ele.getAsJsonObject();
 

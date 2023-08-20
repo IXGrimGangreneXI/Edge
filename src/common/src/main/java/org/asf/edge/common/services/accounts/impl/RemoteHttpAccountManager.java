@@ -1,12 +1,10 @@
 package org.asf.edge.common.services.accounts.impl;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,16 +18,15 @@ import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.accounts.http.RemoteHttpAccountObject;
 import org.asf.edge.common.services.accounts.impl.accounts.http.RemoteHttpSaveContainer;
+import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.common.util.HttpUpgradeUtil;
 import org.asf.edge.common.util.SimpleBinaryMessageClient;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 
 public class RemoteHttpAccountManager extends AccountManager {
 
@@ -43,15 +40,15 @@ public class RemoteHttpAccountManager extends AccountManager {
 	@Override
 	public void loadManager() {
 		// Write/load config
-		File configFile = new File("accountmanager.json");
-		JsonObject accountManagerConfig = new JsonObject();
-		if (configFile.exists()) {
-			try {
-				accountManagerConfig = JsonParser.parseString(Files.readString(configFile.toPath())).getAsJsonObject();
-			} catch (JsonSyntaxException | IOException e) {
-				logger.error("Failed to load account manager configuration!", e);
-				return;
-			}
+		JsonObject accountManagerConfig;
+		try {
+			accountManagerConfig = ConfigProviderService.getInstance().loadConfig("server", "accountmanager");
+		} catch (IOException e) {
+			logger.error("Failed to load account manager configuration!", e);
+			return;
+		}
+		if (accountManagerConfig == null) {
+			accountManagerConfig = new JsonObject();
 		}
 		JsonObject config = new JsonObject();
 		if (!accountManagerConfig.has("remoteHttpManager")) {
@@ -61,8 +58,7 @@ public class RemoteHttpAccountManager extends AccountManager {
 
 			// Write config
 			try {
-				Files.writeString(configFile.toPath(),
-						new Gson().newBuilder().setPrettyPrinting().create().toJson(accountManagerConfig));
+				ConfigProviderService.getInstance().saveConfig("server", "accountmanager", accountManagerConfig);
 			} catch (IOException e) {
 				logger.error("Failed to write the account manager configuration!", e);
 				return;

@@ -1,8 +1,6 @@
 package org.asf.edge.common.services.commondata.impl;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -14,11 +12,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.commondata.impl.db.DatabaseCommonDataManager;
 import org.asf.edge.common.services.commondata.impl.db.DatabaseRequest;
+import org.asf.edge.common.services.config.ConfigProviderService;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 
 public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager {
 
@@ -34,16 +30,15 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 	@Override
 	public void loadManager() {
 		// Write/load config
-		File configFile = new File("commondata.json");
-		JsonObject commonDataManagerConfig = new JsonObject();
-		if (configFile.exists()) {
-			try {
-				commonDataManagerConfig = JsonParser.parseString(Files.readString(configFile.toPath()))
-						.getAsJsonObject();
-			} catch (JsonSyntaxException | IOException e) {
-				logger.error("Failed to load common data manager configuration!", e);
-				return;
-			}
+		JsonObject commonDataManagerConfig;
+		try {
+			commonDataManagerConfig = ConfigProviderService.getInstance().loadConfig("server", "commondata");
+		} catch (IOException e) {
+			logger.error("Failed to load common data manager configuration!", e);
+			return;
+		}
+		if (commonDataManagerConfig == null) {
+			commonDataManagerConfig = new JsonObject();
 		}
 		JsonObject databaseManagerConfig = new JsonObject();
 		if (!commonDataManagerConfig.has("databaseManager")) {
@@ -56,8 +51,7 @@ public class DefaultDatabaseCommonDataManager extends DatabaseCommonDataManager 
 
 			// Write config
 			try {
-				Files.writeString(configFile.toPath(),
-						new Gson().newBuilder().setPrettyPrinting().create().toJson(commonDataManagerConfig));
+				ConfigProviderService.getInstance().saveConfig("server", "commondata", commonDataManagerConfig);
 			} catch (IOException e) {
 				logger.error("Failed to write the common data manager configuration!", e);
 				return;

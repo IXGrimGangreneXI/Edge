@@ -6,24 +6,18 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.entities.achivements.RankTypeID;
-import org.asf.edge.common.entities.items.ItemInfo;
-import org.asf.edge.common.entities.items.PlayerInventory;
-import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.events.achievements.RankChangedEvent;
 import org.asf.edge.common.events.items.InventoryItemCreateEvent;
@@ -35,7 +29,7 @@ import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
-import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.events.quests.QuestManagerLoadEvent;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
@@ -43,7 +37,6 @@ import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.gameplayapi.util.RewardsUtil;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
-import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData.MissionRulesBlock;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData.TaskBlock;
@@ -52,7 +45,6 @@ import org.asf.edge.gameplayapi.xmls.quests.MissionData.MissionRulesBlock.Prereq
 import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData;
 import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData.CompletedMissionInfoBlock;
 import org.asf.edge.gameplayapi.xmls.quests.edgespecific.QuestRegistryManifest;
-import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardBlock;
 import org.asf.edge.modules.IEdgeModule;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -222,18 +214,21 @@ public class QuestManagerImpl extends QuestManager {
 		loadQuests();
 
 		// Load update time
-		if (!new File("questversion.json").exists()) {
+		if (!ConfigProviderService.getInstance().configExists("server", "questversion")) {
 			try {
-				Files.writeString(Path.of("questversion.json"), "{\n    "
-						+ "\"__COMMENT1__\": \"this file controls the quest version, each time quest data is updated this file should also be updated to hold a new version ID\",\n    "
-						+ "\"__COMMENT2__\": \"you MUST update this file manually otherwise quests wont be recomputed after user content updates\",\n    "
-						+ "\"version\": \"" + System.currentTimeMillis() + "\"\n" + "}\n");
+				JsonObject conf = new JsonObject();
+				conf.addProperty("__COMMENT1__",
+						"this file controls the quest version, each time quest data is updated this file should also be updated to hold a new version ID");
+				conf.addProperty("__COMMENT2__",
+						"you MUST update this file manually otherwise quests wont be recomputed after user content updates");
+				conf.addProperty("version", System.currentTimeMillis());
+				ConfigProviderService.getInstance().saveConfig("server", "questversion", conf);
 			} catch (IOException e) {
 			}
 		}
 		try {
-			lastQuestUpdateVersion = JsonParser.parseString(Files.readString(Path.of("questversion.json")))
-					.getAsJsonObject().get("version").getAsString();
+			lastQuestUpdateVersion = ConfigProviderService.getInstance().loadConfig("serve", "questversion")
+					.get("version").getAsString();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

@@ -1,8 +1,6 @@
 package org.asf.edge.common.services.commondata;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 
@@ -13,11 +11,9 @@ import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.commondata.impl.DefaultDatabaseCommonDataManager;
 import org.asf.edge.common.services.commondata.impl.PostgresDatabaseCommonDataManager;
 import org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager;
+import org.asf.edge.common.services.config.ConfigProviderService;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 
 /**
  * 
@@ -50,16 +46,15 @@ public abstract class CommonDataManager extends AbstractService {
 
 		// Write/load config
 		Logger logger = LogManager.getLogger("CommonDataManager");
-		File configFile = new File("commondata.json");
-		JsonObject commonDataManagerConfig = new JsonObject();
-		if (configFile.exists()) {
-			try {
-				commonDataManagerConfig = JsonParser.parseString(Files.readString(configFile.toPath()))
-						.getAsJsonObject();
-			} catch (JsonSyntaxException | IOException e) {
-				logger.error("Failed to load common data manager configuration!", e);
-				return;
-			}
+		JsonObject commonDataManagerConfig;
+		try {
+			commonDataManagerConfig = ConfigProviderService.getInstance().loadConfig("server", "commondata");
+		} catch (IOException e) {
+			logger.error("Failed to load common data manager configuration!", e);
+			return;
+		}
+		if (commonDataManagerConfig == null) {
+			commonDataManagerConfig = new JsonObject();
 		}
 		boolean changed = false;
 		JsonObject remoteManagerConfig = new JsonObject();
@@ -93,8 +88,7 @@ public abstract class CommonDataManager extends AbstractService {
 		if (changed) {
 			// Write config
 			try {
-				Files.writeString(configFile.toPath(),
-						new Gson().newBuilder().setPrettyPrinting().create().toJson(commonDataManagerConfig));
+				ConfigProviderService.getInstance().saveConfig("server", "commondata", commonDataManagerConfig);
 			} catch (IOException e) {
 				logger.error("Failed to write the common data manager configuration!", e);
 				return;
