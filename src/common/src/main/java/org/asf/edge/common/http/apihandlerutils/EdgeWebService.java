@@ -440,6 +440,7 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 									args[i] = false;
 								else
 									pendingException = new HttpException(400, "Bad request");
+								break;
 							}
 
 							case "byte": {
@@ -448,6 +449,7 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 								} catch (Exception e) {
 									pendingException = new HttpException(400, "Bad request");
 								}
+								break;
 							}
 
 							case "char": {
@@ -458,6 +460,7 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 								} catch (Exception e) {
 									pendingException = new HttpException(400, "Bad request");
 								}
+								break;
 							}
 
 							case "short": {
@@ -466,6 +469,7 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 								} catch (Exception e) {
 									pendingException = new HttpException(400, "Bad request");
 								}
+								break;
 							}
 
 							case "int": {
@@ -474,6 +478,7 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 								} catch (Exception e) {
 									pendingException = new HttpException(400, "Bad request");
 								}
+								break;
 							}
 
 							case "long": {
@@ -482,6 +487,7 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 								} catch (Exception e) {
 									pendingException = new HttpException(400, "Bad request");
 								}
+								break;
 							}
 
 							case "float": {
@@ -490,6 +496,7 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 								} catch (Exception e) {
 									pendingException = new HttpException(400, "Bad request");
 								}
+								break;
 							}
 
 							case "double": {
@@ -498,6 +505,7 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 								} catch (Exception e) {
 									pendingException = new HttpException(400, "Bad request");
 								}
+								break;
 							}
 
 							}

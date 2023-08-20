@@ -26,6 +26,7 @@ import org.asf.edge.common.xmls.achievements.AchievementInfoList;
 import org.asf.edge.common.xmls.achievements.UserRankData;
 import org.asf.edge.common.xmls.achievements.UserRankList;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
+import org.asf.edge.gameplayapi.xmls.achievements.AchievementDragonIdList;
 import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardList;
 import org.asf.edge.gameplayapi.xmls.multipliers.RewardTypeMultiplierData;
 import org.asf.edge.gameplayapi.xmls.multipliers.RewardTypeMultiplierListData;
@@ -124,7 +125,7 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	@TokenRequireCapability("gp")
 	public FunctionResult setAchievementByEntityIDs(FunctionInfo func, ServiceRequestInfo req,
 			AccountSaveContainer save, @SodRequestParam int achievementID, @SodRequestParam String groupID,
-			@SodRequestParam String[] petIDs) throws IOException {
+			@SodRequestParam AchievementDragonIdList petIDs) throws IOException {
 		// Handle task reward request
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
