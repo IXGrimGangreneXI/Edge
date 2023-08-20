@@ -64,8 +64,6 @@ public class ConfigProviderServiceImpl extends ConfigProviderService {
 			throw new IllegalArgumentException(
 					"Config names may only contain lowercase alphanumeric characters, hyphens and underscores");
 		synchronized (configs) {
-			if (configs.containsKey(namespace + "/" + config))
-				return configs.get(namespace + "/" + config);
 			File root = namespace.equals("server") ? new File(".") : new File(namespace);
 			File configFile = new File(root, config + ".json");
 			if (configFile.exists()) {
@@ -87,8 +85,6 @@ public class ConfigProviderServiceImpl extends ConfigProviderService {
 			throw new IllegalArgumentException(
 					"Config names may only contain lowercase alphanumeric characters, hyphens and underscores");
 		synchronized (configs) {
-			if (configs.containsKey(namespace + "/" + config))
-				return configs.get(namespace + "/" + config);
 			File root = namespace.equals("server") ? new File(".") : new File(namespace);
 			File configFile = new File(root, config + ".json");
 			if (configFile.exists()) {

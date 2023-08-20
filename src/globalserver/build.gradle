@@ -110,13 +110,6 @@ task installation () {
 	}
 }
 
-task pkg(type: Zip, dependsOn: installation) {
-	from "../../build/pkg/" + project.version
-	destinationDir = file("../../build/packages")
-	archiveBaseName = "edge"
-}
-installation.finalizedBy project.tasks.pkg
-
 installation.dependsOn project.tasks.build
 build.finalizedBy installation
 

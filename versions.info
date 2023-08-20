@@ -1,0 +1,8 @@
+channel=stable
+
+sentinel=1.0.0.A2
+globalserver=1.0.0.A2
+contentserver=1.0.0.A2
+commonapi=1.0.0.A2
+gameplayapi=1.0.0.A2
+mmoserver=1.0.0.A2

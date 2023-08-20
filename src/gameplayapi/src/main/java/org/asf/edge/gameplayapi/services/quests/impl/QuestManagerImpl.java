@@ -227,7 +227,7 @@ public class QuestManagerImpl extends QuestManager {
 			}
 		}
 		try {
-			lastQuestUpdateVersion = ConfigProviderService.getInstance().loadConfig("serve", "questversion")
+			lastQuestUpdateVersion = ConfigProviderService.getInstance().loadConfig("server", "questversion")
 					.get("version").getAsString();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
