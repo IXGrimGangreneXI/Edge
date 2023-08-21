@@ -72,6 +72,7 @@ public class LeaderboardImpl extends Leaderboard {
 
 			// Get score for all saves
 			for (String save : account.getSaveIDs()) {
+				// TODO: change to not be hardcoded
 				userScores.put(save, AchievementManager.getInstance()
 						.getRank(account.getSave(save), save, RankTypeID.UDT).getTotalScore());
 			}

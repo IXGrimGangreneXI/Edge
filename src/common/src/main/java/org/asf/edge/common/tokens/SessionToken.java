@@ -93,7 +93,7 @@ public class SessionToken {
 					.parseString(new String(Base64.getUrlDecoder().decode(token.split("\\.")[1]), "UTF-8"))
 					.getAsJsonObject();
 			if (!jwtPl.has("sub") || !jwtPl.has("uuid") || !jwtPl.has("iat") || !jwtPl.has("jti") || !jwtPl.has("iss")
-					|| !jwtPl.has("cl") || !jwtPl.has("llt"))
+					|| !jwtPl.has("cl") || !jwtPl.has("llt") || !jwtPl.get("iss").getAsString().equals("EDGE"))
 				return TokenParseResult.INVALID_DATA;
 
 			// Read payload

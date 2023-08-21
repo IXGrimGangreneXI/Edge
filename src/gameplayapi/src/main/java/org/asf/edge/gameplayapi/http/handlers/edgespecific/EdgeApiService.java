@@ -302,6 +302,7 @@ public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
 		resp.addProperty("token", token);
 		resp.addProperty("accountId", acc.getAccountID());
 		resp.addProperty("accountUsername", acc.getUsername());
+		resp.addProperty("accountEmail", acc.getAccountEmail());
 		resp.addProperty("lastLoginTime", acc.getLastLoginTime());
 		resp.addProperty("registrationTime", acc.getRegistrationTimestamp());
 		resp.addProperty("multiplayerEnabled", acc.isMultiplayerEnabled());
@@ -452,6 +453,7 @@ public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
 		resp.addProperty("token", token);
 		resp.addProperty("accountId", acc.getAccountID());
 		resp.addProperty("accountUsername", acc.getUsername());
+		resp.addProperty("accountEmail", acc.getAccountEmail());
 		resp.addProperty("lastLoginTime", acc.getLastLoginTime());
 		resp.addProperty("registrationTime", acc.getRegistrationTimestamp());
 		resp.addProperty("multiplayerEnabled", acc.isMultiplayerEnabled());
@@ -619,6 +621,10 @@ public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
 
 		// Delete
 		acc.deleteAccount();
+
+		// Log
+		getServerInstance().getLogger()
+				.info("Account deleted: " + acc.getAccountID() + " (" + acc.getUsername() + ").");
 
 		// Build response
 		JsonObject resp = new JsonObject();
@@ -903,6 +909,9 @@ public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
 
 		// Delete
 		save.deleteSave();
+
+		// Log
+		getServerInstance().getLogger().info("Save deleted: " + acc.getAccountID() + ".");
 
 		// Build response
 		JsonObject resp = new JsonObject();

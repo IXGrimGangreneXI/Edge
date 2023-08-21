@@ -21,6 +21,8 @@ import java.lang.annotation.Target;
 @Target(METHOD)
 @Retention(RUNTIME)
 public @interface Function {
+	public boolean allowSubPaths() default(false);
+	
 	public String value() default ("<auto>");
 
 	public String[] allowedMethods() default { "GET", "POST" };

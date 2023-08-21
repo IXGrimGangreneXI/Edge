@@ -351,8 +351,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 				JsonObject saveObj = saveEle.getAsJsonObject();
 
 				// Delete save
-				new DatabaseSaveDataContainer(this, getSave(saveObj.get("id").getAsString()), manager)
-						.deleteContainer();
+				((DatabaseSaveContainer) getSave(saveObj.get("id").getAsString())).doDeleteSave();
 				MinigameDataManager.getInstance().deleteDataFor(saveObj.get("id").getAsString());
 			}
 		} catch (SQLException e) {

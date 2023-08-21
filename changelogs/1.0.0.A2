@@ -1,2 +1,4 @@
 Changes in 1.0.0.A2:
 - Added the ConfigProviderService class, instead of working directly with files configs are loaded via this service
+- Fixed updater running while its disabled
+- Fixed levels not syncing to the client right away

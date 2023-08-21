@@ -119,7 +119,7 @@ public class CommonUpdater {
 
 		// Check if automatic updating is enabled
 		if (Boolean.parseBoolean(properties.getOrDefault("runtime-auto-update", "false"))
-				&& (System.getProperty("debugMode") == null)) {
+				&& (System.getProperty("debugMode") == null) && !disableUpdater) {
 			int mins = Integer.parseInt(properties.getOrDefault("runtime-update-timer-length", "120"));
 
 			// Start the automatic update thread
@@ -295,7 +295,8 @@ public class CommonUpdater {
 				// Download the update list
 				logger.info("Update available, new version: " + update);
 				logger.info("Preparing to update Edge...");
-				InputStream strm = new URL(serverURL + (serverURL.endsWith("/") ? "" : "/") + channel + "/" + update + "/update.list")
+				InputStream strm = new URL(
+						serverURL + (serverURL.endsWith("/") ? "" : "/") + channel + "/" + update + "/update.list")
 						.openStream();
 				String fileList = new String(strm.readAllBytes(), "UTF-8").trim();
 				strm.close();

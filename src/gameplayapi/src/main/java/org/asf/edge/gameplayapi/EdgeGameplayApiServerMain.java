@@ -36,8 +36,7 @@ public class EdgeGameplayApiServerMain {
 		CommonInit.initAll();
 
 		// Run updater if needed
-		CommonUpdater.init("gameplayapi",
-				"stable", EdgeGameplayApiServer.GAMEPLAY_API_VERSION,
+		CommonUpdater.init("gameplayapi", "stable", EdgeGameplayApiServer.GAMEPLAY_API_VERSION,
 				new File(EdgeGameplayApiServerMain.class.getProtectionDomain().getCodeSource().getLocation().toURI()));
 
 		// Logger
@@ -126,6 +125,7 @@ public class EdgeGameplayApiServerMain {
 		EventBus.getInstance().dispatchEvent(new GameplayApiServerConfigLoadedEvent(config));
 
 		// Prepare services
+		logger.info("Setting up the server...");
 		logger.debug("Loading common data manager implementations...");
 		CommonDataManager.initCommonDataManagerServices(ServiceImplementationPriorityLevels.NORMAL,
 				ServiceImplementationPriorityLevels.DEFAULT, -5);
@@ -133,7 +133,6 @@ public class EdgeGameplayApiServerMain {
 		ServiceManager.selectServiceImplementation(CommonDataManager.class);
 		logger.debug("Loading common data manager...");
 		CommonDataManager.getInstance().loadManager();
-		logger.info("Setting up the server...");
 		logger.debug("Loading account manager implementations...");
 		AccountManager.initAccountManagerServices(ServiceImplementationPriorityLevels.NORMAL,
 				ServiceImplementationPriorityLevels.DEFAULT, -5);

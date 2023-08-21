@@ -6,6 +6,7 @@ import org.asf.edge.modules.eventbus.EventPath;
 
 /**
  * 
+ * Command setup event
  * 
  * @author Sky Swimmer
  *

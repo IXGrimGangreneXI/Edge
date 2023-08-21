@@ -1,6 +1,7 @@
 package org.asf.edge.common.util;
 
 import java.awt.BorderLayout;
+import java.awt.Font;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
@@ -68,8 +69,6 @@ public class LogWindow {
 			String pref = "[" + timeStr;
 			pref += " ";
 			if (event.getLevel().toString().length() == 4)
-				pref += "  ";
-			else if (event.getLevel().toString().length() == 5)
 				pref += " ";
 			pref += event.getLevel().toString();
 			pref += "] - ";
@@ -149,7 +148,7 @@ public class LogWindow {
 			frm.setTitle("Project Edge");
 			frm.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 			frm.setBounds(100, 100, 900, 500);
-			frm.setResizable(false);
+			frm.setResizable(true);
 			frm.setLocationRelativeTo(null);
 		}
 		contentPane = new JPanel();
@@ -216,6 +215,8 @@ public class LogWindow {
 			}
 		});
 		textField.setColumns(10);
+		Font font = new Font(Font.MONOSPACED, Font.PLAIN, 12);
+		textArea.setFont(font);
 
 		contentPane.add(textField, BorderLayout.SOUTH);
 		contentPane.add(pane, BorderLayout.CENTER);

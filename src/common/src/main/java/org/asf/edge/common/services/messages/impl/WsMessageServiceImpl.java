@@ -3,7 +3,9 @@ package org.asf.edge.common.services.messages.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import org.asf.edge.common.entities.achivements.RankTypeID;
 import org.asf.edge.common.entities.messages.WsMessage;
+import org.asf.edge.common.entities.messages.defaultmessages.WsGenericMessage;
 import org.asf.edge.common.entities.messages.defaultmessages.WsRankMessage;
 import org.asf.edge.common.events.achievements.RankChangedEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
@@ -12,10 +14,13 @@ import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.messages.PlayerMessenger;
 import org.asf.edge.common.services.messages.WsMessageService;
+import org.asf.edge.common.xmls.achievements.RewardData;
 import org.asf.edge.common.xmls.messages.MessageInfoData;
 import org.asf.edge.modules.eventbus.EventListener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -43,16 +48,29 @@ public class WsMessageServiceImpl extends WsMessageService {
 
 			// Dragon
 			case 8: {
+				RewardData reward = new RewardData();
+				reward.entityID = event.getEntityRank().getEntityID();
 				msg.particle = "PfDragonLevelUpFxDO";
 				msg.levelUpMessage = new String[] { "Your dragon bond with {{PetName}} the {{PetType}} is now Rank "
 						+ (AchievementManager.getInstance().getRankIndex(event.getNewRank()) + 1) };
+				msg.rawObject.data = new XmlMapper().writer()
+						.withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL).withRootName("RewardData")
+						.writeValueAsString(reward);
 				break;
 			}
 
 			}
 
+			// Add UDT
+			event.getAchievementManager().getRankForUser(event.getSave(), RankTypeID.UDT).addPoints(5);
+
 			// Send message
 			getMessengerFor(acc).sendSessionMessage(msg);
+		} else {
+			// Trigger XP update
+			WsGenericMessage msg2 = new WsGenericMessage();
+			msg2.rawObject.typeID = 11;
+			getMessengerFor(acc).sendSessionMessage(msg2);
 		}
 	}
 

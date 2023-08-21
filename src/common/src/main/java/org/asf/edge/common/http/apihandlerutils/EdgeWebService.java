@@ -200,6 +200,46 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 
 		// Find function
 		try {
+			for (String func : functions.keySet()) {
+				// Get function
+				Method mth = functions.get(func.toLowerCase());
+
+				// Check method
+				if (mth.isAnnotationPresent(Function.class)) {
+					Function anno = mth.getAnnotation(Function.class);
+					String name = mth.getName();
+					if (!anno.value().equals("<auto>"))
+						name = anno.value();
+
+					// Preverify method
+					boolean allowed = false;
+					for (String meth : anno.allowedMethods()) {
+						if (meth.equalsIgnoreCase(method)) {
+							allowed = true;
+							break;
+						}
+					}
+
+					// Check
+					if (anno.allowSubPaths()) {
+						// Check sub path
+						if (path.toLowerCase().equals(name.toLowerCase())
+								|| path.toLowerCase().startsWith(name.toLowerCase() + "/")) {
+							// Found it
+
+							// Check method
+							if (!allowed) {
+								setResponseStatus(405, "Method not allowed");
+								return;
+							}
+
+							// Run function
+							runFunc(mth, path, method, client, contentType);
+							return;
+						}
+					}
+				}
+			}
 			if (functions.containsKey(path.toLowerCase())) {
 				// Get function
 				Method mth = functions.get(path.toLowerCase());
@@ -221,51 +261,7 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 				}
 
 				// Run function
-				try {
-					// Create info
-					FunctionInfo fI = new FunctionInfo(path, getRequest(), getResponse(), getServer(), method, client,
-							contentType, getCookies());
-
-					// Check annotation
-					Object[] args = new Object[] { fI };
-					if (mth.isAnnotationPresent(SodRequest.class)) {
-						// Parse request
-						ServiceRequestInfo req = getUtilities()
-								.getServiceRequestPayload(getServerInstance().getLogger());
-						if (req == null) {
-							getResponse().setResponseStatus(400, "Bad request");
-							return;
-						}
-
-						// Populate arguments
-						args = populateArguments(mth, fI, req);
-					}
-
-					// Run
-					FunctionResult res = (FunctionResult) mth.invoke(this, args);
-
-					// Set response
-					setResponseStatus(res.getStatusCode(), res.getStatusMessage());
-					if (res.hasResponseBody()) {
-						// Check response modes
-						if (res.getContentLength() != -1) {
-							// With length
-							if (res.getResponseMediaType() != null)
-								setResponseContent(res.getResponseMediaType(), res.getResponseBodyStream(),
-										res.getContentLength());
-							else
-								setResponseContent(res.getResponseBodyStream(), res.getContentLength());
-						} else {
-							// Without length
-							if (res.getResponseMediaType() != null)
-								setResponseContent(res.getResponseMediaType(), res.getResponseBodyStream());
-							else
-								setResponseContent(res.getResponseBodyStream());
-						}
-					}
-				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-					throw new RuntimeException(e);
-				}
+				runFunc(mth, path, method, client, contentType);
 				return;
 			} else if (legacyFunctions.containsKey(path.toLowerCase())) {
 				// Get function
@@ -306,6 +302,54 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 				else
 					setResponseContent(e.getBodyMediaType(), e.getBody());
 			}
+		}
+	}
+
+	private void runFunc(Method mth, String path, String method, RemoteClient client, String contentType)
+			throws IOException {
+		try {
+			// Create info
+			FunctionInfo fI = new FunctionInfo(path, getRequest(), getResponse(), getServer(), method, client,
+					contentType, getCookies());
+
+			// Check annotation
+			Object[] args = new Object[] { fI };
+			if (mth.isAnnotationPresent(SodRequest.class)) {
+				// Parse request
+				ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+				if (req == null) {
+					getResponse().setResponseStatus(400, "Bad request");
+					return;
+				}
+
+				// Populate arguments
+				args = populateArguments(mth, fI, req);
+			}
+
+			// Run
+			FunctionResult res = (FunctionResult) mth.invoke(this, args);
+
+			// Set response
+			setResponseStatus(res.getStatusCode(), res.getStatusMessage());
+			if (res.hasResponseBody()) {
+				// Check response modes
+				if (res.getContentLength() != -1) {
+					// With length
+					if (res.getResponseMediaType() != null)
+						setResponseContent(res.getResponseMediaType(), res.getResponseBodyStream(),
+								res.getContentLength());
+					else
+						setResponseContent(res.getResponseBodyStream(), res.getContentLength());
+				} else {
+					// Without length
+					if (res.getResponseMediaType() != null)
+						setResponseContent(res.getResponseMediaType(), res.getResponseBodyStream());
+					else
+						setResponseContent(res.getResponseBodyStream());
+				}
+			}
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			throw new RuntimeException(e);
 		}
 	}
 

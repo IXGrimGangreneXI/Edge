@@ -330,7 +330,7 @@ public class SmartfoxNetworkObjectUtil {
 
 		// Byte
 		case 2: {
-			output.write((byte) value);
+			output.write(((byte) value) & 0xff);
 			break;
 		}
 

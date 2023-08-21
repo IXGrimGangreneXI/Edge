@@ -40,9 +40,12 @@ public class WsRankMessage extends WsGenericMessage {
 		HashMap<String, String> taggedMessage = new HashMap<String, String>();
 		for (String message : levelUpMessage)
 			taggedMessage.put("Line" + i++, message);
-		taggedMessage.put("Particle", particle);
-		taggedMessage.put("Type", Integer.toString(rankType));
-		messageInfo.messageContentMembers = TaggedMessageUtils.writeTagged(taggedMessage);
+		if (particle != null)
+			taggedMessage.put("Particle", particle);
+		if (rankType != 0)
+			taggedMessage.put("Type", Integer.toString(rankType));
+		if (taggedMessage.size() != 0)
+			messageInfo.messageContentMembers = TaggedMessageUtils.writeTagged(taggedMessage);
 	}
 
 	@Override
@@ -53,8 +56,10 @@ public class WsRankMessage extends WsGenericMessage {
 		// Parse
 		ArrayList<String> msg = new ArrayList<String>();
 		Map<String, String> taggedMessage = TaggedMessageUtils.parseTagged(messageInfo.messageContentMembers);
-		particle = taggedMessage.get("Particle");
-		rankType = Integer.parseInt(taggedMessage.get("Type"));
+		if (taggedMessage.containsKey("Particle"))
+			particle = taggedMessage.get("Particle");
+		if (taggedMessage.containsKey("Type"))
+			rankType = Integer.parseInt(taggedMessage.get("Type"));
 		int i = 1;
 		while (taggedMessage.containsKey("Line" + i)) {
 			msg.add(taggedMessage.get("Line" + i));
