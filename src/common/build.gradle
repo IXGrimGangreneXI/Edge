@@ -21,6 +21,10 @@ repositories {
 	}
 }
 
+compileJava {
+	options.compilerArgs << '-parameters'
+}
+
 task javaDocs(type: Javadoc) {
 	classpath = sourceSets.main.runtimeClasspath
 	source = sourceSets.main.allJava

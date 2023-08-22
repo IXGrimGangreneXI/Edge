@@ -21,6 +21,10 @@ repositories {
    }
 }
 
+compileJava {
+	options.compilerArgs << '-parameters'
+}
+
 dependencies {
 	implementation project(":deps:connective-http")
 	implementation project(":src:modulemanager")
