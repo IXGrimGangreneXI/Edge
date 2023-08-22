@@ -5,11 +5,14 @@ import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.events.accounts.saves.AccountSaveDeletedEvent;
+import org.asf.edge.common.events.accounts.saves.AccountSaveUsernameUpdateEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
+import org.asf.edge.modules.eventbus.EventBus;
 
 /**
  * 
@@ -119,6 +122,7 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 			return true;
 
 		// Check validity
+		String oldName = username;
 		if (!manager.isValidUsername(name))
 			return false;
 
@@ -146,6 +150,10 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 		// Perform update
 		if (performUpdateUsername(name)) {
 			username = name;
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new AccountSaveUsernameUpdateEvent(oldName, name, acc, this, manager));
+
 			return true;
 		}
 		return false;
@@ -161,6 +169,9 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 		doDeleteSave();
 		MinigameDataManager.getInstance().deleteDataFor(saveID);
 		acc.refreshSaveList();
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountSaveDeletedEvent(acc, this, manager));
 	}
 
 	@Override

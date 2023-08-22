@@ -4,10 +4,13 @@ import java.io.IOException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.events.accounts.saves.AccountSaveDeletedEvent;
+import org.asf.edge.common.events.accounts.saves.AccountSaveUsernameUpdateEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager;
+import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonObject;
 
@@ -49,6 +52,8 @@ public class RemoteHttpSaveContainer extends AccountSaveContainer {
 
 	@Override
 	public boolean updateUsername(String name) {
+		String oldName = username;
+
 		// Request
 		try {
 			// Build payload
@@ -60,11 +65,18 @@ public class RemoteHttpSaveContainer extends AccountSaveContainer {
 			boolean res = response.get("success").getAsBoolean();
 			if (res)
 				username = name;
-			return res;
+			else
+				return false;
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in updateSaveUsername!", e);
 			return false;
 		}
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountSaveUsernameUpdateEvent(oldName, name, account, this, mgr));
+
+		// Return
+		return true;
 	}
 
 	@Override
@@ -86,6 +98,9 @@ public class RemoteHttpSaveContainer extends AccountSaveContainer {
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in deleteSave!", e);
 		}
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountSaveDeletedEvent(account, this, mgr));
 	}
 
 	@Override

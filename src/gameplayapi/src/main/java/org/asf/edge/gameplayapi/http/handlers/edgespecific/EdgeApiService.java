@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.entities.achivements.EntityRankInfo;
+import org.asf.edge.common.events.accounts.saves.AccountSaveAuthenticatedEvent;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -25,6 +26,7 @@ import org.asf.edge.common.services.textfilter.result.WordMatch;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
+import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -689,6 +691,10 @@ public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
 		getServerInstance().getLogger().info("Viking selected for account " + acc.getAccountID() + ": selected viking '"
 				+ save.getUsername() + "' (ID " + save.getSaveID() + ") from API.");
 		save.getAccount().ping(true);
+
+		// Dispatch event
+		EventBus.getInstance()
+				.dispatchEvent(new AccountSaveAuthenticatedEvent(acc, save, AccountManager.getInstance()));
 
 		// Encode
 		token = tkn.toTokenString();

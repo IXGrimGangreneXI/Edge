@@ -3,11 +3,15 @@ package org.asf.edge.common.services.accounts.impl.accounts.db;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import org.asf.edge.common.events.accounts.AccountDeletedEvent;
+import org.asf.edge.common.events.accounts.AccountEmailUpdateEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.impl.BasicAccountObject;
 import org.asf.edge.common.services.accounts.impl.BasicAccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.DatabaseAccountManager;
 import org.asf.edge.common.services.minigamedata.MinigameDataManager;
+import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -97,6 +101,8 @@ public class DatabaseAccountObject extends BasicAccountObject {
 
 	@Override
 	public boolean updateEmail(String email) {
+		String oldMail = getAccountEmail();
+
 		try {
 			if (getAccountEmail() == null) {
 				// Insert instead
@@ -123,7 +129,6 @@ public class DatabaseAccountObject extends BasicAccountObject {
 				statement.setString(2, getAccountID());
 				statement.execute();
 				statement.close();
-				return true;
 			} finally {
 				conn.close();
 			}
@@ -132,6 +137,13 @@ public class DatabaseAccountObject extends BasicAccountObject {
 					+ getAccountID() + "'", e);
 			return false;
 		}
+
+		// Dispatch event
+		if (oldMail != null)
+			EventBus.getInstance().dispatchEvent(new AccountEmailUpdateEvent(oldMail, email, this, manager));
+
+		// Return
+		return true;
 	}
 
 	@Override
@@ -273,6 +285,9 @@ public class DatabaseAccountObject extends BasicAccountObject {
 
 	@Override
 	public void deleteAccount() throws IOException {
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountDeletedEvent(this, manager));
+
 		// Delete data
 		getAccountData().deleteContainer();
 

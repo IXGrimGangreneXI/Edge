@@ -13,6 +13,9 @@ import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
+import org.asf.edge.common.events.accounts.AccountRegisteredEvent;
+import org.asf.edge.common.events.accounts.GuestAccountRegisteredEvent;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -22,6 +25,7 @@ import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.common.util.HttpUpgradeUtil;
 import org.asf.edge.common.util.SimpleBinaryMessageClient;
+import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -217,11 +221,18 @@ public class RemoteHttpAccountManager extends AccountManager {
 			payload.addProperty("id", id);
 			payload.addProperty("password", password);
 			JsonObject response = accountManagerRequest("verifyPassword", payload);
-			return response.get("result").getAsBoolean();
+			if (!response.get("result").getAsBoolean())
+				return false;
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in isValidUsername!", e);
 			return false;
 		}
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountAuthenticatedEvent(getAccount(id), this));
+
+		// Return
+		return true;
 	}
 
 	@Override
@@ -328,6 +339,7 @@ public class RemoteHttpAccountManager extends AccountManager {
 	@Override
 	public AccountObject registerGuestAccount(String guestID) {
 		// Request
+		RemoteHttpAccountObject obj;
 		try {
 			// Build payload
 			JsonObject payload = new JsonObject();
@@ -336,18 +348,25 @@ public class RemoteHttpAccountManager extends AccountManager {
 			if (!response.get("success").getAsBoolean())
 				return null;
 
-			// Return remote account object
-			return new RemoteHttpAccountObject(response.get("id").getAsString(), response.get("username").getAsString(),
+			// Create remote account object
+			obj = new RemoteHttpAccountObject(response.get("id").getAsString(), response.get("username").getAsString(),
 					this);
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in registerGuestAccount!", e);
 			return null;
 		}
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new GuestAccountRegisteredEvent(obj, this));
+
+		// Return
+		return obj;
 	}
 
 	@Override
 	public AccountObject registerAccount(String username, String email, char[] password) {
 		// Request
+		RemoteHttpAccountObject obj;
 		try {
 			// Build payload
 			JsonObject payload = new JsonObject();
@@ -358,13 +377,19 @@ public class RemoteHttpAccountManager extends AccountManager {
 			if (!response.get("success").getAsBoolean())
 				return null;
 
-			// Return remote account object
-			return new RemoteHttpAccountObject(response.get("id").getAsString(), response.get("username").getAsString(),
+			// Create remote account object
+			obj = new RemoteHttpAccountObject(response.get("id").getAsString(), response.get("username").getAsString(),
 					this);
 		} catch (IOException e) {
 			logger.error("Account server query failure occurred in registerAccount!", e);
 			return null;
 		}
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountRegisteredEvent(obj, this));
+
+		// Return
+		return obj;
 	}
 
 	@Override

@@ -1,2 +1,3 @@
 Changes in 1.0.0.A3:
 - Added a method to retrieve the edge version: `CommonInit.getEdgeVersion()`, it will retrieve the current Edge version of the server
+- Added various account and save management events to the event bus

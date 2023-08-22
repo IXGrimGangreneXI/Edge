@@ -7,6 +7,7 @@ import java.util.TimeZone;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
+import org.asf.edge.common.events.accounts.saves.AccountSaveAuthenticatedEvent;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.*;
 import org.asf.edge.common.services.accounts.AccountManager;
@@ -17,6 +18,7 @@ import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
 import org.asf.edge.commonapi.xmls.auth.UserInfoData;
+import org.asf.edge.modules.eventbus.EventBus;
 
 public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeCommonApiServer> {
 
@@ -137,6 +139,9 @@ public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeComm
 		getServerInstance().getLogger().info("Viking selected for account " + account.getAccountID()
 				+ ": selected viking '" + save.getUsername() + "' (ID " + save.getSaveID() + ")");
 		save.getAccount().ping(true);
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountSaveAuthenticatedEvent(account, save, manager));
 
 		// Set response
 		setResponseContent("text/xml", req.generateEncryptedResponse(getUtilities().encodeToken(tkn.toTokenString())));

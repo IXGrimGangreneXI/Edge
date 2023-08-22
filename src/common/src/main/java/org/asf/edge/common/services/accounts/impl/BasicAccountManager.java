@@ -28,7 +28,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
 import org.asf.edge.common.events.accounts.AccountManagerLoadEvent;
+import org.asf.edge.common.events.accounts.AccountRegisteredEvent;
+import org.asf.edge.common.events.accounts.GuestAccountRegisteredEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
@@ -268,6 +271,11 @@ public abstract class BasicAccountManager extends AccountManager {
 				return false;
 			}
 		}
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountAuthenticatedEvent(getAccount(id), this));
+
+		// Success
 		return true;
 	}
 
@@ -334,6 +342,9 @@ public abstract class BasicAccountManager extends AccountManager {
 			return null;
 		}
 
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new GuestAccountRegisteredEvent(obj, this));
+
 		// Return
 		return obj;
 	}
@@ -389,6 +400,9 @@ public abstract class BasicAccountManager extends AccountManager {
 					+ "'", e);
 			return null;
 		}
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountRegisteredEvent(obj, this));
 
 		// Return
 		return obj;

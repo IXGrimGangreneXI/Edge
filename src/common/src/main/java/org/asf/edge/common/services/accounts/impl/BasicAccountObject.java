@@ -15,11 +15,13 @@ import javax.crypto.spec.PBEKeySpec;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
+import org.asf.edge.common.events.accounts.*;
+import org.asf.edge.common.events.accounts.saves.*;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.textfilter.TextFilterService;
+import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
@@ -229,9 +231,16 @@ public abstract class BasicAccountObject extends AccountObject {
 			return false;
 
 		// Actually update
+		String oldName = username;
 		boolean res = performUpdateUsername(name);
-		if (res)
+		if (res) {
 			username = name;
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new AccountUsernameUpdateEvent(oldName, name, this, manager));
+		}
+
+		// Return
 		return res;
 	}
 
@@ -251,7 +260,14 @@ public abstract class BasicAccountObject extends AccountObject {
 			cred[i] = hash[i - 32];
 
 		// Call update
-		return performUpdatePassword(cred);
+		if (!performUpdatePassword(cred))
+			return false;
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountPasswordUpdateEvent(this, manager));
+
+		// Return
+		return true;
 	}
 
 	@Override
@@ -303,12 +319,17 @@ public abstract class BasicAccountObject extends AccountObject {
 		// Disable guest mode
 		try {
 			getAccountData().getChildContainer("accountdata").setEntry("isguestaccount", new JsonPrimitive(false));
-			return true;
 		} catch (IOException e) {
 			logger.error("Failed to execute database query request while trying to migrate guest account with  ID '"
 					+ id + "' to a normal account", e);
 			return false;
 		}
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new GuestAccountMigrationEvent(this, manager));
+
+		// Return
+		return true;
 	}
 
 	@Override
@@ -411,6 +432,9 @@ public abstract class BasicAccountObject extends AccountObject {
 						newIds[i] = saveIDs[i];
 				saveIDs = newIds;
 			}
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new AccountSaveCreatedEvent(this, sv, manager));
 		}
 		return sv;
 	}
