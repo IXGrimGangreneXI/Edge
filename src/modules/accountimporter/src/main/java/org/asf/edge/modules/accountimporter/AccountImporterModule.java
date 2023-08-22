@@ -121,7 +121,7 @@ public class AccountImporterModule implements IEdgeModule {
 							logger.warn("Shut down the Edge server now if you do not want this!");
 							logger.warn("Waiting 30 seconds before continuing...");
 							try {
-								Thread.sleep(3000);
+								Thread.sleep(30000);
 							} catch (InterruptedException e) {
 							}
 						}

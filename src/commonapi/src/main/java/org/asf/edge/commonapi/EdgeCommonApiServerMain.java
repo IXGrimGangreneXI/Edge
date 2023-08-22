@@ -34,6 +34,7 @@ public class EdgeCommonApiServerMain {
 
 		// Common init
 		CommonInit.initAll();
+		CommonInit.addServerType("commonapi");
 
 		// Run updater if needed
 		CommonUpdater.init("commonapi", "stable", EdgeCommonApiServer.COMMON_API_VERSION,

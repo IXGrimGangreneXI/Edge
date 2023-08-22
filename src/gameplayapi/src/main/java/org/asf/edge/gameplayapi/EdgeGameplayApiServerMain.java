@@ -34,6 +34,7 @@ public class EdgeGameplayApiServerMain {
 
 		// Common init
 		CommonInit.initAll();
+		CommonInit.addServerType("gameplayapi");
 
 		// Run updater if needed
 		CommonUpdater.init("gameplayapi", "stable", EdgeGameplayApiServer.GAMEPLAY_API_VERSION,

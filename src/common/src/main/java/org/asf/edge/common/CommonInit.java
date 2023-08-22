@@ -4,6 +4,7 @@ import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import org.asf.edge.common.util.LogWindow;
@@ -24,8 +25,39 @@ public class CommonInit {
 	private static boolean serverIDInited;
 	private static boolean debugMode;
 
+	private static ArrayList<String> serverTypes = new ArrayList<String>();
+
 	private static String serverID;
 	public static boolean restartPending;
+
+	/**
+	 * Adds server types
+	 * 
+	 * @param type Server type name to add, eg. <code>gameplayapi</code>
+	 */
+	public static void addServerType(String type) {
+		if (!hasServerType(type))
+			serverTypes.add(type.toLowerCase());
+	}
+
+	/**
+	 * Checks if a server type is present in the environment
+	 * 
+	 * @param type Server type name, eg. <code>gameplayapi</code>
+	 * @return True if present, false otherwise
+	 */
+	public static boolean hasServerType(String type) {
+		return serverTypes.contains(type.toLowerCase());
+	}
+
+	/**
+	 * Retrieves all server types present in the environment
+	 * 
+	 * @return Array of server type strings
+	 */
+	public static String[] getServerTypes() {
+		return serverTypes.toArray(t -> new String[t]);
+	}
 
 	/**
 	 * Retrieves the Edge version

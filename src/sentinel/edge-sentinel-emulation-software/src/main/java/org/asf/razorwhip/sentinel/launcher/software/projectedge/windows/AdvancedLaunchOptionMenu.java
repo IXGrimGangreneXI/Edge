@@ -67,6 +67,7 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 				}
 			});
 			btnNewButton.setBounds(12, 12, 296, 27);
+			btnNewButton.setEnabled(LauncherUtils.isAssetManagementAvailable());
 			panel.add(btnNewButton);
 
 			JButton btnNewButton_1 = new JButton("Open payload manager");

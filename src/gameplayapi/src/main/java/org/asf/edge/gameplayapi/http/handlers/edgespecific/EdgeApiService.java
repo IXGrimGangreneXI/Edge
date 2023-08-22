@@ -234,7 +234,7 @@ public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
 		// Check filters
 		if (TextFilterService.getInstance().isFiltered(username, true)) {
 			// Error
-			return response(400, "Bad request", "text/json", "{\"error\":\"imappropriate_username\"}");
+			return response(400, "Bad request", "text/json", "{\"error\":\"inappropriate_username\"}");
 		}
 
 		// Check password validity
@@ -787,7 +787,7 @@ public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
 		// Check filters
 		if (TextFilterService.getInstance().isFiltered(saveUsername, true)) {
 			// Invalid name
-			return response(400, "Bad request", "text/json", "{\"error\":\"imappropriate_username\"}");
+			return response(400, "Bad request", "text/json", "{\"error\":\"inappropriate_username\"}");
 		}
 
 		// Check if in use

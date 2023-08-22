@@ -55,6 +55,11 @@ public class EdgeGlobalServerMain {
 
 		// Common init
 		CommonInit.initAll();
+		CommonInit.addServerType("globalserver");
+		CommonInit.addServerType("contentserver");
+		CommonInit.addServerType("commonapi");
+		CommonInit.addServerType("gameplayapi");
+		CommonInit.addServerType("mmoserver");
 
 		// Run updater if needed
 		CommonUpdater.init("globalserver", "stable", EdgeGlobalServerMain.GLOBAL_SERVER_VERSION,

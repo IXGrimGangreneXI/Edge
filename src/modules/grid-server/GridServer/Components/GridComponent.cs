@@ -17,6 +17,8 @@ namespace GridServer.Components
 
         public override void PreInit()
         {
+            // Disable player limit
+            ServiceManager.GetService<PlayerManagerService>().EnablePlayerLimit = false;
         }
     }
 

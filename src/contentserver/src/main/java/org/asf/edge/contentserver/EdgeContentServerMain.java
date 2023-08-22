@@ -30,6 +30,7 @@ public class EdgeContentServerMain {
 
 		// Common init
 		CommonInit.initAll();
+		CommonInit.addServerType("contentserver");
 
 		// Run updater if needed
 		CommonUpdater.init("contentserver", "stable", EdgeContentServer.CONTENT_SERVER_VERSION,

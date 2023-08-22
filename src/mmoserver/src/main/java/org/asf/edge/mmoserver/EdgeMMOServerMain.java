@@ -34,6 +34,7 @@ public class EdgeMMOServerMain {
 
 		// Common init
 		CommonInit.initAll();
+		CommonInit.addServerType("mmoserver");
 
 		// Run updater if needed
 		CommonUpdater.init("mmoserver", "stable", EdgeMMOServer.MMO_SERVER_VERSION,
