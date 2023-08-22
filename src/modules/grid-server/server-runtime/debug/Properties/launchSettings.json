@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Phoenix.Debug.DebugServerRunner": {
+      "commandName": "Project",
+      "commandLineArgs": "project.json build",
+      "workingDirectory": "..\\..\\Tests\\Phoenix.Tests.Server"
+    }
+  }
+}

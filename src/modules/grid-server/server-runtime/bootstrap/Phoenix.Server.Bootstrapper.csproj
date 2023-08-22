@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+    <TargetFrameworks>net7.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Common\Phoenix.Common.Networking\Phoenix.Common.Networking.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Common\Phoenix.Common\Phoenix.Common.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Server\Phoenix.Server.AssetManager\Phoenix.Server.AssetManager.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Server\Phoenix.Server.Components.CertificateRefresher\Phoenix.Server.Components.CertificateRefresher.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Server\Phoenix.Server.NetworkServerLib\Phoenix.Server.NetworkServerLib.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Server\Phoenix.Server\Phoenix.Server.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle" Version="1.8.9" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="YamlDotNet" Version="13.2.0" />
+  </ItemGroup>
+
+</Project>

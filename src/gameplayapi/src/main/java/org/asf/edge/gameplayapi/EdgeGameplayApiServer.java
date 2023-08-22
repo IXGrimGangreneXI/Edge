@@ -63,6 +63,11 @@ public class EdgeGameplayApiServer implements IBaseServer {
 
 	private ConnectiveHttpServer server;
 
+	@Override
+	public String getVersion() {
+		return GAMEPLAY_API_VERSION;
+	}
+
 	static void printSplash() {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");

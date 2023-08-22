@@ -49,6 +49,11 @@ public class EdgeCommonApiServer implements IBaseServer {
 	private ConnectiveHttpServer server;
 	private ConnectiveHttpServer internalServer;
 
+	@Override
+	public String getVersion() {
+		return COMMON_API_VERSION;
+	}
+
 	static void printSplash() {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");

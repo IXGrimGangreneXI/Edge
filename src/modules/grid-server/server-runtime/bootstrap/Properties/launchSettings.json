@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Phoenix.Server.Bootstrapper": {
+      "commandName": "Executable",
+      "executablePath": "D:\\AerialWorks Software Foundation\\Development\\CrossX\\PX Framework\\Tests\\Phoenix.Tests.Server\\Build\\Release\\server.exe",
+      "workingDirectory": "..\\..\\Tests\\Phoenix.Tests.Server\\Build\\Release"
+    }
+  }
+}

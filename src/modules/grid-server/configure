@@ -1,0 +1,10 @@
+#!/bin/bash
+if [ ! -d phoenix-framework ]; then
+	echo Downloading Phoenix...
+	git clone https://github.com/SkySwimmer/Phoenix.git phoenix-framework || exit 1
+else
+	cd phoenix-framework
+	echo Updating Phoenix...
+	git pull || exit 1
+fi
+

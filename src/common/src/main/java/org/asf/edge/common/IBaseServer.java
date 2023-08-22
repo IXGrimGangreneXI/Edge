@@ -10,4 +10,12 @@ public interface IBaseServer {
 	 * @return Logger instance
 	 */
 	public Logger getLogger();
+
+	/**
+	 * Retrieves the server version
+	 * 
+	 * @return Server version string
+	 */
+	public String getVersion();
+
 }

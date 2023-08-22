@@ -1,0 +1,9 @@
+{
+  "assetsFolder": "PhoenixAssets",
+  "serverClass": "GridServer.GridDedicatedServer",
+  "serverAssembly": "DedicatedServer.dll",
+  "manifestFile": "game.json",
+  "debugConfig": "debug.json",
+  "assembliesDirectory": "bin/Release/net7.0"
+}
+

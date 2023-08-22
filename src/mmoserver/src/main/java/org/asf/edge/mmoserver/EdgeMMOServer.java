@@ -42,6 +42,11 @@ public class EdgeMMOServer implements IBaseServer {
 
 	private SmartfoxServer server;
 
+	@Override
+	public String getVersion() {
+		return MMO_SERVER_VERSION;
+	}
+
 	static void printSplash() {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");

@@ -32,6 +32,11 @@ public class EdgeContentServer implements IBaseServer {
 
 	private ConnectiveHttpServer server;
 
+	@Override
+	public String getVersion() {
+		return CONTENT_SERVER_VERSION;
+	}
+
 	static void printSplash() {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");

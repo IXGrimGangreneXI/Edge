@@ -1,0 +1,186 @@
+[04:51:26] [INFO ] [main] [GRIDAPI] - Preparing to start...
+[04:51:26] [INFO ] [main] [MODULEMANAGER] - Searching for modules...
+[04:51:26] [DEBUG] [main] [MODULEMANAGER] - Scanning modules folder...
+[04:51:26] [INFO ] [main] [MODULEMANAGER] - Searching for dependency repository definitions...
+[04:51:26] [INFO ] [main] [MODULEMANAGER] - Scanning for dependency definitions...
+[04:51:26] [INFO ] [main] [MODULEMANAGER] - Verifying dependencies...
+[04:51:26] [INFO ] [main] [MODULEMANAGER] - Dependencies are up-to-date, loading modules...
+[04:51:26] [DEBUG] [main] [MODULEMANAGER] - Scanning for module classes...
+[04:51:26] [INFO ] [main] [MODULEMANAGER] - Initializing modules...
+[04:51:26] [INFO ] [main] [MODULEMANAGER] - Clearing module pool...
+[04:51:26] [INFO ] [main] [GRIDAPI] - Loading server configuration...
+[04:51:26] [DEBUG] [main] [GRIDAPI] - Creating server configuration...
+[04:51:26] [DEBUG] [main] [GRIDAPI] - Loading configuration file server.json...
+[04:51:26] [DEBUG] [main] [GRIDAPI] - Loading listening settings...
+[04:51:26] [DEBUG] [main] [GRIDAPI] - Loading encryption settings...
+[04:51:26] [DEBUG] [main] [GRIDAPI] - Loading module configurations...
+[04:51:26] [INFO ] [main] [GRIDAPI] - Setting up the server...
+[04:51:26] [DEBUG] [main] [GRIDAPI] - Loading common data manager implementations...
+[04:51:26] [DEBUG] [main] [ServiceManager] - Service implementation org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl registered for service org.asf.edge.common.services.config.ConfigProviderService with priority 0
+[04:51:26] [INFO ] [main] [EVENTBUS] - Registering all events in org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl...
+[04:51:26] [DEBUG] [main] [ServiceManager] - Service implementation selected for org.asf.edge.common.services.config.ConfigProviderService: org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl
+[04:51:26] [DEBUG] [main] [ServiceManager] - Service implementation org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager registered for service org.asf.edge.common.services.commondata.CommonDataManager with priority 0
+[04:51:26] [DEBUG] [main] [ServiceManager] - Service implementation org.asf.edge.common.services.commondata.impl.DefaultDatabaseCommonDataManager registered for service org.asf.edge.common.services.commondata.CommonDataManager with priority -10
+[04:51:26] [DEBUG] [main] [ServiceManager] - Service implementation org.asf.edge.common.services.commondata.impl.PostgresDatabaseCommonDataManager registered for service org.asf.edge.common.services.commondata.CommonDataManager with priority -5
+[04:51:26] [DEBUG] [main] [GRIDAPI] - Selecting common data manager implementation...
+[04:51:26] [INFO ] [main] [EVENTBUS] - Registering all events in org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager...
+[04:51:26] [DEBUG] [main] [ServiceManager] - Service implementation selected for org.asf.edge.common.services.commondata.CommonDataManager: org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager
+[04:51:26] [DEBUG] [main] [GRIDAPI] - Loading common data manager...
+[04:51:26] [INFO ] [main] [CommonDataManager] - Using remote common data manager server, url: http://127.0.0.1:5324/commondatamanager/
+[04:51:26] [WARN ] [main] [CommonDataManager] - Warning: the http-based remote common data manager service is not efficient!
+[04:51:26] [WARN ] [main] [CommonDataManager] - Warning: its highly recommened to use a different implementation, such as a database server.
+[04:51:26] [DEBUG] [main] [GRIDAPI] - Loading account manager implementations...
+[04:51:27] [DEBUG] [main] [ServiceManager] - Service implementation org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager registered for service org.asf.edge.common.services.accounts.AccountManager with priority 0
+[04:51:27] [DEBUG] [main] [ServiceManager] - Service implementation org.asf.edge.common.services.accounts.impl.DefaultDatabaseAccountManager registered for service org.asf.edge.common.services.accounts.AccountManager with priority -10
+[04:51:27] [DEBUG] [main] [ServiceManager] - Service implementation org.asf.edge.common.services.accounts.impl.PostgresDatabaseAccountManager registered for service org.asf.edge.common.services.accounts.AccountManager with priority -5
+[04:51:27] [DEBUG] [main] [GRIDAPI] - Selecting account manager implementation...
+[04:51:27] [INFO ] [main] [EVENTBUS] - Registering all events in org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager...
+[04:51:27] [DEBUG] [main] [ServiceManager] - Service implementation selected for org.asf.edge.common.services.accounts.AccountManager: org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager
+[04:51:27] [DEBUG] [main] [GRIDAPI] - Loading account manager...
+[04:51:27] [INFO ] [main] [AccountManager] - Using remote account manager server, url: http://127.0.0.1:5324/accountmanager/
+[04:51:27] [WARN ] [main] [AccountManager] - Warning: the http-based remote account manager service is not efficient!
+[04:51:27] [WARN ] [main] [AccountManager] - Warning: its highly recommened to use a different implementation, such as a database server.
+[04:51:27] [INFO ] [main] [GRIDAPI] - Edge grid api HTTP server created with listen address 0.0.0.0 and port 16718
+[04:51:27] [DEBUG] [main] [GRIDAPI] - Adding case-insensitive content source...
+[04:51:27] [DEBUG] [main] [GRIDAPI] - Configuring server request handlers...
+[04:51:27] [INFO ] [main] [GRIDAPI] - Setting up item manager...
+[04:51:27] [DEBUG] [main] [ServiceManager] - Service implementation org.asf.edge.common.services.items.impl.ItemManagerImpl registered for service org.asf.edge.common.services.items.ItemManager with priority -10
+[04:51:27] [INFO ] [main] [EVENTBUS] - Registering all events in org.asf.edge.common.services.items.impl.ItemManagerImpl...
+[04:51:27] [DEBUG] [main] [ServiceManager] - Service implementation selected for org.asf.edge.common.services.items.ItemManager: org.asf.edge.common.services.items.impl.ItemManagerImpl
+[04:51:27] [ERROR] [main] [CommonDataManager] - Common data manager server query failure occurred in setupContainer!
+java.net.ConnectException: Connection refused
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:579)
+	at java.base/sun.nio.ch.Net.connect(Net.java:568)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:588)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:183)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:531)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:636)
+	at java.base/sun.net.www.http.HttpClient.<init>(HttpClient.java:279)
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:384)
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:406)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1309)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1242)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1128)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1057)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream0(HttpURLConnection.java:1430)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream(HttpURLConnection.java:1401)
+	at org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager.commonDataManagerRequest(RemoteHttpCommonDataManager.java:88)
+	at org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager.setupContainer(RemoteHttpCommonDataManager.java:135)
+	at org.asf.edge.common.services.commondata.CommonDataManager.getContainer(CommonDataManager.java:148)
+	at org.asf.edge.common.services.items.impl.ItemManagerImpl.initService(ItemManagerImpl.java:76)
+	at org.asf.edge.common.services.ServiceManager.selectServiceImplementation(ServiceManager.java:117)
+	at org.asf.edge.modules.gridapi.EdgeGridApiServer.setupServer(EdgeGridApiServer.java:116)
+	at org.asf.edge.modules.gridapi.EdgeGridApiServerMain.main(EdgeGridApiServerMain.java:130)
+[04:51:27] [ERROR] [main] [CommonDataManager] - Common data manager server query failure occurred in dataEntryExists!
+java.net.ConnectException: Connection refused
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:579)
+	at java.base/sun.nio.ch.Net.connect(Net.java:568)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:588)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:183)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:531)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:636)
+	at java.base/sun.net.www.http.HttpClient.<init>(HttpClient.java:279)
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:384)
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:406)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1309)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1242)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1128)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1057)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream0(HttpURLConnection.java:1430)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream(HttpURLConnection.java:1401)
+	at org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager.commonDataManagerRequest(RemoteHttpCommonDataManager.java:88)
+	at org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataContainer.exists(RemoteHttpCommonDataContainer.java:94)
+	at org.asf.edge.common.services.commondata.CommonDataContainer.entryExists(CommonDataContainer.java:226)
+	at org.asf.edge.common.services.items.impl.ItemManagerImpl.initService(ItemManagerImpl.java:78)
+	at org.asf.edge.common.services.ServiceManager.selectServiceImplementation(ServiceManager.java:117)
+	at org.asf.edge.modules.gridapi.EdgeGridApiServer.setupServer(EdgeGridApiServer.java:116)
+	at org.asf.edge.modules.gridapi.EdgeGridApiServerMain.main(EdgeGridApiServerMain.java:130)
+[04:51:27] [ERROR] [main] [CommonDataManager] - Common data manager server query failure occurred in dataEntryExists!
+java.net.ConnectException: Connection refused
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:579)
+	at java.base/sun.nio.ch.Net.connect(Net.java:568)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:588)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:183)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:531)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:636)
+	at java.base/sun.net.www.http.HttpClient.<init>(HttpClient.java:279)
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:384)
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:406)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1309)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1242)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1128)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1057)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream0(HttpURLConnection.java:1430)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream(HttpURLConnection.java:1401)
+	at org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager.commonDataManagerRequest(RemoteHttpCommonDataManager.java:88)
+	at org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataContainer.exists(RemoteHttpCommonDataContainer.java:94)
+	at org.asf.edge.common.services.commondata.CommonDataContainer.setEntry(CommonDataContainer.java:241)
+	at org.asf.edge.common.services.items.impl.ItemManagerImpl.initService(ItemManagerImpl.java:80)
+	at org.asf.edge.common.services.ServiceManager.selectServiceImplementation(ServiceManager.java:117)
+	at org.asf.edge.modules.gridapi.EdgeGridApiServer.setupServer(EdgeGridApiServer.java:116)
+	at org.asf.edge.modules.gridapi.EdgeGridApiServerMain.main(EdgeGridApiServerMain.java:130)
+[04:51:27] [ERROR] [main] [CommonDataManager] - Common data manager server query failure occurred in setDataEntry!
+java.net.ConnectException: Connection refused
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:579)
+	at java.base/sun.nio.ch.Net.connect(Net.java:568)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:588)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:183)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:531)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:636)
+	at java.base/sun.net.www.http.HttpClient.<init>(HttpClient.java:279)
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:384)
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:406)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1309)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1242)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1128)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1057)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream0(HttpURLConnection.java:1430)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream(HttpURLConnection.java:1401)
+	at org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager.commonDataManagerRequest(RemoteHttpCommonDataManager.java:88)
+	at org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataContainer.create(RemoteHttpCommonDataContainer.java:78)
+	at org.asf.edge.common.services.commondata.CommonDataContainer.setEntry(CommonDataContainer.java:247)
+	at org.asf.edge.common.services.items.impl.ItemManagerImpl.initService(ItemManagerImpl.java:80)
+	at org.asf.edge.common.services.ServiceManager.selectServiceImplementation(ServiceManager.java:117)
+	at org.asf.edge.modules.gridapi.EdgeGridApiServer.setupServer(EdgeGridApiServer.java:116)
+	at org.asf.edge.modules.gridapi.EdgeGridApiServerMain.main(EdgeGridApiServerMain.java:130)
+[04:51:27] [INFO ] [main] [ItemManager] - Loading item store data...
+[04:51:27] [ERROR] [Async task thread] [CommonDataManager] - Common data manager server query failure occurred in getDataEntry!
+java.net.ConnectException: Connection refused
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:579)
+	at java.base/sun.nio.ch.Net.connect(Net.java:568)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:588)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:183)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:531)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:636)
+	at java.base/sun.net.www.http.HttpClient.<init>(HttpClient.java:279)
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:384)
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:406)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1309)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1242)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1128)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1057)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream0(HttpURLConnection.java:1430)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream(HttpURLConnection.java:1401)
+	at org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager.commonDataManagerRequest(RemoteHttpCommonDataManager.java:88)
+	at org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataContainer.get(RemoteHttpCommonDataContainer.java:41)
+	at org.asf.edge.common.services.commondata.CommonDataContainer.getEntry(CommonDataContainer.java:213)
+	at org.asf.edge.common.services.items.impl.ItemManagerImpl.lambda$0(ItemManagerImpl.java:89)
+	at org.asf.connective.tasks.AsyncTask.run(AsyncTask.java:20)
+	at org.asf.connective.tasks.AsyncTaskThreadHandler.run(AsyncTaskThreadHandler.java:36)
+	at org.asf.connective.tasks.AsyncTaskManager.lambda$2(AsyncTaskManager.java:38)
+	at java.base/java.lang.Thread.run(Thread.java:833)

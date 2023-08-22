@@ -6,8 +6,8 @@ plugins {
 version = "1.0.0.A1"
 group = "org.asf.edge"
 
-sourceCompatibility = '1.15'
-targetCompatibility = '1.15'
+sourceCompatibility = '1.17'
+targetCompatibility = '1.17'
 
 def authorname = "AerialWorks Software Foundation"
 
