@@ -8,3 +8,8 @@ Changes to Sentinel:
 - Fixed Sentinel not detecting server exits
 - Fixed Sentinel not handling client exits
 - Fixed a bug which caused asset downloading to fail randomly
+- Sentinel now calculates asset download size before starting download of assets when offline mode is enabled
+- Added JVM and program arguments configuration options to the server configuration window
+- Added a way to open the server log when launching normally
+- Fixed signature verification log bugs
+- Fixed payload signature verification
