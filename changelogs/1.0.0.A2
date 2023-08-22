@@ -3,3 +3,8 @@ Changes in 1.0.0.A2:
 - Fixed updater running while its disabled
 - Fixed levels not syncing to the client right away
 - Fixed A1-style request handlers being broken (stable quests should be fixed)
+
+Changes to Sentinel:
+- Fixed Sentinel not detecting server exits
+- Fixed Sentinel not handling client exits
+- Fixed a bug which caused asset downloading to fail randomly

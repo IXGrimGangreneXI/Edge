@@ -38,7 +38,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class EdgeGlobalServerMain {
-	public static final String GLOBAL_SERVER_VERSION = "1.0.0.A2";
+	public static final String GLOBAL_SERVER_VERSION = "1.0.0.A3";
 
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		// Set locale
@@ -63,6 +63,7 @@ public class EdgeGlobalServerMain {
 		// Logger
 		Logger logger = LogManager.getLogger("FULLSERVER");
 		logger.info("EDGE Global (full) server is starting!");
+		logger.info("Edge version: " + CommonInit.getEdgeVersion());
 		logger.info("Content server version: " + EdgeContentServer.CONTENT_SERVER_VERSION);
 		logger.info("Common API version: " + EdgeCommonApiServer.COMMON_API_VERSION);
 		logger.info("Gameplay API server version: " + EdgeGameplayApiServer.GAMEPLAY_API_VERSION);

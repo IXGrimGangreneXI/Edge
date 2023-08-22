@@ -1,7 +1,7 @@
 channel=stable
 
 sentinel=1.0.0.A2
-globalserver=1.0.0.A2
+globalserver=1.0.0.A3
 contentserver=1.0.0.A2
 commonapi=1.0.0.A2
 gameplayapi=1.0.0.A2

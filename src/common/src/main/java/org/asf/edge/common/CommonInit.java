@@ -18,12 +18,23 @@ import com.google.gson.JsonParser;
  *
  */
 public class CommonInit {
+	private static final String EDGE_VERSION = "1.0.0.A3";
+
 	private static boolean logInited;
 	private static boolean serverIDInited;
 	private static boolean debugMode;
 
 	private static String serverID;
 	public static boolean restartPending;
+
+	/**
+	 * Retrieves the Edge version
+	 * 
+	 * @return Edge version string
+	 */
+	public static String getEdgeVersion() {
+		return EDGE_VERSION;
+	}
 
 	/**
 	 * Calls all init methods
