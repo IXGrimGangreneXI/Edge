@@ -1,29 +1,44 @@
-package org.asf.edge.modules.gridclient.phoenix.events;
+package org.asf.edge.modules.gridclient.events;
 
+import org.asf.edge.modules.eventbus.EventObject;
 import org.asf.edge.modules.eventbus.EventPath;
 import org.asf.edge.modules.gridclient.phoenix.auth.LoginManager;
 
 import com.google.gson.JsonObject;
 
-@EventPath("phoenix.session.authenticated")
-public class SessionAuthenticatedEvent extends LoginManagerEvent {
+/**
+ * 
+ * Grid Client Authentication Success Event - called when authentication
+ * succeeds
+ * 
+ * @author Sky Swimmer
+ *
+ */
+@EventPath("grid.client.auth.success")
+public class GridClientAuthenticationSuccessEvent extends EventObject {
+
+	private LoginManager manager;
 
 	private String accountID;
 	private String displayName;
 
 	private JsonObject rawResponse;
 
-	public SessionAuthenticatedEvent(LoginManager manager, String accountID, String displayName,
+	public GridClientAuthenticationSuccessEvent(LoginManager manager, String accountID, String displayName,
 			JsonObject rawResponse) {
-		super(manager);
+		this.manager = manager;
 		this.accountID = accountID;
 		this.displayName = displayName;
 		this.rawResponse = rawResponse;
 	}
 
-	@Override
-	public String eventPath() {
-		return "phoenix.session.authenticated";
+	/**
+	 * Retrieves the login manager
+	 * 
+	 * @return LoginManager instance
+	 */
+	public LoginManager getManager() {
+		return manager;
 	}
 
 	/**
@@ -51,6 +66,11 @@ public class SessionAuthenticatedEvent extends LoginManagerEvent {
 	 */
 	public String getDisplayName() {
 		return displayName;
+	}
+
+	@Override
+	public String eventPath() {
+		return "grid.client.auth.success";
 	}
 
 }

@@ -152,7 +152,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		// Read token
 		String token = func.getRequest().getHeader("Authorization").getValue().substring("bearer ".length());
 		AccessContext ctx = TokenUtils.fromToken(token, "login");
-		if (ctx == null || !ctx.isAccount) {
+		if (ctx == null) {
 			// Error
 			return response(401, "Unauthorized", "text/json",
 					"{\"error\":\"Authorization token invalid (requiring LOGIN capability)\"}");
@@ -188,7 +188,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		// Check filters
 		if (TextFilterService.getInstance().isFiltered(username, true)) {
 			// Error
-			return response(400, "Bad request", "text/json", "{\"error\":\"imappropriate_username\"}");
+			return response(400, "Bad request", "text/json", "{\"error\":\"inappropriate_username\"}");
 		}
 
 		// Check password validity
@@ -237,7 +237,6 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		resp.addProperty("refreshToken", refresh.toTokenString());
 		resp.addProperty("accountId", acc.getAccountID());
 		resp.addProperty("accountUsername", acc.getUsername());
-		resp.addProperty("accountEmail", ctx.account.getAccountEmail());
 		resp.addProperty("lastLoginTime", acc.getLastLoginTime());
 		resp.addProperty("registrationTime", acc.getRegistrationTimestamp());
 		resp.addProperty("multiplayerEnabled", acc.isMultiplayerEnabled());
@@ -287,7 +286,6 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		JsonObject resp = new JsonObject();
 		resp.addProperty("accountId", ctx.account.getAccountID());
 		resp.addProperty("accountUsername", ctx.account.getUsername());
-		resp.addProperty("accountEmail", ctx.account.getAccountEmail());
 		resp.addProperty("lastLoginTime", ctx.account.getLastLoginTime());
 		resp.addProperty("registrationTime", ctx.account.getRegistrationTimestamp());
 		resp.addProperty("multiplayerEnabled", ctx.account.isMultiplayerEnabled());
@@ -356,7 +354,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 			// Check filters
 			if (TextFilterService.getInstance().isFiltered(username, true)) {
 				// Invalid name
-				return response(400, "Bad request", "text/json", "{\"error\":\"imappropriate_username\"}");
+				return response(400, "Bad request", "text/json", "{\"error\":\"inappropriate_username\"}");
 			}
 
 			// Check if in use
@@ -433,7 +431,6 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		JsonObject resp = new JsonObject();
 		resp.addProperty("accountId", ctx.account.getAccountID());
 		resp.addProperty("accountUsername", ctx.account.getUsername());
-		resp.addProperty("accountEmail", ctx.account.getAccountEmail());
 		resp.addProperty("lastLoginTime", ctx.account.getLastLoginTime());
 		resp.addProperty("registrationTime", ctx.account.getRegistrationTimestamp());
 		resp.addProperty("multiplayerEnabled", ctx.account.isMultiplayerEnabled());
@@ -563,7 +560,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		// Check filters
 		if (TextFilterService.getInstance().isFiltered(saveUsername, true)) {
 			// Invalid name
-			return response(400, "Bad request", "text/json", "{\"error\":\"imappropriate_username\"}");
+			return response(400, "Bad request", "text/json", "{\"error\":\"inappropriate_username\"}");
 		}
 
 		// Check if in use
@@ -666,7 +663,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 			// Check filters
 			if (TextFilterService.getInstance().isFiltered(username, true)) {
 				// Invalid name
-				return response(400, "Bad request", "text/json", "{\"error\":\"imappropriate_username\"}");
+				return response(400, "Bad request", "text/json", "{\"error\":\"inappropriate_username\"}");
 			}
 
 			// Check if in use

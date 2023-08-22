@@ -202,6 +202,9 @@ public class PhoenixAuthWebService extends EdgeWebService<EdgeGridApiServer> {
 				return response(401, "Unauthorized", "application/json", response.toString());
 			}
 			account = plrCtx.account;
+
+			// Generate response
+			response.addProperty("status", "success");
 		} else {
 			// Check payload
 			if (!payload.has("username") || !payload.has("password")) {

@@ -85,8 +85,9 @@ public class AuthenticatorComponent extends GridClientComponent {
 							new String((conn.getResponseCode() >= 400 ? conn.getErrorStream().readAllBytes()
 									: conn.getInputStream().readAllBytes()), "UTF-8"))
 							.getAsJsonObject();
-					getLogger().debug("Received response: " + response);
 					if (conn.getResponseCode() == 200 && response.has("secret")) {
+						getLogger().debug("Received response: "
+								+ response.toString().replace(response.get("secret").getAsString(), "[REDACTED]"));
 						getLogger().debug("Sending to server...");
 						event.getWriter().writeString(response.get("secret").getAsString());
 
@@ -114,6 +115,7 @@ public class AuthenticatorComponent extends GridClientComponent {
 									"Authentication success! Joined as " + manager.getSession().getDisplayName() + "!");
 						}
 					} else {
+						getLogger().debug("Received response: " + response);
 						getLogger().debug("Authentication failure!");
 						throw new IOException("Server rejected login token");
 					}

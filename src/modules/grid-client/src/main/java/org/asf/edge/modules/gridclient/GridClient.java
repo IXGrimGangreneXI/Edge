@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.modules.gridclient.components.auth.AuthenticatorComponent;
 import org.asf.edge.modules.gridclient.events.GridClientConnectFailedEvent;
@@ -21,6 +24,9 @@ import org.asf.edge.modules.gridclient.phoenix.events.ClientDisconnectedEvent;
 import org.asf.edge.modules.gridclient.phoenix.events.ClientProgramHandshakeEvent;
 import org.asf.edge.modules.gridclient.phoenix.events.ClientProgramLateHandshakeEvent;
 import org.asf.edge.modules.gridclient.phoenix.exceptions.PhoenixConnectException;
+import org.asf.edge.modules.gridclient.phoenix.serverlist.ServerInstance;
+import org.asf.edge.modules.gridclient.phoenix.serverlist.ServerListFilter;
+import org.asf.edge.modules.gridclient.phoenix.serverlist.ServerListScanner;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -40,6 +46,7 @@ public class GridClient {
 
 	static PhoenixClient client;
 	static HashMap<String, GridClientComponent> components = new HashMap<String, GridClientComponent>();
+	private static Logger logger = LogManager.getLogger("grid-client");
 
 	private static boolean isDisconnect;
 	private static boolean disconnected;
@@ -54,13 +61,222 @@ public class GridClient {
 	private static LoginManager loginManager;
 
 	private static void addComponentsToPhoenixClient(PhoenixClient client) {
-		client.getLogger().info("Loading components...");
+		logger.info("Loading components...");
 
 		// Add components
 		registerComponent(new AuthenticatorComponent(loginManager));
 
 		// Dispatch event
 		client.getEventBus().dispatchEvent(new GridClientSetupEvent(client));
+	}
+
+	/**
+	 * Scans the server list and finds the best server instance
+	 * 
+	 * @return ServerInstance object or null
+	 */
+	public static ServerInstance findBestServer() {
+		logger.info("Searching for Phoenix servers...");
+		ServerListScanner sc = new ServerListScanner("nexusgrid", GRID_PROTOCOL_VERSION);
+		ServerInstance[] servers = sc.scanPublicServerList(new ServerListFilter("players", "notfull"));
+
+		// Log
+		logger.info("Found " + servers.length + " server(s), attempting server selection...");
+
+		//
+		// FIXME: THIS HAS TO BE DONE BETTER
+		//
+
+		// Go through servers, server with lowest ping and 65 or more players first
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 65 && online < 80 && srv.getPing() < 25)
+				return srv;
+		}
+
+		// Go through servers, server with lowest ping and 50 or more players first
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 50 && online < 80 && srv.getPing() < 25)
+				return srv;
+		}
+
+		// Go through servers, server with low ping and 65 or more players first
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 65 && online < 80 && srv.getPing() < 50)
+				return srv;
+		}
+
+		// Go through servers, server with low ping and 50 or more players first
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 50 && online < 80 && srv.getPing() < 50)
+				return srv;
+		}
+
+		// Go through servers, server with lowest ping and 25 or more players first
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 25 && online < 80 && srv.getPing() < 25)
+				return srv;
+		}
+
+		// Go through servers, server with low ping and 50 or more players first
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 25 && online < 80 && srv.getPing() < 50)
+				return srv;
+		}
+
+		// Go through servers, server with 65 or more players first, higher ping
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 65 && online < 80 && srv.getPing() < 100)
+				return srv;
+		}
+
+		// Go through servers, server with 50 or more players first, higher ping
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 50 && online < 80 && srv.getPing() < 100)
+				return srv;
+		}
+
+		// Go through servers, server with 25 or more players first, higher ping
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 25 && online < 80 && srv.getPing() < 100)
+				return srv;
+		}
+
+		// Go through servers, server with lowest ping and 50 or more players first, no
+		// max, give up trying to find decent load, we need a server, preferably with
+		// at least some players and low ping
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 50 && srv.getPing() < 25)
+				return srv;
+		}
+
+		// Go through servers, server with low ping and 50 or more players first, no
+		// max, give up trying to find decent load, we need a server, preferably with
+		// at least some players and low ping
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 50 && srv.getPing() < 50)
+				return srv;
+		}
+
+		// Give up, find server with some smaller number players at all and lowest ping
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 20 && srv.getPing() < 25)
+				return srv;
+		}
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 20 && srv.getPing() < 50)
+				return srv;
+		}
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 20 && srv.getPing() < 100)
+				return srv;
+		}
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 20)
+				return srv;
+		}
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 10 && srv.getPing() < 25)
+				return srv;
+		}
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 10 && srv.getPing() < 50)
+				return srv;
+		}
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 10 && srv.getPing() < 100)
+				return srv;
+		}
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			int online = Integer.parseInt(srv.details.get("players.current"));
+			if (online >= 10)
+				return srv;
+		}
+
+		// Okay, just return the one with lowest ping
+		for (ServerInstance srv : Stream.of(servers)
+				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
+			// Check
+			return srv;
+		}
+
+		// None found
+		return null;
 	}
 
 	/**
@@ -136,7 +352,7 @@ public class GridClient {
 			throw new IllegalArgumentException("Component " + component.componentID() + " is already registered!");
 
 		// Add
-		client.getLogger().info("Loading component: " + component.componentID());
+		logger.info("Loading component: " + component.componentID());
 		components.put(component.componentID(), component);
 		component.addToClient(client);
 
@@ -189,6 +405,29 @@ public class GridClient {
 	}
 
 	/**
+	 * Switches Phoenix servers
+	 * 
+	 * @param server Server information object
+	 * @throws IOException If downloading the certificate fails
+	 */
+	public static void switchServer(ServerInstance server) throws IOException {
+		synchronized (serverSwitchLock) {
+			// Disconnect
+			disconnect();
+
+			// Assign
+			// Create client
+			GridClient.host = server.getBestAdress();
+			GridClient.port = server.port;
+			GridClient.cert = (server.secureMode ? PhoenixCertificate.downloadFromAPI("nexusgrid", server.serverID)
+					: null);
+
+			// Reconnect
+			connectToServer();
+		}
+	}
+
+	/**
 	 * Disconnects from the servers
 	 */
 	public static void disconnect() {
@@ -196,7 +435,7 @@ public class GridClient {
 			return;
 
 		// Disconnect
-		client.getLogger().info("Disconnecting from servers...");
+		logger.info("Disconnecting from servers...");
 		client.getEventBus().addEventHandler(ClientDisconnectedEvent.class, event -> {
 			disconnected = true;
 		});
@@ -212,16 +451,16 @@ public class GridClient {
 			}
 
 		// Unload components
-		client.getLogger().info("Unloading components...");
+		logger.info("Unloading components...");
 		for (GridClientComponent comp : components.values()) {
-			client.getLogger().info("Unoading component: " + comp.componentID());
+			logger.info("Unoading component: " + comp.componentID());
 			comp.deInit();
 		}
 
 		// Disconnected
 		disconnected = false;
 		isDisconnect = false;
-		client.getLogger().info("Disconnected from Phoenix servers.");
+		logger.info("Disconnected from Phoenix servers.");
 		client = null;
 	}
 
@@ -250,6 +489,26 @@ public class GridClient {
 	}
 
 	/**
+	 * Initializes the Grid client
+	 * 
+	 * @param server       Server information object
+	 * @param loginManager Login manager
+	 * @throws IOException If downloading the certificate fails
+	 */
+	public static void initGridPhoenixClient(ServerInstance server, LoginManager loginManager) throws IOException {
+		if (inited)
+			return;
+		inited = true;
+
+		// Create client
+		GridClient.host = server.getBestAdress();
+		GridClient.port = server.port;
+		GridClient.cert = (server.secureMode ? PhoenixCertificate.downloadFromAPI("nexusgrid", server.serverID) : null);
+		GridClient.loginManager = loginManager;
+		connectToServer();
+	}
+
+	/**
 	 * Connects to the Phoenix servers
 	 */
 	public static void connectToServer() {
@@ -259,7 +518,7 @@ public class GridClient {
 
 			// Phoenix handshake
 			client = new PhoenixClient();
-			client.getLogger().info("Attempting to connect to Grid Phoenix server " + host + ":" + port + "...");
+			logger.info("Attempting to connect to Grid Phoenix server " + host + ":" + port + "...");
 			String gameID = "nexusgrid";
 			String gameVersion = GRID_SOFTWARE_VERSION;
 			int gameProtocol = GRID_PROTOCOL_VERSION;
@@ -364,11 +623,10 @@ public class GridClient {
 				// Reconnect if needed
 				if (!eve.shouldAttemptReconnect()) {
 					// Error
-					client.getLogger().error("Failed to connect to the Phoenix Grid server!", e);
+					logger.error("Failed to connect to the Phoenix Grid server!", e);
 				} else {
 					// Error
-					client.getLogger()
-							.error("Failed to connect to the Phoenix Grid server! Automatic retry scheduled...", e);
+					logger.error("Failed to connect to the Phoenix Grid server! Automatic retry scheduled...", e);
 					AsyncTaskManager.runAsync(() -> {
 						while (true) {
 							// Attempt connection
@@ -437,7 +695,7 @@ public class GridClient {
 				}
 
 				// Log
-				client.getLogger().error("Lost Grid server connection, attempting to reconnect... ("
+				logger.error("Lost Grid server connection, attempting to reconnect... ("
 						+ event.getDisconnectReason().getDisconnectReason() + ")");
 
 				// Run for all components
@@ -458,7 +716,11 @@ public class GridClient {
 								throw new PhoenixConnectException(new DisconnectReason("connect.error.nosessiontoken"));
 
 							// Login
-							client.connect(host, port, cert);
+							ServerInstance inst = findBestServer();
+							if (inst == null)
+								client.connect(host, port, cert);
+							client.connect(inst.getBestAdress(), inst.port,
+									PhoenixCertificate.downloadFromAPI("nexusgrid", inst.serverID));
 							break;
 						} catch (IOException | PhoenixConnectException e) {
 							// Check
@@ -496,6 +758,65 @@ public class GridClient {
 	}
 
 	/**
+	 * Creates Grid API requests
+	 * 
+	 * @param function            API function
+	 * @param token               API token
+	 * @param payload             Payload json
+	 * @param returnErrorMessages True to return error messages, false to throw
+	 *                            exceptions instead
+	 * @return Response object
+	 * @throws IOException If contacting the server fails
+	 */
+	public static JsonObject sendGridApiRequest(String function, String token, JsonObject payload,
+			boolean returnErrorMessages) throws IOException {
+		// Build URL
+		String url = PhoenixEnvironment.defaultAPIServer;
+		if (!url.endsWith("/"))
+			url += "/";
+		if (function.startsWith("/"))
+			function = function.substring(1);
+		url += function;
+
+		// Open connection
+		HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+		conn.addRequestProperty("Authorization", "Bearer " + token);
+		conn.setRequestMethod("POST");
+		conn.setDoOutput(true);
+
+		// Write request
+		conn.getOutputStream().write(payload.toString().getBytes("UTF-8"));
+
+		// Check response
+		if (conn.getResponseCode() >= 400) {
+			if (!returnErrorMessages)
+				throw new IOException(
+						"Server returned HTTP " + conn.getResponseCode() + " " + conn.getResponseMessage());
+
+			// Read error
+			try {
+				JsonObject errorMessage = JsonParser
+						.parseString(new String(conn.getErrorStream().readAllBytes(), "UTF-8")).getAsJsonObject();
+				if (!errorMessage.has("error")) {
+					errorMessage.addProperty("error", "http_status_" + conn.getResponseCode());
+					errorMessage.addProperty("errorMessage", conn.getResponseMessage());
+				}
+				return errorMessage;
+			} catch (IOException e) {
+				throw new IOException(
+						"Server returned HTTP " + conn.getResponseCode() + " " + conn.getResponseMessage());
+			}
+		}
+
+		// Read response
+		try {
+			return JsonParser.parseString(new String(conn.getInputStream().readAllBytes(), "UTF-8")).getAsJsonObject();
+		} catch (Exception e) {
+			throw new IOException("Server returned a non-json response");
+		}
+	}
+
+	/**
 	 * Authenticates the Grid game session
 	 * 
 	 * @param gridApiVersion Expected Grid API version
@@ -521,6 +842,24 @@ public class GridClient {
 		conn.getOutputStream().write(payload.toString().getBytes("UTF-8"));
 
 		// Read response
+		if (conn.getResponseCode() >= 400) {
+			// Error
+			try {
+				JsonObject response = JsonParser.parseString(new String(conn.getErrorStream().readAllBytes(), "UTF-8"))
+						.getAsJsonObject();
+				if (response.has("error")) {
+					String error = response.get("error").getAsString();
+					if (error.equals("api_version_mismatch"))
+						throw new IOException("API version mismatch while authenticating the game");
+					else if (error.equals("software_id_mismatch"))
+						throw new IOException("Software ID mismatch while authenticating the game");
+					else
+						throw new IOException("Server returned: " + error);
+				}
+			} catch (IOException e) {
+				throw e;
+			}
+		}
 		JsonObject response = JsonParser.parseString(new String(conn.getInputStream().readAllBytes(), "UTF-8"))
 				.getAsJsonObject();
 		PhoenixEnvironment.defaultLoginToken = response.get("token").getAsString();

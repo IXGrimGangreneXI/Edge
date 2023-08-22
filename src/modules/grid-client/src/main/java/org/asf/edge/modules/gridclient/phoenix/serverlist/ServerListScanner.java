@@ -206,6 +206,7 @@ public class ServerListScanner {
 		// Read json
 		JsonObject serverInfo = JsonParser.parseString(lineBuffer).getAsJsonObject();
 		ServerInstance instance = new ServerInstance();
+		instance.secureMode = true;
 		instance.gameID = gameID;
 		instance.serverID = serverInfo.get("id").getAsString();
 		instance.version = serverInfo.get("version").getAsString();

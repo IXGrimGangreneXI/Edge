@@ -46,10 +46,10 @@ public class GridGameWebService extends EdgeWebService<EdgeGridApiServer> {
 		}
 
 		// Verify version
-		if (!request.get("clientApiVersion").getAsString().equals(EdgeGridApiServer.GRID_API_VERSION))
-			return response(409, "Conflict", "application/json", "{\"error\":\"api_version_mismatch\"}");
 		if (!request.get("clientSoftwareID").getAsString().equals(EdgeGridApiServer.GRID_SOFTWARE_ID))
 			return response(409, "Conflict", "application/json", "{\"error\":\"software_id_mismatch\"}");
+		if (!request.get("clientApiVersion").getAsString().equals(EdgeGridApiServer.GRID_API_VERSION))
+			return response(409, "Conflict", "application/json", "{\"error\":\"api_version_mismatch\"}");
 
 		// Generate game token
 		PhoenixToken jwt = new PhoenixToken();

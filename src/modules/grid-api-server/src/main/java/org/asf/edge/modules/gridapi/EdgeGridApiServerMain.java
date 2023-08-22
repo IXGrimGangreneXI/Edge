@@ -39,6 +39,7 @@ public class EdgeGridApiServerMain {
 
 		// Common init
 		CommonInit.initAll();
+		CommonInit.addServerType("gridapi");
 
 		// Logger
 		Logger logger = LogManager.getLogger("GRIDAPI");

@@ -136,7 +136,9 @@ public class LoginManager {
 					PhoenixSession sesData = new PhoenixSession(this, acc, dsp, ses, response);
 					session = sesData;
 					onSuccess.accept(sesData);
-					getEventBus().dispatchEvent(new SessionAuthenticatedEvent(this, session));
+					response.remove("sessionToken");
+					getEventBus().dispatchEvent(new SessionAuthenticatedEvent(this, session.getAccountID(),
+							session.getDisplayName(), session.getRawResponse()));
 
 					// Start refresh
 					AsyncTaskManager.runAsync(() -> {

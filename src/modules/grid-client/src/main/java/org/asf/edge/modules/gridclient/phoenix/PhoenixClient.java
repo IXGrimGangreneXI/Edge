@@ -414,6 +414,9 @@ public class PhoenixClient {
 							: disconnectReason);
 		}
 
+		// Log
+		logger.debug("Starting packet handlers...");
+
 		// Start packet handling
 		AsyncTaskManager.runAsync(() -> {
 			while (isConnected()) {
@@ -501,7 +504,9 @@ public class PhoenixClient {
 		});
 
 		// Call connected
+		logger.debug("Calling connection success...");
 		getEventBus().dispatchEvent(new ClientConnectedEvent(this));
+		logger.debug("Connection successfully established!");
 	}
 
 	private boolean attemptProgramHandshake() {
