@@ -31,7 +31,14 @@ import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
+import org.asf.edge.gameplayapi.events.quests.QuestAcceptedEvent;
+import org.asf.edge.gameplayapi.events.quests.QuestCompletedEvent;
 import org.asf.edge.gameplayapi.events.quests.QuestManagerLoadEvent;
+import org.asf.edge.gameplayapi.events.quests.QuestResetEvent;
+import org.asf.edge.gameplayapi.events.quests.QuestStartedEvent;
+import org.asf.edge.gameplayapi.events.quests.QuestTaskCompletionEvent;
+import org.asf.edge.gameplayapi.events.quests.QuestTaskProgressionEvent;
+import org.asf.edge.gameplayapi.events.quests.QuestUnlockEvent;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.gameplayapi.util.RewardsUtil;
@@ -691,15 +698,25 @@ public class QuestManagerImpl extends QuestManager {
 			// Load data container and prepare lists
 			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
 			JsonArray active = new JsonArray();
+			JsonArray activeOld = data.entryExists("activequests") ? data.getEntry("activequests").getAsJsonArray()
+					: new JsonArray();
 			ArrayList<Integer> activeQuests = new ArrayList<Integer>();
+			ArrayList<Integer> prevActiveQuests = new ArrayList<Integer>();
+			for (JsonElement ele : activeOld)
+				prevActiveQuests.add(ele.getAsInt());
 
 			// Find active quests
 			for (MissionData mission : this.quests.values()) {
 				UserQuestInfo q = getUserQuest(save, mission.id);
-				if (((mission.repeatable != null && mission.repeatable.equalsIgnoreCase("true")) || !q.isCompleted())
-						&& q.isActive()) {
-					active.add(q.getQuestID());
-					activeQuests.add(q.getQuestID());
+				if (((mission.repeatable != null && mission.repeatable.equalsIgnoreCase("true")) || !q.isCompleted())) {
+					if (q.isActive()) {
+						active.add(q.getQuestID());
+						activeQuests.add(q.getQuestID());
+						if (!prevActiveQuests.contains(q.getQuestID())) {
+							// Dispatch event
+							EventBus.getInstance().dispatchEvent(new QuestUnlockEvent(q, save, this));
+						}
+					}
 				}
 			}
 
@@ -752,15 +769,25 @@ public class QuestManagerImpl extends QuestManager {
 			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
 			JsonArray active = new JsonArray();
 			JsonArray upcoming = new JsonArray();
+			JsonArray activeOld = data.entryExists("activequests") ? data.getEntry("activequests").getAsJsonArray()
+					: new JsonArray();
 			ArrayList<Integer> activeQuests = new ArrayList<Integer>();
+			ArrayList<Integer> prevActiveQuests = new ArrayList<Integer>();
+			for (JsonElement ele : activeOld)
+				prevActiveQuests.add(ele.getAsInt());
 
 			// Find active quests
 			for (MissionData mission : this.quests.values()) {
 				UserQuestInfo q = getUserQuest(save, mission.id);
-				if (((mission.repeatable != null && mission.repeatable.equalsIgnoreCase("true")) || !q.isCompleted())
-						&& q.isActive()) {
-					active.add(q.getQuestID());
-					activeQuests.add(q.getQuestID());
+				if ((mission.repeatable != null && mission.repeatable.equalsIgnoreCase("true")) || !q.isCompleted()) {
+					if (q.isActive()) {
+						active.add(q.getQuestID());
+						activeQuests.add(q.getQuestID());
+						if (!prevActiveQuests.contains(q.getQuestID())) {
+							// Dispatch event
+							EventBus.getInstance().dispatchEvent(new QuestUnlockEvent(q, save, this));
+						}
+					}
 				}
 			}
 
@@ -961,6 +988,9 @@ public class QuestManagerImpl extends QuestManager {
 				throw new RuntimeException(e);
 			}
 
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new QuestAcceptedEvent(this, save, QuestManagerImpl.this));
+
 			// Recompute active quests
 			AsyncTaskManager.runAsync(() -> {
 				recomputeQuests(save);
@@ -1044,8 +1074,16 @@ public class QuestManagerImpl extends QuestManager {
 			if (invContainer == -1)
 				invContainer = 1;
 
+			// Dispatch event
+			EventBus.getInstance()
+					.dispatchEvent(new QuestTaskProgressionEvent(this, task, payloadStr, save, QuestManagerImpl.this));
+
 			// Update quests if needed
 			if (completed) {
+				// Dispatch event
+				EventBus.getInstance().dispatchEvent(
+						new QuestTaskCompletionEvent(this, task, payloadStr, save, QuestManagerImpl.this));
+
 				// Check tasks
 				boolean missionCompleted = isCompletedMission(mission);
 				if (missionCompleted) {
@@ -1133,6 +1171,9 @@ public class QuestManagerImpl extends QuestManager {
 				throw new RuntimeException(e);
 			}
 
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new QuestStartedEvent(this, save, QuestManagerImpl.this));
+
 			// Recompute active quests
 			AsyncTaskManager.runAsync(() -> {
 				recomputeQuests(save);
@@ -1176,6 +1217,9 @@ public class QuestManagerImpl extends QuestManager {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new QuestCompletedEvent(this, save, QuestManagerImpl.this));
 
 			// Recompute active quests
 			AsyncTaskManager.runAsync(() -> {
@@ -1426,6 +1470,9 @@ public class QuestManagerImpl extends QuestManager {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new QuestResetEvent(this, save, QuestManagerImpl.this));
 
 			// Recompute
 			AsyncTaskManager.runAsync(() -> {

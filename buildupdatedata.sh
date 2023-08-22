@@ -92,6 +92,6 @@ fi
 echo Downloading current version json...
 curl https://sentinel.projectedge.net/software/sod/projectedge/updates.json -f --output build/updatedata/sentinel.projectedge.net/httpdocs/software/sod/projectedge/updates.json || exit 1
 echo Modifying version json...
-echo "$(cat build/updatedata/sentinel.projectedge.net/httpdocs/software/sod/projectedge/updates.json | jq '.latest = $v' --arg v $globalserver | jq '."'"$globalserver"'" |= {"url":"'"https://sentinel.projectedge.net/software/sod/projectedge/edge-sentinel-emulation-software-$globalserver.svp"'","hash":"'"$(sha256sum build/updatedata/sentinel.projectedge.net/httpdocs/software/sod/projectedge/edge-sentinel-emulation-software-$globalserver.svp | awk '{ print $1 }')"'"}')" > build/updatedata/sentinel.projectedge.net/httpdocs/software/sod/projectedge/updates.json
+echo "$(cat build/updatedata/sentinel.projectedge.net/httpdocs/software/sod/projectedge/updates.json | jq '.latest = $v' --arg v $globalserver | jq '.versions."'"$globalserver"'" |= {"url":"'"https://sentinel.projectedge.net/software/sod/projectedge/edge-sentinel-emulation-software-$globalserver.svp"'","hash":"'"$(sha256sum build/updatedata/sentinel.projectedge.net/httpdocs/software/sod/projectedge/edge-sentinel-emulation-software-$globalserver.svp | awk '{ print $1 }')"'"}')" > build/updatedata/sentinel.projectedge.net/httpdocs/software/sod/projectedge/updates.json
 rm -rf build/updatedata/tmp
 echo Done.
