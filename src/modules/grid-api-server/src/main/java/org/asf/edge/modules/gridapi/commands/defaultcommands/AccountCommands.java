@@ -44,7 +44,7 @@ public class AccountCommands extends TaskBasedCommand {
 
 					@Override
 					public String syntax(CommandContext ctx) {
-						return "\"<email>\" \"<username>\" \"<password>\" [<true/false (isUnderageUser)>] [<true/false (subscribeEmailNotifications)>]";
+						return "\"<username>\" \"<password>\" [<true/false (isUnderageUser)>]";
 					}
 
 					@Override
@@ -57,22 +57,17 @@ public class AccountCommands extends TaskBasedCommand {
 							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs) throws Exception {
 						// Check
 						if (args.length < 1) {
-							outputWriteLineCallback.accept("Missing argument: email");
-							return null;
-						} else if (args.length < 2) {
 							outputWriteLineCallback.accept("Missing argument: username");
 							return null;
-						} else if (args.length < 3) {
+						} else if (args.length < 2) {
 							outputWriteLineCallback.accept("Missing argument: password");
 							return null;
 						}
 
 						// Load request into memory
-						String email = args[0];
-						String username = args[1];
-						String password = args[2];
-						boolean isUnderageUser = args.length >= 4 ? args[3].equalsIgnoreCase("true") : false;
-						boolean subscribeEmail = args.length >= 5 ? args[4].equalsIgnoreCase("true") : false;
+						String username = args[0];
+						String password = args[1];
+						boolean isUnderageUser = args.length >= 3 ? args[2].equalsIgnoreCase("true") : false;
 
 						// Find account manager
 						AccountManager manager = AccountManager.getInstance();
@@ -99,21 +94,6 @@ public class AccountCommands extends TaskBasedCommand {
 							return null;
 						}
 
-						// Verify email
-						if (!email.toLowerCase().matches(
-								"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])")) {
-							// Invalid name
-							outputWriteLineCallback.accept("Error: invalid email address");
-							return null;
-						}
-
-						// Check if email is taken
-						if (manager.getAccountIDByEmail(email) != null) {
-							// Error
-							outputWriteLineCallback.accept("Error: email address already taken");
-							return null;
-						}
-
 						// Check if name is taken
 						if (manager.isUsernameTaken(username)) {
 							// Error
@@ -129,7 +109,7 @@ public class AccountCommands extends TaskBasedCommand {
 						}
 
 						// Create account
-						AccountObject acc = manager.registerAccount(username, email, password.toCharArray());
+						AccountObject acc = manager.registerAccount(username, null, password.toCharArray());
 						if (acc == null) {
 							// Error
 							outputWriteLineCallback.accept("Error: a server error occurred");
@@ -138,7 +118,7 @@ public class AccountCommands extends TaskBasedCommand {
 
 						// Set data
 						AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
-						cont.setEntry("sendupdates", new JsonPrimitive(subscribeEmail));
+						cont.setEntry("sendupdates", new JsonPrimitive(false));
 						cont.setEntry("isunderage", new JsonPrimitive(isUnderageUser));
 						cont.setEntry("last_update", new JsonPrimitive(System.currentTimeMillis()));
 						cont.setEntry("significantFieldRandom", new JsonPrimitive(IdentityUtils.rnd.nextInt()));

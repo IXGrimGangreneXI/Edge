@@ -5,8 +5,12 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
+import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.razorwhip.sentinel.launcher.LauncherUtils;
 import org.asf.razorwhip.sentinel.launcher.api.IEmulationSoftwareProvider;
 import org.asf.razorwhip.sentinel.launcher.descriptors.data.LauncherController;
@@ -21,6 +25,8 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 	private JsonObject launchSettings;
 	private Process serverProc;
 	private boolean serverExited;
+
+	public static boolean showLog;
 
 	@Override
 	public void init() {
@@ -254,13 +260,40 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 					libs += File.pathSeparator + "libs/" + lib.getName();
 				}
 
+				// Arguments
+				String jvmArgsExtra = "";
+				String progArgsExtra = "";
+				if (new File("server/commandline.json").exists()) {
+					try {
+						JsonObject configData = JsonParser
+								.parseString(Files.readString(Path.of("server/commandline.json"))).getAsJsonObject();
+
+						// Load
+						jvmArgsExtra = configData.get("jvm").getAsString();
+						progArgsExtra = configData.get("program").getAsString();
+					} catch (IOException e1) {
+						throw new RuntimeException(e1);
+					}
+				}
+
 				// Create builder
 				ProcessBuilder builder;
-				if (!serverLog)
-					builder = new ProcessBuilder(jvm, "-cp", libs, "org.asf.edge.globalserver.EdgeGlobalServerMain");
-				else
-					builder = new ProcessBuilder(jvm, "-cp", libs, "-DopenGuiLog=true",
-							"org.asf.edge.globalserver.EdgeGlobalServerMain");
+				ArrayList<String> args = new ArrayList<String>();
+				if (!serverLog && !showLog) {
+					args.addAll(List.of(jvm, "-cp", libs));
+					if (!jvmArgsExtra.isBlank())
+						args.addAll(parseArguments(jvmArgsExtra));
+					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
+				} else {
+					args.addAll(List.of(jvm, "-cp", libs, "-DopenGuiLog=true",
+							"org.asf.edge.globalserver.EdgeGlobalServerMain"));
+					if (!jvmArgsExtra.isBlank())
+						args.addAll(parseArguments(jvmArgsExtra));
+					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
+				}
+				if (!progArgsExtra.isBlank())
+					args.addAll(parseArguments(progArgsExtra));
+				builder = new ProcessBuilder(args.toArray(t -> new String[t]));
 				builder.directory(new File("server"));
 				builder.inheritIO();
 
@@ -307,12 +340,54 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		successCallback.run();
 	}
 
+	// Argument parser
+	private ArrayList<String> parseArguments(String args) {
+		ArrayList<String> args3 = new ArrayList<String>();
+		char[] argarray = args.toCharArray();
+		boolean ignorespaces = false;
+		boolean hasData = false;
+		String last = "";
+		int i = 0;
+		for (char c : args.toCharArray()) {
+			if (c == '"' && (i == 0 || argarray[i - 1] != '\\')) {
+				if (ignorespaces)
+					ignorespaces = false;
+				else {
+					hasData = true;
+					ignorespaces = true;
+				}
+			} else if (c == ' ' && !ignorespaces && (i == 0 || argarray[i - 1] != '\\')) {
+				if (hasData)
+					args3.add(last);
+				hasData = false;
+				last = "";
+			} else if (c != '\\' || (i + 1 < argarray.length && argarray[i + 1] != '"'
+					&& (argarray[i + 1] != ' ' || ignorespaces))) {
+				hasData = true;
+				last += c;
+			}
+
+			i++;
+		}
+		if (!last.isEmpty())
+			args3.add(last);
+		return args3;
+	}
+
 	private void startServer(ProcessBuilder builder, String launchMode) throws IOException {
 		// Start server
 		Process proc = builder.start();
 		serverProc = proc;
-		proc.onExit().thenAccept(t -> {
-			int code = proc.exitValue();
+		AsyncTaskManager.runAsync(() -> {
+			// Wait for exit
+			int code;
+			try {
+				code = proc.waitFor();
+			} catch (InterruptedException e) {
+				code = 1;
+			}
+
+			// Handle
 			if (code == 237) {
 				// Restart server
 				try {

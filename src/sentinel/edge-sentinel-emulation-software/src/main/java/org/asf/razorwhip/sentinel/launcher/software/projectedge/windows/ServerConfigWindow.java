@@ -8,6 +8,7 @@ import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -17,6 +18,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.awt.event.ActionEvent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -35,6 +37,8 @@ public class ServerConfigWindow extends JDialog {
 	private JTextField textField_6;
 	private JTextField textField_7;
 	private JTextField textField_8;
+	private JTextField textField_9;
+	private JTextField textField_10;
 
 	public boolean showDialog() {
 		setVisible(true);
@@ -71,69 +75,89 @@ public class ServerConfigWindow extends JDialog {
 			panel.setLayout(null);
 
 			JLabel lblGameplayEndpoint = new JLabel("Gameplay API server");
-			lblGameplayEndpoint.setBounds(12, 50, 496, 17);
+			lblGameplayEndpoint.setBounds(12, 12, 496, 17);
 			panel.add(lblGameplayEndpoint);
 
 			textField_1 = new JTextField();
 			textField_1.setText("0.0.0.0");
 			textField_1.setColumns(10);
-			textField_1.setBounds(12, 69, 375, 21);
+			textField_1.setBounds(12, 31, 375, 21);
 			panel.add(textField_1);
 
 			textField_6 = new JTextField();
 			textField_6.setText("5320");
-			textField_6.setBounds(394, 69, 114, 21);
+			textField_6.setBounds(394, 31, 114, 21);
 			panel.add(textField_6);
 			textField_6.setColumns(10);
 
 			JLabel lblCommonApiServer = new JLabel("Common API server");
-			lblCommonApiServer.setBounds(12, 102, 496, 17);
+			lblCommonApiServer.setBounds(12, 64, 496, 17);
 			panel.add(lblCommonApiServer);
 
 			textField_2 = new JTextField();
 			textField_2.setText("0.0.0.0");
 			textField_2.setColumns(10);
-			textField_2.setBounds(12, 121, 375, 21);
+			textField_2.setBounds(12, 83, 375, 21);
 			panel.add(textField_2);
 
 			textField_7 = new JTextField();
 			textField_7.setText("5321");
-			textField_7.setBounds(394, 121, 114, 21);
+			textField_7.setBounds(394, 83, 114, 21);
 			panel.add(textField_7);
 			textField_7.setColumns(10);
 
 			JLabel lblSocialApiServer = new JLabel("Social API server");
-			lblSocialApiServer.setBounds(12, 154, 496, 17);
+			lblSocialApiServer.setBounds(12, 116, 496, 17);
 			panel.add(lblSocialApiServer);
 
 			textField_3 = new JTextField();
 			textField_3.setText("0.0.0.0");
 			textField_3.setToolTipText("");
 			textField_3.setColumns(10);
-			textField_3.setBounds(12, 173, 375, 21);
+			textField_3.setBounds(12, 135, 375, 21);
 			panel.add(textField_3);
 
 			textField_8 = new JTextField();
 			textField_8.setText("5322");
-			textField_8.setBounds(394, 173, 114, 21);
+			textField_8.setBounds(394, 135, 114, 21);
 			panel.add(textField_8);
 			textField_8.setColumns(10);
 
 			JLabel lblSmartfoxServers = new JLabel("Smartfox server");
-			lblSmartfoxServers.setBounds(12, 206, 496, 17);
+			lblSmartfoxServers.setBounds(12, 168, 496, 17);
 			panel.add(lblSmartfoxServers);
 
 			textField_4 = new JTextField();
 			textField_4.setText("0.0.0.0");
 			textField_4.setColumns(10);
-			textField_4.setBounds(12, 225, 375, 21);
+			textField_4.setBounds(12, 187, 375, 21);
 			panel.add(textField_4);
 
 			textField_5 = new JTextField();
 			textField_5.setText("5323");
-			textField_5.setBounds(394, 225, 114, 21);
+			textField_5.setBounds(394, 187, 114, 21);
 			panel.add(textField_5);
 			textField_5.setColumns(10);
+
+			JLabel lblJvm = new JLabel("Additional JVM arguments");
+			lblJvm.setBounds(12, 220, 496, 17);
+			panel.add(lblJvm);
+
+			textField_9 = new JTextField();
+			textField_9.setText("");
+			textField_9.setColumns(10);
+			textField_9.setBounds(12, 239, 496, 21);
+			panel.add(textField_9);
+
+			JLabel lblProg = new JLabel("Program arguments");
+			lblProg.setBounds(12, 272, 496, 17);
+			panel.add(lblProg);
+
+			textField_10 = new JTextField();
+			textField_10.setText("");
+			textField_10.setColumns(10);
+			textField_10.setBounds(12, 291, 496, 21);
+			panel.add(textField_10);
 
 			File edgeConfig = new File("server/server.json");
 			JButton btnNewButton = new JButton("Save");
@@ -263,7 +287,15 @@ public class ServerConfigWindow extends JDialog {
 						sApiJson.addProperty("listenPort", Integer.parseInt(textField_8.getText()));
 
 						// Save
-						Files.writeString(edgeConfig.toPath(), configData.toString());
+						Files.writeString(edgeConfig.toPath(),
+								new GsonBuilder().setPrettyPrinting().create().toJson(configData));
+
+						// Write JVM and program arguments
+						JsonObject argsJ = new JsonObject();
+						argsJ.addProperty("jvm", textField_9.getText());
+						argsJ.addProperty("program", textField_10.getText());
+						Files.writeString(Path.of("server/commandline.json"),
+								new GsonBuilder().setPrettyPrinting().create().toJson(argsJ));
 					} catch (IOException e1) {
 						throw new RuntimeException(e1);
 					}
@@ -305,6 +337,19 @@ public class ServerConfigWindow extends JDialog {
 					JsonObject sfs = configData.get("mmoServer").getAsJsonObject();
 					textField_4.setText(sfs.get("listenAddress").getAsString());
 					textField_5.setText(Integer.toString(sfs.get("listenPort").getAsInt()));
+				} catch (IOException e1) {
+					throw new RuntimeException(e1);
+				}
+			}
+
+			if (new File("server/commandline.json").exists()) {
+				try {
+					JsonObject configData = JsonParser.parseString(Files.readString(Path.of("server/commandline.json")))
+							.getAsJsonObject();
+
+					// Load
+					textField_9.setText(configData.get("jvm").getAsString());
+					textField_10.setText(configData.get("program").getAsString());
 				} catch (IOException e1) {
 					throw new RuntimeException(e1);
 				}

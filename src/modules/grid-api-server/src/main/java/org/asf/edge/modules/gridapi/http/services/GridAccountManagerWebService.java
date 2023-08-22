@@ -163,8 +163,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		try {
 			// Parse and check
 			request = JsonParser.parseString(func.getRequest().getRequestBodyAsString()).getAsJsonObject();
-			if (!request.has("email") || !request.has("username") || !request.has("password")
-					|| !request.has("subscribeEmailNotifications") || !request.has("isUnderageUser"))
+			if (!request.has("username") || !request.has("password") || !request.has("isUnderageUser"))
 				throw new IOException();
 		} catch (Exception e) {
 			// Bad request
@@ -173,10 +172,8 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		}
 
 		// Load request into memory
-		String email = request.get("email").getAsString();
 		String username = request.get("username").getAsString();
 		String password = request.get("password").getAsString();
-		boolean subscribeEmail = request.get("subscribeEmailNotifications").getAsBoolean();
 		boolean isUnderageUser = request.get("isUnderageUser").getAsBoolean();
 
 		// Find account manager
@@ -200,19 +197,6 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 			return response(400, "Bad request", "text/json", "{\"error\":\"invalid_password\"}");
 		}
 
-		// Verify email
-		if (!email.toLowerCase().matches(
-				"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])")) {
-			// Error
-			return response(400, "Bad request", "text/json", "{\"error\":\"invalid_email\"}");
-		}
-
-		// Check if email is taken
-		if (manager.getAccountIDByEmail(email) != null) {
-			// Error
-			return response(400, "Bad request", "text/json", "{\"error\":\"email_in_use\"}");
-		}
-
 		// Check if name is taken
 		if (manager.isUsernameTaken(username)) {
 			// Error
@@ -220,7 +204,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		}
 
 		// Create account
-		AccountObject acc = manager.registerAccount(username, email, password.toCharArray());
+		AccountObject acc = manager.registerAccount(username, null, password.toCharArray());
 		if (acc == null) {
 			// Error
 			return response(500, "Internal server error", "text/json", "{\"error\":\"server_error\"}");
@@ -228,7 +212,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 		// Set data
 		AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
-		cont.setEntry("sendupdates", new JsonPrimitive(subscribeEmail));
+		cont.setEntry("sendupdates", new JsonPrimitive(false));
 		cont.setEntry("isunderage", new JsonPrimitive(isUnderageUser));
 		cont.setEntry("last_update", new JsonPrimitive(System.currentTimeMillis()));
 		cont.setEntry("significantFieldRandom", new JsonPrimitive(IdentityUtils.rnd.nextInt()));

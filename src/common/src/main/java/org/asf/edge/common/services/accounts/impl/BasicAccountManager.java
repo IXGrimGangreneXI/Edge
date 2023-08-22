@@ -353,7 +353,7 @@ public abstract class BasicAccountManager extends AccountManager {
 			return null;
 
 		// Check email
-		if (getAccountIDByEmail(email) != null)
+		if (email != null && getAccountIDByEmail(email) != null)
 			return null;
 
 		// Generate account ID

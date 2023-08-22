@@ -9,6 +9,7 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
 import org.asf.razorwhip.sentinel.launcher.LauncherUtils;
+import org.asf.razorwhip.sentinel.launcher.software.projectedge.EdgeEmulationSoftware;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -65,6 +66,24 @@ public class LaunchOptionMenu extends JDialog {
 			btnNewButton.setBounds(12, 12, 296, 27);
 			panel.add(btnNewButton);
 
+			JButton btnNewButtonL = new JButton("Launch normally (with log)");
+			btnNewButtonL.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					try {
+						EdgeEmulationSoftware.showLog = true;
+						JsonObject conf = JsonParser.parseString(Files.readString(Path.of("edgelauncher.json")))
+								.getAsJsonObject();
+						conf.addProperty("launchMode", "normal");
+						Files.writeString(Path.of("edgelauncher.json"), conf.toString());
+					} catch (IOException e1) {
+						throw new RuntimeException(e1);
+					}
+					dispose();
+				}
+			});
+			btnNewButtonL.setBounds(12, 47, 296, 27);
+			panel.add(btnNewButtonL);
+
 			JButton btnNewButton_1 = new JButton("Launch client (local server)");
 			btnNewButton_1.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
@@ -79,7 +98,7 @@ public class LaunchOptionMenu extends JDialog {
 					dispose();
 				}
 			});
-			btnNewButton_1.setBounds(12, 47, 296, 27);
+			btnNewButton_1.setBounds(12, 83, 296, 27);
 			panel.add(btnNewButton_1);
 
 			JButton btnNewButton_2 = new JButton("Launch client (remote server)");
@@ -90,7 +109,7 @@ public class LaunchOptionMenu extends JDialog {
 						dispose();
 				}
 			});
-			btnNewButton_2.setBounds(12, 83, 296, 27);
+			btnNewButton_2.setBounds(12, 118, 296, 27);
 			panel.add(btnNewButton_2);
 
 			JButton btnNewButton_3 = new JButton("Launch server");
@@ -107,7 +126,7 @@ public class LaunchOptionMenu extends JDialog {
 					dispose();
 				}
 			});
-			btnNewButton_3.setBounds(12, 118, 296, 27);
+			btnNewButton_3.setBounds(12, 153, 296, 27);
 			panel.add(btnNewButton_3);
 
 			JButton btnNewButton_3_1 = new JButton("Select client version");
