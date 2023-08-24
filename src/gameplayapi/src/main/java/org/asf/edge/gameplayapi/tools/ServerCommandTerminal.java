@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
@@ -47,7 +47,7 @@ public class ServerCommandTerminal {
 		Scanner sc = new Scanner(System.in);
 
 		// Common init
-		CommonInit.initAll();
+		EdgeServerEnvironment.initAll();
 
 		// Logger
 		Logger logger = LogManager.getLogger("TERMINAL");

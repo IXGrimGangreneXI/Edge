@@ -9,7 +9,7 @@ import java.util.Locale;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
@@ -33,8 +33,8 @@ public class EdgeMMOServerMain {
 		EdgeMMOServer.printSplash();
 
 		// Common init
-		CommonInit.initAll();
-		CommonInit.addServerType("mmoserver");
+		EdgeServerEnvironment.initAll();
+		EdgeServerEnvironment.addServerType("mmoserver");
 
 		// Run updater if needed
 		CommonUpdater.init("mmoserver", "stable", EdgeMMOServer.MMO_SERVER_VERSION,
@@ -138,7 +138,7 @@ public class EdgeMMOServerMain {
 		// Wait for exit
 		logger.info("Server is running!");
 		server.waitForExit();
-		if (CommonInit.restartPending)
+		if (EdgeServerEnvironment.restartPending)
 			System.exit(237);
 		else
 			System.exit(0);

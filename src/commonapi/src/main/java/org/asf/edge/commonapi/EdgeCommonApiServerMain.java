@@ -9,7 +9,7 @@ import java.util.Locale;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
@@ -33,8 +33,8 @@ public class EdgeCommonApiServerMain {
 		EdgeCommonApiServer.printSplash();
 
 		// Common init
-		CommonInit.initAll();
-		CommonInit.addServerType("commonapi");
+		EdgeServerEnvironment.initAll();
+		EdgeServerEnvironment.addServerType("commonapi");
 
 		// Run updater if needed
 		CommonUpdater.init("commonapi", "stable", EdgeCommonApiServer.COMMON_API_VERSION,
@@ -164,7 +164,7 @@ public class EdgeCommonApiServerMain {
 		// Wait for exit
 		logger.info("Server is running!");
 		server.waitForExit();
-		if (CommonInit.restartPending)
+		if (EdgeServerEnvironment.restartPending)
 			System.exit(237);
 		else
 			System.exit(0);

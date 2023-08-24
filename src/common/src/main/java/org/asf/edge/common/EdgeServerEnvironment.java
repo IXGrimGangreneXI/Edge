@@ -13,12 +13,12 @@ import com.google.gson.JsonParser;
 
 /**
  * 
- * Called to initialize common code of Edge
+ * Edge common server environment
  * 
  * @author Sky Swimmer
  *
  */
-public class CommonInit {
+public class EdgeServerEnvironment {
 	private static final String EDGE_VERSION = "1.0.0.A3";
 
 	private static boolean logInited;
@@ -129,10 +129,10 @@ public class CommonInit {
 
 		// Setup logging
 		if (System.getProperty("debugMode") != null) {
-			System.setProperty("log4j2.configurationFile", CommonInit.class.getResource("/log4j2-ide.xml").toString());
+			System.setProperty("log4j2.configurationFile", EdgeServerEnvironment.class.getResource("/log4j2-ide.xml").toString());
 			debugMode = true;
 		} else {
-			System.setProperty("log4j2.configurationFile", CommonInit.class.getResource("/log4j2.xml").toString());
+			System.setProperty("log4j2.configurationFile", EdgeServerEnvironment.class.getResource("/log4j2.xml").toString());
 		}
 
 		// Open graphical

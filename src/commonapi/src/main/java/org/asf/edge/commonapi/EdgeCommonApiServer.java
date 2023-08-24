@@ -18,7 +18,7 @@ import org.asf.edge.commonapi.events.server.*;
 
 import com.google.gson.JsonPrimitive;
 
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.IBaseServer;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
@@ -243,7 +243,7 @@ public class EdgeCommonApiServer implements IBaseServer {
 					if (restart > lastRestartTime) {
 						// Trigger restart
 						if (isRunning()) {
-							CommonInit.restartPending = true;
+							EdgeServerEnvironment.restartPending = true;
 							stopServer();
 							break;
 						}

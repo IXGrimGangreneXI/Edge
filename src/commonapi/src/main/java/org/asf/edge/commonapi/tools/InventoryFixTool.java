@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
@@ -23,7 +23,7 @@ public class InventoryFixTool {
 
 	public static void main(String[] args) {
 		// Setup
-		CommonInit.initAll();
+		EdgeServerEnvironment.initAll();
 
 		// Logger
 		Logger logger = LogManager.getLogger("CONVERTER");

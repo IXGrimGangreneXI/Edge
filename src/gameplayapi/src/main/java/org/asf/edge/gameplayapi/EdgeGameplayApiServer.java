@@ -22,7 +22,7 @@ import org.asf.edge.modules.eventbus.EventBus;
 import com.google.gson.JsonPrimitive;
 
 import org.asf.edge.gameplayapi.http.handlers.achievements.*;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.IBaseServer;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
@@ -252,7 +252,7 @@ public class EdgeGameplayApiServer implements IBaseServer {
 					if (restart > lastRestartTime) {
 						// Trigger restart
 						if (isRunning()) {
-							CommonInit.restartPending = true;
+							EdgeServerEnvironment.restartPending = true;
 							stopServer();
 							break;
 						}

@@ -9,7 +9,7 @@ import java.util.Locale;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
@@ -54,12 +54,12 @@ public class EdgeGlobalServerMain {
 		System.out.println("");
 
 		// Common init
-		CommonInit.initAll();
-		CommonInit.addServerType("globalserver");
-		CommonInit.addServerType("contentserver");
-		CommonInit.addServerType("commonapi");
-		CommonInit.addServerType("gameplayapi");
-		CommonInit.addServerType("mmoserver");
+		EdgeServerEnvironment.initAll();
+		EdgeServerEnvironment.addServerType("globalserver");
+		EdgeServerEnvironment.addServerType("contentserver");
+		EdgeServerEnvironment.addServerType("commonapi");
+		EdgeServerEnvironment.addServerType("gameplayapi");
+		EdgeServerEnvironment.addServerType("mmoserver");
 
 		// Run updater if needed
 		CommonUpdater.init("globalserver", "stable", EdgeGlobalServerMain.GLOBAL_SERVER_VERSION,
@@ -68,7 +68,7 @@ public class EdgeGlobalServerMain {
 		// Logger
 		Logger logger = LogManager.getLogger("FULLSERVER");
 		logger.info("EDGE Global (full) server is starting!");
-		logger.info("Edge version: " + CommonInit.getEdgeVersion());
+		logger.info("Edge version: " + EdgeServerEnvironment.getEdgeVersion());
 		logger.info("Content server version: " + EdgeContentServer.CONTENT_SERVER_VERSION);
 		logger.info("Common API version: " + EdgeCommonApiServer.COMMON_API_VERSION);
 		logger.info("Gameplay API server version: " + EdgeGameplayApiServer.GAMEPLAY_API_VERSION);
@@ -375,7 +375,7 @@ public class EdgeGlobalServerMain {
 			gpApiSrv.waitForExit();
 		if (!mmoSrvDisabled)
 			mmoSrv.waitForExit();
-		if (CommonInit.restartPending)
+		if (EdgeServerEnvironment.restartPending)
 			System.exit(237);
 		else
 			System.exit(0);

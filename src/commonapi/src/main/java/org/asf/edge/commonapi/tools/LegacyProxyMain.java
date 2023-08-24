@@ -15,7 +15,7 @@ import org.apache.logging.log4j.Logger;
 import org.asf.connective.ConnectiveHttpServer;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.util.TripleDesUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -180,7 +180,7 @@ public class LegacyProxyMain {
 
 	public static void main(String[] args) throws IOException {
 		// Init common
-		CommonInit.initAll();
+		EdgeServerEnvironment.initAll();
 
 		// Create logger
 		Logger log = LogManager.getLogger("Proxy");

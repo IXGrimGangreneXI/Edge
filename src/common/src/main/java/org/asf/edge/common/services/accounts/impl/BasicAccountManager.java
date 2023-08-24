@@ -27,7 +27,7 @@ import javax.crypto.spec.PBEKeySpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
 import org.asf.edge.common.events.accounts.AccountManagerLoadEvent;
 import org.asf.edge.common.events.accounts.AccountRegisteredEvent;
@@ -100,9 +100,9 @@ public abstract class BasicAccountManager extends AccountManager {
 				try {
 					AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
 					if (!cont.entryExists("server_id")
-							|| !cont.getEntry("server_id").getAsString().equals(CommonInit.getServerID())) {
+							|| !cont.getEntry("server_id").getAsString().equals(EdgeServerEnvironment.getServerID())) {
 						// Set
-						cont.setEntry("server_id", new JsonPrimitive(CommonInit.getServerID()));
+						cont.setEntry("server_id", new JsonPrimitive(EdgeServerEnvironment.getServerID()));
 					}
 				} catch (IOException e) {
 					throw new RuntimeException(e);

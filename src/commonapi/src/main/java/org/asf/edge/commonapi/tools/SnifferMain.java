@@ -33,7 +33,7 @@ import org.asf.connective.ConnectiveHttpServer;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.util.TripleDesUtil;
 import org.bouncycastle.util.Arrays;
 
@@ -691,7 +691,7 @@ public class SnifferMain {
 
 	public static void main(String[] args) throws IOException {
 		// Init common
-		CommonInit.initAll();
+		EdgeServerEnvironment.initAll();
 
 		// Create logger
 		Logger log = LogManager.getLogger("Sniffer");

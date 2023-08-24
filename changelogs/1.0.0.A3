@@ -1,5 +1,6 @@
 Changes in 1.0.0.A3:
-- Added a way for modules to determine what type of servers they are running in (CommonInit.hasServerType() can be used for this)
-- Added a method to retrieve the edge version: `CommonInit.getEdgeVersion()`, it will retrieve the current Edge version of the server
+- Renamed 'CommonInit' to 'EdgeServerEnvironment'
+- Added a way for modules to determine what type of servers they are running in (EdgeServerEnvironment.hasServerType() can be used for this)
+- Added a method to retrieve the edge version: `EdgeServerEnvironment.getEdgeVersion()`, it will retrieve the current Edge version of the server
 - Added various account and save management events to the event bus
 - Added various quest events to the event bus

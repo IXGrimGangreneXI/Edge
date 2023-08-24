@@ -9,7 +9,7 @@ import java.util.Locale;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -29,8 +29,8 @@ public class EdgeContentServerMain {
 		EdgeContentServer.printSplash();
 
 		// Common init
-		CommonInit.initAll();
-		CommonInit.addServerType("contentserver");
+		EdgeServerEnvironment.initAll();
+		EdgeServerEnvironment.addServerType("contentserver");
 
 		// Run updater if needed
 		CommonUpdater.init("contentserver", "stable", EdgeContentServer.CONTENT_SERVER_VERSION,
@@ -164,7 +164,7 @@ public class EdgeContentServerMain {
 		// Wait for exit
 		logger.info("Server is running!");
 		server.waitForExit();
-		if (CommonInit.restartPending)
+		if (EdgeServerEnvironment.restartPending)
 			System.exit(237);
 		else
 			System.exit(0);

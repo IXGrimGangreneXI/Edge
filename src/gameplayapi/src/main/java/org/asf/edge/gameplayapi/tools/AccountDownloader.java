@@ -34,7 +34,7 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.util.HttpUpgradeUtil;
 
@@ -82,7 +82,7 @@ public class AccountDownloader {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
-		CommonInit.initLogging();
+		EdgeServerEnvironment.initLogging();
 
 		try {
 			try {

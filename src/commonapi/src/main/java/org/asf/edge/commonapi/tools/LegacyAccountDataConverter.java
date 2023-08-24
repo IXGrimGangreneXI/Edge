@@ -11,7 +11,7 @@ import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
@@ -52,7 +52,7 @@ public class LegacyAccountDataConverter {
 		}
 
 		// Setup
-		CommonInit.initAll();
+		EdgeServerEnvironment.initAll();
 		Class.forName("com.mysql.cj.jdbc.Driver");
 		Class.forName("org.mariadb.jdbc.Driver");
 		Class.forName("org.asf.edge.common.jdbc.LoggingProxyDriver");
