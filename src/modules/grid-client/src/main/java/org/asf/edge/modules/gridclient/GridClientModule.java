@@ -45,7 +45,7 @@ public class GridClientModule implements IEdgeModule {
 
 	private Scanner sc = new Scanner(System.in);
 	private Logger logger = LogManager.getLogger("grid-client");
-	private String loginSystemMessage;
+	public static String loginSystemMessage;
 
 	@Override
 	public String moduleID() {
@@ -72,6 +72,12 @@ public class GridClientModule implements IEdgeModule {
 			return;
 		}
 		PhoenixEnvironment.defaultAPIServer = config.get("gridApiServer").getAsString();
+
+		// Check
+		if (!config.get("enabled").getAsBoolean()) {
+			// Not enabled, lets not start
+			return;
+		}
 
 		// Read session
 		String lastSessionRefreshToken = null;
@@ -113,23 +119,26 @@ public class GridClientModule implements IEdgeModule {
 		}
 	}
 
-	private void sendGridErrorMessageToPlayers(String message) {
+	public static void sendGridErrorMessageToPlayers(String message) {
 		// Send to all players
-		for (AccountObject account : AccountManager.getInstance().getOnlinePlayers()) {
-			if (account.isOnline()) {
-				// Send message
-				PlayerMessenger messenger = WsMessageService.getInstance().getMessengerFor(account);
-				WsGenericMessage msg = new WsGenericMessage();
-				msg.rawObject.typeID = 3;
-				msg.rawObject.messageContentMembers = message;
-				msg.rawObject.messageContentNonMembers = msg.rawObject.messageContentMembers;
-				try {
-					messenger.sendSessionMessage(msg);
-				} catch (IOException e) {
+		loginSystemMessage = message;
+		try {
+			for (AccountObject account : AccountManager.getInstance().getOnlinePlayers()) {
+				if (account.isOnline()) {
+					// Send message
+					PlayerMessenger messenger = WsMessageService.getInstance().getMessengerFor(account);
+					WsGenericMessage msg = new WsGenericMessage();
+					msg.rawObject.typeID = 3;
+					msg.rawObject.messageContentMembers = message;
+					msg.rawObject.messageContentNonMembers = msg.rawObject.messageContentMembers;
+					try {
+						messenger.sendSessionMessage(msg);
+					} catch (IOException e) {
+					}
 				}
 			}
+		} catch (IllegalArgumentException e) {
 		}
-		loginSystemMessage = message;
 	}
 
 	private void gridStartup(JsonObject config, String lastSessionRefreshToken, String lastUsername) {
@@ -209,6 +218,15 @@ public class GridClientModule implements IEdgeModule {
 					logger.warn("Edge will launch in offline mode until a connection is re-established,");
 //					logger.warn("note that players will NOT be able to use Grid saves until Edge connects to the Grid servers again!");
 					logger.warn("note that progress will NOT sync to the Grid servers until Edge connects again!");
+					sendGridErrorMessageToPlayers(
+							"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.\n\nEdge will attempt to connect in the background until a connection is made.");
+				} else {
+					logger.warn("Due to this error, Edge will launch in offline mode.");
+//					logger.warn("Please note that players will NOT be able to use Grid saves until the issue is resolved!");
+					logger.warn(
+							"Please note that player progress will NOT sync to the Grid until the issue is resolved!");
+					sendGridErrorMessageToPlayers(
+							"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.");
 				}
 				logger.warn("Waiting 15 seconds before continuing...");
 				try {
@@ -250,7 +268,8 @@ public class GridClientModule implements IEdgeModule {
 						System.exit(0);
 					}
 					logger.info("Proceeding in offline mode... Automatic retry enabled...");
-					return;
+					sendGridErrorMessageToPlayers(
+							"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.\n\nEdge will attempt to connect in the background until a connection is made.");
 				} else {
 					int res = JOptionPane.showConfirmDialog(null, msg, "Connection failure",
 							JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
@@ -259,7 +278,8 @@ public class GridClientModule implements IEdgeModule {
 						System.exit(0);
 					}
 					logger.info("Proceeding in offline mode...");
-					return;
+					sendGridErrorMessageToPlayers(
+							"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.");
 				}
 			}
 
@@ -272,6 +292,7 @@ public class GridClientModule implements IEdgeModule {
 							GridClient.authenticateGame(GRID_API_VERSION, GRID_SOFTWARE_ID);
 							logger.info("Successfully authenticated the game!");
 							authenticateGameSuccess(true, lastSessionRefreshToken, lastUsername);
+							break;
 						} catch (IOException e2) {
 						}
 						try {
@@ -319,6 +340,7 @@ public class GridClientModule implements IEdgeModule {
 					// Authenticate
 					try {
 						GridClient.authenticateGame(GRID_API_VERSION, GRID_SOFTWARE_ID);
+						break;
 					} catch (IOException e2) {
 					}
 					try {
@@ -446,6 +468,8 @@ public class GridClientModule implements IEdgeModule {
 						System.exit(0);
 					}
 				}
+				sendGridErrorMessageToPlayers(
+						"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.");
 			}, t -> {
 				// Deferred
 				GridClientAuthenticationDeferredEvent ev = new GridClientAuthenticationDeferredEvent(manager, t);
@@ -471,6 +495,8 @@ public class GridClientModule implements IEdgeModule {
 						System.exit(0);
 					}
 				}
+				sendGridErrorMessageToPlayers(
+						"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.");
 			}, t -> {
 				// Login success
 				logger.info("Login success! Logged in as " + t.getDisplayName() + "!");
@@ -699,6 +725,9 @@ public class GridClientModule implements IEdgeModule {
 
 					// Call success
 					loginSuccess(result.session, result.refreshToken);
+				} else {
+					sendGridErrorMessageToPlayers(
+							"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.");
 				}
 			} else {
 				// Console login
@@ -716,6 +745,8 @@ public class GridClientModule implements IEdgeModule {
 					// Check cancel
 					if (opt.equalsIgnoreCase("C")) {
 						logger.info("Login cancelled.");
+						sendGridErrorMessageToPlayers(
+								"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.");
 						break;
 					}
 
@@ -768,6 +799,8 @@ public class GridClientModule implements IEdgeModule {
 									System.exit(0);
 								}
 							}
+							sendGridErrorMessageToPlayers(
+									"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.");
 						}, t -> {
 							// Deferred
 							GridClientAuthenticationDeferredEvent ev = new GridClientAuthenticationDeferredEvent(
@@ -794,6 +827,8 @@ public class GridClientModule implements IEdgeModule {
 									System.exit(0);
 								}
 							}
+							sendGridErrorMessageToPlayers(
+									"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.");
 						}, t -> {
 							// Login success
 							logger.info("Login success! Logged in as " + t.getDisplayName() + "!");
@@ -931,6 +966,9 @@ public class GridClientModule implements IEdgeModule {
 		if (server == null) {
 			// Failed
 			logger.error("Could not find any Phoenix servers! Automatic retry started!");
+			if (loginSystemMessage == null)
+				sendGridErrorMessageToPlayers(
+						"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.\n\nEdge will attempt to connect in the background until a connection is made.");
 			AsyncTaskManager.runAsync(() -> {
 				while (true) {
 					ServerInstance srv = GridClient.findBestServer();
@@ -960,6 +998,9 @@ public class GridClientModule implements IEdgeModule {
 						ServerInstance srv = GridClient.findBestServer();
 						if (srv != null)
 							GridClient.initGridPhoenixClient(srv, session.getManager());
+						else if (loginSystemMessage == null)
+							sendGridErrorMessageToPlayers(
+									"A connection to the Multiplayer Grid could not be made, non-local multiplayer features are presently unavailable.\n\nEdge will attempt to connect in the background until a connection is made.");
 						break;
 					} catch (IOException e2) {
 					}

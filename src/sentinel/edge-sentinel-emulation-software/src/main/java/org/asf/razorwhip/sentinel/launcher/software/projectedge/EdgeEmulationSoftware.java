@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.asf.connective.tasks.AsyncTaskManager;
@@ -17,6 +18,7 @@ import org.asf.razorwhip.sentinel.launcher.descriptors.data.LauncherController;
 import org.asf.razorwhip.sentinel.launcher.descriptors.data.ServerEndpoints;
 import org.asf.razorwhip.sentinel.launcher.software.projectedge.windows.LaunchOptionMenu;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -26,6 +28,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 	private Process serverProc;
 	private boolean serverExited;
 
+	public static boolean updating;
 	public static boolean showLog;
 
 	@Override
@@ -62,11 +65,9 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		// TODO:
 		// Main menu:
 		// - More options:
-		// - - Open version manager
-		// - - Open payload manager
-		// - - Open server configuration
 		// - - Manual game descriptor update
 		// - - Manual emulation software update
+		// - - Game data transfer
 
 		// Reload
 		init();
@@ -89,6 +90,10 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 	private void prepareLaunch(Runnable successCallback, Consumer<String> errorCallback) {
 		// Check start mode
 		LauncherUtils.log("Loading configuration...");
+		if (new File("sentinel.edge.automatedupdate").exists()) {
+			updating = true;
+			new File("sentinel.edge.automatedupdate").delete();
+		}
 
 		// Load remote endpoints
 		JsonObject remoteEndpoints = launchSettings.get("remoteEndpoints").getAsJsonObject();
@@ -183,7 +188,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		String launchMode = launchSettings.get("launchMode").getAsString();
 
 		// Prepare client startup
-		if (launchMode.equals("server")) {
+		if (launchMode.equals("server") || (updating && launchMode.equals("normal"))) {
 			LauncherUtils.addTag("no_launch_client");
 		} else {
 			// Select endpoints
@@ -280,15 +285,56 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				ProcessBuilder builder;
 				ArrayList<String> args = new ArrayList<String>();
 				if (!serverLog && !showLog) {
+					// Add classpath arguments
 					args.addAll(List.of(jvm, "-cp", libs));
+
+					// Add JVM extra arguments
 					if (!jvmArgsExtra.isBlank())
 						args.addAll(parseArguments(jvmArgsExtra));
+
+					// Load sentinel update settings
+					Map<String, String> descriptor;
+					try {
+						descriptor = LauncherUtils.parseProperties(
+								LauncherUtils.downloadString(LauncherUtils.urlBaseSoftwareFile + "/softwareinfo"));
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+					String listURL = descriptor.get("Update-List-URL");
+					if (listURL != null) {
+						// Add sentinel update settings
+						args.add("-DenableSentinelLauncherUpdateManager=true");
+						args.add("-DsentinelLauncherEdgeSoftwareUpdateList=" + listURL);
+						args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
+					}
+
+					// Add main class
 					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
 				} else {
-					args.addAll(List.of(jvm, "-cp", libs, "-DopenGuiLog=true",
-							"org.asf.edge.globalserver.EdgeGlobalServerMain"));
+					// Add classpath and log arguments
+					args.addAll(List.of(jvm, "-cp", libs, "-DopenGuiLog=true"));
+
+					// Add JVM extra arguments
 					if (!jvmArgsExtra.isBlank())
 						args.addAll(parseArguments(jvmArgsExtra));
+
+					// Load sentinel update settings
+					Map<String, String> descriptor;
+					try {
+						descriptor = LauncherUtils.parseProperties(
+								LauncherUtils.downloadString(LauncherUtils.urlBaseSoftwareFile + "/softwareinfo"));
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+					String listURL = descriptor.get("Update-List-URL");
+					if (listURL != null) {
+						// Add sentinel update settings
+						args.add("-DenableSentinelLauncherUpdateManager=true");
+						args.add("-DsentinelLauncherEdgeSoftwareUpdateList=" + listURL);
+						args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
+					}
+
+					// Add main class
 					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
 				}
 				if (!progArgsExtra.isBlank())
@@ -395,6 +441,35 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
+			} else if (code == 238) {
+				// Restart Sentinel for automatic update
+				try {
+					// Make sure the next sentinel instance knows its a update
+					new File("sentinel.edge.automatedupdate").createNewFile();
+				} catch (IOException e) {
+				}
+				// Check tag
+				if (LauncherUtils.hasTag("client_process")) {
+					Process clProc = LauncherUtils.getTag("client_process").getValue(Process.class);
+					if (clProc.isAlive()) {
+						try {
+							// Make sure the next sentinel instance shuts the client down if a client update
+							// is present, else we can get write errors
+
+							// Create file
+							JsonArray procLst = new JsonArray();
+							procLst.add(clProc.pid());
+							JsonArray fLst = new JsonArray();
+							fLst.add("sentinel.edge.automatedupdate");
+							JsonObject obj = new JsonObject();
+							obj.add("processes", procLst);
+							obj.add("deleteFilesOnProcessExit", fLst);
+							Files.writeString(Path.of("sentinel.activeprocesses.sjf"), obj.toString());
+						} catch (IOException e) {
+						}
+					}
+				}
+				System.exit(237);
 			} else {
 				serverExited = true;
 				if (launchMode.equals("server")) {

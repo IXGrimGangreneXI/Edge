@@ -8,6 +8,8 @@ import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
+import org.asf.razorwhip.sentinel.launcher.software.projectedge.EdgeEmulationSoftware;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -164,6 +166,7 @@ public class RemoteServerConfigWindow extends JDialog {
 						remoteEndpoints.addProperty("smartfoxHost", textField_4.getText());
 						remoteEndpoints.addProperty("smartfoxPort", Integer.parseInt(textField_5.getText()));
 						conf.addProperty("launchMode", "remote-client");
+						EdgeEmulationSoftware.updating = false;
 						Files.writeString(Path.of("edgelauncher.json"), conf.toString());
 					} catch (IOException e1) {
 						throw new RuntimeException(e1);

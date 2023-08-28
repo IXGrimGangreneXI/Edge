@@ -60,8 +60,8 @@ public class ServerConfigWindow extends JDialog {
 	}
 
 	private void initialize() {
-		setTitle("Remote server");
-		setBounds(100, 100, 536, 401);
+		setTitle("Server configuration");
+		setBounds(100, 100, 536, 420);
 		getContentPane().setLayout(new BorderLayout());
 		setModal(true);
 		setLocationRelativeTo(null);
@@ -70,7 +70,7 @@ public class ServerConfigWindow extends JDialog {
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		{
 			JPanel panel = new JPanel();
-			panel.setPreferredSize(new Dimension(520, 350));
+			panel.setPreferredSize(new Dimension(520, 370));
 			contentPanel.add(panel);
 			panel.setLayout(null);
 
@@ -305,7 +305,7 @@ public class ServerConfigWindow extends JDialog {
 					dispose();
 				}
 			});
-			btnNewButton.setBounds(403, 311, 105, 27);
+			btnNewButton.setBounds(403, 331, 105, 27);
 			panel.add(btnNewButton);
 
 			JButton btnCancel = new JButton("Cancel");
@@ -314,7 +314,7 @@ public class ServerConfigWindow extends JDialog {
 					dispose();
 				}
 			});
-			btnCancel.setBounds(282, 311, 105, 27);
+			btnCancel.setBounds(282, 331, 105, 27);
 			panel.add(btnCancel);
 
 			if (edgeConfig.exists()) {

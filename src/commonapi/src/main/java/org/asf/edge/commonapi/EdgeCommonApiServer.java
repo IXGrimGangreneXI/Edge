@@ -9,6 +9,7 @@ import org.asf.connective.ConnectiveHttpServer;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.commonapi.http.*;
 import org.asf.edge.commonapi.http.handlers.api.core.*;
+import org.asf.edge.commonapi.http.handlers.TestConnectionHandler;
 import org.asf.edge.commonapi.http.handlers.api.accounts.*;
 import org.asf.edge.commonapi.http.handlers.api.avatars.*;
 import org.asf.edge.commonapi.http.handlers.api.messaging.*;
@@ -183,6 +184,7 @@ public class EdgeCommonApiServer implements IBaseServer {
 		server.registerProcessor(new RegistrationWebServiceV3Processor(this));
 		server.registerProcessor(new RegistrationWebServiceV4Processor(this));
 		server.registerProcessor(new ProfileWebServiceProcessor(this));
+		server.registerProcessor(new TestConnectionHandler());
 
 		// Register handlers: internal
 		logger.debug("Configuring internal server request handlers...");

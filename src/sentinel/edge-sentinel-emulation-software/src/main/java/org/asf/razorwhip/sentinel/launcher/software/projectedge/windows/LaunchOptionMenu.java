@@ -53,6 +53,7 @@ public class LaunchOptionMenu extends JDialog {
 			btnNewButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					try {
+						EdgeEmulationSoftware.updating = false;
 						JsonObject conf = JsonParser.parseString(Files.readString(Path.of("edgelauncher.json")))
 								.getAsJsonObject();
 						conf.addProperty("launchMode", "normal");
@@ -70,6 +71,7 @@ public class LaunchOptionMenu extends JDialog {
 			btnNewButtonL.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					try {
+						EdgeEmulationSoftware.updating = false;
 						EdgeEmulationSoftware.showLog = true;
 						JsonObject conf = JsonParser.parseString(Files.readString(Path.of("edgelauncher.json")))
 								.getAsJsonObject();
@@ -88,6 +90,7 @@ public class LaunchOptionMenu extends JDialog {
 			btnNewButton_1.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					try {
+						EdgeEmulationSoftware.updating = false;
 						JsonObject conf = JsonParser.parseString(Files.readString(Path.of("edgelauncher.json")))
 								.getAsJsonObject();
 						conf.addProperty("launchMode", "local-client");
@@ -116,6 +119,7 @@ public class LaunchOptionMenu extends JDialog {
 			btnNewButton_3.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					try {
+						EdgeEmulationSoftware.updating = false;
 						JsonObject conf = JsonParser.parseString(Files.readString(Path.of("edgelauncher.json")))
 								.getAsJsonObject();
 						conf.addProperty("launchMode", "server");

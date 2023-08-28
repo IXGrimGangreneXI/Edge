@@ -10,6 +10,7 @@ import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.EdgeServerEnvironment;
+import org.asf.edge.common.SentinelUpdateManager;
 import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
@@ -64,6 +65,17 @@ public class EdgeGlobalServerMain {
 		// Run updater if needed
 		CommonUpdater.init("globalserver", "stable", EdgeGlobalServerMain.GLOBAL_SERVER_VERSION,
 				new File(EdgeGlobalServerMain.class.getProtectionDomain().getCodeSource().getLocation().toURI()));
+
+		// Start sentinel update manager
+		if (System.getProperty("enableSentinelLauncherUpdateManager") != null
+				&& !System.getProperty("enableSentinelLauncherUpdateManager").equalsIgnoreCase("false")) {
+			// Load sentinel properties
+			String listUrl = System.getProperty("sentinelLauncherEdgeSoftwareUpdateList");
+			String currentVersion = System.getProperty("sentinelLauncherEdgeSoftwareVersion");
+			if (listUrl != null && currentVersion != null) {
+				SentinelUpdateManager.init(listUrl, currentVersion);
+			}
+		}
 
 		// Logger
 		Logger logger = LogManager.getLogger("FULLSERVER");

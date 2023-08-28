@@ -20,12 +20,10 @@ import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
-import org.asf.edge.common.entities.messages.WsMessage;
 import org.asf.edge.common.entities.minigamedata.MinigameData;
 import org.asf.edge.common.entities.minigamedata.MinigameDataRequest;
 import org.asf.edge.common.entities.minigamedata.MinigameSaveRequest;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
@@ -40,14 +38,10 @@ import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.items.ItemManager;
-import org.asf.edge.common.services.messages.PlayerMessenger;
-import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
-import org.asf.edge.common.xmls.messages.MessageInfoData;
-import org.asf.edge.common.xmls.messages.MessageInfoList;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
@@ -104,7 +98,10 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			throws IOException {
 		// Handle request
 		path = path;
-		setResponseStatus(404, "Not found");
+		if (path.equals(""))
+			setResponseStatus(200, "OK");
+		else
+			setResponseStatus(404, "Not found");
 	}
 
 	@LegacyFunction(allowedMethods = { "POST" })

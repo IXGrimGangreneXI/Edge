@@ -23,141 +23,105 @@ import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.modules.eventbus.EventBus;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 /**
  * 
- * Common update system
+ * Sentinel update management system
  * 
  * @author Sky Swimmer
  *
  */
-public class CommonUpdater {
+public class SentinelUpdateManager {
 
 	private static Logger logger;
 
 	private static String currentVersion = null;
+
 	private static boolean cancelUpdate = false;
 	private static boolean updating = false;
+
 	private static String nextVersion = null;
-	private static String serverURL = null;
+	private static String listURL = null;
+
 	private static int updateTimeRemaining = -1;
 
-	private static File updaterJar;
+	/**
+	 * Checks if the Sentinel Update Manager is enabled
+	 * 
+	 * @return True if enabled, false otherwise
+	 */
+	public static boolean isEnabled() {
+		return currentVersion != null;
+	}
 
 	/**
-	 * Retrieves the current server version
+	 * Retrieves the current Sentinel software version
 	 * 
-	 * @return Version string
+	 * @return Version string or null if not enabled
 	 */
-	public static String getCurrentVersion() {
+	public static String getCurrentSoftwareVersion() {
 		return currentVersion;
 	}
 
 	/**
 	 * Initializes the update system
 	 * 
-	 * @param serverName     Server name
-	 * @param defaultChannel Default updater channel
+	 * @param listURL        Update list URL
 	 * @param currentVersion Current version
-	 * @param updaterJar     Update jar source, this file will be copied and run
-	 *                       when the updater finishes and restarts the server
 	 * @throws IOException If initializing fails
 	 */
-	public static void init(String serverName, String defaultChannel, String currentVersion, File updaterJar)
-			throws IOException {
-		CommonUpdater.currentVersion = currentVersion;
-		CommonUpdater.updaterJar = updaterJar;
+	public static void init(String listURL, String currentVersion) throws IOException {
+		SentinelUpdateManager.listURL = listURL;
+		SentinelUpdateManager.currentVersion = currentVersion;
 		logger = LogManager.getLogger("Updater");
-
-		// Defaults
-		CommonUpdater.serverURL = "https://projectedge.net/updates/" + serverName;
-		String updateChannel = defaultChannel;
-		boolean disableUpdater = true;
-
-		// Create config
-		if (!new File("updater.conf").exists()) {
-			// Write
-			Files.writeString(Path.of("updater.conf"), ""//
-
-					+ "# Updater URL\n" //
-					+ "url=https://projectedge.net/updates/" + serverName + "\n" //
-					+ "\n" //
-					+ "# Update channel, valid values are lts, stable, unstable and dev\n" //
-					+ "# channel=" + defaultChannel + "\n" //
-					+ "\n" //
-					+ "# Runtime automatic updater, true to enable updating while the server runs, false otherwise\n"
-					+ "runtime-auto-update=true\n" //
-					+ "\n" //
-					+ "# Update timer length\n" //
-					+ "runtime-update-timer-length=120\n" //
-					+ "\n" //
-					+ "# Disables the updater\n" //
-					+ "disable=true\n"
-
-			);
-		}
 
 		// Parse properties
 		HashMap<String, String> properties = new HashMap<String, String>();
-		for (String line : Files.readAllLines(Path.of("updater.conf"))) {
-			if (line.isEmpty() || line.startsWith("#"))
-				continue;
-			String key = line;
-			String value = "";
-			if (key.contains("=")) {
-				value = key.substring(key.indexOf("=") + 1);
-				key = key.substring(0, key.indexOf("="));
-			}
-			properties.put(key, value);
-		}
-
-		// Load channel
-		updateChannel = properties.getOrDefault("channel", updateChannel);
-
-		// Check if disabled
-		disableUpdater = Boolean.parseBoolean(properties.getOrDefault("disable", "true"));
-
-		// Load url
-		serverURL = properties.getOrDefault("url", serverURL);
-
-		// Check if automatic updating is enabled
-		if (Boolean.parseBoolean(properties.getOrDefault("runtime-auto-update", "false"))
-				&& (System.getProperty("debugMode") == null) && !disableUpdater) {
-			int mins = Integer.parseInt(properties.getOrDefault("runtime-update-timer-length", "120"));
-
-			// Start the automatic update thread
-			final String channel = updateChannel;
-			Thread updater = new Thread(() -> {
-				while (true) {
-					// Run every 2 minutes
-					try {
-						Thread.sleep(120000);
-					} catch (InterruptedException e) {
-					}
-
-					// Check for updates
-					if (shouldUpdate(channel)) {
-						runUpdater(mins);
-						return;
-					}
+		if (new File("updater.conf").exists()) {
+			for (String line : Files.readAllLines(Path.of("updater.conf"))) {
+				if (line.isEmpty() || line.startsWith("#"))
+					continue;
+				String key = line;
+				String value = "";
+				if (key.contains("=")) {
+					value = key.substring(key.indexOf("=") + 1);
+					key = key.substring(0, key.indexOf("="));
 				}
-			}, "Automatic update thread");
-			updater.setDaemon(true);
-			updater.start();
-		}
-
-		// Updater
-		if (!disableUpdater && (System.getProperty("debugMode") == null)) {
-			// Check for updates
-			if (shouldUpdate(updateChannel)) {
-				// Dispatch event
-				EventBus.getInstance().dispatchEvent(new ServerUpdateEvent(nextVersion, -1));
-
-				// Dispatch completion event
-				EventBus.getInstance().dispatchEvent(new ServerUpdateCompletionEvent(nextVersion));
-
-				// Exit server
-				System.exit(0);
+				properties.put(key, value);
 			}
+		}
+		// Start the automatic update thread
+		Thread updater = new Thread(() -> {
+			while (true) {
+				// Run every 2 minutes
+				try {
+					Thread.sleep(120000);
+				} catch (InterruptedException e) {
+				}
+
+				// Check for updates
+				if (shouldUpdate()) {
+					runUpdater(60);
+					return;
+				}
+			}
+		}, "Automatic update thread");
+		updater.setDaemon(true);
+		updater.start();
+
+		// Run
+		if (shouldUpdate()) {
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new ServerUpdateEvent(nextVersion, -1));
+
+			// Dispatch completion event
+			EventBus.getInstance().dispatchEvent(new ServerUpdateCompletionEvent(nextVersion));
+
+			// Exit server
+			logger.info("Restarting server via exit code 238 for update...");
+			System.exit(238);
 		}
 	}
 
@@ -167,6 +131,8 @@ public class CommonUpdater {
 	 * @return True if successful, false otherwise
 	 */
 	public static boolean cancelUpdate() {
+		if (!isEnabled())
+			return false;
 		if (updating) {
 			cancelUpdate = true;
 			nextVersion = null;
@@ -179,7 +145,7 @@ public class CommonUpdater {
 					// Send message
 					WsGenericMessage msg = new WsGenericMessage();
 					msg.rawObject.typeID = 3;
-					msg.rawObject.messageContentMembers = "The server update has been cancelled by an administrator.";
+					msg.rawObject.messageContentMembers = "The Sentinel update has been cancelled by an administrator.";
 					msg.rawObject.messageContentNonMembers = msg.rawObject.messageContentMembers;
 					try {
 						WsMessageService.getInstance().getMessengerFor(t).sendSessionMessage(msg);
@@ -258,13 +224,13 @@ public class CommonUpdater {
 		}
 
 		// Warn everyone
-		logger.info("Restarting server...");
+		logger.info("Restarting server via exit code 238 for update...");
 		AccountManager.getInstance().runForAllAccounts(t -> {
 			if (t.isOnline()) {
 				// Send message
 				WsGenericMessage msg = new WsGenericMessage();
 				msg.rawObject.typeID = 3;
-				msg.rawObject.messageContentMembers = "Edge servers are restarting! They will be offline for a few seconds and may cause errors now!";
+				msg.rawObject.messageContentMembers = "The Sentinel Launcher is being restarted to apply the server update! The emulation software will be offline for a few minutes and may cause errors now!";
 				msg.rawObject.messageContentNonMembers = msg.rawObject.messageContentMembers;
 				try {
 					WsMessageService.getInstance().getMessengerFor(t).sendSessionMessage(msg);
@@ -278,47 +244,27 @@ public class CommonUpdater {
 		EventBus.getInstance().dispatchEvent(new ServerUpdateCompletionEvent(nextVersion));
 
 		// Shut server down
-		if (!new File("update.list").exists())
-			System.exit(237);
-		else
-			System.exit(0);
+		System.exit(238);
 	}
 
-	private static boolean shouldUpdate(String channel) {
+	private static boolean shouldUpdate() {
 		// Check for updates
 		logger.info("Checking for updates...");
 		try {
-			InputStream updateLog = new URL(serverURL + (serverURL.endsWith("/") ? "" : "/") + channel + "/update.info")
-					.openStream();
-			String update = new String(updateLog.readAllBytes(), "UTF-8").trim();
+			// Download list
+			InputStream updateLog = new URL(listURL).openStream();
+			String updateInfo = new String(updateLog.readAllBytes(), "UTF-8").trim();
+			JsonObject versionList = JsonParser.parseString(updateInfo).getAsJsonObject();
 			updateLog.close();
 
-			if (!currentVersion.equals(update)) {
+			// Check version
+			if (!currentVersion.equals(versionList.get("latest").getAsString())) {
 				// Download the update list
-				logger.info("Update available, new version: " + update);
-				logger.info("Preparing to update Edge...");
-				InputStream strm = new URL(
-						serverURL + (serverURL.endsWith("/") ? "" : "/") + channel + "/" + update + "/update.list")
-						.openStream();
-				String fileList = new String(strm.readAllBytes(), "UTF-8").trim();
-				strm.close();
-
-				// Parse the file list (newline-separated)
-				String downloadList = "";
-				for (String file : fileList.split("\n")) {
-					if (!file.isEmpty()) {
-						downloadList += file + "=" + serverURL + (serverURL.endsWith("/") ? "" : "/") + channel + "/"
-								+ update + "/" + file + "\n";
-					}
-				}
-
-				// Save the file, copy jar and run the shutdown timer
-				Files.writeString(Path.of("update.list"), downloadList);
-				if (!new File("updater.jar").exists())
-					Files.copy(updaterJar.toPath(), Path.of("updater.jar"));
+				logger.info(
+						"Sentinel software update available, new version: " + versionList.get("latest").getAsString());
 
 				// Save new version in memory
-				nextVersion = update;
+				nextVersion = versionList.get("latest").getAsString();
 
 				// Update available
 				return true;
@@ -348,16 +294,23 @@ public class CommonUpdater {
 			case 5:
 			case 3:
 			case 1:
-				message = "The Edge servers are presently being updated! They will be temporarily offline for a few seconds and may cause errors! Restart is imminent!";
+				message = "The Sentinel Launcher is presently being updated! Game and Launcher restart is imminent!\n\nWhen the launcher restarts, the game will be left open unless there are client mod updates, note that there may be errors until the update finishes and restarts the servers.";
 				break;
 
 			case 0:
-				message = "Edge servers are restarting! They will be offline for a few seconds and may cause errors now!";
+				message = "The Sentinel Launcher is being restarted to apply the server update! The emulation software will be offline for a few minutes and may cause errors now!";
 				break;
 
 			default:
-				message = "The Edge servers are gonna be updated! They will be temporarily offline and may cause errors soon! They are scheduled to go down at "
-						+ fmt.format(new Date(System.currentTimeMillis() + (updateTimeRemaining * 60 * 1000))) + " UTC";
+				if (nextVersion != null)
+					message = "Project Edge has a update available! Launcher restart is scheduled at "
+							+ fmt.format(new Date(System.currentTimeMillis() + (updateTimeRemaining * 60 * 1000)))
+							+ " UTC. Updating to " + nextVersion + "."
+							+ "\n\nWhen the launcher restarts, the game will be left open unless there are client mod updates, note that there may be errors until the update finishes and restarts the servers.";
+				else
+					message = "Project Edge has a update available! Launcher restart is scheduled at "
+							+ fmt.format(new Date(System.currentTimeMillis() + (updateTimeRemaining * 60 * 1000)))
+							+ " UTC.\n\nWhen the launcher restarts, the game will be left open unless there are client mod updates, note that there may be errors until the update finishes and restarts the servers.";
 				break;
 
 			}

@@ -621,10 +621,18 @@ public class GridClient {
 				// Reconnect if needed
 				if (!eve.shouldAttemptReconnect()) {
 					// Error
-					logger.error("Failed to connect to the Phoenix Grid server!", e);
+					if (e instanceof PhoenixConnectException)
+						logger.error("Failed to connect to the Phoenix Grid server! ("
+								+ ((PhoenixConnectException) e).getDisconnectReason().getReason() + ")");
+					else
+						logger.error("Failed to connect to the Phoenix Grid server!", e);
 				} else {
 					// Error
-					logger.error("Failed to connect to the Phoenix Grid server! Automatic retry scheduled...", e);
+					if (e instanceof PhoenixConnectException)
+						logger.error("Failed to connect to the Phoenix Grid server! Automatic retry scheduled... ("
+								+ ((PhoenixConnectException) e).getDisconnectReason().getReason() + ")");
+					else
+						logger.error("Failed to connect to the Phoenix Grid server! Automatic retry scheduled...", e);
 					AsyncTaskManager.runAsync(() -> {
 						while (true) {
 							// Attempt connection
@@ -637,7 +645,8 @@ public class GridClient {
 								// Login
 								ServerInstance inst = findBestServer();
 								if (inst == null)
-									client.connect(host, port, cert);
+									throw new PhoenixConnectException(
+											new DisconnectReason("connect.error.connectfailure.noservers"));
 								else
 									client.connect(inst.getBestAdress(), inst.port,
 											PhoenixCertificate.downloadFromAPI("nexusgrid", inst.serverID));
@@ -730,7 +739,8 @@ public class GridClient {
 							// Login
 							ServerInstance inst = findBestServer();
 							if (inst == null)
-								client.connect(host, port, cert);
+								throw new PhoenixConnectException(
+										new DisconnectReason("connect.error.connectfailure.noservers"));
 							else
 								client.connect(inst.getBestAdress(), inst.port,
 										PhoenixCertificate.downloadFromAPI("nexusgrid", inst.serverID));

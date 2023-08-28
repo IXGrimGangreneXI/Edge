@@ -23,18 +23,18 @@ public class ConnectFailureHandlerComponent extends GridClientComponent {
 		// Game ID mismatch
 		case "connect.error.connectfailure.gamemismatch": {
 			// Cancel reconnect, probably some update required
-			// TODO: send messages to clients that the server needs updating
-			event = event;
 			event.cancelReconnect();
+			getLogger().error(
+					"Game ID mismatch while connecting to the Grid servers, please verify if the server software is up to date.");
 			break;
 		}
 
 		// Version mismatch
 		case "connect.error.connectfailure.versionmismatch": {
 			// Cancel reconnect, probably some update required
-			// TODO: send messages to clients that the server needs updating
-			event = event;
 			event.cancelReconnect();
+			getLogger().error(
+					"Version mismatch while connecting to the Grid servers, please verify if the server software is up to date.");
 			break;
 		}
 
@@ -48,52 +48,55 @@ public class ConnectFailureHandlerComponent extends GridClientComponent {
 				// Cancel reconnect, our session is invalid, which would explain it
 				event.cancelReconnect();
 			}
+			getLogger().error("Failed to connect to the Grid servers due to a session error.");
 			break;
 		}
 
 		// Server full
 		case "disconnect.loginfailure.fullserver": {
+			getLogger().error("Failed to connect to the Grid server, server is full.");
 			break;
 		}
 
 		// Banned for unspecified reasons
 		case "disconnect.loginfailure.banned.undefined": {
 			// Player is banned
-			// TODO: send message to clients that the server has been banned (for local
-			// client it should say their account is banned)
-			event = event;
 			event.cancelReconnect();
+			getLogger().error(
+					"Failed to connect to the Grid server, the account used to connect to the Grid servers was permanently banned.");
 			break;
 		}
 
 		// Banned
 		case "disconnect.loginfailure.banned": {
 			// Player is banned with reason
-			// TODO: send message to clients that the server has been banned (for local
-			// client it should say their account is banned), include reason (argument 1)
-			event = event;
 			event.cancelReconnect();
+			getLogger().error(
+					"Failed to connect to the Grid server, the account used to connect to the Grid servers was permanently banned.");
+			getLogger().error("Ban reason: " + event.getDisconnectReason().getReasonArgs()[0]);
 			break;
 		}
 
 		// Temporarily banned for unspecified reasons
 		case "disconnect.loginfailure.tempbanned.undefined": {
 			// Player is banned
-			// TODO: send message to clients that the server has been banned (for local
-			// client it should say their account is banned), include ban end date
-			event = event;
 			event.cancelReconnect();
+			getLogger().error(
+					"Failed to connect to the Grid server, the account used to connect to the Grid servers was banned.");
+			getLogger().error("The account will be unbanned at: " + event.getDisconnectReason().getReasonArgs()[0] + " "
+					+ event.getDisconnectReason().getReasonArgs()[1] + "UTC.");
 			break;
 		}
 
 		// Temporarily banned
 		case "disconnect.loginfailure.tempbanned": {
 			// Player is banned with reason
-			// TODO: send message to clients that the server has been banned (for local
-			// client it should say their account is banned), include reason (argument 1)
-			// and ban end date
-			event = event;
 			event.cancelReconnect();
+			getLogger().error(
+					"Failed to connect to the Grid server, the account used to connect to the Grid servers was banned.");
+			getLogger().error("The account will be unbanned at: " + event.getDisconnectReason().getReasonArgs()[0] + " "
+					+ event.getDisconnectReason().getReasonArgs()[1] + "UTC.");
+			getLogger().error("Ban reason: " + event.getDisconnectReason().getReasonArgs()[2]);
 			break;
 		}
 

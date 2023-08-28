@@ -189,6 +189,7 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 			path = path.substring(1);
 		if (path.isEmpty()) {
 			setResponseStatus(404, "Not found");
+			fallbackRequestProcessor(path, method, client, contentType);
 			return;
 		}
 

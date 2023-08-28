@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.CommonUpdater;
+import org.asf.edge.common.SentinelUpdateManager;
 import org.asf.edge.common.entities.messages.WsMessage;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.*;
@@ -49,6 +50,7 @@ public class MessagingWebServiceProcessor extends EdgeWebService<EdgeCommonApiSe
 	public FunctionResult getUserMessageQueue(ServiceRequestInfo req, AccountObject account, AccountSaveContainer save)
 			throws IOException {
 		// Get messenger
+		SentinelUpdateManager.warnPlayerIfUpdating(account);
 		CommonUpdater.warnPlayerIfUpdating(account);
 		PlayerMessenger messenger = WsMessageService.getInstance().getMessengerFor(account, save);
 
