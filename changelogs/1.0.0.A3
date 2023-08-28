@@ -4,3 +4,4 @@ Changes in 1.0.0.A3:
 - Added a method to retrieve the edge version: `EdgeServerEnvironment.getEdgeVersion()`, it will retrieve the current Edge version of the server
 - Added various account and save management events to the event bus
 - Added various quest events to the event bus
+- Fix certain account data being cached when it shouldn't, this fixes guest migration breaking down

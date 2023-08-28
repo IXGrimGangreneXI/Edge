@@ -282,6 +282,12 @@ public class RegistrationWebServiceV3Processor extends EdgeWebService<EdgeCommon
 				return;
 			}
 
+			// Log
+			getServerInstance().getLogger()
+					.info("Account registration from IP " + func.getClient().getRemoteAddress() + ": registered "
+							+ guestAcc.getAccountID() + " (username: " + guestAcc.getUsername()
+							+ ", migrated guest account " + guestID + ")");
+
 			// Set data
 			AccountDataContainer cont = guestAcc.getAccountData().getChildContainer("accountdata");
 			cont.setEntry("sendupdates", new JsonPrimitive(registration.emailNotification == 1));
@@ -303,6 +309,10 @@ public class RegistrationWebServiceV3Processor extends EdgeWebService<EdgeCommon
 						req.generateEncryptedResponse(req.generateXmlValue("RegistrationResult", resp)));
 				return;
 			}
+
+			// Log
+			getServerInstance().getLogger().info("Account registration from IP " + func.getClient().getRemoteAddress()
+					+ ": registered " + acc.getAccountID() + " (username: " + acc.getUsername() + ")");
 
 			// Set data
 			AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");

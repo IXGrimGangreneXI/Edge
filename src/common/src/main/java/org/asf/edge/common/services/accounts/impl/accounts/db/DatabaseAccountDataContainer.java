@@ -53,8 +53,10 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 		}
 		// Add if needed
 		synchronized (dataCache) {
-			if (dataCache.containsKey(key))
-				return dataCache.get(key) == null ? null : dataCache.get(key).deepCopy();
+			if (!key.startsWith("accountdata/")) {
+				if (dataCache.containsKey(key))
+					return dataCache.get(key) == null ? null : dataCache.get(key).deepCopy();
+			}
 			try {
 				DatabaseRequest req = mgr.createRequest();
 				try {
@@ -96,7 +98,7 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 					res.close();
 					statement.close();
 					JsonElement r = JsonParser.parseString(data);
-					if (!key.startsWith("accountdata/"))
+					if (!keyF.startsWith("accountdata/"))
 						dataCache.put(keyF, r);
 					return r;
 				} finally {
@@ -140,7 +142,7 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 				statement.setString(5, id);
 				statement.execute();
 				statement.close();
-				if (!key.startsWith("accountdata/"))
+				if (!keyF.startsWith("accountdata/"))
 					dataCache.put(keyF, value);
 			} finally {
 				req.close();
@@ -181,7 +183,7 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 				req.setDataObject(5, value.toString(), statement);
 				statement.execute();
 				statement.close();
-				if (!key.startsWith("accountdata/"))
+				if (!keyF.startsWith("accountdata/"))
 					dataCache.put(keyF, value);
 			} finally {
 				req.close();
@@ -233,7 +235,7 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 				statement.setString(4, id);
 				ResultSet res = statement.executeQuery();
 				boolean r = res.next();
-				if (!key.startsWith("accountdata/")) {
+				if (!keyF.startsWith("accountdata/")) {
 					if (!r)
 						dataCache.put(keyF, null);
 					else {
@@ -284,7 +286,7 @@ public class DatabaseAccountDataContainer extends AccountDataContainer {
 				statement.setString(4, id);
 				statement.execute();
 				statement.close();
-				if (!key.startsWith("accountdata/"))
+				if (!keyF.startsWith("accountdata/"))
 					dataCache.remove(keyF);
 			} finally {
 				req.close();

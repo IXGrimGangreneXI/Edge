@@ -28,7 +28,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.EdgeServerEnvironment;
-import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
 import org.asf.edge.common.events.accounts.AccountManagerLoadEvent;
 import org.asf.edge.common.events.accounts.AccountRegisteredEvent;
 import org.asf.edge.common.events.accounts.GuestAccountRegisteredEvent;

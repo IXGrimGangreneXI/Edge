@@ -13,7 +13,6 @@ import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
 import org.asf.edge.common.events.accounts.AccountRegisteredEvent;
 import org.asf.edge.common.events.accounts.GuestAccountRegisteredEvent;
 import org.asf.edge.common.services.accounts.AccountManager;
