@@ -2,7 +2,9 @@ package org.asf.edge.modules.gridapi.http.services.phoenix;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+
 import org.asf.connective.processors.HttpPushProcessor;
+import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -86,10 +88,43 @@ public class PhoenixAuthWebService extends EdgeWebService<EdgeGridApiServer> {
 	public FunctionResult joinServer(FunctionInfo func) throws IOException {
 		// Load token
 		TokenUtils.AccessContext ctx = TokenUtils.fromFunction(func, "play");
-		if (ctx == null) {
+		if (ctx == null || ctx.token.payload == null || !ctx.token.payload.isJsonObject()
+				|| !ctx.token.payload.getAsJsonObject().has("isfr")
+				|| !ctx.token.payload.getAsJsonObject().has("isfn")) {
 			return response(401, "Unauthorized", "application/json", "{\"error\":\"token_invalid\"}");
 		}
 		PhoenixToken tkn = ctx.token;
+
+		// Check significant fields
+		try {
+			// Identity-based token
+			if (ctx.account != null) {
+				// Load data
+				AccountDataContainer data = ctx.account.getAccountData().getChildContainer("accountdata");
+				if (!data.entryExists("significantFieldRandom"))
+					return response(401, "Unauthorized", "application/json", "{\"error\":\"token_invalid\"}");
+				if (!data.entryExists("significantFieldNumber"))
+					return response(401, "Unauthorized", "application/json", "{\"error\":\"token_invalid\"}");
+
+				// Check fields
+				long isfn = data.getEntry("significantFieldNumber").getAsLong();
+				int isfr = data.getEntry("significantFieldRandom").getAsInt();
+				if (isfn != tkn.payload.getAsJsonObject().get("isfn").getAsLong()
+						|| isfr != tkn.payload.getAsJsonObject().get("isfr").getAsInt()) {
+					return response(401, "Unauthorized", "application/json", "{\"error\":\"token_invalid\"}");
+				}
+			} else if (ctx.identity != null) {
+				// Check fields
+				if (ctx.identity.significantFieldNumber != tkn.payload.getAsJsonObject().get("isfn").getAsLong()
+						|| ctx.identity.significantFieldRandom != tkn.payload.getAsJsonObject().get("isfr")
+								.getAsInt()) {
+					return response(401, "Unauthorized", "application/json", "{\"error\":\"token_invalid\"}");
+				}
+			} else
+				return response(401, "Unauthorized", "application/json", "{\"error\":\"token_invalid\"}");
+		} catch (IOException e) {
+			return response(401, "Unauthorized", "application/json", "{\"error\":\"token_invalid\"}");
+		}
 
 		// Check token
 		long isfn = tkn.payload.getAsJsonObject().get("isfn").getAsLong();
@@ -142,6 +177,9 @@ public class PhoenixAuthWebService extends EdgeWebService<EdgeGridApiServer> {
 		if (ctx == null) {
 			return response(401, "Unauthorized", "application/json", "{\"error\":\"token_invalid\"}");
 		}
+
+		// Find account manager
+		AccountManager manager = AccountManager.getInstance();
 
 		// Load payload
 		JsonObject payload = new JsonObject();
@@ -224,9 +262,6 @@ public class PhoenixAuthWebService extends EdgeWebService<EdgeGridApiServer> {
 			String username = payload.get("username").getAsString();
 			String password = payload.get("password").getAsString();
 
-			// Find account manager
-			AccountManager manager = AccountManager.getInstance();
-
 			// Find account
 			if (!manager.isValidUsername(username)) {
 				// Invalid username
@@ -301,6 +336,9 @@ public class PhoenixAuthWebService extends EdgeWebService<EdgeGridApiServer> {
 		if (account != null)
 			account.updateLastLoginTime();
 
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountAuthenticatedEvent(account, manager));
+
 		// Handle status
 		if (!response.get("status").getAsString().equals("success")) {
 
@@ -349,7 +387,7 @@ public class PhoenixAuthWebService extends EdgeWebService<EdgeGridApiServer> {
 		jwt.tokenExpiryTime = (System.currentTimeMillis() / 1000) + (60 * 60);
 		jwt.tokenGenerationTime = System.currentTimeMillis() / 1000;
 		jwt.tokenNotBefore = -1;
-		jwt.capabilities = new String[] { "play", "refresh" };
+		jwt.capabilities = new String[] { "play", "refresh", "accprops", "gpdata" };
 		JsonObject pl = new JsonObject();
 		pl.addProperty("isfr", data.getEntry("significantFieldRandom").getAsLong());
 		pl.addProperty("isfn", data.getEntry("significantFieldNumber").getAsLong());

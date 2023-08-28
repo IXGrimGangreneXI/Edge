@@ -10,7 +10,7 @@ import java.util.Scanner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.common.CommonInit;
+import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
@@ -38,8 +38,8 @@ public class EdgeGridApiServerMain {
 		EdgeGridApiServer.printSplash();
 
 		// Common init
-		CommonInit.initAll();
-		CommonInit.addServerType("gridapi");
+		EdgeServerEnvironment.initAll();
+		EdgeServerEnvironment.addServerType("gridapi");
 
 		// Logger
 		Logger logger = LogManager.getLogger("GRIDAPI");
@@ -152,7 +152,7 @@ public class EdgeGridApiServerMain {
 		logger.info("Server is running!");
 		AsyncTaskManager.runAsync(() -> {
 			server.waitForExit();
-			if (CommonInit.restartPending)
+			if (EdgeServerEnvironment.restartPending)
 				System.exit(237);
 			else
 				System.exit(0);

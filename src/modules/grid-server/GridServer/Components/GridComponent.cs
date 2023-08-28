@@ -19,6 +19,7 @@ namespace GridServer.Components
         {
             // Disable player limit
             ServiceManager.GetService<PlayerManagerService>().EnablePlayerLimit = false;
+            ServiceManager.GetService<PermissionManagerService>().ShouldGrantOperatorPermissionsToOwner = false;
         }
     }
 

@@ -1,10 +1,10 @@
-package org.asf.edge.modules.gridclient.components.auth;
+package org.asf.edge.modules.gridclient.grid.components.auth;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import org.asf.edge.modules.gridclient.GridClientComponent;
+import org.asf.edge.modules.gridclient.grid.GridClientComponent;
 import org.asf.edge.modules.gridclient.phoenix.DisconnectReason;
 import org.asf.edge.modules.gridclient.phoenix.PhoenixClient;
 import org.asf.edge.modules.gridclient.phoenix.auth.LoginManager;
@@ -106,8 +106,8 @@ public class AuthenticatorComponent extends GridClientComponent {
 							// Error
 							getLogger().error("Authentication failure! Server rejected join request!");
 							if (disconnectReason != null)
-								event.getClient().disconnect(disconnectReason.getDisconnectReason(),
-										disconnectReason.getDisconnectReasonArgs());
+								event.getClient().disconnect(disconnectReason.getReason(),
+										disconnectReason.getReasonArgs());
 							else
 								event.getClient().disconnect("disconnect.loginfailure.authfailure");
 						} else {
@@ -143,8 +143,8 @@ public class AuthenticatorComponent extends GridClientComponent {
 						// Error
 						getLogger().error("Authentication failure! Server rejected join request!");
 						if (disconnectReason != null)
-							event.getClient().disconnect(disconnectReason.getDisconnectReason(),
-									disconnectReason.getDisconnectReasonArgs());
+							event.getClient().disconnect(disconnectReason.getReason(),
+									disconnectReason.getReasonArgs());
 						else
 							event.getClient().disconnect("disconnect.loginfailure.authfailure");
 					} else {

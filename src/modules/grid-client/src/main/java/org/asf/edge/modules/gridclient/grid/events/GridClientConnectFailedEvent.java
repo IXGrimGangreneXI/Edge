@@ -1,4 +1,4 @@
-package org.asf.edge.modules.gridclient.events;
+package org.asf.edge.modules.gridclient.grid.events;
 
 import org.asf.edge.modules.eventbus.EventObject;
 import org.asf.edge.modules.eventbus.EventPath;
@@ -26,10 +26,9 @@ public class GridClientConnectFailedEvent extends EventObject {
 	}
 
 	/**
-	 * Cancels reconnecte attempts
+	 * Cancels reconnect attempts
 	 */
-	public void cancelReconncet() {
-		setHandled();
+	public void cancelReconnect() {
 		attemptReconnect = false;
 	}
 

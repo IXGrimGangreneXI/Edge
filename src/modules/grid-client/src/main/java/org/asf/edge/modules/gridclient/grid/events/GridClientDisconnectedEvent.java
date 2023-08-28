@@ -1,4 +1,4 @@
-package org.asf.edge.modules.gridclient.events;
+package org.asf.edge.modules.gridclient.grid.events;
 
 import org.asf.edge.modules.eventbus.EventObject;
 import org.asf.edge.modules.eventbus.EventPath;
@@ -17,10 +17,27 @@ public class GridClientDisconnectedEvent extends EventObject {
 
 	private PhoenixClient client;
 	private DisconnectReason disconnectReason;
+	private boolean attemptReconnect = true;
 
 	public GridClientDisconnectedEvent(PhoenixClient client, DisconnectReason disconnectReason) {
 		this.client = client;
 		this.disconnectReason = disconnectReason;
+	}
+
+	/**
+	 * Cancels reconnect attempts
+	 */
+	public void cancelReconnect() {
+		attemptReconnect = false;
+	}
+
+	/**
+	 * Checks if the client should attempt reconnects
+	 * 
+	 * @return True if the client should try to reconnect, false otherwise
+	 */
+	public boolean shouldAttemptReconnect() {
+		return attemptReconnect;
 	}
 
 	/**

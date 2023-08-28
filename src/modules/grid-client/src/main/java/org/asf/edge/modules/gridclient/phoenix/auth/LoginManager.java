@@ -28,6 +28,11 @@ public class LoginManager {
 	private PhoenixSession session;
 	private EventBus eventBus;
 
+	public LoginManager() {
+		eventBus = EventBus.getInstance().createBus();
+		eventBus.addEventHandler(SessionRefreshFailureEvent.class, event -> logout());
+	}
+
 	/**
 	 * API server endpoint
 	 */
@@ -44,8 +49,6 @@ public class LoginManager {
 	 * @return EventBus instance
 	 */
 	public EventBus getEventBus() {
-		if (eventBus == null)
-			eventBus = EventBus.getInstance().createBus();
 		return eventBus;
 	}
 
@@ -155,11 +158,7 @@ public class LoginManager {
 								if ((System.currentTimeMillis() / 1000) + (15 * 60) >= payload.get("exp").getAsLong()) {
 									// Refresh
 									if (!sesData.refresh()) {
-										try {
-											getEventBus().dispatchEvent(new SessionRefreshFailureEvent(this, sesData));
-										} finally {
-											logout();
-										}
+										logout();
 										break;
 									}
 								}
@@ -168,11 +167,7 @@ public class LoginManager {
 								Thread.sleep(1000);
 							} catch (Exception e) {
 								if (isLoggedIn() && getSession() == sesData)
-									try {
-										getEventBus().dispatchEvent(new SessionRefreshFailureEvent(this, sesData));
-									} finally {
-										logout();
-									}
+									logout();
 								break;
 							}
 						}

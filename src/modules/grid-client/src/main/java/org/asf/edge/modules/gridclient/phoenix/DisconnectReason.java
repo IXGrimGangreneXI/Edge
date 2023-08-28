@@ -10,11 +10,11 @@ public class DisconnectReason {
 		this.disconnectReasonArgs = disconnectReasonArgs;
 	}
 
-	public String getDisconnectReason() {
+	public String getReason() {
 		return disconnectReason;
 	}
 
-	public String[] getDisconnectReasonArgs() {
+	public String[] getReasonArgs() {
 		return disconnectReasonArgs;
 	}
 

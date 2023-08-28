@@ -3,6 +3,7 @@ package org.asf.edge.modules.gridapi.http.services.phoenix;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.UUID;
 
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
@@ -112,6 +113,40 @@ public class PhoenixTokensWebService extends EdgeWebService<EdgeGridApiServer> {
 			return response(401, "Unauthorized");
 		}
 		PhoenixToken jwt = ctx.token;
+
+		// Check significant fields
+		if (!jwt.identity.equals(new UUID(0, 0).toString()) && jwt.payload != null && jwt.payload.isJsonObject()
+				&& jwt.payload.getAsJsonObject().has("isfr") && jwt.payload.getAsJsonObject().has("isfn")) {
+			try {
+				// Identity-based token
+				if (ctx.account != null) {
+					// Load data
+					AccountDataContainer data = ctx.account.getAccountData().getChildContainer("accountdata");
+					if (!data.entryExists("significantFieldRandom"))
+						return response(401, "Unauthorized");
+					if (!data.entryExists("significantFieldNumber"))
+						return response(401, "Unauthorized");
+
+					// Check fields
+					long isfn = data.getEntry("significantFieldNumber").getAsLong();
+					int isfr = data.getEntry("significantFieldRandom").getAsInt();
+					if (isfn != jwt.payload.getAsJsonObject().get("isfn").getAsLong()
+							|| isfr != jwt.payload.getAsJsonObject().get("isfr").getAsInt()) {
+						return response(401, "Unauthorized");
+					}
+				} else if (ctx.identity != null) {
+					// Check fields
+					if (ctx.identity.significantFieldNumber != jwt.payload.getAsJsonObject().get("isfn").getAsLong()
+							|| ctx.identity.significantFieldRandom != jwt.payload.getAsJsonObject().get("isfr")
+									.getAsInt()) {
+						return response(401, "Unauthorized");
+					}
+				} else
+					return response(401, "Unauthorized");
+			} catch (IOException e) {
+				return response(401, "Unauthorized");
+			}
+		}
 
 		// Refresh
 		if (jwt.tokenExpiryTime != -1) {

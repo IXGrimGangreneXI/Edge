@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.entities.achivements.EntityRankInfo;
+import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
 import org.asf.edge.common.events.accounts.saves.AccountSaveAuthenticatedEvent;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
@@ -497,8 +498,8 @@ public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
 		}
 		resp.add("profiles", profiles);
 
-		// Update login time
-		acc.updateLastLoginTime();
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountAuthenticatedEvent(acc, manager));
 
 		// Return
 		return ok("text/json", resp.toString());

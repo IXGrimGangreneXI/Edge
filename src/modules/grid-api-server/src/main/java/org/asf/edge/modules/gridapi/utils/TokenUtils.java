@@ -13,8 +13,6 @@ import com.google.gson.JsonPrimitive;
 
 public class TokenUtils {
 
-	private static final String NIL_UUID = new UUID(0, 0).toString();
-
 	public static class AccessContext {
 		public PhoenixToken token;
 		public IdentityDef identity;
@@ -41,8 +39,39 @@ public class TokenUtils {
 		// Load token
 		String tokenR = auth.substring("Bearer ".length());
 		AccessContext res = fromToken(tokenR);
-		if (res == null)
+		if (res == null) {
 			func.getResponse().setResponseStatus(401, "Unauthorized");
+			return null;
+		}
+
+		// Verify server
+		if (res.token != null && res.token.hasCapability("serveraccess")) {
+			// Retrieve ID from token
+			String sid = res.token.payload.getAsJsonObject().get("sid").getAsString();
+
+			// Check authentication header
+			String authServer = func.getRequest().getHeaderValue("Server-Authorization");
+			if (authServer == null || !authServer.startsWith("Bearer ")) {
+				func.getResponse().setResponseStatus(401, "Unauthorized");
+				return null;
+			}
+
+			// Load token
+			String tokenRS = authServer.substring("Bearer ".length());
+			AccessContext resS = fromToken(tokenRS, "host");
+			if (resS == null) {
+				func.getResponse().setResponseStatus(401, "Unauthorized");
+				return null;
+			}
+
+			// Verify ID
+			if (!resS.identity.identity.equals(sid)) {
+				func.getResponse().setResponseStatus(401, "Unauthorized");
+				return null;
+			}
+		}
+
+		// Return
 		return res;
 	}
 
@@ -64,8 +93,39 @@ public class TokenUtils {
 		// Load token
 		String tokenR = auth.substring("Bearer ".length());
 		AccessContext res = fromToken(tokenR, cap);
-		if (res == null)
+		if (res == null) {
 			func.getResponse().setResponseStatus(401, "Unauthorized");
+			return null;
+		}
+
+		// Verify server
+		if (res.token != null && res.token.hasCapability("serveraccess")) {
+			// Retrieve ID from token
+			String sid = res.token.payload.getAsJsonObject().get("sid").getAsString();
+
+			// Check authentication header
+			String authServer = func.getRequest().getHeaderValue("Server-Authorization");
+			if (authServer == null || !authServer.startsWith("Bearer ")) {
+				func.getResponse().setResponseStatus(401, "Unauthorized");
+				return null;
+			}
+
+			// Load token
+			String tokenRS = authServer.substring("Bearer ".length());
+			AccessContext resS = fromToken(tokenRS, "host");
+			if (resS == null) {
+				func.getResponse().setResponseStatus(401, "Unauthorized");
+				return null;
+			}
+
+			// Verify ID
+			if (!resS.identity.identity.equals(sid)) {
+				func.getResponse().setResponseStatus(401, "Unauthorized");
+				return null;
+			}
+		}
+
+		// Return
 		return res;
 	}
 
@@ -88,7 +148,7 @@ public class TokenUtils {
 	 */
 	public static AccessContext fromToken(String tokenStr, String cap) {
 		PhoenixToken tkn = new PhoenixToken();
-		if (tkn.parseToken(tokenStr) != TokenParseResult.SUCCESS && (cap != null && !tkn.hasCapability(cap))) {
+		if (tkn.parseToken(tokenStr) != TokenParseResult.SUCCESS || (cap != null && !tkn.hasCapability(cap))) {
 			return null;
 		}
 
@@ -139,34 +199,23 @@ public class TokenUtils {
 		}
 		ctx.isServer = ctx.identity.properties.containsKey("serverCertificateProperties");
 
-		// Check significant fields
-		if (!tkn.identity.equals(NIL_UUID) && tkn.payload != null && tkn.payload.isJsonObject()
-				&& tkn.payload.getAsJsonObject().has("isfr") && tkn.payload.getAsJsonObject().has("isfn")) {
-			try {
-				// Identity-based token
-				if (ctx.account != null) {
-					// Load data
-					AccountDataContainer data = ctx.account.getAccountData().getChildContainer("accountdata");
-					if (!data.entryExists("significantFieldRandom"))
-						return null;
-					if (!data.entryExists("significantFieldNumber"))
-						return null;
+		// Check
+		if (tkn.hasCapability("serveraccess")) {
+			// Verify account
+			if (ctx.account == null)
+				return null;
 
-					// Check fields
-					long isfn = data.getEntry("significantFieldNumber").getAsLong();
-					int isfr = data.getEntry("significantFieldRandom").getAsInt();
-					if (isfn != tkn.payload.getAsJsonObject().get("isfn").getAsLong()
-							|| isfr != tkn.payload.getAsJsonObject().get("isfr").getAsInt()) {
-						return null;
-					}
-				} else if (ctx.identity != null) {
-					// Check fields
-					if (ctx.identity.significantFieldNumber != tkn.payload.getAsJsonObject().get("isfn").getAsLong()
-							|| ctx.identity.significantFieldRandom != tkn.payload.getAsJsonObject().get("isfr")
-									.getAsInt()) {
-						return null;
-					}
-				} else
+			// Verify server ID property
+			if (tkn.payload == null || !tkn.payload.isJsonObject() || !tkn.payload.getAsJsonObject().has("sid"))
+				return null;
+
+			// Retrieve ID from token
+			String sid = tkn.payload.getAsJsonObject().get("sid").getAsString();
+
+			// Verify ID
+			try {
+				AccountDataContainer data = ctx.account.getAccountData().getChildContainer("accountdata");
+				if (!data.entryExists("current_server") || !data.getEntry("current_server").getAsString().equals(sid))
 					return null;
 			} catch (IOException e) {
 				return null;

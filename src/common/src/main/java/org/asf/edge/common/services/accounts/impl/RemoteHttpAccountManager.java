@@ -228,9 +228,6 @@ public class RemoteHttpAccountManager extends AccountManager {
 			return false;
 		}
 
-		// Dispatch event
-		EventBus.getInstance().dispatchEvent(new AccountAuthenticatedEvent(getAccount(id), this));
-
 		// Return
 		return true;
 	}

@@ -9,7 +9,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.modules.gridapi.commands.defaultcommands.AccountCommands;
-import org.asf.edge.modules.gridapi.commands.defaultcommands.GenerateGridClientTokenCommand;
 import org.asf.edge.modules.gridapi.commands.defaultcommands.GenerateMasterTokenCommand;
 import org.asf.edge.modules.gridapi.commands.defaultcommands.GenerateTokenCommand;
 import org.asf.edge.modules.gridapi.commands.defaultcommands.HelpCommand;
@@ -49,7 +48,6 @@ public class CommandContext {
 		registerCommand(new AccountCommands());
 		registerCommand(new ServerCommands());
 		registerCommand(new GenerateTokenCommand());
-		registerCommand(new GenerateGridClientTokenCommand());
 
 		// Dispatch event
 		EventBus.getInstance().dispatchEvent(new CommandSetupEvent(this));

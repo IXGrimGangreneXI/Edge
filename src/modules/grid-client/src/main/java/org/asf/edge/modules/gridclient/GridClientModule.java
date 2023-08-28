@@ -11,13 +11,19 @@ import javax.swing.JOptionPane;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
+import org.asf.edge.common.entities.messages.defaultmessages.WsGenericMessage;
+import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.config.ConfigProviderService;
+import org.asf.edge.common.services.messages.PlayerMessenger;
+import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.modules.IEdgeModule;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.modules.eventbus.EventListener;
-import org.asf.edge.modules.gridclient.events.GridClientAuthenticationDeferredEvent;
-import org.asf.edge.modules.gridclient.events.GridClientAuthenticationFailureEvent;
-import org.asf.edge.modules.gridclient.events.GridClientAuthenticationSuccessEvent;
+import org.asf.edge.modules.gridclient.grid.events.GridClientAuthenticationDeferredEvent;
+import org.asf.edge.modules.gridclient.grid.events.GridClientAuthenticationFailureEvent;
+import org.asf.edge.modules.gridclient.grid.events.GridClientAuthenticationSuccessEvent;
 import org.asf.edge.modules.gridclient.gui.LoginWindow;
 import org.asf.edge.modules.gridclient.gui.LoginWindow.LoginResult;
 import org.asf.edge.modules.gridclient.gui.RegistrationWindow.RegistrationResult;
@@ -25,7 +31,11 @@ import org.asf.edge.modules.gridclient.phoenix.PhoenixEnvironment;
 import org.asf.edge.modules.gridclient.phoenix.auth.LoginManager;
 import org.asf.edge.modules.gridclient.phoenix.auth.PhoenixSession;
 import org.asf.edge.modules.gridclient.phoenix.events.PhoenixGameInvalidatedEvent;
+import org.asf.edge.modules.gridclient.phoenix.events.SessionRefreshFailureEvent;
 import org.asf.edge.modules.gridclient.phoenix.serverlist.ServerInstance;
+import org.asf.edge.modules.gridclient.eventhandlers.ConnectionEventHandlers;
+import org.asf.edge.modules.gridclient.grid.GridClient;
+import org.asf.edge.modules.gridclient.grid.SessionLockStatus;
 
 import com.google.gson.JsonObject;
 
@@ -33,7 +43,9 @@ public class GridClientModule implements IEdgeModule {
 	public static final String GRID_API_VERSION = "1.0.0.A1";
 	public static final String GRID_SOFTWARE_ID = "edge-phoenix-grid";
 
+	private Scanner sc = new Scanner(System.in);
 	private Logger logger = LogManager.getLogger("grid-client");
+	private String loginSystemMessage;
 
 	@Override
 	public String moduleID() {
@@ -78,11 +90,47 @@ public class GridClientModule implements IEdgeModule {
 			}
 		}
 
+		// Attach event handlers
+		EventBus.getInstance().addAllEventsFromReceiver(new ConnectionEventHandlers());
+
 		// Contact grid server
 		gridStartup(config, lastSessionRefreshToken, lastUsername);
 	}
 
-	private Scanner sc = new Scanner(System.in);
+	@EventListener
+	public void accountAuthenticated(AccountAuthenticatedEvent event) {
+		if (loginSystemMessage != null) {
+			// Send message
+			PlayerMessenger messenger = WsMessageService.getInstance().getMessengerFor(event.getAccount());
+			WsGenericMessage msg = new WsGenericMessage();
+			msg.rawObject.typeID = 3;
+			msg.rawObject.messageContentMembers = loginSystemMessage;
+			msg.rawObject.messageContentNonMembers = msg.rawObject.messageContentMembers;
+			try {
+				messenger.sendSessionMessage(msg);
+			} catch (IOException e) {
+			}
+		}
+	}
+
+	private void sendGridErrorMessageToPlayers(String message) {
+		// Send to all players
+		for (AccountObject account : AccountManager.getInstance().getOnlinePlayers()) {
+			if (account.isOnline()) {
+				// Send message
+				PlayerMessenger messenger = WsMessageService.getInstance().getMessengerFor(account);
+				WsGenericMessage msg = new WsGenericMessage();
+				msg.rawObject.typeID = 3;
+				msg.rawObject.messageContentMembers = message;
+				msg.rawObject.messageContentNonMembers = msg.rawObject.messageContentMembers;
+				try {
+					messenger.sendSessionMessage(msg);
+				} catch (IOException e) {
+				}
+			}
+		}
+		loginSystemMessage = message;
+	}
 
 	private void gridStartup(JsonObject config, String lastSessionRefreshToken, String lastUsername) {
 		boolean graphical = !GraphicsEnvironment.isHeadless();
@@ -248,7 +296,7 @@ public class GridClientModule implements IEdgeModule {
 			// Read session
 			String lastSessionRefreshToken = null;
 			String lastUsername = null;
-			if (ConfigProviderService.getInstance().configExists("modules", "gridsession")) {
+			if (ConfigProviderService.getInstance().configExists("moduleconfigs", "gridsession")) {
 				// Read session
 				try {
 					logger.info("Loading last session...");
@@ -277,6 +325,80 @@ public class GridClientModule implements IEdgeModule {
 						Thread.sleep(10000);
 					} catch (InterruptedException e1) {
 						break;
+					}
+				}
+			});
+		}
+	}
+
+	@EventListener
+	public void phoenixTokenRefreshFailure(SessionRefreshFailureEvent event) {
+		// Token invalidated
+
+		// Verify session lock
+		if (GridClient.sessionLockStatus() == SessionLockStatus.LOCK_LOST) {
+			// Someone else logged in
+			logger.warn("Phoenix session has been invalidated! The account was logged into from another location!");
+
+			// Make sure the clients get informed
+			sendGridErrorMessageToPlayers("The Grid account used by this server was logged into from another location!"
+					+ " The Multiplayer Grid will cease to function for this session, please restart the game to resume non-local multiplayer features."
+					+ "\n\nThis message will only be showed once in your session.");
+			return;
+		}
+
+		// Refresh
+		logger.warn("Phoenix session has been invalidated! Attempting re-authentication...");
+		if (PhoenixEnvironment.defaultLoginToken != null) {
+			// Load refresh token
+			String lastSessionRefreshToken = null;
+			String lastUsername = null;
+			if (ConfigProviderService.getInstance().configExists("moduleconfigs", "gridsession")) {
+				// Read session
+				try {
+					logger.info("Loading last session...");
+					JsonObject session = ConfigProviderService.getInstance().loadConfig("moduleconfigs", "gridsession");
+					lastSessionRefreshToken = session.get("refreshToken").getAsString();
+					lastUsername = session.get("lastUsername").getAsString();
+				} catch (IOException e) {
+					logger.error("Failed to load previous Grid session from configuration!", e);
+					lastSessionRefreshToken = null;
+					lastUsername = null;
+				}
+			}
+
+			// Log in
+			authenticateGameSuccess(true, lastSessionRefreshToken, lastUsername);
+		} else {
+			// Wait
+			AsyncTaskManager.runAsync(() -> {
+				while (true) {
+					if (PhoenixEnvironment.defaultLoginToken != null) {
+						// Load refresh token
+						String lastSessionRefreshToken = null;
+						String lastUsername = null;
+						if (ConfigProviderService.getInstance().configExists("moduleconfigs", "gridsession")) {
+							// Read session
+							try {
+								logger.info("Loading last session...");
+								JsonObject session = ConfigProviderService.getInstance().loadConfig("moduleconfigs",
+										"gridsession");
+								lastSessionRefreshToken = session.get("refreshToken").getAsString();
+								lastUsername = session.get("lastUsername").getAsString();
+							} catch (IOException e) {
+								logger.error("Failed to load previous Grid session from configuration!", e);
+								lastSessionRefreshToken = null;
+								lastUsername = null;
+							}
+						}
+
+						// Log in
+						authenticateGameSuccess(true, lastSessionRefreshToken, lastUsername);
+						break;
+					}
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
 					}
 				}
 			});
@@ -787,7 +909,7 @@ public class GridClientModule implements IEdgeModule {
 		} else {
 			// Error
 			logger.error(
-					"Unable to log back into the Grid! There is no valid refresh token and we are past initialization, unable to prompt for input!");
+					"Unable to log back into the Grid! There is no valid refresh token and the system is past initialization, unable to prompt for input!");
 		}
 	}
 

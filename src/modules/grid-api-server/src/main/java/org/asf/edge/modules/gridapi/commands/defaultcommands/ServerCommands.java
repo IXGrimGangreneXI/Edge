@@ -184,7 +184,8 @@ public class ServerCommands extends TaskBasedCommand {
 								// Attempt to find identity
 								IdentityDef ownerDef = IdentityUtils
 										.getIdentity(serverDef.properties.get("owner").value);
-								if (ownerDef != null && ownerDef.properties.get("hostBanned").value.equals("true")) {
+								if (ownerDef != null && ownerDef.properties.containsKey("hostBanned")
+										&& ownerDef.properties.get("hostBanned").value.equals("true")) {
 									// Banned from hosting
 									outputWriteLineCallback.accept("Error: server owner is host-banned");
 									return null;

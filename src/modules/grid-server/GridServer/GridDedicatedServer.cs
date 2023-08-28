@@ -48,9 +48,9 @@ namespace GridServer
             server.AddComponent(new SceneReplicationComponent());
             server.AddComponent(new ConfigManagerComponent());
             server.AddComponent(new ServerListPublisherComponent());
-            server.AddComponent(new NetworkServerComponent());
 
             // Add grid components
+            server.AddComponent(new GridLoginComponent());
             server.AddComponent(new GridComponent());
 
             // Add replication channel

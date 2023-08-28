@@ -4,10 +4,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
+import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountManager;
+import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.modules.gridapi.identities.IdentityDef;
+import org.asf.edge.modules.gridapi.utils.IdentityUtils;
 
 public class ServerListManager {
 
@@ -61,12 +66,53 @@ public class ServerListManager {
 	}
 
 	public static ServerListEntry[] getServers() {
+		ServerListEntry[] servers;
 		while (true) {
 			try {
-				return ServerListManager.entries.toArray(t -> new ServerListEntry[t]);
+				servers = ServerListManager.entries.toArray(t -> new ServerListEntry[t]);
+				break;
 			} catch (ConcurrentModificationException e) {
 			}
 		}
+
+		// Filter banned
+		ArrayList<ServerListEntry> srvLst = new ArrayList<ServerListEntry>();
+		for (ServerListEntry ent : servers) {
+			// Check if the owner is not host-banned
+			if (!ent.ownerId.equals(new UUID(0, 0).toString())) {
+				// Attempt to find account
+				AccountObject acc = AccountManager.getInstance().getAccount(ent.ownerId);
+				if (acc != null) {
+					try {
+						AccountDataContainer data = acc.getAccountData().getChildContainer("accountdata");
+						if (data.entryExists("hostBanned") && data.getEntry("hostBanned").getAsBoolean()) {
+							// Banned from hosting
+							continue;
+						}
+					} catch (IOException e) {
+						continue;
+					}
+				} else {
+					// Attempt to find identity
+					IdentityDef ownerDef = IdentityUtils.getIdentity(ent.ownerId);
+					if (ownerDef != null && ownerDef.properties.containsKey("hostBanned")
+							&& ownerDef.properties.get("hostBanned").value.equals("true")) {
+						// Banned from hosting
+						continue;
+					} else if (ownerDef == null) {
+						// Owner was deleted
+						IdentityUtils.deleteIdentity(ent.serverId);
+						continue;
+					}
+				}
+			}
+
+			// Add
+			srvLst.add(ent);
+		}
+
+		// Return
+		return srvLst.toArray(t -> new ServerListEntry[t]);
 	}
 
 	public static ServerListEntry[] getServers(Map<String, String> filter) {

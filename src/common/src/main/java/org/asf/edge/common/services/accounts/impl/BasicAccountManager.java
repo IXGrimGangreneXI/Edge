@@ -272,9 +272,6 @@ public abstract class BasicAccountManager extends AccountManager {
 			}
 		}
 
-		// Dispatch event
-		EventBus.getInstance().dispatchEvent(new AccountAuthenticatedEvent(getAccount(id), this));
-
 		// Success
 		return true;
 	}

@@ -1,19 +1,22 @@
-package org.asf.edge.modules.gridclient;
+package org.asf.edge.modules.gridclient.grid;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.modules.gridclient.components.auth.AuthenticatorComponent;
-import org.asf.edge.modules.gridclient.events.GridClientConnectFailedEvent;
-import org.asf.edge.modules.gridclient.events.GridClientConnectedEvent;
-import org.asf.edge.modules.gridclient.events.GridClientDisconnectedEvent;
-import org.asf.edge.modules.gridclient.events.GridClientSetupEvent;
+import org.asf.edge.modules.gridclient.grid.components.auth.AuthenticatorComponent;
+import org.asf.edge.modules.gridclient.grid.components.auth.GridLoginComponent;
+import org.asf.edge.modules.gridclient.grid.components.core.ConnectFailureHandlerComponent;
+import org.asf.edge.modules.gridclient.grid.components.core.DisconnectHandlerComponent;
+import org.asf.edge.modules.gridclient.grid.events.GridClientConnectFailedEvent;
+import org.asf.edge.modules.gridclient.grid.events.GridClientConnectedEvent;
+import org.asf.edge.modules.gridclient.grid.events.GridClientDisconnectedEvent;
+import org.asf.edge.modules.gridclient.grid.events.GridClientSetupEvent;
 import org.asf.edge.modules.gridclient.phoenix.DisconnectReason;
 import org.asf.edge.modules.gridclient.phoenix.PhoenixClient;
 import org.asf.edge.modules.gridclient.phoenix.PhoenixEnvironment;
@@ -45,7 +48,7 @@ public class GridClient {
 	public static final String GRID_SOFTWARE_VERSION = "1.0.0.A1";
 
 	static PhoenixClient client;
-	static HashMap<String, GridClientComponent> components = new HashMap<String, GridClientComponent>();
+	static LinkedHashMap<String, GridClientComponent> components = new LinkedHashMap<String, GridClientComponent>();
 	private static Logger logger = LogManager.getLogger("grid-client");
 
 	private static boolean isDisconnect;
@@ -64,10 +67,22 @@ public class GridClient {
 		logger.info("Loading components...");
 
 		// Add components
+		registerComponent(new DisconnectHandlerComponent());
+		registerComponent(new ConnectFailureHandlerComponent());
 		registerComponent(new AuthenticatorComponent(loginManager));
+		registerComponent(new GridLoginComponent(loginManager));
 
 		// Dispatch event
 		client.getEventBus().dispatchEvent(new GridClientSetupEvent(client));
+	}
+
+	/**
+	 * Retrieves the login manager
+	 * 
+	 * @return LoginManager instance
+	 */
+	public static LoginManager getLoginManager() {
+		return loginManager;
 	}
 
 	/**
@@ -86,10 +101,12 @@ public class GridClient {
 		//
 		// FIXME: THIS HAS TO BE DONE BETTER
 		//
+		// TODO: we also need support for a friend system, we should prioritize servers
+		// with friends
+		//
 
 		// Go through servers, server with lowest ping and 65 or more players first
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -98,8 +115,7 @@ public class GridClient {
 		}
 
 		// Go through servers, server with lowest ping and 50 or more players first
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -108,8 +124,7 @@ public class GridClient {
 		}
 
 		// Go through servers, server with low ping and 65 or more players first
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -118,8 +133,7 @@ public class GridClient {
 		}
 
 		// Go through servers, server with low ping and 50 or more players first
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -128,8 +142,7 @@ public class GridClient {
 		}
 
 		// Go through servers, server with lowest ping and 25 or more players first
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -138,8 +151,7 @@ public class GridClient {
 		}
 
 		// Go through servers, server with low ping and 50 or more players first
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -148,8 +160,7 @@ public class GridClient {
 		}
 
 		// Go through servers, server with 65 or more players first, higher ping
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -158,8 +169,7 @@ public class GridClient {
 		}
 
 		// Go through servers, server with 50 or more players first, higher ping
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -168,8 +178,7 @@ public class GridClient {
 		}
 
 		// Go through servers, server with 25 or more players first, higher ping
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -180,8 +189,7 @@ public class GridClient {
 		// Go through servers, server with lowest ping and 50 or more players first, no
 		// max, give up trying to find decent load, we need a server, preferably with
 		// at least some players and low ping
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -192,8 +200,7 @@ public class GridClient {
 		// Go through servers, server with low ping and 50 or more players first, no
 		// max, give up trying to find decent load, we need a server, preferably with
 		// at least some players and low ping
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -202,64 +209,56 @@ public class GridClient {
 		}
 
 		// Give up, find server with some smaller number players at all and lowest ping
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
 			if (online >= 20 && srv.getPing() < 25)
 				return srv;
 		}
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
 			if (online >= 20 && srv.getPing() < 50)
 				return srv;
 		}
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
 			if (online >= 20 && srv.getPing() < 100)
 				return srv;
 		}
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
 			if (online >= 20)
 				return srv;
 		}
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
 			if (online >= 10 && srv.getPing() < 25)
 				return srv;
 		}
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
 			if (online >= 10 && srv.getPing() < 50)
 				return srv;
 		}
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
 			if (online >= 10 && srv.getPing() < 100)
 				return srv;
 		}
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			int online = Integer.parseInt(srv.details.get("players.current"));
@@ -268,8 +267,7 @@ public class GridClient {
 		}
 
 		// Okay, just return the one with lowest ping
-		for (ServerInstance srv : Stream.of(servers)
-				.filter(t -> t.isReachable() && t.details.containsKey("players.current"))
+		for (ServerInstance srv : Stream.of(servers).filter(t -> t.details.containsKey("players.current"))
 				.sorted((t1, t2) -> Integer.compare(t1.getPing(), t2.getPing())).toArray(t -> new ServerInstance[t])) {
 			// Check
 			return srv;
@@ -618,7 +616,7 @@ public class GridClient {
 				// Run for all components
 				for (GridClientComponent comp : components.values())
 					if (!eve.isHandled())
-						comp.connectFailed(eve.getDisconnectReason());
+						comp.connectFailed(eve);
 
 				// Reconnect if needed
 				if (!eve.shouldAttemptReconnect()) {
@@ -637,7 +635,12 @@ public class GridClient {
 											new DisconnectReason("connect.error.nosessiontoken"));
 
 								// Login
-								client.connect(host, port, cert);
+								ServerInstance inst = findBestServer();
+								if (inst == null)
+									client.connect(host, port, cert);
+								else
+									client.connect(inst.getBestAdress(), inst.port,
+											PhoenixCertificate.downloadFromAPI("nexusgrid", inst.serverID));
 								startSuccess(host, port, cert, client);
 								break;
 							} catch (IOException | PhoenixConnectException e2) {
@@ -657,7 +660,7 @@ public class GridClient {
 								// Run for all components
 								for (GridClientComponent comp : components.values())
 									if (!ev.isHandled())
-										comp.connectFailed(ev.getDisconnectReason());
+										comp.connectFailed(ev);
 
 								// Dont reconnect if cancelled
 								if (!ev.shouldAttemptReconnect())
@@ -694,17 +697,26 @@ public class GridClient {
 					return;
 				}
 
-				// Log
-				logger.error("Lost Grid server connection, attempting to reconnect... ("
-						+ event.getDisconnectReason().getDisconnectReason() + ")");
+				// Dispatch event
+				GridClientDisconnectedEvent ev = new GridClientDisconnectedEvent(client, event.getDisconnectReason());
+				client.getEventBus().dispatchEvent(ev);
 
 				// Run for all components
 				for (GridClientComponent comp : components.values())
-					comp.disconnect(event.getDisconnectReason());
+					if (!ev.isHandled())
+						comp.disconnect(ev);
 
-				// Dispatch event
-				client.getEventBus()
-						.dispatchEvent(new GridClientDisconnectedEvent(client, event.getDisconnectReason()));
+				// Dont reconnect if cancelled
+				if (!ev.shouldAttemptReconnect()) {
+					// Log
+					logger.error("Lost Grid server connection, cannot reconnect! ("
+							+ event.getDisconnectReason().getReason() + ")");
+					return;
+				}
+
+				// Log
+				logger.error("Lost Grid server connection, attempting to reconnect... ("
+						+ event.getDisconnectReason().getReason() + ")");
 
 				// Reconnect
 				AsyncTaskManager.runAsync(() -> {
@@ -719,8 +731,9 @@ public class GridClient {
 							ServerInstance inst = findBestServer();
 							if (inst == null)
 								client.connect(host, port, cert);
-							client.connect(inst.getBestAdress(), inst.port,
-									PhoenixCertificate.downloadFromAPI("nexusgrid", inst.serverID));
+							else
+								client.connect(inst.getBestAdress(), inst.port,
+										PhoenixCertificate.downloadFromAPI("nexusgrid", inst.serverID));
 							break;
 						} catch (IOException | PhoenixConnectException e) {
 							// Check
@@ -730,19 +743,19 @@ public class GridClient {
 							}
 
 							// Dispatch event
-							GridClientConnectFailedEvent ev = new GridClientConnectFailedEvent(client,
+							GridClientConnectFailedEvent ev2 = new GridClientConnectFailedEvent(client,
 									(e instanceof PhoenixConnectException
 											? ((PhoenixConnectException) e).getDisconnectReason()
 											: new DisconnectReason("connection.failed", e.getMessage())));
-							client.getEventBus().dispatchEvent(ev);
+							client.getEventBus().dispatchEvent(ev2);
 
 							// Run for all components
 							for (GridClientComponent comp : components.values())
 								if (!ev.isHandled())
-									comp.connectFailed(ev.getDisconnectReason());
+									comp.connectFailed(ev2);
 
 							// Dont reconnect if cancelled
-							if (!ev.shouldAttemptReconnect())
+							if (!ev2.shouldAttemptReconnect())
 								break;
 						}
 						try {
@@ -755,6 +768,55 @@ public class GridClient {
 			} catch (Exception e) {
 			}
 		});
+	}
+
+	/**
+	 * Authenticates the Grid game session
+	 * 
+	 * @param gridApiVersion Expected Grid API version
+	 * @param gridSoftwareID Expected Grid API software ID
+	 * @throws IOException If the game cannot be authenticated
+	 */
+	public static void authenticateGame(String gridApiVersion, String gridSoftwareID) throws IOException {
+		// Build URL
+		String url = PhoenixEnvironment.defaultAPIServer;
+		if (!url.endsWith("/"))
+			url += "/";
+		url += "grid/gameservice/startgame";
+
+		// Build request
+		JsonObject payload = new JsonObject();
+		payload.addProperty("clientApiVersion", gridApiVersion);
+		payload.addProperty("clientSoftwareID", gridSoftwareID);
+
+		// Contact Phoenix
+		HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+		conn.setRequestMethod("POST");
+		conn.setDoOutput(true);
+		conn.getOutputStream().write(payload.toString().getBytes("UTF-8"));
+
+		// Read response
+		if (conn.getResponseCode() >= 400) {
+			// Error
+			try {
+				JsonObject response = JsonParser.parseString(new String(conn.getErrorStream().readAllBytes(), "UTF-8"))
+						.getAsJsonObject();
+				if (response.has("error")) {
+					String error = response.get("error").getAsString();
+					if (error.equals("api_version_mismatch"))
+						throw new IOException("API version mismatch while authenticating the game");
+					else if (error.equals("software_id_mismatch"))
+						throw new IOException("Software ID mismatch while authenticating the game");
+					else
+						throw new IOException("Server returned: " + error);
+				}
+			} catch (IOException e) {
+				throw e;
+			}
+		}
+		JsonObject response = JsonParser.parseString(new String(conn.getInputStream().readAllBytes(), "UTF-8"))
+				.getAsJsonObject();
+		PhoenixEnvironment.defaultLoginToken = response.get("token").getAsString();
 	}
 
 	/**
@@ -817,52 +879,48 @@ public class GridClient {
 	}
 
 	/**
-	 * Authenticates the Grid game session
+	 * Verifies the session lock status
 	 * 
-	 * @param gridApiVersion Expected Grid API version
-	 * @param gridSoftwareID Expected Grid API software ID
-	 * @throws IOException If the game cannot be authenticated
+	 * @return SessionLockStatus value
 	 */
-	public static void authenticateGame(String gridApiVersion, String gridSoftwareID) throws IOException {
-		// Build URL
-		String url = PhoenixEnvironment.defaultAPIServer;
-		if (!url.endsWith("/"))
-			url += "/";
-		url += "grid/gameservice/startgame";
-
-		// Build request
-		JsonObject payload = new JsonObject();
-		payload.addProperty("clientApiVersion", gridApiVersion);
-		payload.addProperty("clientSoftwareID", gridSoftwareID);
-
-		// Contact Phoenix
-		HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-		conn.setRequestMethod("POST");
-		conn.setDoOutput(true);
-		conn.getOutputStream().write(payload.toString().getBytes("UTF-8"));
-
-		// Read response
-		if (conn.getResponseCode() >= 400) {
-			// Error
-			try {
-				JsonObject response = JsonParser.parseString(new String(conn.getErrorStream().readAllBytes(), "UTF-8"))
-						.getAsJsonObject();
-				if (response.has("error")) {
-					String error = response.get("error").getAsString();
-					if (error.equals("api_version_mismatch"))
-						throw new IOException("API version mismatch while authenticating the game");
-					else if (error.equals("software_id_mismatch"))
-						throw new IOException("Software ID mismatch while authenticating the game");
-					else
-						throw new IOException("Server returned: " + error);
-				}
-			} catch (IOException e) {
-				throw e;
+	public static SessionLockStatus sessionLockStatus() {
+		try {
+			// Test connection
+			String url = PhoenixEnvironment.defaultAPIServer;
+			if (!url.endsWith("/"))
+				url += "/";
+			url += "grid/utilities/testsessionlock";
+			HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+			conn.addRequestProperty("Authorization", "Bearer " + loginManager.getSession().getGameSessionToken());
+			if (conn.getResponseCode() >= 400) {
+				return SessionLockStatus.valueOf(new String(conn.getErrorStream().readAllBytes(), "UTF-8").trim());
+			} else {
+				return SessionLockStatus.valueOf(new String(conn.getInputStream().readAllBytes(), "UTF-8").trim());
 			}
+		} catch (Exception e) {
+			return SessionLockStatus.CONNECTION_FAILURE;
 		}
-		JsonObject response = JsonParser.parseString(new String(conn.getInputStream().readAllBytes(), "UTF-8"))
-				.getAsJsonObject();
-		PhoenixEnvironment.defaultLoginToken = response.get("token").getAsString();
+	}
+
+	/**
+	 * Verifies the grid server connection
+	 * 
+	 * @return True if connected, false otherwise
+	 */
+	public static boolean verifyGridConnection() {
+		try {
+			// Verify our own connection to the Grid
+			String url = PhoenixEnvironment.defaultAPIServer;
+			if (!url.endsWith("/"))
+				url += "/";
+			url += "grid/utilities/testconnection";
+			new URL(url).openStream().close();
+
+			// Connected!
+			return true;
+		} catch (IOException e) {
+		}
+		return false;
 	}
 
 }

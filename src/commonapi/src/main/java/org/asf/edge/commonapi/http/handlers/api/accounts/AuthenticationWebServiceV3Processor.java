@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
+import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
@@ -20,6 +21,7 @@ import org.asf.edge.commonapi.xmls.auth.GuestLoginData;
 import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
 import org.asf.edge.commonapi.xmls.auth.ParentLoginData;
 import org.asf.edge.commonapi.xmls.auth.ParentLoginResponseData;
+import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
@@ -321,6 +323,9 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 
 		// Update login time
 		acc.updateLastLoginTime();
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountAuthenticatedEvent(acc, manager));
 
 		// Create session token
 		SessionToken tkn = new SessionToken();

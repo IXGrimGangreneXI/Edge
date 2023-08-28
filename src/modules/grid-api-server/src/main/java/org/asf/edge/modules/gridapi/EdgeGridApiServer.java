@@ -123,8 +123,10 @@ public class EdgeGridApiServer implements IBaseServer {
 		server.registerProcessor(new PhoenixTokensWebService(this));
 		server.registerProcessor(new PhoenixIdentityWebService(this));
 		server.registerProcessor(new GridAccountManagerWebService(this));
-		server.registerProcessor(new GridTextFilterWebService(this));
+		server.registerProcessor(new GridUtilityWebService(this));
 		server.registerProcessor(new GridGameWebService(this));
+		server.registerProcessor(new GridGameWebService(this));
+		server.registerProcessor(new GridGameplayWebService(this));
 		// TODO
 
 		// Bind command handler

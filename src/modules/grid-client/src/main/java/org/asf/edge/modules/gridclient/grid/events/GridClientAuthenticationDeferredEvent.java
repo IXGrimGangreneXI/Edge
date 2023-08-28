@@ -1,4 +1,4 @@
-package org.asf.edge.modules.gridclient.events;
+package org.asf.edge.modules.gridclient.grid.events;
 
 import org.asf.edge.modules.eventbus.EventObject;
 import org.asf.edge.modules.eventbus.EventPath;

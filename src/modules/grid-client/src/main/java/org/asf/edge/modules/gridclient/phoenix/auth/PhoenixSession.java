@@ -130,8 +130,11 @@ public class PhoenixSession {
 				}
 				displayName = dsp.get("value").getAsString();
 				token = tkn;
-			} else
+			} else {
+				// Dispatch event
+				manager.getEventBus().dispatchEvent(new SessionRefreshFailureEvent(manager, this));
 				return false;
+			}
 		} catch (IOException e) {
 			// Dispatch event
 			manager.getEventBus().dispatchEvent(new SessionRefreshFailureEvent(manager, this));

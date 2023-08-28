@@ -76,7 +76,8 @@ public class ServerInstance {
 		// Try ping
 		if (unreachable)
 			return null;
-		pingServer();
+		if (bestAddress == null)
+			pingServer();
 		return bestAddress;
 	}
 

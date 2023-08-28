@@ -1,9 +1,11 @@
 package org.asf.edge.modules.gridapi.http.services;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.stream.Stream;
 
 import org.asf.connective.processors.HttpPushProcessor;
+import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -13,15 +15,18 @@ import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.textfilter.TextFilterService;
-import org.asf.edge.common.services.textfilter.result.FilterResult;
-import org.asf.edge.common.services.textfilter.result.WordMatch;
+import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.modules.gridapi.EdgeGridApiServer;
+import org.asf.edge.modules.gridapi.events.auth.AuthenticationDeferredEvent;
+import org.asf.edge.modules.gridapi.events.auth.AuthenticationFailedEvent;
+import org.asf.edge.modules.gridapi.events.auth.AuthenticationSuccessEvent;
+import org.asf.edge.modules.gridapi.events.auth.GridAuthenticateEvent;
 import org.asf.edge.modules.gridapi.utils.IdentityUtils;
 import org.asf.edge.modules.gridapi.utils.PhoenixToken;
 import org.asf.edge.modules.gridapi.utils.TokenUtils;
 import org.asf.edge.modules.gridapi.utils.TokenUtils.AccessContext;
 
-import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
@@ -168,7 +173,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		} catch (Exception e) {
 			// Bad request
 			return response(400, "Bad request", "text/json",
-					"{\"error\":\"Invalid request body, expecting a JSON with a 'email', 'username', 'password', 'subscribeEmailNotifications' and 'isUnderageUser' field\"}");
+					"{\"error\":\"Invalid request body, expecting a JSON with a 'username', 'password' and 'isUnderageUser' field\"}");
 		}
 
 		// Load request into memory
@@ -263,6 +268,267 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		return ok("text/json", resp.toString());
 	}
 
+	@Function(value = "authenticate", allowedMethods = { "POST" })
+	public FunctionResult authenticate(FunctionInfo func) throws NoSuchAlgorithmException, IOException {
+		// Load token
+		TokenUtils.AccessContext ctx = TokenUtils.fromFunction(func, "login");
+		if (ctx == null) {
+			return response(401, "Unauthorized", "application/json", "{\"error\":\"token_invalid\"}");
+		}
+
+		// Find account manager
+		AccountManager manager = AccountManager.getInstance();
+
+		// Load payload
+		JsonObject payload = new JsonObject();
+		try {
+			if (!func.getRequest().hasRequestBody())
+				return response(400, "Bad Request");
+			payload = JsonParser.parseString(func.getRequest().getRequestBodyAsString()).getAsJsonObject();
+		} catch (Exception e) {
+			return response(400, "Bad Request");
+		}
+
+		// Check payload
+		if (!payload.has("mode")) {
+			// Generate response
+			JsonObject response = new JsonObject();
+			response.addProperty("status", "deferred");
+			response.addProperty("dataRequestKey", "mode");
+			response.addProperty("error", "invalid_mode");
+			response.addProperty("errorMessage",
+					"Missing 'mode' field, expecting 'refreshtoken' or 'usernamepassword'");
+			return response(400, "Derred", "application/json", response.toString());
+		} else if (!payload.get("mode").getAsString().equals("refreshtoken")
+				&& !payload.get("mode").getAsString().equals("usernamepassword")) {
+			// Generate response
+			JsonObject response = new JsonObject();
+			response.addProperty("status", "failure");
+			response.addProperty("error", "invalid_mode");
+			response.addProperty("errorMessage",
+					"Invalid 'mode' field, expecting 'refreshtoken' or 'usernamepassword'");
+			return response(401, "Unauthorized", "application/json", response.toString());
+		}
+
+		// Check mode
+		AccountObject account = null;
+		JsonObject response = new JsonObject();
+		boolean byRefreshToken = payload.get("mode").getAsString().equals("refreshtoken");
+		if (byRefreshToken) {
+			// Check payload
+			if (!payload.has("token")) {
+				// Generate response
+				response.addProperty("status", "deferred");
+				response.addProperty("dataRequestKey", "token");
+				response.addProperty("error", "invalid_token");
+				response.addProperty("errorMessage", "Missing 'token' field, expecting a refresh token.");
+				EventBus.getInstance().dispatchEvent(new AuthenticationDeferredEvent(null, response));
+				return response(400, "Derred", "application/json", response.toString());
+			}
+
+			// Load token
+			String refreshToken = payload.get("token").getAsString();
+			AccessContext plrCtx = TokenUtils.fromToken(refreshToken, "playerrefreshlogin");
+			if (plrCtx == null || !plrCtx.isAccount) {
+				// Generate response
+				response.addProperty("status", "failure");
+				response.addProperty("error", "invalid_token");
+				response.addProperty("errorMessage", "Refresh token is invalid");
+				EventBus.getInstance().dispatchEvent(new AuthenticationFailedEvent(null, response));
+				return response(401, "Unauthorized", "application/json", response.toString());
+			}
+			account = plrCtx.account;
+
+			// Generate response
+			response.addProperty("status", "success");
+		} else {
+			// Check payload
+			if (!payload.has("username") || !payload.has("password")) {
+				// Generate response
+				response.addProperty("status", "deferred");
+				if (!payload.has("username"))
+					response.addProperty("dataRequestKey", "username");
+				else if (!payload.has("password"))
+					response.addProperty("dataRequestKey", "password");
+				response.addProperty("error", "invalid_credentials");
+				response.addProperty("errorMessage", "Missing 'username' and/or 'password' field.");
+				EventBus.getInstance().dispatchEvent(new AuthenticationDeferredEvent(null, response));
+				return response(400, "Derred", "application/json", response.toString());
+			}
+
+			// Load
+			String username = payload.get("username").getAsString();
+			String password = payload.get("password").getAsString();
+
+			// Find account
+			if (!manager.isValidUsername(username)) {
+				// Invalid username
+				return invalidUserCallback(username, null);
+			}
+			if (!manager.isUsernameTaken(username)) {
+				// Log
+				getServerInstance().getLogger().warn("Grid login from IP " + func.getClient().getRemoteAddress()
+						+ " rejected for " + username + ": account not found");
+
+				// Account not found
+				return invalidUserCallback(username, null);
+			}
+
+			// Retrieve ID
+			String id = manager.getAccountID(username);
+
+			// Check ID
+			if (!manager.accountExists(id)) {
+				// Log
+				getServerInstance().getLogger().warn("Grid login from IP " + func.getClient().getRemoteAddress()
+						+ " rejected for " + id + ": account not found");
+
+				// ID does not exist
+				return invalidUserCallback(username, null);
+			}
+
+			// Find account
+			AccountObject acc = manager.getAccount(id);
+			if (acc.isGuestAccount()) {
+				// Log
+				getServerInstance().getLogger().warn("Grid login from IP " + func.getClient().getRemoteAddress()
+						+ " rejected for " + acc.getAccountID() + ": guest accounts may not be directly logged in on");
+
+				// NO
+				return invalidUserCallback(username, acc);
+			}
+
+			// Return invalid if the username is on cooldown
+			JsonElement lock = acc.getAccountData().getChildContainer("accountdata").getEntry("lockedsince");
+			if (lock != null && (System.currentTimeMillis() - lock.getAsLong()) < 8000) {
+				// Log
+				getServerInstance().getLogger().warn("Grid login from IP " + func.getClient().getRemoteAddress()
+						+ " rejected for " + acc.getAccountID() + ": login rejected by antibruteforce");
+
+				// Locked
+				return response(401, "Unauthorized", "text/json", "{\"error\":\"invalid_credentials\"}");
+			}
+
+			// Password check
+			if (!manager.verifyPassword(id, password)) {
+				// Log
+				getServerInstance().getLogger().warn("Grid login from IP " + func.getClient().getRemoteAddress()
+						+ " rejected for " + id + ": invalid password");
+
+				// Password incorrect
+				return invalidUserCallback(username, acc);
+			}
+
+			// Apply
+			account = acc;
+
+			// Generate response
+			response.addProperty("status", "success");
+
+			// Dispatch event
+			GridAuthenticateEvent ev = new GridAuthenticateEvent(account, payload, response);
+			EventBus.getInstance().dispatchEvent(ev);
+		}
+
+		// Update time
+		if (account != null)
+			account.updateLastLoginTime();
+
+		// Dispatch event
+		EventBus.getInstance().dispatchEvent(new AccountAuthenticatedEvent(account, manager));
+
+		// Handle status
+		if (!response.get("status").getAsString().equals("success")) {
+
+			// Handle response
+			switch (response.get("status").getAsString()) {
+
+			case "failure": {
+				// Generate response
+				response.addProperty("status", "failure");
+				return response(401, "Unauthorized", "application/json", response.toString());
+			}
+
+			case "deferred": {
+				// Generate response
+				response.addProperty("status", "deferred");
+				return response(400, "Derred", "application/json", response.toString());
+			}
+
+			// Error
+			default: {
+				// Generate response
+				getServerInstance().getLogger().error("A module returned invalid response type '"
+						+ response.get("status").getAsString()
+						+ "' in response to /auth/auhtenticate, expected either 'success', 'failure' or 'deferred'");
+				response.addProperty("status", "failure");
+				response.addProperty("error", "internal_error");
+				response.addProperty("errorMessage", "An internal server error occurred!");
+				return response(401, "Unauthorized", "application/json", response.toString());
+			}
+
+			}
+		}
+
+		// Success
+		AccountDataContainer data = account.getAccountData().getChildContainer("accountdata");
+		if (!data.entryExists("significantFieldRandom"))
+			data.setEntry("significantFieldRandom", new JsonPrimitive(IdentityUtils.rnd.nextInt()));
+		if (!data.entryExists("significantFieldNumber"))
+			data.setEntry("significantFieldNumber", new JsonPrimitive(System.currentTimeMillis()));
+		if (!data.entryExists("last_update"))
+			data.setEntry("last_update", new JsonPrimitive(System.currentTimeMillis()));
+
+		// Generate game token
+		PhoenixToken jwt = new PhoenixToken();
+		jwt.gameID = "nexusgrid";
+		jwt.identity = account.getAccountID();
+		jwt.lastUpdate = data.getEntry("last_update").getAsLong();
+		jwt.tokenExpiryTime = (System.currentTimeMillis() / 1000) + (60 * 60);
+		jwt.tokenGenerationTime = System.currentTimeMillis() / 1000;
+		jwt.tokenNotBefore = -1;
+		jwt.capabilities = new String[] { "refresh", "accprops" };
+		JsonObject pl = new JsonObject();
+		pl.addProperty("isfr", data.getEntry("significantFieldRandom").getAsLong());
+		pl.addProperty("isfn", data.getEntry("significantFieldNumber").getAsLong());
+		jwt.payload = pl;
+
+		// Generate refresh token
+		PhoenixToken refresh = new PhoenixToken();
+		refresh.gameID = "nexusgrid";
+		refresh.identity = account.getAccountID();
+		refresh.lastUpdate = data.getEntry("last_update").getAsLong();
+		refresh.tokenExpiryTime = (System.currentTimeMillis() / 1000) + (30 * 24 * 60 * 60);
+		refresh.tokenGenerationTime = System.currentTimeMillis() / 1000;
+		refresh.tokenNotBefore = -1;
+		refresh.capabilities = new String[] { "playerrefreshlogin" };
+
+		// Add properties
+		response.addProperty("accountID", account.getAccountID());
+		response.addProperty("displayName", account.getUsername());
+		response.addProperty("sessionToken", jwt.toTokenString());
+		response.addProperty("refreshToken", refresh.toTokenString());
+		EventBus.getInstance().dispatchEvent(new AuthenticationSuccessEvent(account, response));
+		return ok("application/json", response.toString());
+	}
+
+	private FunctionResult invalidUserCallback(String username, AccountObject account) throws IOException {
+		if (account != null)
+			account.getAccountData().getChildContainer("accountdata").setEntry("lockedsince",
+					new JsonPrimitive(System.currentTimeMillis()));
+		try {
+			Thread.sleep(8000);
+		} catch (InterruptedException e) {
+		}
+		// Generate response
+		JsonObject response = new JsonObject();
+		response.addProperty("status", "failure");
+		response.addProperty("error", "invalid_credentials");
+		response.addProperty("errorMessage", "Credentials are invalid");
+		EventBus.getInstance().dispatchEvent(new AuthenticationFailedEvent(account, response));
+		return response(401, "Unauthorized", "application/json", response.toString());
+	}
+
 	@Function
 	public FunctionResult getAccountDetails(FunctionInfo func) throws IOException {
 		// Account details
@@ -276,7 +542,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 		// Read token
 		String token = func.getRequest().getHeader("Authorization").getValue().substring("bearer ".length());
-		AccessContext ctx = TokenUtils.fromToken(token);
+		AccessContext ctx = TokenUtils.fromToken(token, "accprops");
 		if (ctx == null || !ctx.isAccount) {
 			// Error
 			return response(401, "Unauthorized", "text/json", "{\"error\":\"Authorization token invalid\"}");
@@ -322,7 +588,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 		// Read token
 		String token = func.getRequest().getHeader("Authorization").getValue().substring("bearer ".length());
-		AccessContext ctx = TokenUtils.fromToken(token);
+		AccessContext ctx = TokenUtils.fromToken(token, "accprops");
 		if (ctx == null || !ctx.isAccount) {
 			// Error
 			return response(401, "Unauthorized", "text/json", "{\"error\":\"Authorization token invalid\"}");
@@ -376,28 +642,6 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 			// Update
 			if (!ctx.account.updateUsername(username))
-				return response(500, "Internal server error", "text/json", "{\"error\":\"server_error\"}");
-			ctx.account.getAccountData().getChildContainer("accountdata").setEntry("last_update",
-					new JsonPrimitive(System.currentTimeMillis()));
-		}
-		if (request.has("accountEmail")) {
-			String email = request.get("accountEmail").getAsString();
-
-			// Verify email
-			if (!email.toLowerCase().matches(
-					"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])")) {
-				// Error
-				return response(400, "Bad request", "text/json", "{\"error\":\"invalid_email\"}");
-			}
-
-			// Check if email is taken
-			if (manager.getAccountIDByEmail(email) != null) {
-				// Error
-				return response(400, "Bad request", "text/json", "{\"error\":\"email_in_use\"}");
-			}
-
-			// Update
-			if (!ctx.account.updateEmail(email))
 				return response(500, "Internal server error", "text/json", "{\"error\":\"server_error\"}");
 			ctx.account.getAccountData().getChildContainer("accountdata").setEntry("last_update",
 					new JsonPrimitive(System.currentTimeMillis()));
@@ -467,7 +711,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 		// Read token
 		String token = func.getRequest().getHeader("Authorization").getValue().substring("bearer ".length());
-		AccessContext ctx = TokenUtils.fromToken(token);
+		AccessContext ctx = TokenUtils.fromToken(token, "accprops");
 		if (ctx == null || !ctx.isAccount) {
 			// Error
 			return response(401, "Unauthorized", "text/json", "{\"error\":\"Authorization token invalid\"}");
@@ -496,7 +740,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 		// Read token
 		String token = func.getRequest().getHeader("Authorization").getValue().substring("bearer ".length());
-		AccessContext ctx = TokenUtils.fromToken(token);
+		AccessContext ctx = TokenUtils.fromToken(token, "accprops");
 		if (ctx == null || !ctx.isAccount) {
 			// Error
 			return response(401, "Unauthorized", "text/json", "{\"error\":\"Authorization token invalid\"}");
@@ -526,7 +770,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 		// Read token
 		String token = func.getRequest().getHeader("Authorization").getValue().substring("bearer ".length());
-		AccessContext ctx = TokenUtils.fromToken(token);
+		AccessContext ctx = TokenUtils.fromToken(token, "accprops");
 		if (ctx == null || !ctx.isAccount) {
 			// Error
 			return response(401, "Unauthorized", "text/json", "{\"error\":\"Authorization token invalid\"}");
@@ -618,7 +862,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 		// Read token
 		String token = func.getRequest().getHeader("Authorization").getValue().substring("bearer ".length());
-		AccessContext ctx = TokenUtils.fromToken(token);
+		AccessContext ctx = TokenUtils.fromToken(token, "accprops");
 		if (ctx == null || !ctx.isAccount) {
 			// Error
 			return response(401, "Unauthorized", "text/json", "{\"error\":\"Authorization token invalid\"}");
@@ -718,7 +962,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 		// Read token
 		String token = func.getRequest().getHeader("Authorization").getValue().substring("bearer ".length());
-		AccessContext ctx = TokenUtils.fromToken(token);
+		AccessContext ctx = TokenUtils.fromToken(token, "accprops");
 		if (ctx == null || !ctx.isAccount) {
 			// Error
 			return response(401, "Unauthorized", "text/json", "{\"error\":\"Authorization token invalid\"}");
@@ -777,7 +1021,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 		// Read token
 		String token = func.getRequest().getHeader("Authorization").getValue().substring("bearer ".length());
-		AccessContext ctx = TokenUtils.fromToken(token);
+		AccessContext ctx = TokenUtils.fromToken(token, "accprops");
 		if (ctx == null || !ctx.isAccount) {
 			// Error
 			return response(401, "Unauthorized", "text/json", "{\"error\":\"Authorization token invalid\"}");
@@ -815,49 +1059,6 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 		// Return
 		return ok("text/json", resp.toString());
-	}
-
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult textFilter(FunctionInfo func) {
-		// Edge text filter
-
-		// Load request
-		JsonObject request;
-		try {
-			// Parse and check
-			request = JsonParser.parseString(func.getRequest().getRequestBodyAsString()).getAsJsonObject();
-			if (!request.has("message") || !request.has("strictMode"))
-				throw new IOException();
-		} catch (Exception e) {
-			// Bad request
-			return response(400, "Bad request");
-		}
-
-		// Run filter
-		String message = request.get("message").getAsString();
-		boolean strictMode = request.get("strictMode").getAsBoolean();
-		FilterResult result = TextFilterService.getInstance().filter(message, strictMode);
-
-		// Build response match list
-		JsonArray matches = new JsonArray();
-		for (WordMatch match : result.getMatches()) {
-			JsonObject m = new JsonObject();
-			m.addProperty("phrase", match.getPhraseFilter().getPhrase());
-			m.addProperty("matchedPhrase", match.getMatchedPhrase());
-			m.addProperty("reason", match.getReason());
-			m.addProperty("severity", match.getSeverity().toString());
-			matches.add(m);
-		}
-
-		// Build response
-		JsonObject res = new JsonObject();
-		res.addProperty("isFiltered", result.isMatch());
-		res.addProperty("resultMessage", result.getFilterResult());
-		res.addProperty("resultSeverity", result.getSeverity().toString());
-		res.add("matches", matches);
-
-		// Return result
-		return ok("text/json", res.toString());
 	}
 
 }

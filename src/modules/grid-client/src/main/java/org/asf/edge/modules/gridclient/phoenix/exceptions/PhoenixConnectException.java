@@ -9,7 +9,7 @@ public class PhoenixConnectException extends Exception {
 	private DisconnectReason disconnectReason;
 
 	public PhoenixConnectException(DisconnectReason disconnectReason) {
-		super("Phoenix error: " + disconnectReason.getDisconnectReason());
+		super("Phoenix error: " + disconnectReason.getReason());
 		this.disconnectReason = disconnectReason;
 	}
 
