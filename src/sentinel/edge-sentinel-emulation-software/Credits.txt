@@ -1,0 +1,4 @@
+Credits:
+ - Launcher code and emulation software package: Sky Swimmer (denzaya in discord)
+ - Launcher icon: ellenbellen (discord)
+ - Launcher banner: arrowheadg (discord)

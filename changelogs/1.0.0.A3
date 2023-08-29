@@ -7,6 +7,7 @@ Changes in 1.0.0.A3:
 - Fix certain account data being cached when it shouldn't, this fixes guest migration breaking down
 
 Sentinel changes:
+- Added the Project Edge banner and icon to the launcher (may need reinstall for it to fully work), credits to arrowheadg for the banner and credits to ellenbellen for the icon
 - Added a automatic updater in Edge that will notify the player if a Sentinel update is available and restarts the server automatically
 - Fixed the server configuration window's OK and Cancel button clipping through the program arguments input box
 - Fixed launch arguments being broken in server-log-mode

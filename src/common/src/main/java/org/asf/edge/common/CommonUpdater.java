@@ -356,8 +356,12 @@ public class CommonUpdater {
 				break;
 
 			default:
-				message = "The Edge servers are gonna be updated! They will be temporarily offline and may cause errors soon! They are scheduled to go down at "
-						+ fmt.format(new Date(System.currentTimeMillis() + (updateTimeRemaining * 60 * 1000))) + " UTC";
+				if (updateTimeRemaining > 10)
+					message = "The Edge servers are gonna be updated! They will be temporarily offline and may cause errors soon! They are scheduled to go down at "
+							+ fmt.format(new Date(System.currentTimeMillis() + (updateTimeRemaining * 60 * 1000)))
+							+ " UTC";
+				else
+					message = null;
 				break;
 
 			}
