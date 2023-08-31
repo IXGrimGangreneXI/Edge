@@ -8,7 +8,7 @@ import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
-import org.asf.razorwhip.sentinel.launcher.LauncherUtils;
+import org.asf.razorwhip.sentinel.launcher.AssetManager;
 import org.asf.razorwhip.sentinel.launcher.PayloadManager;
 
 import java.awt.Dimension;
@@ -60,14 +60,14 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 			btnNewButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					try {
-						LauncherUtils.showVersionManager(false);
+						AssetManager.showVersionManager(false);
 					} catch (IOException e1) {
 						throw new RuntimeException(e1);
 					}
 				}
 			});
 			btnNewButton.setBounds(12, 12, 296, 27);
-			btnNewButton.setEnabled(LauncherUtils.isAssetManagementAvailable());
+			btnNewButton.setEnabled(AssetManager.isAssetOnlineManagementAvailable());
 			panel.add(btnNewButton);
 
 			JButton btnNewButton_1 = new JButton("Open payload manager");

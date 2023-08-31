@@ -8,7 +8,7 @@ import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
-import org.asf.razorwhip.sentinel.launcher.LauncherUtils;
+import org.asf.razorwhip.sentinel.launcher.AssetManager;
 import org.asf.razorwhip.sentinel.launcher.software.projectedge.EdgeEmulationSoftware;
 
 import com.google.gson.JsonObject;
@@ -137,7 +137,7 @@ public class LaunchOptionMenu extends JDialog {
 			btnNewButton_3_1.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					try {
-						LauncherUtils.showClientSelector(false);
+						AssetManager.showClientSelector(false);
 					} catch (IOException e1) {
 						throw new RuntimeException(e1);
 					}

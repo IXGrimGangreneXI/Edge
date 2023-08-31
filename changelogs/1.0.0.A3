@@ -13,3 +13,6 @@ Sentinel changes:
 - Fixed launch arguments being broken in server-log-mode
 - Fix asset download tool ending up in a loop during size calculation
 - Fix asset download calculation running when asset downloads arent enabled
+- Overhauled sentinel's file structure to be more clean
+- Implemented asset de-duping and selection of quality levels to reduce download size
+- Overhauled asset management backend code

@@ -36,14 +36,14 @@ public class ContentServerRequestHandler extends HttpPushProcessor {
 	private EdgeContentServer server;
 
 	private String sanitizePath(String path) {
+		if (path.contains("\\"))
+			path = path.replace("\\", "/");
 		while (path.startsWith("/"))
 			path = path.substring(1);
 		while (path.endsWith("/"))
 			path = path.substring(0, path.length() - 1);
 		while (path.contains("//"))
 			path = path.replace("//", "/");
-		if (path.contains("\\"))
-			path = path.replace("\\", "/");
 		if (!path.startsWith("/"))
 			path = "/" + path;
 		return path;
