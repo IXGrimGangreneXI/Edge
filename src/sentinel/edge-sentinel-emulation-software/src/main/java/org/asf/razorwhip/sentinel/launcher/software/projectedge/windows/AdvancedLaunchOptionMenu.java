@@ -29,8 +29,8 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 
 	public AdvancedLaunchOptionMenu(JDialog parent) {
 		super(parent);
-		setLocationRelativeTo(parent);
 		initialize();
+		setLocationRelativeTo(parent);
 	}
 
 	/**
@@ -78,7 +78,6 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 					} catch (IOException e1) {
 						throw new RuntimeException(e1);
 					}
-					dispose();
 				}
 			});
 			btnNewButton_1.setBounds(12, 47, 296, 27);

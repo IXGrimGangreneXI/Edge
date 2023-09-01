@@ -61,7 +61,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 	@Override
 	public void showOptionWindow() {
 		// Show option menu
-		LaunchOptionMenu window = new LaunchOptionMenu();
+		LaunchOptionMenu window = new LaunchOptionMenu(LauncherUtils.getLauncherWindow());
 		window.setVisible(true);
 
 		// TODO:

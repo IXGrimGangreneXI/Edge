@@ -5,6 +5,7 @@ import java.awt.FlowLayout;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
@@ -33,13 +34,24 @@ public class LaunchOptionMenu extends JDialog {
 		setTitle("Launch options");
 		setResizable(false);
 		initialize();
+		setLocationRelativeTo(null);
+	}
+
+	/**
+	 * Create the dialog.
+	 */
+	public LaunchOptionMenu(JFrame parent) {
+		super(parent);
+		setTitle("Launch options");
+		setResizable(false);
+		initialize();
+		setLocationRelativeTo(parent);
 	}
 
 	private void initialize() {
 		setBounds(100, 100, 340, 329);
 		getContentPane().setLayout(new BorderLayout());
 		setModal(true);
-		setLocationRelativeTo(null);
 		contentPanel.setLayout(new FlowLayout());
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
@@ -149,7 +161,7 @@ public class LaunchOptionMenu extends JDialog {
 			JButton btnNewButton_3_1_1 = new JButton("More options...");
 			btnNewButton_3_1_1.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					AdvancedLaunchOptionMenu window = new AdvancedLaunchOptionMenu();
+					AdvancedLaunchOptionMenu window = new AdvancedLaunchOptionMenu(LaunchOptionMenu.this);
 					if (window.showDialog())
 						dispose();
 				}
