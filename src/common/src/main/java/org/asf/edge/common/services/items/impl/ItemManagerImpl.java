@@ -400,40 +400,6 @@ public class ItemManagerImpl extends ItemManager {
 		HashMap<Integer, ItemStoreInfo> storeDefs = new HashMap<Integer, ItemStoreInfo>();
 		ArrayList<ItemSaleInfo> sales = new ArrayList<ItemSaleInfo>();
 		DefaultItemBlock[] defaultItems;
-		logger.info("Loading item store data...");
-
-		try {
-			// Load XML
-			InputStream strm = getClass().getClassLoader().getResourceAsStream("itemdata/itemstores.xml");
-			String data = new String(strm.readAllBytes(), "UTF-8");
-			strm.close();
-			data = data.replace("http://media.jumpstart.com/", "RS_DATA/");
-			data = data.replace("https://media.jumpstart.com/", "RS_DATA/");
-			data = data.replace("http://media.schoolofdragons.com/", "RS_DATA/");
-			data = data.replace("https://media.schoolofdragons.com/", "RS_DATA/");
-
-			// Load into map
-			XmlMapper mapper = new XmlMapper();
-			ItemStoreDefinitionData[] stores = mapper.reader().readValue(data, ItemStoreDefinitionData[].class);
-
-			// Load stores
-			for (ItemStoreDefinitionData store : stores) {
-				// Load store
-				logger.debug("Loading store: " + store.storeID + " (" + store.storeName + ")");
-				ItemInfo[] items = new ItemInfo[store.items.length];
-				for (int i = 0; i < items.length; i++) {
-					// Register item
-					items[i] = new ItemInfo(store.items[i].get("id").asInt(), store.items[i].get("itn").asText(),
-							store.items[i].get("d").asText(), store.items[i]);
-					itemDefs.put(items[i].getID(), items[i]);
-					logger.debug("Registered item: " + items[i].getID() + ": " + items[i].getName());
-				}
-				storeDefs.put(store.storeID,
-						new ItemStoreInfo(store.storeID, store.storeName, store.storeDescription, items));
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
 
 		// Load item defs
 		logger.info("Loading item defs...");
@@ -460,6 +426,45 @@ public class ItemManagerImpl extends ItemManager {
 				ItemInfo itm = new ItemInfo(def.get("id").asInt(), def.get("itn").asText(), def.get("d").asText(), def);
 				itemDefs.put(itm.getID(), itm);
 				logger.debug("Registered item: " + itm.getID() + ": " + itm.getName());
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		// Load store data
+		logger.info("Loading item store data...");
+		try {
+			// Load XML
+			InputStream strm = getClass().getClassLoader().getResourceAsStream("itemdata/itemstores.xml");
+			String data = new String(strm.readAllBytes(), "UTF-8");
+			strm.close();
+			data = data.replace("http://media.jumpstart.com/", "RS_DATA/");
+			data = data.replace("https://media.jumpstart.com/", "RS_DATA/");
+			data = data.replace("http://media.schoolofdragons.com/", "RS_DATA/");
+			data = data.replace("https://media.schoolofdragons.com/", "RS_DATA/");
+
+			// Load into map
+			XmlMapper mapper = new XmlMapper();
+			ItemStoreDefinitionData[] stores = mapper.reader().readValue(data, ItemStoreDefinitionData[].class);
+
+			// Load stores
+			for (ItemStoreDefinitionData store : stores) {
+				// Load store
+				logger.debug("Loading store: " + store.storeID + " (" + store.storeName + ")");
+				ItemInfo[] items = new ItemInfo[store.items.length];
+				for (int i = 0; i < items.length; i++) {
+					// Register item
+					if (!itemDefs.containsKey(store.items[i].get("id").asInt())) {
+						items[i] = new ItemInfo(store.items[i].get("id").asInt(), store.items[i].get("itn").asText(),
+								store.items[i].get("d").asText(), store.items[i]);
+						itemDefs.put(items[i].getID(), items[i]);
+						logger.debug("Registered item: " + items[i].getID() + ": " + items[i].getName());
+					} else {
+						items[i] = itemDefs.get(store.items[i].get("id").asInt());
+					}
+				}
+				storeDefs.put(store.storeID,
+						new ItemStoreInfo(store.storeID, store.storeName, store.storeDescription, items));
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -911,30 +916,35 @@ public class ItemManagerImpl extends ItemManager {
 
 				// Check type, if this is not a removal request, check fields
 				if (!md.equals("remove")) {
-					if (!trans.has("cost"))
-						throw new IllegalArgumentException(
-								"No 'cost' field present in transformer item! Item ID: " + id);
-					if (!trans.has("currency"))
+					// Verify
+					if (trans.has("cost") && !trans.has("currency"))
 						throw new IllegalArgumentException(
 								"No 'currency' field present in transformer item! Item ID: " + id);
-					if (!trans.get("currency").getAsString().equals("gems")
+					else if (trans.has("cost") && trans.has("currency")
+							&& !trans.get("currency").getAsString().equals("gems")
 							&& !trans.get("currency").getAsString().equals("coins"))
 						throw new IllegalArgumentException(
 								"Invalid currency type in transformer item, expected either 'gems' or 'coins'");
+
+					// Apply
+					ObjectNode newNode = def.getRawObject().deepCopy();
+					if (trans.has("cost")) {
+						newNode.set("ct", new IntNode(-1));
+						newNode.set("ct2", new IntNode(0));
+						if (trans.get("currency").getAsString().equals("coins"))
+							newNode.set("ct", new IntNode(trans.get("cost").getAsInt()));
+						else
+							newNode.set("ct2", new IntNode(trans.get("cost").getAsInt()));
+					}
+
+					// Create new def
+					ItemInfo newDef = new ItemInfo(def.getID(), def.getDescription(), def.getDescription(), newNode);
+					items.put(id, newDef);
+				} else {
+					// Remove
+					if (items.containsKey(id))
+						items.remove(id);
 				}
-
-				// Apply
-				ObjectNode newNode = def.getRawObject().deepCopy();
-				newNode.set("ct", new IntNode(-1));
-				newNode.set("ct2", new IntNode(0));
-				if (trans.get("currency").getAsString().equals("coins"))
-					newNode.set("ct", new IntNode(trans.get("cost").getAsInt()));
-				else
-					newNode.set("ct2", new IntNode(trans.get("cost").getAsInt()));
-
-				// Create new def
-				ItemInfo newDef = new ItemInfo(def.getID(), def.getDescription(), def.getDescription(), newNode);
-				items.put(id, newDef);
 			}
 		}
 
