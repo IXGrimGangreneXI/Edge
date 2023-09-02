@@ -942,8 +942,7 @@ public class ItemManagerImpl extends ItemManager {
 					items.put(id, newDef);
 				} else {
 					// Remove
-					if (items.containsKey(id))
-						items.remove(id);
+					items.remove(id);
 				}
 			}
 		}
