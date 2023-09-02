@@ -38,7 +38,7 @@ dependencies {
 	implementation group: 'org.bouncycastle', name: 'bcpkix-jdk14', version: '1.73'
 }
 
-task installation () {
+/*task installation () {
 	doLast {
 		for (def task : project.tasks) {
 			if (task instanceof AbstractArchiveTask) {
@@ -55,7 +55,7 @@ task installation () {
 }
 
 installation.dependsOn project.tasks.build
-build.finalizedBy installation
+build.finalizedBy installation*/
 
 eclipse {
   jdt {

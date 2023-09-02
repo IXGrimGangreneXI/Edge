@@ -5,6 +5,9 @@ Changes in 1.0.0.A3:
 - Added various account and save management events to the event bus
 - Added various quest events to the event bus
 - Fix certain account data being cached when it shouldn't, this fixes guest migration breaking down
+- With the patches to assets the hatchery should be able to be entered again
+- Guest accounts should be functional again
+- Fishing has been patched
 
 Sentinel changes:
 - Added the Project Edge banner and icon to the launcher (may need reinstall for it to fully work), credits to arrowheadg for the banner and credits to ellenbellen for the icon
@@ -16,3 +19,4 @@ Sentinel changes:
 - Overhauled sentinel's file structure to be more clean
 - Implemented asset de-duping and selection of quality levels to reduce download size
 - Overhauled asset management backend code
+- Implemented archive exporting (an option to export a server folder structure and to export a sga zip file)

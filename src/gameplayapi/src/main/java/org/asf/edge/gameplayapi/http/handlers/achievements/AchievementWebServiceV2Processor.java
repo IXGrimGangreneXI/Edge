@@ -61,7 +61,7 @@ public class AchievementWebServiceV2Processor extends EdgeWebService<EdgeGamepla
 		for (AchievementTaskData reqA : achievementTaskSetRequest.requests) {
 			// TODO: stubbed
 			AchievementTaskSetResponseData resp = new AchievementTaskSetResponseData();
-			resp.success = false;
+			resp.success = new AchievementTaskSetResponseData.BooleanWrapper(false);
 			responses.add(resp);
 		}
 

@@ -1,42 +1,80 @@
 package org.asf.edge.gameplayapi.xmls.achievements;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class AchievementTaskSetResponseData {
 
-	@JacksonXmlProperty(localName = "xmlns", isAttribute = true)
-	private final String xmlns = "";
+	public static class StringWrapper {
+		public StringWrapper() {
+		}
+
+		public StringWrapper(String value) {
+			this.value = value;
+		}
+
+		@JacksonXmlProperty(isAttribute = true)
+		public String xmlns = "";
+
+		@JacksonXmlText
+		public String value;
+	}
+
+	public static class IntWrapper {
+		public IntWrapper() {
+		}
+
+		public IntWrapper(int value) {
+			this.value = value;
+		}
+
+		@JacksonXmlProperty(isAttribute = true)
+		public String xmlns = "";
+
+		@JacksonXmlText
+		public int value;
+	}
+
+	public static class BooleanWrapper {
+		public BooleanWrapper() {
+		}
+
+		public BooleanWrapper(boolean value) {
+			this.value = value;
+		}
+
+		@JacksonXmlProperty(isAttribute = true)
+		public String xmlns = "";
+
+		@JacksonXmlText
+		public boolean value;
+	}
 
 	@JsonProperty("s")
-	public boolean success;
+	public BooleanWrapper success;
 
 	@JsonProperty("u")
-	public boolean userMessage;
+	public BooleanWrapper userMessage;
 
 	@JsonProperty("a")
-	public String achievementName;
+	public StringWrapper achievementName;
 
 	@JsonProperty("l")
-	public int level;
+	public IntWrapper level;
 
 	@JsonProperty("aid")
-	@JsonInclude(Include.NON_DEFAULT)
-	public int achievementTaskGroupID = -1;
+	public IntWrapper achievementTaskGroupID = null;
 
 	@JsonProperty("LL")
-	@JsonInclude(Include.NON_NULL)
-	public String lastLevelCompletedBoolean = null;
+	public StringWrapper lastLevelCompletedBoolean = null;
 
 	@JsonProperty("aiid")
-	@JsonInclude(Include.NON_DEFAULT)
-	public int achievementInfoID = -1;
+	public IntWrapper achievementInfoID = null;
 
 }
