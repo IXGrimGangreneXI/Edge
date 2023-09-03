@@ -2,7 +2,6 @@ package org.asf.edge.gameplayapi.http.handlers.achievements;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.TimeZone;
@@ -21,7 +20,6 @@ import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.tokens.SessionToken;
-import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.common.xmls.achievements.AchievementInfoList;
 import org.asf.edge.common.xmls.achievements.UserRankData;
 import org.asf.edge.common.xmls.achievements.UserRankList;

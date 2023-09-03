@@ -1401,7 +1401,8 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
 	public FunctionResult useInventory(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
-			AccountObject account, @SodRequestParam int userInventoryId, @SodRequestParam int uses) throws IOException {
+			AccountObject account, @SodRequestParam int userInventoryId, @SodRequestParam int numberOfUses)
+			throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
@@ -1430,13 +1431,13 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Check
-		if (uses > usesLeft) {
+		if (numberOfUses > usesLeft) {
 			// Not enough uses left
 			return ok("text/xml", req.generateXmlValue("boolean", false));
 		}
 
 		// Remove uses
-		if (!itm.useItem(uses)) {
+		if (!itm.useItem(numberOfUses)) {
 			// Failed to use item
 			return ok("text/xml", req.generateXmlValue("boolean", false));
 		}

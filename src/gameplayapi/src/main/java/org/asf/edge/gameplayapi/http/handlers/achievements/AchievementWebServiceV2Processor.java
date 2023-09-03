@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import org.apache.logging.log4j.LogManager;
-import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.*;
@@ -38,14 +37,6 @@ public class AchievementWebServiceV2Processor extends EdgeWebService<EdgeGamepla
 	@Override
 	public String path() {
 		return "/v2/AchievementWebService.asmx";
-	}
-
-	@Override
-	public void fallbackRequestProcessor(String path, String method, RemoteClient client, String contentType)
-			throws IOException {
-		// Handle request
-		path = path;
-		setResponseStatus(404, "Not found");
 	}
 
 	@SodRequest

@@ -324,7 +324,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 					Map<String, String> descriptor;
 					try {
 						descriptor = LauncherUtils.parseProperties(
-								LauncherUtils.downloadString(LauncherUtils.urlBaseSoftwareFile + "/softwareinfo"));
+								LauncherUtils.downloadString(LauncherUtils.urlBaseSoftwareFile + "softwareinfo"));
 					} catch (IOException e) {
 						throw new RuntimeException(e);
 					}

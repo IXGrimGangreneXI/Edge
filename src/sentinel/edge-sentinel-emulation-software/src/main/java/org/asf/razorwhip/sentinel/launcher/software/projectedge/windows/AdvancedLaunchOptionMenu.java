@@ -29,6 +29,8 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 
 	public AdvancedLaunchOptionMenu(JDialog parent) {
 		super(parent);
+		setTitle("Launch options");
+		setResizable(false);
 		initialize();
 		setLocationRelativeTo(parent);
 	}
