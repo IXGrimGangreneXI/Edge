@@ -1,9 +1,11 @@
 package org.asf.edge.mmoserver.networking;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.mmoserver.networking.packets.AbstractPacketChannel;
 import org.asf.edge.modules.eventbus.EventBus;
 
 /**
@@ -17,6 +19,17 @@ public abstract class SmartfoxServer {
 
 	private Logger logger = LogManager.getLogger("smartfox-server");
 	private EventBus eventBus = EventBus.getInstance().createBus();
+
+	private ArrayList<AbstractPacketChannel> registry = new ArrayList<AbstractPacketChannel>();
+
+	/**
+	 * Registers packet channels
+	 * 
+	 * @param channel Channel to register
+	 */
+	public void registerChannel(AbstractPacketChannel channel) {
+		registry.add(channel);
+	}
 
 	/**
 	 * Retrieves the server-specific event bus
@@ -79,6 +92,7 @@ public abstract class SmartfoxServer {
 	 */
 	protected void onClientAccepted(SmartfoxClient client) {
 		// Start client
+		client.initRegistry(registry.toArray(t -> new AbstractPacketChannel[t]));
 		client.startClient();
 	}
 

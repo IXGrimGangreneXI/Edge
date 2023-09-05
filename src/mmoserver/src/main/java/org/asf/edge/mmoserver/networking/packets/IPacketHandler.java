@@ -1,18 +1,16 @@
-package org.asf.edge.modules.gridclient.phoenix.networking.packets;
+package org.asf.edge.mmoserver.networking.packets;
 
 import java.io.IOException;
 
-import org.asf.edge.modules.gridclient.phoenix.networking.channels.AbstractPacketChannel;
-
 /**
  * 
- * Phoenix packet handler
+ * Smartfox packet handler
  * 
  * @author Sky Swimmer
  *
  * @param <T> Packet type
  */
-public interface IPacketHandler<T extends IPhoenixPacket> {
+public interface IPacketHandler<T extends ISmartfoxPacket> {
 
 	/**
 	 * Defines the packet class
@@ -25,7 +23,7 @@ public interface IPacketHandler<T extends IPhoenixPacket> {
 	 * Checks if a packet can be handled
 	 * 
 	 * @param packet Packet to handle
-	 * @return True if the packet can be handled, false otherwise
+	 * @return True if the packet can be handled, false otehrwise
 	 */
 	public default boolean canHandle(T packet) {
 		return true;

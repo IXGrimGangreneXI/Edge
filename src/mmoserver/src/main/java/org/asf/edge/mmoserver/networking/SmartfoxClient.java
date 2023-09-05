@@ -1,15 +1,19 @@
 package org.asf.edge.mmoserver.networking;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.mmoserver.events.clients.ClientConnectedEvent;
 import org.asf.edge.mmoserver.events.clients.ClientDisconnectedEvent;
-import org.asf.edge.mmoserver.networking.sfs.SmartfoxNetworkObjectUtil;
-import org.asf.edge.mmoserver.networking.sfs.OuterSmartfoxPacket;
+import org.asf.edge.mmoserver.networking.sfs.SmartfoxPayload;
+import org.asf.edge.mmoserver.networking.impl.channels.SystemChannel;
+import org.asf.edge.mmoserver.networking.impl.channels.system.handlers.ServerboundHandshakeStartPacket;
+import org.asf.edge.mmoserver.networking.packets.AbstractPacketChannel;
+import org.asf.edge.mmoserver.networking.packets.ISmartfoxPacket;
+import org.asf.edge.mmoserver.networking.sfs.SmartfoxPacketData;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,9 +27,30 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public abstract class SmartfoxClient {
 
-	private HashMap<String, Object> memory = new HashMap<String, Object>();
+	private class ChannelDat {
+		public AbstractPacketChannel channel;
+		public CorePacketHandler handler;
+	}
 
+	private HashMap<String, Object> memory = new HashMap<String, Object>();
+	private ArrayList<ChannelDat> registry = new ArrayList<ChannelDat>();
 	private Logger logger = LogManager.getLogger("smartfox-client");
+
+	/**
+	 * Retrieves channels by type
+	 * 
+	 * @param <T>          Channel type
+	 * @param channelClass Channel class
+	 * @return AbstractPacketChannel instance or null
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends AbstractPacketChannel> T getChannel(Class<T> channelClass) {
+		for (ChannelDat ch : registry) {
+			if (channelClass.isAssignableFrom(ch.channel.getClass()))
+				return (T) ch.channel;
+		}
+		return null;
+	}
 
 	/**
 	 * Retrieves the client logger
@@ -132,15 +157,13 @@ public abstract class SmartfoxClient {
 	void startClient() {
 		// Handshake
 		try {
-			// Read first packet
-			byte[] data = readSingleRawPacket();
-
-			// Decode
-			Map<String, Object> obj = SmartfoxNetworkObjectUtil.parseSfsObject(data);
-			OuterSmartfoxPacket handshakePk = OuterSmartfoxPacket.fromSfsObject(obj);
+			// Read handshake
+			SystemChannel channel = getChannel(SystemChannel.class);
+			ServerboundHandshakeStartPacket handshakePk = readPacket(new ServerboundHandshakeStartPacket(),
+					channel.channelID());
 
 			// Handle handshake
-			data = data;
+			handshakePk = handshakePk;
 		} catch (IOException e) {
 			getLogger().error("Failed to handshake client " + getRemoteAddress(), e);
 			disconnect();
@@ -162,30 +185,109 @@ public abstract class SmartfoxClient {
 			}
 
 			// Decode
-			OuterSmartfoxPacket pkt;
+			SmartfoxPacketData pkt;
 			try {
-				pkt = OuterSmartfoxPacket.fromSfsObject(SmartfoxNetworkObjectUtil.parseSfsObject(packet));
+				pkt = SmartfoxPacketData.fromSfsObject(SmartfoxPayload.parseSfsObject(packet));
 			} catch (Exception e) {
-				logger.debug("Error occured while decoding packet: " + bytesToHex(packet) + " from client "
-						+ getRemoteAddress(), e);
+				logger.error("Error occured while decoding packet: " + bytesToHex(packet) + " from client "
+						+ getRemoteAddress() + ", terminating connection!", e);
 				disconnect();
 				return;
 			}
 
 			// Handle
 			try {
-				// TODO
+				boolean handled = false;
+
+				// Find channel
+				for (ChannelDat ch : registry) {
+					if (ch.channel.channelID() == pkt.channelID) {
+						// Found channel
+						ch.handler.handle(pkt.channelID, pkt.packetId, pkt);
+						handled = true;
+						break;
+					}
+				}
+
+				if (!handled) {
+					// Unhandled
+					try {
+						logger.warn("Unhandled packet: " + pkt.channelID + ":" + pkt.packetId + ": ["
+								+ new ObjectMapper().writeValueAsString(pkt.payload) + "], client: "
+								+ getRemoteAddress());
+					} catch (JsonProcessingException e1) {
+					}
+				}
 			} catch (Exception e) {
 				try {
-					logger.debug("Error occured while handling packet: " + pkt.targetController + ":" + pkt.packetId
-							+ " (payload: " + new ObjectMapper().writeValueAsString(pkt.payload) + ") from client "
-							+ getRemoteAddress(), e);
+					logger.error("Error occured while handling packet: " + pkt.channelID + ":" + pkt.packetId + ": ["
+							+ new ObjectMapper().writeValueAsString(pkt.payload) + "], client " + getRemoteAddress(),
+							e);
 				} catch (JsonProcessingException e1) {
 				}
 				disconnect();
 				return;
 			}
 		}
+	}
+
+	private <T extends ISmartfoxPacket> T readPacket(T pkt, int channel) throws IOException {
+		SmartfoxPacketData pk = SmartfoxPacketData.fromSfsObject(SmartfoxPayload.parseSfsObject(readSingleRawPacket()));
+		if (pk.channelID != channel || pk.packetId != pkt.packetID() || !pkt.matches(pk))
+			throw new IOException("Unexpected packet: " + pk.channelID + ":" + pk.packetId);
+		pkt = (T) pkt.createInstance();
+		pkt.parse(pk);
+		return pkt;
+	}
+
+	void initRegistry(AbstractPacketChannel[] channels) {
+		registry.clear();
+
+		// Default channels
+		registry.add(channelEntry(new SystemChannel()));
+
+		// Add channels
+		for (AbstractPacketChannel channel : channels) {
+			// Init
+			channel = channel.createInstance();
+			CorePacketHandler handler = channel.init(this, (ch, packet) -> {
+				// Build pacet
+				SmartfoxPacketData data = new SmartfoxPacketData();
+				data.channelID = ch.channelID();
+				data.packetId = packet.packetID();
+				data.payload = SmartfoxPayload.create();
+				packet.build(data);
+
+				// Write
+				writeSingleRawPacket(data.toSfsObject().encodeToSfsObject());
+			});
+
+			// Add
+			ChannelDat d = new ChannelDat();
+			d.channel = channel;
+			d.handler = handler;
+			registry.add(d);
+		}
+	}
+
+	private ChannelDat channelEntry(AbstractPacketChannel ch) {
+		return new ChannelDat() {
+			{
+				channel = ch;
+
+				handler = channel.init(SmartfoxClient.this, (ch, packet) -> {
+					// Build pacet
+					SmartfoxPacketData data = new SmartfoxPacketData();
+					data.channelID = ch.channelID();
+					data.packetId = packet.packetID();
+					data.payload = SmartfoxPayload.create();
+					packet.build(data);
+
+					// Write
+					writeSingleRawPacket(data.toSfsObject().encodeToSfsObject());
+				});
+			}
+		};
 	}
 
 	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
@@ -199,4 +301,5 @@ public abstract class SmartfoxClient {
 		}
 		return new String(hexChars);
 	}
+
 }

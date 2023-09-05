@@ -236,8 +236,8 @@ public abstract class AbstractPacketChannel {
 												+ AbstractPacketChannel.this.getClass().getTypeName());
 							}
 						}
-					} catch (IOException e) {
-
+					} catch (Exception e) {
+						logger.error("Error occured while handling packet: " + chId + ":" + id, e);
 					}
 				});
 			}

@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class AchievementRewardBlock {
 
-	// 1, 9, 10, 12: achievement points, 2: coins, 5: gems, 6: item, 8: dragon XP
 	@JsonProperty("ai")
 	public int achievementID;
 
@@ -25,6 +24,7 @@ public class AchievementRewardBlock {
 	@JsonProperty("a")
 	public int amount;
 
+	// 1, 9, 10, 12: achievement points, 2: coins, 5: gems, 6: item, 8: dragon XP
 	@JsonProperty("p")
 	@JsonInclude(Include.NON_DEFAULT)
 	public int pointTypeID = -1;

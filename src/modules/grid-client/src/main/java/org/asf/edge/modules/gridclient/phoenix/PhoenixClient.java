@@ -113,6 +113,18 @@ public class PhoenixClient {
 	}
 
 	/**
+	 * Retrieves channels by ID
+	 * 
+	 * @param cId Channel ID
+	 * @return AbstractPacketChannel instance or null
+	 */
+	public AbstractPacketChannel getChannel(int cId) {
+		if (cId >= 0 && cId < registry.size())
+			return registry.keySet().toArray(t -> new AbstractPacketChannel[t])[cId];
+		return null;
+	}
+
+	/**
 	 * Registers packet channels
 	 * 
 	 * @param channel Channel to register
@@ -469,6 +481,66 @@ public class PhoenixClient {
 
 					}
 
+				} else {
+					// Handle packets
+					if (connected) {
+						try {
+							// Get channel
+							AbstractPacketChannel channel = getChannel(cId);
+							if (channel != null) {
+								// Find packet
+								IPhoenixPacket def = channel.getPacketDefinition(pId);
+								if (def != null && !def.lengthPrefixed()) {
+									// Handle unprefixed packet
+									if (connected)
+										if (!handlePacket(cId, pId, reader)) {
+											// Error
+											logger.error("Unhandled packet: " + def.getClass().getTypeName()
+													+ ", channel type name: " + channel.getClass().getTypeName());
+										}
+									continue;
+								} else if (def != null && def.isSynchronized()) {
+									// Read data
+									byte[] packet = reader.readBytes();
+									DataReader rd = new DataReader(new ByteArrayInputStream(packet));
+									if (connected) {
+										if (!handlePacket(cId, pId, rd)) {
+											logger.error("Unhandled packet: " + def.getClass().getTypeName() + ": ["
+													+ bytesToHex(packet) + "], channel type name: "
+													+ channel.getClass().getTypeName());
+										}
+									}
+									continue;
+								}
+							}
+
+							// Read data
+							byte[] packet = reader.readBytes();
+							DataReader rd = new DataReader(new ByteArrayInputStream(packet));
+
+							// Handle
+							AsyncTaskManager.runAsync(() -> {
+								if (!handlePacket(cId, pId, rd)) {
+									AbstractPacketChannel ch = getChannel(cId);
+									if (ch == null)
+										logger.error("Unhandled packet: " + cId + ":" + pId + ": [" + bytesToHex(packet)
+												+ "]");
+									else {
+										IPhoenixPacket pkt = ch.getPacketDefinition(pId);
+										if (pkt != null)
+											logger.error("Unhandled packet: " + pkt.getClass().getTypeName() + ": ["
+													+ bytesToHex(packet) + "], channel type name: "
+													+ ch.getClass().getTypeName());
+										else
+											logger.error(
+													"Unhandled packet: " + cId + ":" + pId + ": [" + bytesToHex(packet)
+															+ "], channel type name: " + ch.getClass().getTypeName());
+									}
+								}
+							});
+						} catch (Exception e) {
+						}
+					}
 				}
 			}
 		});
@@ -507,6 +579,21 @@ public class PhoenixClient {
 		logger.debug("Calling connection success...");
 		getEventBus().dispatchEvent(new ClientConnectedEvent(this));
 		logger.debug("Connection successfully established!");
+	}
+
+	private boolean handlePacket(int cId, int pId, DataReader reader) {
+		try {
+			// Get channel
+			AbstractPacketChannel channel = getChannel(cId);
+			if (channel != null) {
+				registry.get(channel).handle(cId, pId, reader);
+				return true;
+			}
+			return false;
+		} catch (Exception e) {
+			logger.error("Error occured while handling packet: " + cId + ":" + pId, e);
+			return true;
+		}
 	}
 
 	private boolean attemptProgramHandshake() {
