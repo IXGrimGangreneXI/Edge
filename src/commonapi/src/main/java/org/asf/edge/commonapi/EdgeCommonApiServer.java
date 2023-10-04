@@ -1,6 +1,7 @@
 package org.asf.edge.commonapi;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.apache.logging.log4j.LogManager;
@@ -14,6 +15,7 @@ import org.asf.edge.commonapi.http.handlers.api.accounts.*;
 import org.asf.edge.commonapi.http.handlers.api.avatars.*;
 import org.asf.edge.commonapi.http.handlers.api.messaging.*;
 import org.asf.edge.commonapi.http.handlers.internal.*;
+import org.asf.edge.commonapi.util.MmoServerEntry;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.commonapi.events.server.*;
 
@@ -49,6 +51,8 @@ public class EdgeCommonApiServer implements IBaseServer {
 
 	private ConnectiveHttpServer server;
 	private ConnectiveHttpServer internalServer;
+
+	private ArrayList<MmoServerEntry> mmoServers = new ArrayList<MmoServerEntry>();
 
 	@Override
 	public String getVersion() {
@@ -190,6 +194,7 @@ public class EdgeCommonApiServer implements IBaseServer {
 		logger.debug("Configuring internal server request handlers...");
 		internalServer.registerProcessor(new AccountManagerAPI(this));
 		internalServer.registerProcessor(new CommonDataManagerAPI(this));
+		internalServer.registerProcessor(new MmoServerUplinkHandler(this));
 
 		// Select achievement manager
 		logger.info("Setting up achievement manager...");
@@ -354,6 +359,41 @@ public class EdgeCommonApiServer implements IBaseServer {
 		// Wait for server to stop
 		server.waitForExit();
 		internalServer.waitForExit();
+	}
+
+	/**
+	 * Retrieves MMO server entries for server discovery
+	 * 
+	 * @return Array of MmoServerEntry instances
+	 */
+	public MmoServerEntry[] getMmoServers() {
+		synchronized (mmoServers) {
+			return mmoServers.toArray(t -> new MmoServerEntry[t]);
+		}
+	}
+
+	/**
+	 * Adds MMO servers to server discovery
+	 * 
+	 * @param entry Server to add
+	 */
+	public void addMmoServer(MmoServerEntry entry) {
+		synchronized (mmoServers) {
+			mmoServers.add(entry);
+			getLogger().info("Added MMO server " + entry.address + ":" + entry.port + " to server discovery!");
+		}
+	}
+
+	/**
+	 * Removes MMO servers from server discover
+	 * 
+	 * @param entry Server to remove
+	 */
+	public void removeMmoServer(MmoServerEntry entry) {
+		synchronized (mmoServers) {
+			mmoServers.remove(entry);
+			getLogger().info("Removed MMO server " + entry.address + ":" + entry.port + " from server discovery!");
+		}
 	}
 
 }

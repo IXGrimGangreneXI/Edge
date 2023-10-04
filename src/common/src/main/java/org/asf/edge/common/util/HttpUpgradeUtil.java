@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,7 +45,9 @@ public class HttpUpgradeUtil {
 
 		// Write request
 		conn.getOutputStream()
-				.write(("POST " + URLEncoder.encode(u.getFile(), "UTF-8") + " HTTP/1.1\r\n").getBytes("UTF-8"));
+				.write(("POST " + u.getFile()
+						+ (u.getQuery() != null && !u.getQuery().isEmpty() ? "?" + u.getQuery() : "") + " HTTP/1.1\r\n")
+						.getBytes("UTF-8"));
 		conn.getOutputStream().write(("Host: " + u.getHost() + "\r\n").getBytes("UTF-8"));
 		for (String key : requestHeaders.keySet()) {
 			String value = requestHeaders.get(key);

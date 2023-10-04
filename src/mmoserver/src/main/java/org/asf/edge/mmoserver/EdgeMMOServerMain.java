@@ -64,6 +64,8 @@ public class EdgeMMOServerMain {
 					+ "\n" //
 					+ "    \"discoveryAddress\": \"localhost\",\n" // discovery Address
 					+ "    \"discoveryPort\": 5323,\n" // discovery port
+					+ "    \"discoveryRootZone\": \"JumpStart\",\n" // MMO root zone
+					+ "    \"isBackupServer\": false,\n" // is this a backup MMO server?
 					+ "\n" //
 					+ "    \"commonApiUplinkURL\": \"http://127.0.0.1:5324/\",\n" // uplink URL
 					+ "\n" //
@@ -88,6 +90,10 @@ public class EdgeMMOServerMain {
 		config.discoveryAddress = configData.get("discoveryAddress").getAsString();
 		config.discoveryPort = configData.get("discoveryPort").getAsInt();
 		config.commonApiUplinkURL = configData.get("commonApiUplinkURL").getAsString();
+		if (configData.has("isBackupServer"))
+			config.isBackupServer = configData.get("isBackupServer").getAsBoolean();
+		if (configData.has("discoveryRootZone"))
+			config.discoveryRootZone = configData.get("discoveryRootZone").getAsString();
 
 		// Load module settings
 		if (configData.has("modules")) {

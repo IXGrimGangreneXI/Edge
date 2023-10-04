@@ -164,6 +164,8 @@ public class EdgeGlobalServerMain {
 					+ "\n" //
 					+ "        \"discoveryAddress\": \"localhost\",\n" // discovery Address
 					+ "        \"discoveryPort\": 5323,\n" // discovery port
+					+ "        \"discoveryRootZone\": \"JumpStart\",\n" // MMO root zone
+					+ "        \"isBackupServer\": false,\n" // is this a backup MMO server?
 					+ "\n" //
 					+ "        \"commonApiUplinkURL\": \"http://127.0.0.1:5324/\"\n" // uplink URL
 					+ "    },\n" //
@@ -289,6 +291,10 @@ public class EdgeGlobalServerMain {
 			mmoSrvConfig.discoveryAddress = mmoSrvJson.get("discoveryAddress").getAsString();
 			mmoSrvConfig.discoveryPort = mmoSrvJson.get("discoveryPort").getAsInt();
 			mmoSrvConfig.commonApiUplinkURL = mmoSrvJson.get("commonApiUplinkURL").getAsString();
+			if (mmoSrvJson.has("isBackupServer"))
+				mmoSrvConfig.isBackupServer = mmoSrvJson.get("isBackupServer").getAsBoolean();
+			if (mmoSrvJson.has("discoveryRootZone"))
+				mmoSrvConfig.discoveryRootZone = mmoSrvJson.get("discoveryRootZone").getAsString();
 		}
 
 		// Load module settings

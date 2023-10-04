@@ -32,6 +32,16 @@ public class MMOServerConfig {
 	public int discoveryPort = 5323;
 
 	/**
+	 * Determines if this server should be a backup server in server discovery
+	 */
+	public boolean isBackupServer = false;
+
+	/**
+	 * Defines the discovery root zone
+	 */
+	public String discoveryRootZone = "JumpStart";
+
+	/**
 	 * Common API uplink URL (url to the internal server of the common API, used to
 	 * publish the server)
 	 */

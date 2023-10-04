@@ -1,4 +1,4 @@
-package org.asf.edge.modules.gridapi.utils;
+package org.asf.edge.common.io;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,6 +21,16 @@ public class DataWriter {
 
 	public OutputStream getStream() {
 		return output;
+	}
+
+	/**
+	 * Writes a single boolean
+	 * 
+	 * @param value Value to write
+	 * @throws IOException If writing fails
+	 */
+	public void writeBoolean(boolean value) throws IOException {
+		output.write(value ? 1 : 0);
 	}
 
 	/**
