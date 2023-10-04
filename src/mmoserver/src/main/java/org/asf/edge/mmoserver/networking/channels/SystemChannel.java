@@ -1,7 +1,9 @@
 package org.asf.edge.mmoserver.networking.channels;
 
 import org.asf.edge.mmoserver.networking.channels.system.handlers.LoginRequestHandler;
+import org.asf.edge.mmoserver.networking.channels.system.handlers.LogoutHandler;
 import org.asf.edge.mmoserver.networking.channels.system.packets.serverbound.ServerboundLoginRequestPacket;
+import org.asf.edge.mmoserver.networking.channels.system.packets.serverbound.ServerboundLogoutPacket;
 import org.asf.edge.mmoserver.networking.channels.system.packets.serverbound.ServerboundSetRoomVariablePacket;
 import org.asf.edge.mmoserver.networking.packets.AbstractPacketChannel;
 
@@ -21,11 +23,13 @@ public class SystemChannel extends AbstractPacketChannel {
 	protected void registerPackets() {
 		registerPacket(new ServerboundLoginRequestPacket());
 		registerPacket(new ServerboundSetRoomVariablePacket());
+		registerPacket(new ServerboundLogoutPacket());
 	}
 
 	@Override
 	protected void registerPacketHandlers() {
 		registerHandler(new LoginRequestHandler());
+		registerHandler(new LogoutHandler());
 	}
 
 }
