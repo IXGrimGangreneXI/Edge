@@ -23,6 +23,7 @@ import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.util.AvatarDowngrader;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.xmls.auth.UserInfoData;
 import org.asf.edge.commonapi.xmls.data.ProfileData;
@@ -289,6 +290,10 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 		if (data.entryExists("avatar")) {
 			// Load data
 			profile.avatar.avatarData = req.parseXmlValue(data.getEntry("avatar").getAsString(), ObjectNode.class);
+
+			// Downgrade avatar
+			profile.avatar.avatarData = AvatarDowngrader.downgradeAvatar(profile.avatar.avatarData, account, save, 6, 0,
+					0);
 		}
 
 		// Add save info

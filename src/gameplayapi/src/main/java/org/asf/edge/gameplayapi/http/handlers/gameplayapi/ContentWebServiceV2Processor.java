@@ -654,34 +654,20 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
 	}
 
-	@LegacyFunction(allowedMethods = { "POST" })
-	public void setAvatar(LegacyFunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult setAvatar(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn, AccountObject account,
+			AccountSaveContainer save, @SodRequestParam ObjectNode contentXML) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
 
-		// Handle avatar change request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return;
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			setResponseStatus(404, "Not found");
-			return;
-		}
-
-		// Find save
-		AccountSaveContainer save = account.getSave(tkn.saveID);
-
 		// Parse request
-		ObjectNode aviData = req.parseXmlValue(req.payload.get("contentXML"), ObjectNode.class);
+		ObjectNode aviData = contentXML;
 
 		// Find name
 		String name = aviData.get("DisplayName").asText();
@@ -693,8 +679,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			resp.success = false;
 			resp.statusCode = 10;
 			resp.suggestions = null;
-			setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
-			return;
+			return ok("text/xml", req.generateXmlValue("SetAvatarResult", resp));
 		}
 
 		// Check filters
@@ -704,8 +689,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			resp.success = false;
 			resp.statusCode = 10;
 			resp.suggestions = null;
-			setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
-			return;
+			return ok("text/xml", req.generateXmlValue("SetAvatarResult", resp));
 		}
 
 		// Check if not the same
@@ -746,8 +730,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 
 				// Set response
 				resp.suggestions.suggestions = suggestions.toArray(t -> new String[t]);
-				setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
-				return;
+				return ok("text/xml", req.generateXmlValue("SetAvatarResult", resp));
 			}
 
 			// Set username
@@ -757,8 +740,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 				resp.success = false;
 				resp.statusCode = 10;
 				resp.suggestions = null;
-				setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
-				return;
+				return ok("text/xml", req.generateXmlValue("SetAvatarResult", resp));
 			}
 		}
 
@@ -779,7 +761,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		resp.success = true;
 		resp.displayName = name;
 		resp.suggestions = null;
-		setResponseContent("text/xml", req.generateXmlValue("SetAvatarResult", resp));
+		return ok("text/xml", req.generateXmlValue("SetAvatarResult", resp));
 	}
 
 	@LegacyFunction(allowedMethods = { "POST" })

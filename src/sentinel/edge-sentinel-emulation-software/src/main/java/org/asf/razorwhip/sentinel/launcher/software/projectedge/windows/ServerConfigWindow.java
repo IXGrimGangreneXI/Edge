@@ -160,6 +160,7 @@ public class ServerConfigWindow extends JDialog {
 			panel.add(textField_10);
 
 			File edgeConfig = new File("server/server.json");
+			File socialSrvJar = new File("server/libs/socialserver.jar");
 			JButton btnNewButton = new JButton("Save");
 			btnNewButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
@@ -271,20 +272,23 @@ public class ServerConfigWindow extends JDialog {
 						cApiJson.addProperty("listenPort", Integer.parseInt(textField_7.getText()));
 						sfs.addProperty("listenPort", Integer.parseInt(textField_5.getText()));
 
-						// Create social service API if not presenbt
-						if (!configData.has("socialApiServer")) {
-							JsonObject socialApi = new JsonObject();
-							socialApi.addProperty("disabled", false);
-							socialApi.addProperty("listenAddress", "0.0.0.0");
-							socialApi.addProperty("listenPort", 5322);
-							socialApi.addProperty("https", false);
-							socialApi.add("tlsKeystore", JsonNull.INSTANCE);
-							socialApi.add("tlsKeystorePassword", JsonNull.INSTANCE);
-							configData.add("socialApiServer", socialApi);
+						// Social server
+						if (socialSrvJar.exists()) {
+							// Create social service API if not present
+							if (!configData.has("socialApiServer")) {
+								JsonObject socialApi = new JsonObject();
+								socialApi.addProperty("disabled", false);
+								socialApi.addProperty("listenAddress", "0.0.0.0");
+								socialApi.addProperty("listenPort", 5322);
+								socialApi.addProperty("https", false);
+								socialApi.add("tlsKeystore", JsonNull.INSTANCE);
+								socialApi.add("tlsKeystorePassword", JsonNull.INSTANCE);
+								configData.add("socialApiServer", socialApi);
+							}
+							JsonObject sApiJson = configData.get("socialApiServer").getAsJsonObject();
+							sApiJson.addProperty("listenAddress", textField_3.getText());
+							sApiJson.addProperty("listenPort", Integer.parseInt(textField_8.getText()));
 						}
-						JsonObject sApiJson = configData.get("socialApiServer").getAsJsonObject();
-						sApiJson.addProperty("listenAddress", textField_3.getText());
-						sApiJson.addProperty("listenPort", Integer.parseInt(textField_8.getText()));
 
 						// Save
 						Files.writeString(edgeConfig.toPath(),
@@ -333,6 +337,10 @@ public class ServerConfigWindow extends JDialog {
 						JsonObject sApiJson = configData.get("socialApiServer").getAsJsonObject();
 						textField_3.setText(sApiJson.get("listenAddress").getAsString());
 						textField_8.setText(Integer.toString(sApiJson.get("listenPort").getAsInt()));
+					} else if (!socialSrvJar.exists()) {
+						lblSocialApiServer.setText("Social API server (unsupported in this Edge version)");
+						textField_3.setEnabled(false);
+						textField_8.setEnabled(false);
 					}
 					JsonObject sfs = configData.get("mmoServer").getAsJsonObject();
 					textField_4.setText(sfs.get("listenAddress").getAsString());
@@ -340,6 +348,10 @@ public class ServerConfigWindow extends JDialog {
 				} catch (IOException e1) {
 					throw new RuntimeException(e1);
 				}
+			} else if (!socialSrvJar.exists()) {
+				lblSocialApiServer.setText("Social API server (unsupported in this Edge version)");
+				textField_3.setEnabled(false);
+				textField_8.setEnabled(false);
 			}
 
 			if (new File("server/commandline.json").exists()) {

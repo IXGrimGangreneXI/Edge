@@ -115,6 +115,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 
 		// Load edge config
 		File edgeConfig = new File("server/server.json");
+		File socialSrvJar = new File("server/libs/socialserver.jar");
 		if (edgeConfig.exists()) {
 			try {
 				JsonObject configData = JsonParser.parseString(Files.readString(edgeConfig.toPath())).getAsJsonObject();
@@ -148,7 +149,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				gpURL += gpApiJson.get("listenPort").getAsInt();
 
 				// Load social server configuration
-				if (configData.has("socialApiServer")) {
+				if (configData.has("socialApiServer") && socialSrvJar.exists()) {
 					JsonObject sApiJson = configData.get("socialApiServer").getAsJsonObject();
 					String sURL = (sApiJson.get("https").getAsBoolean() ? "https://" : "http://");
 					ip = sApiJson.get("listenAddress").getAsString();
@@ -163,15 +164,21 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 					sURL += sApiJson.get("listenPort").getAsInt();
 
 					// Apply
-					endpointsLocal.achievementServiceEndpoint = sURL;
-					endpointsLocal.itemstoremissionServiceEndpoint = sURL;
+					endpointsLocal.groupsServiceEndpoint = sURL;
+					endpointsLocal.messagingServiceEndpoint = sURL;
+				} else {
+					// Use common API to work around issues with 1.x when there are no social
+					// services in the current Edge server files
+					endpointsLocal.groupsServiceEndpoint = commonURL;
+					endpointsLocal.messagingServiceEndpoint = commonURL;
 				}
 
 				// Apply
-				endpointsLocal.commonServiceEndpoint = commonURL;
-				endpointsLocal.groupsServiceEndpoint = commonURL;
+				endpointsLocal.contentserverServiceEndpoint = gpURL;
+				endpointsLocal.itemstoremissionServiceEndpoint = gpURL;
 				endpointsLocal.achievementServiceEndpoint = gpURL;
-				endpointsLocal.messagingServiceEndpoint = gpURL;
+				endpointsLocal.commonServiceEndpoint = commonURL;
+				endpointsLocal.userServiceEndpoint = commonURL;
 
 				// Load smartfox server config
 				JsonObject mmoSrvJson = configData.get("mmoServer").getAsJsonObject();
@@ -183,6 +190,11 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
+		} else if (!socialSrvJar.exists()) {
+			// Use common API to work around issues with 1.x when there are no social
+			// services in the current Edge server files
+			endpointsLocal.groupsServiceEndpoint = "http://localhost:5321/";
+			endpointsLocal.messagingServiceEndpoint = "http://localhost:5321/";
 		}
 
 		// Log

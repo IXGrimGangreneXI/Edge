@@ -9,6 +9,7 @@ Changes in 1.0.0.A3:
 New features:
 - Implemented support for 1.x dragon mechanics, stats should now persist in 1.x versions
 - Implemented basic quest support for 1.x versions (many thanks to the SoDOff team for pointing out the issues with it)
+- Implemented support for <2.8 avatar data (2.5 and below should have avatars, tho not all versions may work, if there are versions that dont work with avatars, open a bug report)
 - Added a way for modules to determine what type of servers they are running in (EdgeServerEnvironment.hasServerType() can be used for this)
 - Added a method to retrieve the edge version: `EdgeServerEnvironment.getEdgeVersion()`, it will retrieve the current Edge version of the server
 - Added various account and save management events to the event bus
@@ -25,3 +26,5 @@ Sentinel changes:
 - Implemented asset de-duping and selection of quality levels to reduce download size
 - Overhauled asset management backend code
 - Implemented archive exporting (an option to export a server folder structure and to export a sga zip file)
+- Fixed sentinel not fully using remote server configuration
+- Fixed some clients not being modified correctly
