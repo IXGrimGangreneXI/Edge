@@ -481,6 +481,12 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 					o.addProperty("time", System.currentTimeMillis());
 					pairs.add("HubBerkDOFirstCommon", o);
 					data.setEntry("pairs-" + pair, pairs);
+					KeyValuePairData d = new KeyValuePairData();
+					d.key = "HubBerkDOFirstCommon";
+					d.value = "1";
+					d.updateDate = fmt.format(new Date(o.get("time").getAsLong()));
+					data.setEntry("pairs-" + pair, pairs);
+					setData.items = appendTo(setData.items, d);
 				}
 			}
 
@@ -492,12 +498,19 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		} else {
 			// Check
 			if (pair == 2017) {
+				KeyValuePairSetData setData = new KeyValuePairSetData();
+				setData.items = new KeyValuePairData[1];
 				JsonObject pairs = new JsonObject();
 				JsonObject o = new JsonObject();
 				o.addProperty("value", "1");
 				o.addProperty("time", System.currentTimeMillis());
 				pairs.add("HubBerkDOFirstCommon", o);
 				data.setEntry("pairs-" + pair, pairs);
+				KeyValuePairData d = new KeyValuePairData();
+				d.key = "HubBerkDOFirstCommon";
+				d.value = "1";
+				d.updateDate = fmt.format(new Date(o.get("time").getAsLong()));
+				setResponseContent("text/xml", req.generateXmlValue("Pairs", setData));
 			}
 
 			// Not found
@@ -594,7 +607,12 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 						o.addProperty("value", "1");
 						o.addProperty("time", System.currentTimeMillis());
 						pairs.add("HubBerkDOFirstCommon", o);
+						KeyValuePairData d = new KeyValuePairData();
+						d.key = "HubBerkDOFirstCommon";
+						d.value = "1";
+						d.updateDate = fmt.format(new Date(o.get("time").getAsLong()));
 						data.setEntry("pairs-" + pair, pairs);
+						setData.items = appendTo(setData.items, d);
 					}
 				}
 
@@ -606,12 +624,19 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			} else {
 				// Check
 				if (pair == 2017) {
+					KeyValuePairSetData setData = new KeyValuePairSetData();
+					setData.items = new KeyValuePairData[1];
 					JsonObject pairs = new JsonObject();
 					JsonObject o = new JsonObject();
 					o.addProperty("value", "1");
 					o.addProperty("time", System.currentTimeMillis());
 					pairs.add("HubBerkDOFirstCommon", o);
 					data.setEntry("pairs-" + pair, pairs);
+					KeyValuePairData d = new KeyValuePairData();
+					d.key = "HubBerkDOFirstCommon";
+					d.value = "1";
+					d.updateDate = fmt.format(new Date(o.get("time").getAsLong()));
+					setResponseContent("text/xml", req.generateXmlValue("Pairs", setData));
 				}
 
 				// Not found
@@ -1811,6 +1836,17 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Return
 		return ok("text/xml", req.generateXmlValue("boolean", true));
+	}
+
+	private static KeyValuePairData[] appendTo(KeyValuePairData[] arr, KeyValuePairData block) {
+		KeyValuePairData[] newB = new KeyValuePairData[arr.length + 1];
+		for (int i = 0; i < newB.length; i++) {
+			if (i >= arr.length)
+				newB[i] = block;
+			else
+				newB[i] = arr[i];
+		}
+		return newB;
 	}
 
 	private static ItemUpdateBlock[] appendTo(ItemUpdateBlock[] arr, ItemUpdateBlock block) {

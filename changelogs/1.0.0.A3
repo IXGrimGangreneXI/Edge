@@ -3,6 +3,7 @@ Changes in 1.0.0.A3:
 - Fix certain account data being cached when it shouldn't, this fixes guest migration breaking down
 - Fixed random world join infiloads (the cogs after loading screen vanishes) being caused when announcements fail to fetch
 - Guest accounts should be functional again
+- Disabled 1.13 initial intro
 - Fishing has been patched
 - Fixed alpha rally
 
