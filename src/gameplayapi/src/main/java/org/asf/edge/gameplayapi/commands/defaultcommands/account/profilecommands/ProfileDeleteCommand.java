@@ -5,12 +5,12 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.permissions.PermissionLevel;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.commands.IEdgeServerCommand;
-import org.asf.edge.gameplayapi.permissions.PermissionLevel;
 
 import com.google.gson.JsonPrimitive;
 

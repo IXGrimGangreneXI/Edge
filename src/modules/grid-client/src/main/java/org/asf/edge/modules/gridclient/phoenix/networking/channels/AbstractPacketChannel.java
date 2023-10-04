@@ -189,6 +189,7 @@ public abstract class AbstractPacketChannel {
 		this.sendPacketCallback = sender;
 		this.client = client;
 		registerPackets();
+		registerPacketHandlers();
 		return (chId, id, reader) -> {
 			// Find packet
 			IPhoenixPacket pkt = getPacketDefinition(id);

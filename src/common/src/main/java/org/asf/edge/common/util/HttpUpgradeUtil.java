@@ -96,7 +96,7 @@ public class HttpUpgradeUtil {
 		int status = Integer.parseInt(statusLine.split(" ")[1]);
 		if (status != 101) {
 			conn.close();
-			throw new IOException("Server returned HTTP " + line.substring("HTTP/1.1 ".length()));
+			throw new IOException("Server returned HTTP " + statusLine.substring("HTTP/1.1 ".length()));
 		}
 		if (!responseHeadersOutput.containsKey("Upgrade") && !responseHeadersOutput.containsKey("upgrade")) {
 			conn.close();

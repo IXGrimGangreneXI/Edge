@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.mmoserver.networking.SmartfoxClient;
@@ -27,7 +27,7 @@ public class BitswarmSmartfoxServer extends SmartfoxServer {
 //	private DatagramSocket sockUdp;
 	private boolean connected = false;
 
-	private ArrayList<BitswarmClientContainer> clients = new ArrayList<BitswarmClientContainer>();
+	private HashMap<Integer, BitswarmClientContainer> clients = new HashMap<Integer, BitswarmClientContainer>();
 
 	public BitswarmSmartfoxServer(String address, int port) {
 		this.address = address;
@@ -46,11 +46,12 @@ public class BitswarmSmartfoxServer extends SmartfoxServer {
 	}
 
 	@Override
-	public void start() throws IOException {
+	protected void startSrv() throws IOException {
 		if (sockTcp != null) // || sockUdp != null)
 			throw new IOException("Server is already started");
 
 		// Create socket
+		getLogger().debug("Starting server on " + address + ", port " + port + "...");
 		sockTcp = new ServerSocket(port, 0, InetAddress.getByName(address));
 //		try {
 //			sockUdp = new DatagramSocket(port, InetAddress.getByName(address));
@@ -59,6 +60,41 @@ public class BitswarmSmartfoxServer extends SmartfoxServer {
 //			sockTcp = null;
 //		}
 		connected = true;
+
+//		// Read UDP packets
+//		AsyncTaskManager.runAsync(() -> {
+//			while (isRunning()) {
+//				try {
+//					// Read packet
+//					byte[] buf = new byte[sockUdp.getReceiveBufferSize()];
+//					DatagramPacket packet = new DatagramPacket(buf, buf.length);
+//					sockUdp.receive(packet);
+//					int read = packet.getLength();
+//					byte[] data = packet.getData();
+//					data = Arrays.copyOf(data, read);
+//
+//					// Parse
+//					BitswarmClient b = new BitswarmClient(new ByteArrayInputStream(data), null);
+//					data = b.readPacket();
+//
+//					// Parse SFS packet
+//					SmartfoxPayload pkt = SmartfoxPayload.parseSfsObject(data);
+//
+//					// Handle packet
+//					if (pkt.has("u")) {
+//						int userID = pkt.getInt("u");
+//
+//						// Find client
+//						SmartfoxClient sfsCl = this.getClientByNumericID(userID);
+//						if (sfsCl != null) {
+//							// Parse packet
+//							// TODO
+//						}
+//					}
+//				} catch (IOException e) {
+//				}
+//			}
+//		});
 
 		// Accept connections
 		AsyncTaskManager.runAsync(() -> {
@@ -89,12 +125,18 @@ public class BitswarmSmartfoxServer extends SmartfoxServer {
 						client.bitswarmClient = bsCl;
 						client.sfsClient = sfsCl;
 						sfsCl.container = client;
-						synchronized (clients) {
-							clients.add(client);
-						}
 
 						// Accepted
+						// Perform handshake
 						onClientAccepted(sfsCl);
+
+						// Check success
+						if (sfsCl.isConnected()) {
+							// Add
+							synchronized (clients) {
+								clients.put(client.sfsClient.getSessionNumericID(), client);
+							}
+						}
 					} catch (IOException e) {
 						// Failed
 						try {
@@ -105,10 +147,11 @@ public class BitswarmSmartfoxServer extends SmartfoxServer {
 				});
 			}
 		});
+		getLogger().debug("Server online, waiting for clients...");
 	}
 
 	@Override
-	public void stopForced() throws IOException {
+	protected void stopSrvForced() throws IOException {
 		// Check state
 		if (!connected)
 			return;
@@ -126,7 +169,7 @@ public class BitswarmSmartfoxServer extends SmartfoxServer {
 		getLogger().debug("Disconnecting clients...");
 		BitswarmClientContainer[] clientLst;
 		synchronized (clients) {
-			clientLst = clients.toArray(t -> new BitswarmClientContainer[t]);
+			clientLst = clients.values().toArray(t -> new BitswarmClientContainer[t]);
 		}
 		for (BitswarmClientContainer client : clientLst) {
 			try {
@@ -137,6 +180,7 @@ public class BitswarmSmartfoxServer extends SmartfoxServer {
 				client.socket.close();
 			} catch (Exception e) {
 			}
+			client.socket = null;
 		}
 		clients.clear();
 
@@ -147,7 +191,7 @@ public class BitswarmSmartfoxServer extends SmartfoxServer {
 	}
 
 	@Override
-	public void stop() throws IOException {
+	protected void stopSrv() throws IOException {
 		// Check state
 		if (!connected)
 			return;
@@ -164,7 +208,7 @@ public class BitswarmSmartfoxServer extends SmartfoxServer {
 		getLogger().debug("Disconnecting clients...");
 		BitswarmClientContainer[] clientLst;
 		synchronized (clients) {
-			clientLst = clients.toArray(t -> new BitswarmClientContainer[t]);
+			clientLst = clients.values().toArray(t -> new BitswarmClientContainer[t]);
 		}
 		for (BitswarmClientContainer client : clientLst) {
 			try {
@@ -184,19 +228,30 @@ public class BitswarmSmartfoxServer extends SmartfoxServer {
 	@Override
 	public SmartfoxClient[] getClients() {
 		synchronized (clients) {
-			return clients.stream().map(t -> t.sfsClient).toArray(t -> new SmartfoxClient[t]);
+			return clients.values().stream().map(t -> t.sfsClient).toArray(t -> new SmartfoxClient[t]);
 		}
 	}
 
 	void onClientDisconnect(BitswarmSmartfoxClient client) {
 		// Disconnect
 		synchronized (clients) {
-			clients.remove(client.container);
+			clients.remove(client.container.sfsClient.getSessionNumericID());
 		}
 		getLogger().debug("Client disconnected: " + client.getRemoteAddress());
 		try {
 			client.socket.close();
 		} catch (IOException e2) {
+		}
+		client.socket = null;
+	}
+
+	@Override
+	public SmartfoxClient getClientByNumericID(int id) {
+		synchronized (clients) {
+			BitswarmClientContainer c = clients.get(id);
+			if (c == null)
+				return null;
+			return c.sfsClient;
 		}
 	}
 

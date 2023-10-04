@@ -32,12 +32,12 @@ public class SmartfoxPacketData {
 		pkt.packetId = obj.getShort("a");
 		pkt.channelID = obj.getByte("c");
 		pkt.payload = obj.getObject("p");
-		if (obj.has("ec")) {
+		if (pkt.payload.has("ec")) {
 			pkt.hasError = true;
-			pkt.errorCode = SfsErrorCode.fromShort(obj.getShort("ec"));
+			pkt.errorCode = SfsErrorCode.fromShort(pkt.payload.getShort("ec"));
 			pkt.errorParams = new String[0];
-			if (obj.has("ep"))
-				pkt.errorParams = obj.getStringArray("ep");
+			if (pkt.payload.has("ep"))
+				pkt.errorParams = pkt.payload.getStringArray("ep");
 		}
 		return pkt;
 	}
@@ -53,8 +53,8 @@ public class SmartfoxPacketData {
 		mp.setShort("a", packetId);
 		mp.setObject("p", payload);
 		if (hasError) {
-			mp.setShort("ec", errorCode.toShort());
-			mp.setStringArray("ep", errorParams);
+			mp.getObject("p").setShort("ec", errorCode.toShort());
+			mp.getObject("p").setStringArray("ep", errorParams);
 		}
 		return mp;
 	}

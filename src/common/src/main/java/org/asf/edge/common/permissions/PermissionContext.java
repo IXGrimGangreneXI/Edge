@@ -1,4 +1,4 @@
-package org.asf.edge.gameplayapi.permissions;
+package org.asf.edge.common.permissions;
 
 import java.io.IOException;
 import java.util.ArrayList;

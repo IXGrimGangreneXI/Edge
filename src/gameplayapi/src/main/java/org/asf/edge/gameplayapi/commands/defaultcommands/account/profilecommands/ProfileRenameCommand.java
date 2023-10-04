@@ -6,13 +6,13 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.permissions.PermissionLevel;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.commands.IEdgeServerCommand;
-import org.asf.edge.gameplayapi.permissions.PermissionLevel;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;

@@ -231,6 +231,10 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 		}).toArray(t -> new CommonLoginInfo[t]);
 		guestAcc.ping(true);
 
+		// Log
+		getServerInstance().getLogger().info("Guest login from IP " + func.getClient().getRemoteAddress() + " to "
+				+ guestAcc.getAccountID() + ": logged in as guest");
+
 		// Set response
 		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
 	}

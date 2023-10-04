@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.permissions.PermissionContext;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.gameplayapi.commands.defaultcommands.HelpCommand;
@@ -16,7 +17,6 @@ import org.asf.edge.gameplayapi.commands.defaultcommands.administration.RestartC
 import org.asf.edge.gameplayapi.commands.defaultcommands.administration.ShutdownCommand;
 import org.asf.edge.gameplayapi.commands.defaultcommands.debug.DebugCommands;
 import org.asf.edge.gameplayapi.events.commands.CommandSetupEvent;
-import org.asf.edge.gameplayapi.permissions.PermissionContext;
 import org.asf.edge.modules.eventbus.EventBus;
 
 /**

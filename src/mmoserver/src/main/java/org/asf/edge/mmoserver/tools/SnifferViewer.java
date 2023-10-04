@@ -24,16 +24,19 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 
 import java.awt.event.ActionListener;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.InflaterInputStream;
 import java.awt.event.ActionEvent;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
@@ -126,6 +129,41 @@ public class SnifferViewer {
 			srStr += "\n";
 
 			try {
+				byte[] data = this.data;
+				if (type.equals("UDP")) {
+					// Read single bitswarm packet
+					ByteArrayInputStream bbIn = new ByteArrayInputStream(data);
+
+					// Read header
+					int b = bbIn.read();
+					if (b == -1)
+						throw new IOException("Disconnected");
+					boolean encrypted = ((b & 64) > 0);
+					boolean compressed = ((b & 32) > 0);
+					boolean largeSize = ((b & 8) > 0);
+
+					// Read length
+					int length = (largeSize ? ByteBuffer.wrap(bbIn.readNBytes(4)).getInt()
+							: ByteBuffer.wrap(bbIn.readNBytes(2)).getShort());
+
+					// Read body
+					byte[] payload = bbIn.readNBytes(length);
+
+					// Decompress and decrypt
+					if (encrypted)
+						throw new IOException("Encryption not supported");
+					if (compressed) {
+						ByteArrayInputStream bIn = new ByteArrayInputStream(payload);
+						InflaterInputStream inInf = new InflaterInputStream(bIn);
+						payload = inInf.readAllBytes();
+						inInf.close();
+					}
+
+					// Apply
+					data = payload;
+				}
+
+				// To string
 				srStr += new ObjectMapper().writerWithDefaultPrettyPrinter()
 						.writeValueAsString(SmartfoxNetworkObjectUtil.parseSfsObject(data));
 			} catch (IOException e) {
@@ -389,8 +427,8 @@ public class SnifferViewer {
 					if ((!obj.has("time") || !obj.has("host") || !obj.has("port") || !obj.has("side")
 							|| !obj.has("data")) && (obj.has("type") && !obj.get("type").getAsString().equals("http")))
 						throw new IOException("Invalid file");
-					if (obj.has("type") && !obj.get("type").getAsString().equals("bstcp")
-							&& !obj.get("type").getAsString().equals("udp"))
+					if (!obj.has("type") || (!obj.get("type").getAsString().equals("bstcp")
+							&& !obj.get("type").getAsString().equals("udp")))
 						continue;
 
 					// Load object into memory

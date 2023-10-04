@@ -1,4 +1,4 @@
-package org.asf.edge.gameplayapi.permissions;
+package org.asf.edge.common.permissions;
 
 public enum PermissionLevel {
 

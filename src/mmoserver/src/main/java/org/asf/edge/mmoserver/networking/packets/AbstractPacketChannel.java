@@ -1,6 +1,7 @@
 package org.asf.edge.mmoserver.networking.packets;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.function.Function;
 
@@ -185,19 +186,22 @@ public abstract class AbstractPacketChannel {
 		this.sendPacketCallback = sender;
 		this.client = client;
 		registerPackets();
+		registerPacketHandlers();
 		return (chId, id, data) -> {
 			// Find packet
 			boolean foundMatch = false;
 			for (ISmartfoxPacket pkt : packetReg) {
 				if (pkt.packetID() == id && pkt.matches(data)) {
 					pkt = pkt.createInstance();
+					pkt.parse(data);
 
 					// Handle packet
 					if (pkt.isSynchronized()) {
 						if (!handlePacket(pkt)) {
 							logger.error("Unhandled packet: " + pkt.getClass().getTypeName() + ": ["
-									+ new ObjectMapper().writeValueAsString(data.payload) + "], channel type name: "
-									+ getClass().getTypeName() + ", client: " + client.getRemoteAddress());
+									+ new ObjectMapper().writeValueAsString(data.payload.toSfsObject())
+									+ "], channel type name: " + getClass().getTypeName() + ", client: "
+									+ client.getRemoteAddress());
 						}
 					} else {
 						ISmartfoxPacket pktF = pkt;
@@ -205,12 +209,13 @@ public abstract class AbstractPacketChannel {
 							try {
 								if (!handlePacket(pktF)) {
 									logger.error("Unhandled packet: " + pktF.getClass().getTypeName() + ": ["
-											+ new ObjectMapper().writeValueAsString(data.payload)
+											+ new ObjectMapper().writeValueAsString(data.payload.toSfsObject())
 											+ "], channel type name: " + getClass().getTypeName() + ", client: "
 											+ client.getRemoteAddress());
 								}
 							} catch (Exception e) {
-								logger.error("Error occured while handling packet: " + chId + ":" + id, e);
+								if (!(e instanceof SocketException || e instanceof IOException) || client.isConnected())
+									logger.error("Error occured while handling packet: " + chId + ":" + id, e);
 							}
 						});
 					}
@@ -222,7 +227,7 @@ public abstract class AbstractPacketChannel {
 			// Error
 			if (!foundMatch)
 				logger.error("Unregistered packet: " + chId + ":" + id + " ["
-						+ new ObjectMapper().writeValueAsString(data.payload) + "], channel type name: "
+						+ new ObjectMapper().writeValueAsString(data.payload.toSfsObject()) + "], channel type name: "
 						+ getClass().getTypeName() + ", client: " + client.getRemoteAddress());
 		};
 	}

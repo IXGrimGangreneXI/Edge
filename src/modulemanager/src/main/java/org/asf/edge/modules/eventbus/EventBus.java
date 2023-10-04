@@ -50,6 +50,13 @@ public abstract class EventBus {
 	public abstract void addAllEventsFromReceiver(IEventReceiver receiver);
 
 	/**
+	 * Removes all subscribed events from a IEventReceiver object
+	 * 
+	 * @param receiver IEventReceiver to add
+	 */
+	public abstract void removeAllEventsFromReceiver(IEventReceiver receiver);
+
+	/**
 	 * Dispatches a event
 	 * 
 	 * @param event Event to dispatch

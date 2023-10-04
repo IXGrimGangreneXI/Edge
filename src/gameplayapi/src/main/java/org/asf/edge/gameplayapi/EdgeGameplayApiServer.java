@@ -12,8 +12,6 @@ import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.gameplayapi.http.*;
 import org.asf.edge.gameplayapi.http.handlers.gameplayapi.*;
 import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
-import org.asf.edge.gameplayapi.permissions.PermissionContext;
-import org.asf.edge.gameplayapi.permissions.PermissionLevel;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
@@ -24,6 +22,8 @@ import com.google.gson.JsonPrimitive;
 import org.asf.edge.gameplayapi.http.handlers.achievements.*;
 import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.IBaseServer;
+import org.asf.edge.common.permissions.PermissionContext;
+import org.asf.edge.common.permissions.PermissionLevel;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
@@ -56,7 +56,7 @@ import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
  *
  */
 public class EdgeGameplayApiServer implements IBaseServer {
-	public static final String GAMEPLAY_API_VERSION = "1.0.0.A2";
+	public static final String GAMEPLAY_API_VERSION = "1.0.0.A3";
 
 	private Logger logger;
 	private GameplayApiServerConfig config;
@@ -72,7 +72,7 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
 		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
-		System.out.println("            Gameplay API Server Version: 1.0.0.A2            ");
+		System.out.println("            Gameplay API Server Version: 1.0.0.A3            ");
 		System.out.println("                                                             ");
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("");

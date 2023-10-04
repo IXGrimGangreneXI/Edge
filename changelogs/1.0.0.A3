@@ -1,14 +1,18 @@
 Changes in 1.0.0.A3:
 - Renamed 'CommonInit' to 'EdgeServerEnvironment'
-- Added a way for modules to determine what type of servers they are running in (EdgeServerEnvironment.hasServerType() can be used for this)
-- Added a method to retrieve the edge version: `EdgeServerEnvironment.getEdgeVersion()`, it will retrieve the current Edge version of the server
-- Added various account and save management events to the event bus
-- Added various quest events to the event bus
 - Fix certain account data being cached when it shouldn't, this fixes guest migration breaking down
 - With the patches to assets the hatchery should be able to be entered again
 - Guest accounts should be functional again
 - Fishing has been patched
 - Fixed alpha rally
+
+New features:
+- Implemented support for 1.x dragon mechanics, stats should now persist in 1.x versions
+- Implemented basic quest support for 1.x versions (many thanks to the SoDOff team for pointing out the issues with it)
+- Added a way for modules to determine what type of servers they are running in (EdgeServerEnvironment.hasServerType() can be used for this)
+- Added a method to retrieve the edge version: `EdgeServerEnvironment.getEdgeVersion()`, it will retrieve the current Edge version of the server
+- Added various account and save management events to the event bus
+- Added various quest events to the event bus
 
 Sentinel changes:
 - Added the Project Edge banner and icon to the launcher (may need reinstall for it to fully work), credits to arrowheadg for the banner and credits to ellenbellen for the icon

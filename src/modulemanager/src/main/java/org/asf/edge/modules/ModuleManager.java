@@ -238,7 +238,7 @@ public class ModuleManager {
 		}
 		if (updatedDeps) {
 			logger.info("Updated server dependencies, please restart the server.");
-			System.exit(0);
+			System.exit(237);
 		}
 	}
 

@@ -483,56 +483,56 @@ public class SmartfoxNetworkObjectUtil {
 		// Object array
 		case 17: {
 			// Write length
-			Map<String, Object>[] va = (Map<String, Object>[]) value;
+			Object[] va = (Object[]) value;
 			output.write(ByteBuffer.allocate(2).putShort((short) va.length).array());
 
 			// Write data
-			for (Map<String, Object> v : va) {
+			for (Object v : va) {
 				// Find type
 				int t = 0;
-				if (value == null)
+				if (v == null)
 					t = 0;
-				else if (value instanceof Boolean)
+				else if (v instanceof Boolean)
 					t = 1;
-				else if (value instanceof Byte)
+				else if (v instanceof Byte)
 					t = 2;
-				else if (value instanceof Short)
+				else if (v instanceof Short)
 					t = 3;
-				else if (value instanceof Integer)
+				else if (v instanceof Integer)
 					t = 4;
-				else if (value instanceof Long)
+				else if (v instanceof Long)
 					t = 5;
-				else if (value instanceof Float)
+				else if (v instanceof Float)
 					t = 6;
-				else if (value instanceof Double)
+				else if (v instanceof Double)
 					t = 7;
-				else if (value instanceof String) {
-					if (value.toString().length() > Short.MAX_VALUE)
+				else if (v instanceof String) {
+					if (v.toString().length() > Short.MAX_VALUE)
 						throw new IOException(
 								"String '" + value.toString() + "' too long, max length is " + Short.MAX_VALUE);
 					t = 8;
-				} else if (value instanceof boolean[])
+				} else if (v instanceof boolean[])
 					t = 9;
-				else if (value instanceof byte[])
+				else if (v instanceof byte[])
 					t = 10;
-				else if (value instanceof short[])
+				else if (v instanceof short[])
 					t = 11;
-				else if (value instanceof int[])
+				else if (v instanceof int[])
 					t = 12;
-				else if (value instanceof long[])
+				else if (v instanceof long[])
 					t = 13;
-				else if (value instanceof float[])
+				else if (v instanceof float[])
 					t = 14;
-				else if (value instanceof double[])
+				else if (v instanceof double[])
 					t = 15;
-				else if (value instanceof String[]) {
-					for (String str : (String[]) value)
+				else if (v instanceof String[]) {
+					for (String str : (String[]) v)
 						if (str.length() > Short.MAX_VALUE)
 							throw new IOException("String '" + str + "' too long, max length is " + Short.MAX_VALUE);
 					t = 16;
-				} else if (value instanceof Object[])
+				} else if (v instanceof Object[])
 					t = 17;
-				else if (value instanceof Map) {
+				else if (v instanceof Map) {
 					Map<String, Object> mp = (Map<String, Object>) value;
 					if (!mp.containsKey("$C") || !mp.containsKey("$F"))
 						t = 18;

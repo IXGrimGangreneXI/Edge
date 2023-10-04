@@ -41,7 +41,7 @@ import com.google.gson.JsonObject;
 
 public class GridClientModule implements IEdgeModule {
 	public static final String GRID_API_VERSION = "1.0.0.A1";
-	public static final String GRID_SOFTWARE_ID = "edge-phoenix-grid";
+	public static final String GRID_SOFTWARE_ID = "sod-phoenix-grid";
 
 	private Scanner sc = new Scanner(System.in);
 	private Logger logger = LogManager.getLogger("grid-client");

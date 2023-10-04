@@ -2,21 +2,30 @@ package org.asf.edge.mmoserver.networking;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
+import java.util.Random;
+import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.EdgeServerEnvironment;
+import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.mmoserver.events.clients.ClientConnectedEvent;
 import org.asf.edge.mmoserver.events.clients.ClientDisconnectedEvent;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPayload;
-import org.asf.edge.mmoserver.networking.impl.channels.SystemChannel;
-import org.asf.edge.mmoserver.networking.impl.channels.system.handlers.ServerboundHandshakeStartPacket;
+import org.asf.edge.mmoserver.networking.channels.ExtensionChannel;
+import org.asf.edge.mmoserver.networking.channels.SystemChannel;
+import org.asf.edge.mmoserver.networking.channels.system.packets.clientbound.ClientboundHandshakeStartPacket;
+import org.asf.edge.mmoserver.networking.channels.system.packets.serverbound.ServerboundHandshakeStartPacket;
 import org.asf.edge.mmoserver.networking.packets.AbstractPacketChannel;
 import org.asf.edge.mmoserver.networking.packets.ISmartfoxPacket;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPacketData;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 
 /**
  * 
@@ -32,9 +41,31 @@ public abstract class SmartfoxClient {
 		public CorePacketHandler handler;
 	}
 
+	private static Random rnd = new Random();
+
 	private HashMap<String, Object> memory = new HashMap<String, Object>();
 	private ArrayList<ChannelDat> registry = new ArrayList<ChannelDat>();
 	private Logger logger = LogManager.getLogger("smartfox-client");
+	private String sessionID;
+	private int userID;
+
+	/**
+	 * Retrieves the session numeric ID
+	 * 
+	 * @return User ID integer
+	 */
+	public int getSessionNumericID() {
+		return userID;
+	}
+
+	/**
+	 * Retrieves the session ID
+	 * 
+	 * @return Session ID string
+	 */
+	public String getSessionID() {
+		return sessionID;
+	}
 
 	/**
 	 * Retrieves channels by type
@@ -100,8 +131,8 @@ public abstract class SmartfoxClient {
 	public void disconnect() {
 		if (!isConnected())
 			return;
-		callDisconnectEvents();
 		disconnectClient();
+		callDisconnectEvents();
 	}
 
 	/**
@@ -161,9 +192,61 @@ public abstract class SmartfoxClient {
 			SystemChannel channel = getChannel(SystemChannel.class);
 			ServerboundHandshakeStartPacket handshakePk = readPacket(new ServerboundHandshakeStartPacket(),
 					channel.channelID());
+			logger.debug("Client " + getRemoteAddress() + " connected with a " + handshakePk.clientType
+					+ " client, API " + handshakePk.apiVersion);
 
-			// Handle handshake
-			handshakePk = handshakePk;
+			// Prepare response
+			ClientboundHandshakeStartPacket resp = new ClientboundHandshakeStartPacket();
+			resp.compressionThreshold = 2048;
+			resp.maxMessageSize = Integer.MAX_VALUE;
+
+			// Generate session token
+			String id = UUID.randomUUID().toString();
+			while (true) {
+				String idF = id;
+				if (Stream.of(getServer().getClients()).anyMatch(t -> t.getSessionID().equals(idF)))
+					id = UUID.randomUUID().toString();
+				else
+					break;
+			}
+			sessionID = id;
+			int uId = rnd.nextInt();
+			while (true) {
+				int idF = uId;
+				if (Stream.of(getServer().getClients()).anyMatch(t -> t.getSessionNumericID() == idF))
+					uId = rnd.nextInt();
+				else
+					break;
+			}
+			userID = uId;
+
+			// Build header
+			JsonObject headers = new JsonObject();
+			headers.addProperty("alg", "RS256");
+			headers.addProperty("typ", "JWT");
+			String headerD = Base64.getUrlEncoder().withoutPadding()
+					.encodeToString(headers.toString().getBytes("UTF-8"));
+
+			// Build payload
+			JsonObject payload = new JsonObject();
+			payload.addProperty("iat", System.currentTimeMillis() / 1000);
+			payload.addProperty("jti", UUID.randomUUID().toString());
+			payload.addProperty("iss", "EDGE");
+			payload.addProperty("sub", "EDGE_MMO");
+			payload.addProperty("uuid", sessionID);
+
+			// Build
+			String payloadD = Base64.getUrlEncoder().withoutPadding()
+					.encodeToString(payload.toString().getBytes("UTF-8"));
+
+			// Sign
+			String token = headerD + "." + payloadD;
+			String sig = Base64.getUrlEncoder().withoutPadding()
+					.encodeToString(AccountManager.getInstance().signToken(token));
+
+			// Send response
+			resp.sessionToken = token + "." + sig;
+			channel.sendPacket(resp);
 		} catch (IOException e) {
 			getLogger().error("Failed to handshake client " + getRemoteAddress(), e);
 			disconnect();
@@ -187,7 +270,16 @@ public abstract class SmartfoxClient {
 			// Decode
 			SmartfoxPacketData pkt;
 			try {
-				pkt = SmartfoxPacketData.fromSfsObject(SmartfoxPayload.parseSfsObject(packet));
+				SmartfoxPayload pl = SmartfoxPayload.parseSfsObject(packet);
+
+				// Check debug mode
+				if (EdgeServerEnvironment.isInDebugMode()) {
+					// Log
+					logger.debug("C->S: " + new ObjectMapper().writeValueAsString(pl.toSfsObject()));
+				}
+
+				// Decode
+				pkt = SmartfoxPacketData.fromSfsObject(pl);
 			} catch (Exception e) {
 				logger.error("Error occured while decoding packet: " + bytesToHex(packet) + " from client "
 						+ getRemoteAddress() + ", terminating connection!", e);
@@ -213,7 +305,7 @@ public abstract class SmartfoxClient {
 					// Unhandled
 					try {
 						logger.warn("Unhandled packet: " + pkt.channelID + ":" + pkt.packetId + ": ["
-								+ new ObjectMapper().writeValueAsString(pkt.payload) + "], client: "
+								+ new ObjectMapper().writeValueAsString(pkt.payload.toSfsObject()) + "], client: "
 								+ getRemoteAddress());
 					} catch (JsonProcessingException e1) {
 					}
@@ -221,8 +313,8 @@ public abstract class SmartfoxClient {
 			} catch (Exception e) {
 				try {
 					logger.error("Error occured while handling packet: " + pkt.channelID + ":" + pkt.packetId + ": ["
-							+ new ObjectMapper().writeValueAsString(pkt.payload) + "], client " + getRemoteAddress(),
-							e);
+							+ new ObjectMapper().writeValueAsString(pkt.payload.toSfsObject()) + "], client "
+							+ getRemoteAddress(), e);
 				} catch (JsonProcessingException e1) {
 				}
 				disconnect();
@@ -231,8 +323,19 @@ public abstract class SmartfoxClient {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private <T extends ISmartfoxPacket> T readPacket(T pkt, int channel) throws IOException {
-		SmartfoxPacketData pk = SmartfoxPacketData.fromSfsObject(SmartfoxPayload.parseSfsObject(readSingleRawPacket()));
+		// Read packet
+		SmartfoxPayload pl = SmartfoxPayload.parseSfsObject(readSingleRawPacket());
+
+		// Check debug mode
+		if (EdgeServerEnvironment.isInDebugMode()) {
+			// Log
+			logger.debug("C->S: " + new ObjectMapper().writeValueAsString(pl.toSfsObject()));
+		}
+
+		// Parse packet
+		SmartfoxPacketData pk = SmartfoxPacketData.fromSfsObject(pl);
 		if (pk.channelID != channel || pk.packetId != pkt.packetID() || !pkt.matches(pk))
 			throw new IOException("Unexpected packet: " + pk.channelID + ":" + pk.packetId);
 		pkt = (T) pkt.createInstance();
@@ -245,6 +348,7 @@ public abstract class SmartfoxClient {
 
 		// Default channels
 		registry.add(channelEntry(new SystemChannel()));
+		registry.add(channelEntry(new ExtensionChannel()));
 
 		// Add channels
 		for (AbstractPacketChannel channel : channels) {
@@ -257,6 +361,12 @@ public abstract class SmartfoxClient {
 				data.packetId = packet.packetID();
 				data.payload = SmartfoxPayload.create();
 				packet.build(data);
+
+				// Check debug mode
+				if (EdgeServerEnvironment.isInDebugMode()) {
+					// Log
+					logger.debug("S->C: " + new ObjectMapper().writeValueAsString(data.toSfsObject().toSfsObject()));
+				}
 
 				// Write
 				writeSingleRawPacket(data.toSfsObject().encodeToSfsObject());
@@ -282,6 +392,13 @@ public abstract class SmartfoxClient {
 					data.packetId = packet.packetID();
 					data.payload = SmartfoxPayload.create();
 					packet.build(data);
+
+					// Check debug mode
+					if (EdgeServerEnvironment.isInDebugMode()) {
+						// Log
+						logger.debug(
+								"S->C: " + new ObjectMapper().writeValueAsString(data.toSfsObject().toSfsObject()));
+					}
 
 					// Write
 					writeSingleRawPacket(data.toSfsObject().encodeToSfsObject());

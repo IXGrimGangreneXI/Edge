@@ -24,6 +24,7 @@ import org.asf.edge.common.entities.minigamedata.MinigameData;
 import org.asf.edge.common.entities.minigamedata.MinigameDataRequest;
 import org.asf.edge.common.entities.minigamedata.MinigameSaveRequest;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
@@ -62,8 +63,11 @@ import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.Cur
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
+import org.asf.edge.gameplayapi.xmls.quests.MissionData.MissionRulesBlock.PrerequisiteInfoBlock;
+import org.asf.edge.gameplayapi.xmls.quests.MissionData.MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes;
 import org.asf.edge.gameplayapi.xmls.quests.QuestListResponseData;
 import org.asf.edge.gameplayapi.xmls.quests.RequestFilterDataLegacy;
+import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData;
 
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -72,6 +76,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import java.util.function.Predicate;
 
 public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApiServer> {
 
@@ -1285,14 +1290,160 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 						if (addedQuests.contains(quest.getQuestID()))
 							continue;
 
+						// Check quest
+						MissionData questDef = quest.getDef();
+						if (questDef.missionRules != null && questDef.missionRules.prerequisites != null
+								&& Stream.of(questDef.missionRules.prerequisites)
+										.anyMatch(new Predicate<PrerequisiteInfoBlock>() {
+
+											@Override
+											public boolean test(PrerequisiteInfoBlock t) {
+												// Check type
+												if (t.type >= 7)
+													return true;
+												else if (t.type == PrerequisiteRuleTypes.MISSION) {
+													// Get quest
+													MissionData def = questManager
+															.getQuestDef(Integer.parseInt(t.value));
+													if (def == null || Stream.of(def.missionRules.prerequisites)
+															.anyMatch(this)) {
+														// Incompatible
+														return true;
+													}
+												}
+
+												// Compatible
+												return false;
+											}
+
+										})) {
+							// Cannot use this quest in 1.x
+							continue;
+						}
+
 						// Add
 						MissionData d = quest.getData();
+						d.accepted = true;
 						questLst.add(d);
 						addedQuests.add(quest.getQuestID());
 					}
+
+					// Add fishing quest
+					if (!addedQuests.contains(1000)) {
+						MissionData fishing = questManager.getQuestDef(999).copy();
+						fishing.id = 1000;
+						fishing.completed = 1;
+						fishing.version = 1;
+						fishing.acceptanceAchievementID = -1;
+						fishing.achievementID = -1;
+						fishing.accepted = true;
+						questLst.add(fishing);
+					}
 				} else {
-					// Fix for the tutorial, we cannot support full quests
-					questLst.add(questManager.getUserQuest(save, 999).getData());
+					// Add quests
+					for (UserQuestInfo quest : questManager.getActiveQuests(save)) {
+						// Check ID
+						if (addedQuests.contains(quest.getQuestID()))
+							continue;
+
+						// Check quest
+						MissionData questDef = quest.getDef();
+						if (questDef.missionRules != null && questDef.missionRules.prerequisites != null
+								&& Stream.of(questDef.missionRules.prerequisites)
+										.anyMatch(new Predicate<PrerequisiteInfoBlock>() {
+
+											@Override
+											public boolean test(PrerequisiteInfoBlock t) {
+												// Check type
+												if (t.type >= 7)
+													return true;
+												else if (t.type == PrerequisiteRuleTypes.MISSION) {
+													// Get quest
+													MissionData def = questManager
+															.getQuestDef(Integer.parseInt(t.value));
+													if (def == null || Stream.of(def.missionRules.prerequisites)
+															.anyMatch(this)) {
+														// Incompatible
+														return true;
+													}
+												}
+
+												// Compatible
+												return false;
+											}
+
+										})) {
+							// Cannot use this quest in 1.x
+							continue;
+						}
+
+						// Add
+						MissionData d = quest.getData();
+						d.accepted = quest.isStarted();
+						questLst.add(d);
+						addedQuests.add(quest.getQuestID());
+					}
+
+					// Add quests
+					for (UserQuestInfo quest : questManager.getUpcomingQuests(save)) {
+						// Check ID
+						if (addedQuests.contains(quest.getQuestID()))
+							continue;
+
+						// Check quest
+						MissionData questDef = quest.getDef();
+						if (questDef.missionRules != null && questDef.missionRules.prerequisites != null
+								&& Stream.of(questDef.missionRules.prerequisites)
+										.anyMatch(new Predicate<PrerequisiteInfoBlock>() {
+
+											@Override
+											public boolean test(PrerequisiteInfoBlock t) {
+												// Check type
+												if (t.type >= 7)
+													return true;
+												else if (t.type == PrerequisiteRuleTypes.MISSION) {
+													// Get quest
+													MissionData def = questManager
+															.getQuestDef(Integer.parseInt(t.value));
+													if (def == null || Stream.of(def.missionRules.prerequisites)
+															.anyMatch(this)) {
+														// Incompatible
+														return true;
+													}
+												}
+
+												// Compatible
+												return false;
+											}
+
+										})) {
+							// Cannot use this quest in 1.x
+							continue;
+						}
+
+						// Add
+						MissionData d = quest.getData();
+						d.accepted = false;
+						questLst.add(d);
+						addedQuests.add(quest.getQuestID());
+					}
+
+					// Add fishing quest
+					if (!addedQuests.contains(1000)) {
+						MissionData fishing = questManager.getQuestDef(999).copy();
+						fishing.id = 1000;
+						fishing.completed = 1;
+						fishing.version = 1;
+						fishing.acceptanceAchievementID = -1;
+						fishing.achievementID = -1;
+						fishing.accepted = true;
+						questLst.add(fishing);
+					}
+
+					// Add tutorial quest
+					if (!addedQuests.contains(999)) {
+						questLst.add(questManager.getUserQuest(save, 999).getData());
+					}
 				}
 			}
 
@@ -1301,6 +1452,43 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			setResponseContent("text/xml", req.generateXmlValue("UserMissionStateResult", resp));
 		} else {
 			setResponseStatus(404, "Not found");
+		}
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult setTaskState(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam String userId, @SodRequestParam int missionId,
+			@SodRequestParam int taskId, @SodRequestParam boolean completed, @SodRequestParam String xmlPayload)
+			throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+		if (questManager == null)
+			questManager = QuestManager.getInstance();
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userId);
+		if (save != null) {
+			// Load fields
+			int invContainer = Integer.parseInt(req.payload.getOrDefault("ContainerId", "1"));
+
+			// Find quest
+			UserQuestInfo quest = questManager.getUserQuest(save, missionId);
+			if (quest != null) {
+				return ok("text/xml", req.generateXmlValue("SetTaskStateResult", quest.handleTaskCall(taskId,
+						xmlPayload, completed, invContainer, new SetCommonInventoryRequestData[0])));
+			} else {
+				// Not found
+				SetTaskStateResultData resp = new SetTaskStateResultData();
+				resp.success = false;
+				resp.status = SetTaskStateResultData.SetTaskStateResultStatuses.MISSION_STATE_NOT_FOUND;
+				return ok("text/xml", req.generateXmlValue("SetTaskStateResult", resp));
+			}
+		} else {
+			return response(404, "Not found");
 		}
 	}
 

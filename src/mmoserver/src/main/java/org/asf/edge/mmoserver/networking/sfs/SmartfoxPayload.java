@@ -435,16 +435,21 @@ public class SmartfoxPayload {
 	 * @param key Value key
 	 * @return Object array value
 	 */
-	@SuppressWarnings("unchecked")
 	public Object[] getObjectArray(String key) {
 		if (!data.containsKey(key))
 			throw new IllegalArgumentException("Key " + key + " is not present in object");
-		Object[] arr = (Object[]) data.get(key);
-		Object[] ar = new Object[arr.length];
+		return mapObjectsForRead((Object[]) data.get(key));
+	}
+
+	@SuppressWarnings("unchecked")
+	private Object[] mapObjectsForRead(Object[] value) {
+		Object[] ar = new Object[value.length];
 		int i = 0;
-		for (Object obj : arr) {
-			if (obj instanceof Map) {
+		for (Object obj : value) {
+			if (obj instanceof SmartfoxPayload) {
 				obj = SmartfoxPayload.fromObject((Map<String, Object>) obj);
+			} else if (obj instanceof Object[]) {
+				obj = mapObjectsForRead((Object[]) obj);
 			}
 			ar[i++] = obj;
 		}
@@ -458,15 +463,21 @@ public class SmartfoxPayload {
 	 * @param value Value to assign
 	 */
 	public void setObjectArray(String key, Object[] value) {
+		data.put(key, mapObjectsForWrite(value));
+	}
+
+	private Object[] mapObjectsForWrite(Object[] value) {
 		Object[] ar = new Object[value.length];
 		int i = 0;
 		for (Object obj : value) {
 			if (obj instanceof SmartfoxPayload) {
 				obj = ((SmartfoxPayload) obj).toSfsObject();
+			} else if (obj instanceof Object[]) {
+				obj = mapObjectsForWrite((Object[]) obj);
 			}
 			ar[i++] = obj;
 		}
-		data.put(key, ar);
+		return ar;
 	}
 
 	/**

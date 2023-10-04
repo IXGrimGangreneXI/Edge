@@ -6,10 +6,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.mmoserver.events.clients.ClientConnectedEvent;
+import org.asf.edge.mmoserver.events.clients.ClientDisconnectedEvent;
 import org.asf.edge.mmoserver.events.server.MMOServerSetupEvent;
 import org.asf.edge.mmoserver.events.server.MMOServerStartupEvent;
+import org.asf.edge.mmoserver.events.variables.DynamicRoomVariableSetupEvent;
 import org.asf.edge.mmoserver.networking.SmartfoxServer;
 import org.asf.edge.mmoserver.networking.impl.BitswarmSmartfoxServer;
+import org.asf.edge.mmoserver.services.ZoneManager;
+import org.asf.edge.mmoserver.services.impl.ZoneManagerImpl;
 import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonPrimitive;
@@ -26,6 +30,8 @@ import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.common.services.messages.impl.WsMessageServiceImpl;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.mmoserver.config.MMOServerConfig;
+import org.asf.edge.mmoserver.entities.player.PlayerInfo;
+import org.asf.edge.mmoserver.entities.smartfox.RoomVariable;
 
 /**
  * 
@@ -35,7 +41,7 @@ import org.asf.edge.mmoserver.config.MMOServerConfig;
  *
  */
 public class EdgeMMOServer implements IBaseServer {
-	public static final String MMO_SERVER_VERSION = "1.0.0.A2";
+	public static final String MMO_SERVER_VERSION = "1.0.0.A3";
 
 	private Logger logger;
 	private MMOServerConfig config;
@@ -51,7 +57,7 @@ public class EdgeMMOServer implements IBaseServer {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
 		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
-		System.out.println("                 MMO Server Version 1.0.0.A2                 ");
+		System.out.println("                 MMO Server Version 1.0.0.A3                 ");
 		System.out.println("                                                             ");
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("");
@@ -115,7 +121,17 @@ public class EdgeMMOServer implements IBaseServer {
 			// Add object
 			event.getClient().setObject(EdgeMMOServer.class, this);
 		});
-		logger.debug("Configuring server packet handlers...");
+		server.getEventBus().addEventHandler(ClientDisconnectedEvent.class, event -> {
+			// Check
+			PlayerInfo player = event.getClient().getObject(PlayerInfo.class);
+			if (player != null) {
+				// Disconnect player
+				player.disconnect();
+			}
+		});
+
+		// Register packet handlers
+		logger.debug("Configuring server packet channels...");
 		// TODO
 
 		// Select item manager
@@ -133,6 +149,19 @@ public class EdgeMMOServer implements IBaseServer {
 		// Load filter
 		logger.info("Loading text filter...");
 		TextFilterService.getInstance();
+
+		// Attach events
+		logger.info("Attaching room events...");
+		EventBus.getInstance().addEventHandler(DynamicRoomVariableSetupEvent.class, ev -> {
+			// Dynamic variables
+			setupDynamicVar(ev.getDynamicAssignmentKey(), ev.getVariable());
+		});
+
+		// Select zone manager
+		logger.info("Setting up zone manager...");
+		ServiceManager.registerServiceImplementation(ZoneManager.class, new ZoneManagerImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(ZoneManager.class);
 
 		// Server watchdog
 		logger.info("Starting shutdown and restart watchdog...");
@@ -262,6 +291,26 @@ public class EdgeMMOServer implements IBaseServer {
 			} catch (InterruptedException e) {
 				break;
 			}
+	}
+
+	private void setupDynamicVar(String dynamicAssignmentKey, RoomVariable variable) {
+		switch (dynamicAssignmentKey) {
+
+		// WE_ScoutAttack
+		case "sod.rooms.admin.vars.we_scoutattack": {
+			// TODO
+			variable = variable;
+			break;
+		}
+
+		// WEN_ScoutAttack
+		case "sod.rooms.admin.vars.wen_scoutattack": {
+			// TODO
+			variable = variable;
+			break;
+		}
+
+		}
 	}
 
 }

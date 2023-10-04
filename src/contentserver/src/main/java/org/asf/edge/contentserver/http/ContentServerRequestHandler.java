@@ -193,6 +193,7 @@ public class ContentServerRequestHandler extends HttpPushProcessor {
 							fileStream.transferTo(fO);
 							fileStream.close();
 							fO.close();
+
 							fileStream = new FileInputStream(requestedFile);
 						} catch (IOException e) {
 							// Error

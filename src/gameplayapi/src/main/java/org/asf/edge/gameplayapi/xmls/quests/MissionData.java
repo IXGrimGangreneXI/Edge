@@ -1,9 +1,6 @@
 package org.asf.edge.gameplayapi.xmls.quests;
 
-import java.util.UUID;
-
 import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardBlock;
-import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -53,6 +50,7 @@ public class MissionData {
 
 	@JsonProperty("M")
 	@JacksonXmlElementWrapper(useWrapping = false)
+	@JsonInclude(Include.NON_NULL)
 	public MissionData[] childMissions;
 
 	@JsonProperty("Task")

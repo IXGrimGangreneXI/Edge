@@ -31,6 +31,8 @@ import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.http.apihandlerutils.functions.SodRequest;
 import org.asf.edge.common.http.apihandlerutils.functions.SodRequestParam;
 import org.asf.edge.common.http.apihandlerutils.functions.SodTokenSecured;
+import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireCapability;
+import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireSave;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
@@ -51,6 +53,8 @@ import org.asf.edge.gameplayapi.xmls.dragons.CreatePetResponseData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetCreateRequestData;
+import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateRequestData;
+import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
@@ -1253,4 +1257,124 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		return ok("text/xml", req.generateXmlValue("GameDataSummary", resp));
 	}
 
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	@Function(allowedMethods = { "POST" })
+	public FunctionResult setRaisedPet(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, AccountSaveContainer save, @SodRequestParam DragonData raisedPetData)
+			throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Load save data
+		AccountDataContainer data = save.getSaveData();
+
+		// Prepare response
+		PetUpdateResponseData resp = new PetUpdateResponseData();
+		resp.raisedPetSetResult = 1;
+
+		// Pull dragons
+		data = data.getChildContainer("dragons");
+		JsonArray dragonIds = new JsonArray();
+		if (data.entryExists("dragonlist"))
+			dragonIds = data.getEntry("dragonlist").getAsJsonArray();
+		else
+			data.setEntry("dragonlist", dragonIds);
+
+		// Find id
+		int id = raisedPetData.id;
+		if (!data.entryExists("dragon-" + id)) {
+			// Error
+			resp.raisedPetSetResult = 3;
+			resp.errorMessage = "Dragon ID not found";
+			return ok("text/xml", req.generateXmlValue("SetRaisedPetResponse", resp));
+		}
+
+		// Check filter
+		if (TextFilterService.getInstance().isFiltered(raisedPetData.name, true)) {
+			// Error
+			resp.raisedPetSetResult = 4;
+			resp.errorMessage = "Invalid name";
+			return ok("text/xml", req.generateXmlValue("SetRaisedPetResponse", resp));
+		}
+
+		// Read dragon data
+		DragonData cdragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(), DragonData.class);
+		if (!cdragon.name.equals(raisedPetData.name)) {
+			// Check name
+			String newName = raisedPetData.name;
+			if (newName.length() > 100 || newName.replace(" ", "").length() < 1) {
+				// Error
+				resp.raisedPetSetResult = 4;
+				resp.errorMessage = "Invalid name";
+				return ok("text/xml", req.generateXmlValue("SetRaisedPetResponse", resp));
+			}
+		}
+
+		// Fill fields
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+		DragonData dragonUpdate = raisedPetData;
+
+		// Merge data
+		if (dragonUpdate.accessories != null)
+			cdragon.accessories = dragonUpdate.accessories;
+		if (dragonUpdate.attributes != null) {
+			if (cdragon.attributes == null)
+				cdragon.attributes = new ObjectNode[0];
+
+			// Apply attributes
+			for (ObjectNode attr : dragonUpdate.attributes) {
+				String key = attr.get("k").asText();
+				Optional<ObjectNode> optA = Stream.of(cdragon.attributes).filter(t -> t.get("k").asText().equals(key))
+						.findFirst();
+				if (optA.isPresent()) {
+					// Update
+					optA.get().set("v", attr.get("v"));
+					optA.get().set("dt", attr.get("dt"));
+				} else {
+					// Add
+					int i = 0;
+					ObjectNode[] newA = new ObjectNode[cdragon.attributes.length + 1];
+					for (i = 0; i < cdragon.attributes.length; i++)
+						newA[i] = cdragon.attributes[i];
+					newA[i] = attr;
+					cdragon.attributes = newA;
+				}
+			}
+		}
+		if (dragonUpdate.colors != null)
+			cdragon.colors = dragonUpdate.colors;
+		if (dragonUpdate.gender != null)
+			cdragon.gender = dragonUpdate.gender;
+		if (dragonUpdate.geometry != null)
+			cdragon.geometry = dragonUpdate.geometry;
+		if (dragonUpdate.texture != null)
+			cdragon.texture = dragonUpdate.texture;
+		if (dragonUpdate.skills != null)
+			cdragon.skills = dragonUpdate.skills;
+		if (dragonUpdate.growthState != null)
+			cdragon.growthState = dragonUpdate.growthState;
+		if (dragonUpdate.imagePosition != null)
+			cdragon.imagePosition = dragonUpdate.imagePosition;
+		if (dragonUpdate.states != null)
+			cdragon.states = dragonUpdate.states;
+		if (dragonUpdate.typeID != null)
+			cdragon.typeID = dragonUpdate.typeID;
+		if (dragonUpdate.name != null)
+			cdragon.name = dragonUpdate.name;
+
+		// Set update time
+		cdragon.updateDate = fmt.format(new Date()); // Update time
+
+		// Save dragon
+		data.setEntry("dragon-" + id, new JsonPrimitive(req.generateXmlValue("RaisedPetData", cdragon)));
+
+		// Set response
+		return ok("text/xml", req.generateXmlValue("SetRaisedPetResponse", resp));
+	}
 }

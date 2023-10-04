@@ -115,7 +115,7 @@ public class EdgeServerEnvironment {
 	 * 
 	 * @return True if in debug mode, false otherwise
 	 */
-	public boolean isInDebugMode() {
+	public static boolean isInDebugMode() {
 		return debugMode;
 	}
 
