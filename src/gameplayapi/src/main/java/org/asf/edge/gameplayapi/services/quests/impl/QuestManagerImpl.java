@@ -1016,9 +1016,20 @@ public class QuestManagerImpl extends QuestManager {
 				return resp;
 			}
 
+			// Load payload
+			JsonObject payload = questInfoData.get("payload").getAsJsonObject();
+			JsonObject tasksBase;
+			if (payload.has("tasks"))
+				tasksBase = payload.get("tasks").getAsJsonObject();
+			else {
+				tasksBase = new JsonObject();
+				payload.add("tasks", tasksBase);
+			}
+
 			// Security checks
-			if (isCompleted() && (mission.repeatable == null || mission.repeatable.equalsIgnoreCase("false"))) {
-				// Mission already completed
+			if (isCompleted() && (mission.repeatable == null || mission.repeatable.equalsIgnoreCase("false"))
+					&& !tasksBase.has(Integer.toString(taskID))) {
+				// Mission already completed, and not trying to update
 				SetTaskStateResultData resp = new SetTaskStateResultData();
 				resp.success = false;
 				resp.status = SetTaskStateResultData.SetTaskStateResultStatuses.NON_REPEATABLE_MISSION;
@@ -1032,16 +1043,7 @@ public class QuestManagerImpl extends QuestManager {
 				startQuest();
 			}
 
-			// Update task
-			// Load payload
-			JsonObject payload = questInfoData.get("payload").getAsJsonObject();
-			JsonObject tasksBase;
-			if (payload.has("tasks"))
-				tasksBase = payload.get("tasks").getAsJsonObject();
-			else {
-				tasksBase = new JsonObject();
-				payload.add("tasks", tasksBase);
-			}
+			// Load task payload
 			JsonObject taskPayload;
 			if (tasksBase.has(Integer.toString(taskID)))
 				taskPayload = tasksBase.get(Integer.toString(taskID)).getAsJsonObject();
@@ -1049,9 +1051,14 @@ public class QuestManagerImpl extends QuestManager {
 				taskPayload = new JsonObject();
 				tasksBase.add(Integer.toString(taskID), taskPayload);
 			}
+
+			// Update task
 			taskPayload.addProperty("payload", payloadStr);
-			taskPayload.addProperty("completed", completed);
-			task.completed = completed ? 1 : 0;
+			if (completed) {
+				taskPayload.addProperty("completed", true);
+				task.completed = 1;
+			} else
+				task.completed = taskPayload.has("completed") && taskPayload.get("completed").getAsBoolean() ? 1 : 0;
 			task.payload = payloadStr;
 
 			// Save

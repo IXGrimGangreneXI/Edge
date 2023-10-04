@@ -473,12 +473,33 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 				setData.items[i++] = p;
 			}
 
+			// Check
+			if (pair == 2017) {
+				if (!Stream.of(setData.items).anyMatch(t -> t.key.equals("HubBerkDOFirstCommon"))) {
+					JsonObject o = new JsonObject();
+					o.addProperty("value", "1");
+					o.addProperty("time", System.currentTimeMillis());
+					pairs.add("HubBerkDOFirstCommon", o);
+					data.setEntry("pairs-" + pair, pairs);
+				}
+			}
+
 			// Set response
 			if (setData.items.length != 0)
 				setResponseContent("text/xml", req.generateXmlValue("Pairs", setData));
 			else
 				setResponseContent("text/xml", req.generateXmlValue("Pairs", new EmptyKeyValuePairSetData()));
 		} else {
+			// Check
+			if (pair == 2017) {
+				JsonObject pairs = new JsonObject();
+				JsonObject o = new JsonObject();
+				o.addProperty("value", "1");
+				o.addProperty("time", System.currentTimeMillis());
+				pairs.add("HubBerkDOFirstCommon", o);
+				data.setEntry("pairs-" + pair, pairs);
+			}
+
 			// Not found
 			setResponseContent("text/xml", req.generateXmlValue("Pairs", new EmptyKeyValuePairSetData()));
 		}
@@ -566,12 +587,33 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 					setData.items[i++] = p;
 				}
 
+				// Check
+				if (pair == 2017) {
+					if (!Stream.of(setData.items).anyMatch(t -> t.key.equals("HubBerkDOFirstCommon"))) {
+						JsonObject o = new JsonObject();
+						o.addProperty("value", "1");
+						o.addProperty("time", System.currentTimeMillis());
+						pairs.add("HubBerkDOFirstCommon", o);
+						data.setEntry("pairs-" + pair, pairs);
+					}
+				}
+
 				// Set response
 				if (setData.items.length != 0)
 					setResponseContent("text/xml", req.generateXmlValue("Pairs", setData));
 				else
 					setResponseContent("text/xml", req.generateXmlValue("Pairs", new EmptyKeyValuePairSetData()));
 			} else {
+				// Check
+				if (pair == 2017) {
+					JsonObject pairs = new JsonObject();
+					JsonObject o = new JsonObject();
+					o.addProperty("value", "1");
+					o.addProperty("time", System.currentTimeMillis());
+					pairs.add("HubBerkDOFirstCommon", o);
+					data.setEntry("pairs-" + pair, pairs);
+				}
+
 				// Not found
 				setResponseContent("text/xml", req.generateXmlValue("Pairs", new EmptyKeyValuePairSetData()));
 			}

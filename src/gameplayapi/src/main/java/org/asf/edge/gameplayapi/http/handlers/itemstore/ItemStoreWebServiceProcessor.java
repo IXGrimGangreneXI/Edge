@@ -26,9 +26,13 @@ import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.tokens.SessionToken;
+import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.xmls.items.GetStoreRequestData;
 import org.asf.edge.gameplayapi.xmls.items.GetStoreResponseData;
@@ -81,6 +85,35 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 		String data = new String(strm.readAllBytes(), "UTF-8");
 		strm.close();
 		setResponseContent("text/xml", data);
+	}
+
+	@LegacyFunction(allowedMethods = { "POST" })
+	public void getAnnouncementsByUser(LegacyFunctionInfo info) throws IOException {
+		// Handle request
+		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		if (req == null)
+			return;
+		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
+
+		// Read token
+		SessionToken tkn = new SessionToken();
+		TokenParseResult res = tkn.parseToken(apiToken);
+		AccountObject account = tkn.account;
+		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+		AccountSaveContainer save = account.getSave(tkn.saveID);
+		if (save == null) {
+			// Error
+			setResponseStatus(404, "Not found");
+			return;
+		}
+
+		// FIXME: dummied
+		setResponseContent("text/xml", "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n"
+				+ "<Announcements xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" />");
 	}
 
 	private static synchronized void initPopularItemManager() {

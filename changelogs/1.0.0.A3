@@ -1,7 +1,7 @@
 Changes in 1.0.0.A3:
 - Renamed 'CommonInit' to 'EdgeServerEnvironment'
 - Fix certain account data being cached when it shouldn't, this fixes guest migration breaking down
-- With the patches to assets the hatchery should be able to be entered again
+- Fixed random world join infiloads (the cogs after loading screen vanishes) being caused when announcements fail to fetch
 - Guest accounts should be functional again
 - Fishing has been patched
 - Fixed alpha rally
@@ -9,6 +9,7 @@ Changes in 1.0.0.A3:
 Fixed quests:
 - Fixed missing rewards for the second quest of Friendship Festival 2023 (many thanks to the SoDOff team for helping us out!!!)
 - Fixed the 'Hatch your Egg' quest not being completed (many thanks to the SoDOff team for helping us out!!!)
+- Fixed lab quests breaking the game (many thanks to the SoDOff team for helping us out!!!)
 
 New features:
 - Implemented support for 1.x dragon mechanics, stats should now persist in 1.x versions
