@@ -63,7 +63,7 @@ public class MMOServerInfoBlock {
 	public IntWrapper port;
 
 	@JsonProperty("VR")
-	public StringWrapper protocolVersion = new StringWrapper("S2x");
+	public StringWrapper protocolVersion = new StringWrapper("S2X");
 
 	@JsonProperty("DF")
 	public BooleanWrapper isDefault;
