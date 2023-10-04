@@ -20,6 +20,8 @@ import org.asf.edge.common.xmls.messages.MessageInfoData;
 import org.asf.edge.gameplayapi.commands.CommandContext;
 import org.asf.edge.gameplayapi.commands.IEdgeServerCommand;
 import org.asf.edge.gameplayapi.commands.TaskBasedCommand;
+import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
+import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
@@ -195,6 +197,54 @@ public class DebugCommands extends TaskBasedCommand {
 						} catch (Exception e) {
 						}
 						return "Test errored";
+					}
+
+				}, new IEdgeServerCommand() {
+
+					@Override
+					public String id() {
+						return "resetquest";
+					}
+
+					@Override
+					public String syntax(CommandContext ctx) {
+						return "<quest ID>";
+					}
+
+					@Override
+					public String description(CommandContext ctx) {
+						return "Resets quests";
+					}
+
+					@Override
+					public PermissionLevel permLevel() {
+						return PermissionLevel.ADMINISTRATOR;
+					}
+
+					@Override
+					public String permNode() {
+						return "commands.admin.debugcommands";
+					}
+
+					@Override
+					public String run(String[] args, CommandContext ctx, Logger logger,
+							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs) {
+						// Check
+						if (!ctx.getCommandMemory().containsKey("active_profile")) {
+							outputWriteLineCallback.accept(
+									"Error: no active profile, please use 'profiles select' before using this command");
+							return null;
+						}
+						AccountSaveContainer save = AccountManager.getInstance()
+								.getAccount(ctx.getCommandMemory().get("active_account").toString())
+								.getSave(ctx.getCommandMemory().get("active_profile").toString());
+						UserQuestInfo q = QuestManager.getInstance().getUserQuest(save, Integer.parseInt(args[0]));
+						if (q == null) {
+							outputWriteLineCallback.accept("Error: invalid quest, quest not recognized");
+							return null;
+						}
+						q.resetQuest();
+						return "Done";
 					}
 
 				}, new IEdgeServerCommand() {

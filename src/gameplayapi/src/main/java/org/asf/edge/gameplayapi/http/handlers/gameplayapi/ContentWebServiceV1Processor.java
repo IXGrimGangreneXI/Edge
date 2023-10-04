@@ -1,6 +1,7 @@
 package org.asf.edge.gameplayapi.http.handlers.gameplayapi;
 
 import java.io.IOException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -1146,7 +1147,17 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Set response
-		setResponseContent("text/xml", data.getEntry("imageslotinfo-" + slot + "-" + type).getAsString());
+		ObjectNode imgD = req.parseXmlValue(data.getEntry("imageslotinfo-" + slot + "-" + type).getAsString(),
+				ObjectNode.class);
+		if (imgD.has("ImageURL")) {
+			// Make relative to host
+			URL u = new URL(imgD.get("ImageURL").asText());
+			String prot = "http://";
+			if (getServerInstance().getServer() instanceof TlsSecuredHttpServer)
+				prot = "https://";
+			imgD.put("ImageURL", prot + getHeader("Host") + "/" + u.getFile());
+		}
+		setResponseContent("text/xml", req.generateXmlValue("ImageData", imgD));
 	}
 
 	@LegacyFunction(allowedMethods = { "POST" })

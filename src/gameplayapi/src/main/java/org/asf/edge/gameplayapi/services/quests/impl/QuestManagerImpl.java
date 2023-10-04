@@ -1439,45 +1439,60 @@ public class QuestManagerImpl extends QuestManager {
 		@Override
 		public void resetQuest() {
 			// Reset
-			questInfoData = new JsonObject();
-			questInfoData.addProperty("completed", false);
-			questInfoData.addProperty("accepted", false);
-			questInfoData.addProperty("started", false);
-			questInfoData.add("payload", new JsonObject());
+			questReset(this, QuestManagerImpl.this);
+
+			// Recompute
+			AsyncTaskManager.runAsync(() -> {
+				recomputeQuests(save);
+			});
+		}
+
+		private static void questReset(UserQuestInfoImpl quest, QuestManager manager) {
+			// Reset
+			quest.questInfoData = new JsonObject();
+			quest.questInfoData.addProperty("completed", false);
+			quest.questInfoData.addProperty("accepted", false);
+			quest.questInfoData.addProperty("started", false);
+			quest.questInfoData.add("payload", new JsonObject());
 
 			try {
 				// Remove completed
 				JsonArray completedQuests;
-				if (!data.entryExists("completedquests")) {
+				if (!quest.data.entryExists("completedquests")) {
 					completedQuests = new JsonArray();
 				} else
-					completedQuests = data.getEntry("completedquests").getAsJsonArray();
+					completedQuests = quest.data.getEntry("completedquests").getAsJsonArray();
 				boolean found = false;
 				for (JsonElement ele : completedQuests) {
-					if (ele.getAsInt() == def.id) {
+					if (ele.getAsInt() == quest.def.id) {
 						found = true;
 						completedQuests.remove(ele);
 						break;
 					}
 				}
 				if (found) {
-					completedQuests.add(def.id);
-					data.setEntry("completedquests", completedQuests);
+					completedQuests.add(quest.def.id);
+					quest.data.setEntry("completedquests", completedQuests);
 				}
 
 				// Save
-				data.setEntry("quest-" + def.id, questInfoData);
+				quest.data.setEntry("quest-" + quest.def.id, quest.questInfoData);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 
 			// Dispatch event
-			EventBus.getInstance().dispatchEvent(new QuestResetEvent(this, save, QuestManagerImpl.this));
+			EventBus.getInstance().dispatchEvent(new QuestResetEvent(quest, quest.save, manager));
 
-			// Recompute
-			AsyncTaskManager.runAsync(() -> {
-				recomputeQuests(save);
-			});
+			// Reset child quests
+			if (quest.def.childMissions != null) {
+				for (MissionData ch : quest.def.childMissions) {
+					// Reset
+					UserQuestInfoImpl q = (UserQuestInfoImpl) manager.getUserQuest(quest.save, ch.id);
+					questReset(q, manager);
+				}
+			}
+
 		}
 
 	}
