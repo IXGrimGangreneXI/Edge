@@ -31,7 +31,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 	}
 
 	@Override
-	public PlayerRoomInfo[] getPlayerRooms(AccountSaveContainer save) {
+	public PlayerRoomInfo[] getRooms(AccountSaveContainer save) {
 		ArrayList<PlayerRoomInfo> rooms = new ArrayList<PlayerRoomInfo>();
 		try {
 			// Load data

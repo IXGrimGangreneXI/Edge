@@ -29,7 +29,7 @@ public abstract class PlayerRoomManager extends AbstractService {
 	 * @param save Player save
 	 * @return Array of PlayerRoomInfo instances
 	 */
-	public abstract PlayerRoomInfo[] getPlayerRooms(AccountSaveContainer save);
+	public abstract PlayerRoomInfo[] getRooms(AccountSaveContainer save);
 
 	/**
 	 * Creates or retrieves player rooms

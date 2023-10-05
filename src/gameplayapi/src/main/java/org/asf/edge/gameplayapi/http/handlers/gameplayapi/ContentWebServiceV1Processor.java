@@ -80,6 +80,10 @@ import org.asf.edge.gameplayapi.xmls.rooms.RoomItemData.ItemStateBlock;
 import org.asf.edge.gameplayapi.xmls.rooms.RoomItemList;
 import org.asf.edge.gameplayapi.xmls.rooms.RoomItemUpdateRequestData;
 import org.asf.edge.gameplayapi.xmls.rooms.RoomItemUpdateResponseData;
+import org.asf.edge.gameplayapi.xmls.rooms.RoomList;
+import org.asf.edge.gameplayapi.xmls.rooms.RoomListEntryData;
+import org.asf.edge.gameplayapi.xmls.rooms.RoomListRequestData;
+import org.asf.edge.gameplayapi.xmls.rooms.RoomUpdateResponseData;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
@@ -1855,6 +1859,62 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 	@SodRequest
 	@SodTokenSecured
+	public FunctionResult getUserRoomList(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam RoomListRequestData request) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (roomManager == null)
+			roomManager = PlayerRoomManager.getInstance();
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(request.userID.toString());
+		if (save == null)
+			return ok("text/xml", req.generateXmlValue("URR", new RoomList()));
+
+		// Create list
+		RoomList list = new RoomList();
+		ArrayList<RoomListEntryData> rooms = new ArrayList<RoomListEntryData>();
+		for (PlayerRoomInfo room : roomManager.getRooms(save)) {
+			if (room.getCategoryID() != request.categoryID)
+				continue;
+			RoomListEntryData entry = new RoomListEntryData();
+			entry.roomID = room.getID();
+			entry.name = room.getName();
+			entry.itemID = room.getItemID();
+			entry.creativePoints = room.getCreativePoints();
+			entry.categoryID = room.getCategoryID();
+			rooms.add(entry);
+		}
+		list.rooms = rooms.toArray(t -> new RoomListEntryData[t]);
+		return ok("text/xml", req.generateXmlValue("URR", list));
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult setUserRoom(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, AccountSaveContainer save, @SodRequestParam RoomListEntryData request)
+			throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (roomManager == null)
+			roomManager = PlayerRoomManager.getInstance();
+
+		// Find room
+		PlayerRoomInfo room = roomManager.createOrGetRoom(request.roomID, request.categoryID, save);
+
+		// Update room
+		room.setName(request.name);
+		room.setCreativePoints(request.creativePoints);
+		room.setItemID(request.itemID);
+
+		// Send response
+		return ok("text/xml", req.generateXmlValue("URSR", new RoomUpdateResponseData()));
+	}
+
+	@SodRequest
+	@SodTokenSecured
 	public FunctionResult getUserRoomItemPositions(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId, @SodRequestParam String roomID) throws IOException {
 		if (manager == null)
@@ -2121,7 +2181,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		if (raw.has("is")) {
 			// Has states
 			ArrayList<ObjectNode> states = new ArrayList<ObjectNode>();
-			JsonNode node = raw.get("at");
+			JsonNode node = raw.get("is");
 			if (node.isArray()) {
 				// Go through all nodes
 				for (JsonNode n : node) {
