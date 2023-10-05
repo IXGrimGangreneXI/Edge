@@ -2183,28 +2183,15 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		info.position = new Vector3D(crReq.posX.value, crReq.posY.value, crReq.posZ.value);
 		info.rotation = new Vector3D(crReq.rotX.value, crReq.rotY.value, crReq.rotZ.value);
 
-		// Find best state
-		boolean addedState = false;
-		ItemDefData raw = def.getRawObject();
-		if (raw.states.length >= 1) {
-			// Assign first
-			info.currentStateID = raw.states[0].stateID;
-			addedState = true;
-		}
-
-		// Use supplied states
+		// Set states
 		if (crReq.itemState != null) {
 			// Assign
 			info.currentStateID = crReq.itemState.itemStateID;
-			addedState = true;
+			info.lastStateChange = System.currentTimeMillis();
 		}
 
-		// Add modification time
-		if (addedState)
-			info.lastStateChange = System.currentTimeMillis();
-
 		// Create state block
-		if (addedState) {
+		if (info.currentStateID != -1) {
 			ItemStateBlock stateBlock = new ItemStateBlock();
 			stateBlock.itemStateID = info.currentStateID;
 			stateBlock.stateChangeDate = fmt.format(new Date(info.lastStateChange));
