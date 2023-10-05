@@ -1,4 +1,4 @@
-package org.asf.edge.mmoserver.entities.coordinates;
+package org.asf.edge.common.entities.coordinates;
 
 public class Vector3D {
 

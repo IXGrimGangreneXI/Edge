@@ -1,24 +1,26 @@
-package org.asf.edge.gameplayapi.xmls.data;
+package org.asf.edge.gameplayapi.xmls.rooms;
+
+import org.asf.edge.gameplayapi.xmls.rooms.RoomItemData.ItemStateBlock;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-public class KeyValuePairSetData {
+public class RoomItemUpdateResponseData {
 
-	@JacksonXmlProperty(isAttribute = true)
-	public String xmlns = "";
+	@JsonProperty("s")
+	public boolean success;
 
-	@JsonProperty("Pair")
-	@JsonInclude(Include.NON_NULL)
+	@JsonProperty("ids")
 	@JacksonXmlElementWrapper(useWrapping = false)
-	public KeyValuePairData[] items;
+	public int[] createdRoomItemIDs;
+
+	@JsonProperty("uciis")
+	@JacksonXmlElementWrapper(useWrapping = false)
+	public ItemStateBlock[] states;
 
 }

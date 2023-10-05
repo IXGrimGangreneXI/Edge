@@ -1,7 +1,7 @@
 package org.asf.edge.mmoserver.io;
 
-import org.asf.edge.mmoserver.entities.coordinates.Quaternion4D;
-import org.asf.edge.mmoserver.entities.coordinates.Vector3D;
+import org.asf.edge.common.entities.coordinates.Quaternion4D;
+import org.asf.edge.common.entities.coordinates.Vector3D;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPayload;
 
 /**

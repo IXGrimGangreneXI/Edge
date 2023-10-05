@@ -1,8 +1,6 @@
-package org.asf.edge.gameplayapi.xmls.data;
+package org.asf.edge.gameplayapi.xmls.rooms;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -11,14 +9,13 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-public class KeyValuePairSetData {
+public class RoomItemList {
 
-	@JacksonXmlProperty(isAttribute = true)
-	public String xmlns = "";
+	@JacksonXmlProperty(localName = "xmlns", isAttribute = true)
+	private final String xmlns = "http://api.jumpstart.com/";
 
-	@JsonProperty("Pair")
-	@JsonInclude(Include.NON_NULL)
+	@JsonProperty("UserItemPosition")
 	@JacksonXmlElementWrapper(useWrapping = false)
-	public KeyValuePairData[] items;
+	public RoomItemData[] roomItems = new RoomItemData[0];
 
 }

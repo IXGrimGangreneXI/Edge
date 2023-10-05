@@ -9,14 +9,17 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.TlsSecuredHttpServer;
 import org.asf.connective.processors.HttpPushProcessor;
+import org.asf.edge.common.entities.coordinates.Vector3D;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
@@ -46,7 +49,10 @@ import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
+import org.asf.edge.gameplayapi.entities.rooms.PlayerRoomInfo;
+import org.asf.edge.gameplayapi.entities.rooms.RoomItemInfo;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
+import org.asf.edge.gameplayapi.services.rooms.PlayerRoomManager;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
 import org.asf.edge.gameplayapi.xmls.data.KeyValuePairData;
@@ -69,7 +75,13 @@ import org.asf.edge.gameplayapi.xmls.quests.MissionData.MissionRulesBlock.Prereq
 import org.asf.edge.gameplayapi.xmls.quests.QuestListResponseData;
 import org.asf.edge.gameplayapi.xmls.quests.RequestFilterDataLegacy;
 import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData;
+import org.asf.edge.gameplayapi.xmls.rooms.RoomItemData;
+import org.asf.edge.gameplayapi.xmls.rooms.RoomItemData.ItemStateBlock;
+import org.asf.edge.gameplayapi.xmls.rooms.RoomItemList;
+import org.asf.edge.gameplayapi.xmls.rooms.RoomItemUpdateRequestData;
+import org.asf.edge.gameplayapi.xmls.rooms.RoomItemUpdateResponseData;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -82,8 +94,11 @@ import java.util.function.Predicate;
 public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApiServer> {
 
 	private static AccountManager manager;
+	private static PlayerRoomManager roomManager;
 	private static ItemManager itemManager;
 	private static QuestManager questManager;
+
+	private static Random rnd = new Random();
 
 	public ContentWebServiceV1Processor(EdgeGameplayApiServer server) {
 		super(server);
@@ -1815,7 +1830,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			manager = AccountManager.getInstance();
 
 		// Retrieve container
-		AccountSaveContainer save = account.getSave(userId);
+		AccountSaveContainer save = manager.getSaveByID(userId);
 		if (save == null)
 			return ok("text/xml", req.generateXmlValue("boolean", false));
 
@@ -1836,6 +1851,322 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Return
 		return ok("text/xml", req.generateXmlValue("boolean", true));
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	public FunctionResult getUserRoomItemPositions(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam String userId, @SodRequestParam String roomID) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (roomManager == null)
+			roomManager = PlayerRoomManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Retrieve container
+		AccountSaveContainer save = account.getSave(userId);
+		if (save == null)
+			return ok("text/xml", req.generateXmlValue("ArrayOfUserItemPosition", new RoomItemList()));
+
+		// Find room
+		if (!roomManager.roomExists(roomID, save))
+			return ok("text/xml", req.generateXmlValue("ArrayOfUserItemPosition", new RoomItemList()));
+		PlayerRoomInfo room = roomManager.getRoom(roomID, save);
+
+		// Return
+		RoomItemList list = new RoomItemList();
+		RoomItemInfo[] items = room.getItems();
+		ArrayList<Integer> addingItems = new ArrayList<Integer>();
+		ArrayList<RoomItemData> itmData = new ArrayList<RoomItemData>();
+		for (RoomItemInfo data : items)
+			addItem(itmData, data, items, save, addingItems);
+		list.roomItems = itmData.toArray(t -> new RoomItemData[t]);
+		return ok("text/xml", req.generateXmlValue("ArrayOfUserItemPosition", list));
+
+	}
+
+	private void addItem(ArrayList<RoomItemData> itmData, RoomItemInfo it, RoomItemInfo[] itms,
+			AccountSaveContainer save, ArrayList<Integer> addingItems) {
+		// Check
+		if (addingItems.contains(it.roomItemID))
+			return;
+		addingItems.add(it.roomItemID);
+
+		// Add parent if needed
+		if (it.parentID != -1 && Stream.of(itms).anyMatch(t -> t.roomItemID == it.parentID)) {
+			RoomItemInfo p = Stream.of(itms).filter(t -> t.roomItemID == it.parentID).findFirst().get();
+			addItem(itmData, p, itms, save, addingItems);
+		}
+
+		// Create item
+		RoomItemData d = new RoomItemData();
+		d.itemPositionID = new RoomItemData.IntWrapper(it.roomItemID);
+		if (it.parentID != -1)
+			d.parentID = new RoomItemData.IntWrapper(it.parentID);
+		if (it.itemID != -1)
+			d.itemID = new RoomItemData.IntWrapper(it.itemID);
+		if (it.itemUniqueID != -1) {
+			d.itemUniqueID = new RoomItemData.IntWrapper(it.itemUniqueID);
+			d.itemDef = new RoomItemData.ItemDataBlockWrapper();
+			d.itemDef.itemDef = save.getInventory().getContainer(1).getItem(it.itemUniqueID).getItemDef()
+					.getRawObject();
+		}
+		if (it.uses != -1)
+			d.uses = new RoomItemData.IntWrapper(it.uses);
+		if (it.inventoryModificationDate != null)
+			d.inventoryModificationDate = new RoomItemData.StringWrapper(it.inventoryModificationDate);
+		if (it.itemAttributes != null)
+			d.itemAttributes = it.itemAttributes;
+		if (it.itemStats != null)
+			d.itemStats = it.itemStats;
+		d.posX = new RoomItemData.DoubleWrapper(it.position.x);
+		d.posY = new RoomItemData.DoubleWrapper(it.position.y);
+		d.posZ = new RoomItemData.DoubleWrapper(it.position.z);
+		d.rotX = new RoomItemData.DoubleWrapper(it.rotation.x);
+		d.rotY = new RoomItemData.DoubleWrapper(it.rotation.y);
+		d.rotZ = new RoomItemData.DoubleWrapper(it.rotation.z);
+		d.itemState = new RoomItemData.ItemStateBlock();
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		d.itemState.itemStateID = it.currentStateID;
+		d.itemState.stateChangeDate = fmt.format(new Date(it.lastStateChange));
+		d.itemState.itemDefID = it.itemID;
+		d.itemState.itemUniqueID = it.itemUniqueID;
+		d.itemState.itemPositionID = it.roomItemID;
+		itmData.add(d);
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult setUserRoomItemPositions(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, AccountSaveContainer save, @SodRequestParam String roomID,
+			@SodRequestParam RoomItemUpdateRequestData[] createXml,
+			@SodRequestParam RoomItemUpdateRequestData[] updateXml, @SodRequestParam int[] removeXml)
+			throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (roomManager == null)
+			roomManager = PlayerRoomManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Response
+		RoomItemUpdateResponseData resp = new RoomItemUpdateResponseData();
+		LinkedHashMap<Integer, ItemStateBlock> states = new LinkedHashMap<Integer, ItemStateBlock>();
+		resp.success = true;
+
+		// Find room
+		PlayerRoomInfo room = roomManager.createOrGetRoom(roomID, -1, save);
+		HashMap<Integer, RoomItemInfo> newItemData = new HashMap<Integer, RoomItemInfo>();
+		for (RoomItemInfo itm : room.getItems())
+			newItemData.put(itm.roomItemID, itm);
+
+		// Check create requests
+		ArrayList<RoomItemUpdateRequestData> ls = new ArrayList<RoomItemUpdateRequestData>();
+		for (RoomItemUpdateRequestData crReq : createXml) {
+			if (!handleCreate(newItemData, room, save, crReq, createXml, resp, ls, states)) {
+				// Invalid
+				resp.success = false;
+				return ok("text/xml", req.generateXmlValue("UIPSRS", resp));
+			}
+		}
+
+		// Handle update requests
+		for (RoomItemUpdateRequestData crReq : updateXml) {
+			// Check
+			if (crReq.itemPositionID == null || !newItemData.containsKey(crReq.itemPositionID.value)) {
+				// Invalid
+				resp.success = false;
+				return ok("text/xml", req.generateXmlValue("UIPSRS", resp));
+			}
+
+			// Find data
+			RoomItemInfo info = newItemData.get(crReq.itemPositionID.value);
+
+			// Assign item fields
+			if (crReq.uses != null)
+				info.uses = crReq.uses.value;
+			if (crReq.inventoryModificationDate != null)
+				info.inventoryModificationDate = crReq.inventoryModificationDate.value;
+			if (crReq.itemAttributes != null)
+				info.itemAttributes = crReq.itemAttributes;
+			if (crReq.itemStats != null)
+				info.itemStats = crReq.itemStats;
+
+			// Load item
+			ItemInfo def = itemManager.getItemDefinition(info.itemID);
+			if (def == null) {
+				// Invalid
+				resp.success = false;
+				return ok("text/xml", req.generateXmlValue("UIPSRS", resp));
+			}
+
+			// Populate position and rotation
+			info.position = new Vector3D(crReq.posX.value, crReq.posY.value, crReq.posZ.value);
+			info.rotation = new Vector3D(crReq.rotX.value, crReq.rotY.value, crReq.rotZ.value);
+
+			// Use supplied states
+			boolean addedState = false;
+			if (crReq.itemState != null) {
+				// Assign
+				info.currentStateID = crReq.itemState.itemStateID;
+				addedState = true;
+			}
+
+			// Add modification time
+			if (addedState)
+				info.lastStateChange = System.currentTimeMillis();
+		}
+
+		// Handle removal requests
+		for (int id : removeXml) {
+			// Check
+			if (!newItemData.containsKey(id)) {
+				resp.success = false;
+				return ok("text/xml", req.generateXmlValue("UIPSRS", resp));
+			}
+
+			// Remove
+			newItemData.remove(id);
+		}
+
+		// Return
+		if (resp.success) {
+			// Add to response
+			int i = 0;
+			resp.createdRoomItemIDs = new int[states.size()];
+			resp.states = new ItemStateBlock[states.size()];
+			for (int roomItemID : states.keySet()) {
+				resp.states[i] = states.get(roomItemID);
+				resp.createdRoomItemIDs[i++] = roomItemID;
+			}
+
+			// Save
+			room.setItems(newItemData.values().toArray(t -> new RoomItemInfo[t]));
+		}
+		String res = req.generateXmlValue("UIPSRS", resp);
+		return ok("text/xml", res);
+	}
+
+	private boolean handleCreate(HashMap<Integer, RoomItemInfo> newItemData, PlayerRoomInfo room,
+			AccountSaveContainer save, RoomItemUpdateRequestData crReq, RoomItemUpdateRequestData[] createXml,
+			RoomItemUpdateResponseData resp, ArrayList<RoomItemUpdateRequestData> addedItems,
+			LinkedHashMap<Integer, ItemStateBlock> statesL) {
+		// Check
+		if (addedItems.contains(crReq))
+			return true;
+		addedItems.add(crReq);
+
+		// Create object
+		RoomItemInfo info = new RoomItemInfo();
+
+		// If present, find parent
+		if (crReq.parentIndex != null) {
+			// Verify
+			int ind = crReq.parentIndex.value;
+			if (ind < 0 || ind > createXml.length) {
+				// Invalid
+				return false;
+			}
+
+			// Found parent index
+			if (!handleCreate(newItemData, room, save, createXml[ind], createXml, resp, addedItems, statesL))
+				return false;
+
+			// Assign parent
+			info.parentID = createXml[ind].result.roomItemID;
+		} else if (crReq.parentID != null) {
+			// Verify
+			if (!newItemData.containsKey(crReq.parentID.value)) {
+				// Invalid
+				return false;
+			}
+
+			// Assign parent
+			info.parentID = crReq.parentID.value;
+		}
+
+		// Create ID
+		int id = rnd.nextInt(0, Integer.MAX_VALUE);
+		while (newItemData.containsKey(id))
+			id = rnd.nextInt(0, Integer.MAX_VALUE);
+		info.roomItemID = id;
+
+		// Assign item fields
+		info.itemID = crReq.itemID.value;
+		info.itemUniqueID = crReq.itemUniqueID.value;
+		if (crReq.uses != null)
+			info.uses = crReq.uses.value;
+		if (crReq.inventoryModificationDate != null)
+			info.inventoryModificationDate = crReq.inventoryModificationDate.value;
+		if (crReq.itemAttributes != null)
+			info.itemAttributes = crReq.itemAttributes;
+		if (crReq.itemStats != null)
+			info.itemStats = crReq.itemStats;
+
+		// Load item
+		ItemInfo def = itemManager.getItemDefinition(info.itemID);
+		if (def == null)
+			return false; // Invalid
+
+		// Populate position and rotation
+		info.position = new Vector3D(crReq.posX.value, crReq.posY.value, crReq.posZ.value);
+		info.rotation = new Vector3D(crReq.rotX.value, crReq.rotY.value, crReq.rotZ.value);
+
+		// Find best state
+		boolean addedState = false;
+		ObjectNode raw = def.getRawObject();
+		if (raw.has("is")) {
+			// Has states
+			ArrayList<ObjectNode> states = new ArrayList<ObjectNode>();
+			JsonNode node = raw.get("at");
+			if (node.isArray()) {
+				// Go through all nodes
+				for (JsonNode n : node) {
+					if (n.has("ItemStateID")) {
+						states.add((ObjectNode) n);
+					}
+				}
+			} else if (node.has("ItemStateID")) {
+				// Go through single item
+				states.add((ObjectNode) node);
+			}
+
+			// Check
+			if (states.size() >= 1) {
+				// Assign first
+				info.currentStateID = states.get(0).get("ItemStateID").asInt();
+				addedState = true;
+			}
+		}
+
+		// Use supplied states
+		if (crReq.itemState != null) {
+			// Assign
+			info.currentStateID = crReq.itemState.itemStateID;
+			addedState = true;
+		}
+
+		// Add modification time
+		if (addedState)
+			info.lastStateChange = System.currentTimeMillis();
+
+		// Create state block
+		ItemStateBlock stateBlock = new ItemStateBlock();
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		stateBlock.itemStateID = info.currentStateID;
+		stateBlock.stateChangeDate = fmt.format(new Date(info.lastStateChange));
+		stateBlock.itemDefID = info.itemID;
+		stateBlock.itemUniqueID = info.itemUniqueID;
+		stateBlock.itemPositionID = info.roomItemID;
+
+		// Success
+		crReq.result = info;
+		newItemData.put(info.roomItemID, info);
+		statesL.put(info.roomItemID, stateBlock);
+		return true;
 	}
 
 	private static KeyValuePairData[] appendTo(KeyValuePairData[] arr, KeyValuePairData block) {

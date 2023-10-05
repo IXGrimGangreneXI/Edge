@@ -14,6 +14,8 @@ import org.asf.edge.gameplayapi.http.handlers.gameplayapi.*;
 import org.asf.edge.gameplayapi.http.handlers.itemstore.*;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
+import org.asf.edge.gameplayapi.services.rooms.PlayerRoomManager;
+import org.asf.edge.gameplayapi.services.rooms.impl.PlayerRoomManagerImpl;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.modules.eventbus.EventBus;
 
@@ -190,6 +192,12 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		ServiceManager.registerServiceImplementation(QuestManager.class, new QuestManagerImpl(),
 				ServiceImplementationPriorityLevels.DEFAULT);
 		ServiceManager.selectServiceImplementation(QuestManager.class);
+
+		// Select room manager
+		logger.info("Setting up player room manager...");
+		ServiceManager.registerServiceImplementation(PlayerRoomManager.class, new PlayerRoomManagerImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(PlayerRoomManager.class);
 
 		// Select achievement manager
 		logger.info("Setting up achievement manager...");

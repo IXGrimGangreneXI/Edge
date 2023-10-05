@@ -20,7 +20,6 @@ import org.asf.edge.mmoserver.networking.channels.SystemChannel;
 import org.asf.edge.mmoserver.networking.channels.system.packets.clientbound.ClientboundHandshakeStartPacket;
 import org.asf.edge.mmoserver.networking.channels.system.packets.serverbound.ServerboundHandshakeStartPacket;
 import org.asf.edge.mmoserver.networking.packets.AbstractPacketChannel;
-import org.asf.edge.mmoserver.networking.packets.ISmartfoxPacket;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPacketData;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -186,12 +185,35 @@ public abstract class SmartfoxClient {
 	protected abstract void writeSingleRawPacket(byte[] packet) throws IOException;
 
 	void startClient() {
+		SmartfoxPayload pl;
+		try {
+			// Read packet
+			pl = SmartfoxPayload.parseSfsObject(readSingleRawPacket());
+
+			// Check debug mode
+			if (EdgeServerEnvironment.isInDebugMode()) {
+				// Log
+				logger.debug("C->S: " + new ObjectMapper().writeValueAsString(pl.toSfsObject()));
+			}
+		} catch (IOException e) {
+			disconnect();
+			return;
+		}
+
 		// Handshake
 		try {
 			// Read handshake
 			SystemChannel channel = getChannel(SystemChannel.class);
-			ServerboundHandshakeStartPacket handshakePk = readPacket(new ServerboundHandshakeStartPacket(),
-					channel.channelID());
+
+			// Parse packet
+			SmartfoxPacketData pk = SmartfoxPacketData.fromSfsObject(pl);
+			ServerboundHandshakeStartPacket pkt = new ServerboundHandshakeStartPacket();
+			if (pk.channelID != channel.channelID() || pk.packetId != pkt.packetID() || !pkt.matches(pk))
+				throw new IOException("Unexpected packet: " + pk.channelID + ":" + pk.packetId);
+			pkt = (ServerboundHandshakeStartPacket) pkt.createInstance();
+			pkt.parse(pk);
+
+			ServerboundHandshakeStartPacket handshakePk = pkt;
 			logger.debug("Client " + getRemoteAddress() + " connected with a " + handshakePk.clientType
 					+ " client, API " + handshakePk.apiVersion);
 
@@ -270,7 +292,8 @@ public abstract class SmartfoxClient {
 			// Decode
 			SmartfoxPacketData pkt;
 			try {
-				SmartfoxPayload pl = SmartfoxPayload.parseSfsObject(packet);
+				// Decode packet
+				pl = SmartfoxPayload.parseSfsObject(packet);
 
 				// Check debug mode
 				if (EdgeServerEnvironment.isInDebugMode()) {
@@ -321,26 +344,6 @@ public abstract class SmartfoxClient {
 				return;
 			}
 		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T extends ISmartfoxPacket> T readPacket(T pkt, int channel) throws IOException {
-		// Read packet
-		SmartfoxPayload pl = SmartfoxPayload.parseSfsObject(readSingleRawPacket());
-
-		// Check debug mode
-		if (EdgeServerEnvironment.isInDebugMode()) {
-			// Log
-			logger.debug("C->S: " + new ObjectMapper().writeValueAsString(pl.toSfsObject()));
-		}
-
-		// Parse packet
-		SmartfoxPacketData pk = SmartfoxPacketData.fromSfsObject(pl);
-		if (pk.channelID != channel || pk.packetId != pkt.packetID() || !pkt.matches(pk))
-			throw new IOException("Unexpected packet: " + pk.channelID + ":" + pk.packetId);
-		pkt = (T) pkt.createInstance();
-		pkt.parse(pk);
-		return pkt;
 	}
 
 	void initRegistry(AbstractPacketChannel[] channels) {
