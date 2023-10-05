@@ -66,6 +66,13 @@ public abstract class PlayerRoomInfo {
 	public abstract void setName(String newName);
 
 	/**
+	 * Updates the room category ID
+	 * 
+	 * @param newID New room category ID
+	 */
+	public abstract void setCategoryID(int newID);
+
+	/**
 	 * Updates the room item ID
 	 * 
 	 * @param newID New room item ID

@@ -9,7 +9,6 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -1908,6 +1907,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		room.setName(request.name);
 		room.setCreativePoints(request.creativePoints);
 		room.setItemID(request.itemID);
+		room.setCategoryID(request.categoryID);
 
 		// Send response
 		return ok("text/xml", req.generateXmlValue("URSR", new RoomUpdateResponseData()));
@@ -1942,7 +1942,8 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		for (RoomItemInfo data : items)
 			addItem(itmData, data, items, save, addingItems);
 		list.roomItems = itmData.toArray(t -> new RoomItemData[t]);
-		return ok("text/xml", req.generateXmlValue("ArrayOfUserItemPosition", list));
+		String res = req.generateXmlValue("ArrayOfUserItemPosition", list);
+		return ok("text/xml", res);
 
 	}
 
@@ -1970,8 +1971,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			d.itemUniqueID = new RoomItemData.IntWrapper(it.itemUniqueID);
 			d.itemDef = save.getInventory().getContainer(1).getItem(it.itemUniqueID).getItemDef().getRawObject();
 		}
-		if (it.uses != -1)
-			d.uses = new RoomItemData.IntWrapper(it.uses);
+		d.uses = new RoomItemData.IntWrapper(it.uses);
 		if (it.inventoryModificationDate != null)
 			d.inventoryModificationDate = new RoomItemData.StringWrapper(it.inventoryModificationDate);
 		if (it.itemAttributes != null)
@@ -1984,13 +1984,15 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		d.rotX = new RoomItemData.DoubleWrapper(it.rotation.x);
 		d.rotY = new RoomItemData.DoubleWrapper(it.rotation.y);
 		d.rotZ = new RoomItemData.DoubleWrapper(it.rotation.z);
-		d.itemState = new RoomItemData.ItemStateBlock();
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
-		d.itemState.itemStateID = it.currentStateID;
-		d.itemState.stateChangeDate = fmt.format(new Date(it.lastStateChange));
-		d.itemState.itemDefID = it.itemID;
-		d.itemState.itemUniqueID = it.itemUniqueID;
-		d.itemState.itemPositionID = it.roomItemID;
+		if (it.currentStateID != -1) {
+			d.itemState = new RoomItemData.ItemStateBlock();
+			SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+			d.itemState.itemStateID = it.currentStateID;
+			d.itemState.stateChangeDate = fmt.format(new Date(it.lastStateChange));
+			d.itemState.itemDefID = it.itemID;
+			d.itemState.itemUniqueID = it.itemUniqueID;
+			d.itemState.itemPositionID = it.roomItemID;
+		}
 		itmData.add(d);
 	}
 
@@ -2012,11 +2014,12 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Response
 		RoomItemUpdateResponseData resp = new RoomItemUpdateResponseData();
-		LinkedHashMap<Integer, ItemStateBlock> states = new LinkedHashMap<Integer, ItemStateBlock>();
+		ArrayList<ItemStateBlock> states = new ArrayList<ItemStateBlock>();
+		ArrayList<Integer> createdItems = new ArrayList<Integer>();
 		resp.success = true;
 
 		// Find room
-		PlayerRoomInfo room = roomManager.createOrGetRoom(roomID, -1, save);
+		PlayerRoomInfo room = roomManager.createOrGetRoom(roomID, roomID.equals("") ? 541 : -1, save);
 		HashMap<Integer, RoomItemInfo> newItemData = new HashMap<Integer, RoomItemInfo>();
 		for (RoomItemInfo itm : room.getItems())
 			newItemData.put(itm.roomItemID, itm);
@@ -2024,7 +2027,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		// Check create requests
 		ArrayList<RoomItemUpdateRequestData> ls = new ArrayList<RoomItemUpdateRequestData>();
 		for (RoomItemUpdateRequestData crReq : createXml) {
-			if (!handleCreate(newItemData, room, save, crReq, createXml, resp, ls, states)) {
+			if (!handleCreate(newItemData, room, save, crReq, createXml, resp, ls, states, createdItems)) {
 				// Invalid
 				resp.success = false;
 				return ok("text/xml", req.generateXmlValue("UIPSRS", resp));
@@ -2035,19 +2038,26 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		for (RoomItemUpdateRequestData crReq : updateXml) {
 			// Check
 			if (crReq.itemPositionID == null || !newItemData.containsKey(crReq.itemPositionID.value)) {
-				// Invalid
-				resp.success = false;
-				return ok("text/xml", req.generateXmlValue("UIPSRS", resp));
+				continue;
 			}
 
 			// Find data
 			RoomItemInfo info = newItemData.get(crReq.itemPositionID.value);
 
 			// Assign item fields
+			SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
 			if (crReq.uses != null)
 				info.uses = crReq.uses.value;
 			if (crReq.inventoryModificationDate != null)
 				info.inventoryModificationDate = crReq.inventoryModificationDate.value;
+			if (crReq.itemID != null) {
+				info.itemID = crReq.itemID.value;
+				info.inventoryModificationDate = fmt.format(new Date(System.currentTimeMillis()));
+			}
+			if (crReq.itemUniqueID != null) {
+				info.itemUniqueID = crReq.itemUniqueID.value;
+				info.inventoryModificationDate = fmt.format(new Date(System.currentTimeMillis()));
+			}
 			if (crReq.itemAttributes != null)
 				info.itemAttributes = crReq.itemAttributes;
 			if (crReq.itemStats != null)
@@ -2058,6 +2068,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			if (def == null) {
 				// Invalid
 				resp.success = false;
+				resp.status = 7;
 				return ok("text/xml", req.generateXmlValue("UIPSRS", resp));
 			}
 
@@ -2081,10 +2092,8 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		// Handle removal requests
 		for (int id : removeXml) {
 			// Check
-			if (!newItemData.containsKey(id)) {
-				resp.success = false;
-				return ok("text/xml", req.generateXmlValue("UIPSRS", resp));
-			}
+			if (!newItemData.containsKey(id))
+				continue;
 
 			// Remove
 			newItemData.remove(id);
@@ -2093,25 +2102,21 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		// Return
 		if (resp.success) {
 			// Add to response
-			int i = 0;
-			resp.createdRoomItemIDs = new int[states.size()];
-			resp.states = new ItemStateBlock[states.size()];
-			for (int roomItemID : states.keySet()) {
-				resp.states[i] = states.get(roomItemID);
-				resp.createdRoomItemIDs[i++] = roomItemID;
-			}
+			resp.createdRoomItemIDs = new int[createdItems.size()];
+			for (int i = 0; i < resp.createdRoomItemIDs.length; i++)
+				resp.createdRoomItemIDs[i] = createdItems.get(i);
+			resp.states = states.toArray(t -> new ItemStateBlock[t]);
 
 			// Save
 			room.setItems(newItemData.values().toArray(t -> new RoomItemInfo[t]));
 		}
-		String res = req.generateXmlValue("UIPSRS", resp);
-		return ok("text/xml", res);
+		return ok("text/xml", req.generateXmlValue("UIPSRS", resp));
 	}
 
 	private boolean handleCreate(HashMap<Integer, RoomItemInfo> newItemData, PlayerRoomInfo room,
 			AccountSaveContainer save, RoomItemUpdateRequestData crReq, RoomItemUpdateRequestData[] createXml,
 			RoomItemUpdateResponseData resp, ArrayList<RoomItemUpdateRequestData> addedItems,
-			LinkedHashMap<Integer, ItemStateBlock> statesL) {
+			ArrayList<ItemStateBlock> statesL, ArrayList<Integer> createdItems) {
 		// Check
 		if (addedItems.contains(crReq))
 			return true;
@@ -2126,11 +2131,13 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			int ind = crReq.parentIndex.value;
 			if (ind < 0 || ind > createXml.length) {
 				// Invalid
+				resp.status = 4;
 				return false;
 			}
 
 			// Found parent index
-			if (!handleCreate(newItemData, room, save, createXml[ind], createXml, resp, addedItems, statesL))
+			if (!handleCreate(newItemData, room, save, createXml[ind], createXml, resp, addedItems, statesL,
+					createdItems))
 				return false;
 
 			// Assign parent
@@ -2139,6 +2146,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			// Verify
 			if (!newItemData.containsKey(crReq.parentID.value)) {
 				// Invalid
+				resp.status = 3;
 				return false;
 			}
 
@@ -2153,12 +2161,12 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		info.roomItemID = id;
 
 		// Assign item fields
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
 		info.itemID = crReq.itemID.value;
 		info.itemUniqueID = crReq.itemUniqueID.value;
+		info.inventoryModificationDate = fmt.format(new Date(System.currentTimeMillis()));
 		if (crReq.uses != null)
 			info.uses = crReq.uses.value;
-		if (crReq.inventoryModificationDate != null)
-			info.inventoryModificationDate = crReq.inventoryModificationDate.value;
 		if (crReq.itemAttributes != null)
 			info.itemAttributes = crReq.itemAttributes;
 		if (crReq.itemStats != null)
@@ -2166,8 +2174,10 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Load item
 		ItemInfo def = itemManager.getItemDefinition(info.itemID);
-		if (def == null)
+		if (def == null) {
+			resp.status = 7;
 			return false; // Invalid
+		}
 
 		// Populate position and rotation
 		info.position = new Vector3D(crReq.posX.value, crReq.posY.value, crReq.posZ.value);
@@ -2194,19 +2204,42 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			info.lastStateChange = System.currentTimeMillis();
 
 		// Create state block
-		ItemStateBlock stateBlock = new ItemStateBlock();
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
-		stateBlock.itemStateID = info.currentStateID;
-		stateBlock.stateChangeDate = fmt.format(new Date(info.lastStateChange));
-		stateBlock.itemDefID = info.itemID;
-		stateBlock.itemUniqueID = info.itemUniqueID;
-		stateBlock.itemPositionID = info.roomItemID;
+		if (addedState) {
+			ItemStateBlock stateBlock = new ItemStateBlock();
+			stateBlock.itemStateID = info.currentStateID;
+			stateBlock.stateChangeDate = fmt.format(new Date(info.lastStateChange));
+			stateBlock.itemDefID = info.itemID;
+			stateBlock.itemUniqueID = info.itemUniqueID;
+			stateBlock.itemPositionID = info.roomItemID;
+			statesL.add(stateBlock);
+		}
 
 		// Success
 		crReq.result = info;
 		newItemData.put(info.roomItemID, info);
-		statesL.put(info.roomItemID, stateBlock);
+		createdItems.add(info.roomItemID);
 		return true;
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult setGameCurrency(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, AccountSaveContainer save, @SodRequestParam int amount) throws IOException {
+		// Load currency
+		AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+
+		// Load coins
+		int currentC = 300;
+		if (currency.entryExists("coins"))
+			currentC = currency.getEntry("coins").getAsInt();
+
+		// Update
+		currency.setEntry("coins", new JsonPrimitive(currentC + amount));
+
+		// Return
+		return ok("text/xml", req.generateXmlValue("int", currentC + amount));
 	}
 
 	private static KeyValuePairData[] appendTo(KeyValuePairData[] arr, KeyValuePairData block) {

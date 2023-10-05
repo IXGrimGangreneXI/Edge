@@ -281,5 +281,18 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 			return roomData.get("roomCategory").getAsInt();
 		}
 
+		@Override
+		public void setCategoryID(int newID) {
+			// Set item ID
+			roomData.addProperty("roomCategory", newID);
+
+			try {
+				// Save
+				save.getSaveData().getChildContainer("rooms").setEntry("room-" + roomID, roomData);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
 	}
 }

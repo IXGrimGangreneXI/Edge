@@ -15,6 +15,9 @@ public class RoomItemUpdateResponseData {
 	@JsonProperty("s")
 	public boolean success;
 
+	@JsonProperty("r")
+	public int status = 1;
+
 	@JsonProperty("ids")
 	@JacksonXmlElementWrapper(useWrapping = false)
 	public int[] createdRoomItemIDs;
