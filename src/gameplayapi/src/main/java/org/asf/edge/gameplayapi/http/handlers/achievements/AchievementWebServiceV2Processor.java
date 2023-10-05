@@ -138,13 +138,13 @@ public class AchievementWebServiceV2Processor extends EdgeWebService<EdgeGamepla
 			if (dateRange != null) {
 				resp.dateRange = new UdtLeaderboardResponseData.UdtDateRangeBlock();
 
-				SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+				SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 				fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 				resp.dateRange.dateStart = fmt.format(new Date(dateRange.dateStart));
 				resp.dateRange.dateEnd = fmt.format(new Date(dateRange.dateEnd));
 			} else {
 				resp.dateRange = new UdtLeaderboardResponseData.UdtDateRangeBlock();
-				SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+				SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 				resp.dateRange.dateStart = fmt.format(new Date(0));
 				resp.dateRange.dateEnd = fmt.format(new Date(System.currentTimeMillis()));
 			}

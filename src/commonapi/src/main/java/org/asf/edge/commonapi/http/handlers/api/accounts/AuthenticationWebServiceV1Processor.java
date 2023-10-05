@@ -176,7 +176,7 @@ public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeComm
 		}
 
 		// Check save
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		if (tkn.saveID != null) {
 			// Save specific

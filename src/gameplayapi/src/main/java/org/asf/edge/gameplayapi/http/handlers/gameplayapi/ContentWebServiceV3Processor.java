@@ -135,7 +135,7 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Fill fields
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		DragonData dragonUpdate = request.dragonData;
 

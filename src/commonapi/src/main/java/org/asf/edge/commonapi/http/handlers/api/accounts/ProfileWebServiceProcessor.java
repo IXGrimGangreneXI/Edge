@@ -274,7 +274,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 
 	private ProfileData getProfile(String saveID, AccountObject account, ServiceRequestInfo req, boolean minimal)
 			throws IOException {
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		AccountSaveContainer save = account.getSave(saveID);
 		AccountDataContainer data = save.getSaveData();

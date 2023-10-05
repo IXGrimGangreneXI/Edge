@@ -911,7 +911,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Fill fields
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		ObjectNode dragon = request.dragonData;
 		dragon.set("id", new IntNode(id)); // ID
@@ -1210,7 +1210,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 				Integer.parseInt(req.payload.get("gameId")), srq);
 
 		// Load other date format
-		fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 
 		// Prepare response
@@ -1298,7 +1298,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Fill fields
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		DragonData dragonUpdate = raisedPetData;
 

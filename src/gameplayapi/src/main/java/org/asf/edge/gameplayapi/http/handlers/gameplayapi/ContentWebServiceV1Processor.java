@@ -152,7 +152,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			return;
 
 		// Set response
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		setResponseContent("text/xml",
 				req.generateXmlValue("dateTime", fmt.format(new Date(System.currentTimeMillis()))));
@@ -474,7 +474,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		data = data.getChildContainer("keyvaluedata");
 
 		// Set result
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		if (data.entryExists("pairs-" + pair)) {
 			// Get data
@@ -601,7 +601,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			data = data.getChildContainer("keyvaluedata");
 
 			// Set result
-			SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+			SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 			fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 			if (data.entryExists("pairs-" + pair)) {
 				// Get data
@@ -1761,7 +1761,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		resp.key = srq.key;
 		resp.entries = new GameDataSummaryData.GameDataBlock[1];
 		resp.entries[0] = new GameDataSummaryData.GameDataBlock();
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		resp.entries[0].datePlayed = fmt.format(new Date(data.timePlayed));
 		resp.entries[0].rankID = 1;
@@ -1798,7 +1798,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 				Integer.parseInt(req.payload.get("gameId")), srq);
 
 		// Prepare response
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		GameDataSummaryData resp = new GameDataSummaryData();
 		resp.gameID = Integer.parseInt(req.payload.get("gameId"));
@@ -1969,7 +1969,10 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			d.itemID = new RoomItemData.IntWrapper(it.itemID);
 		if (it.itemUniqueID != -1) {
 			d.itemUniqueID = new RoomItemData.IntWrapper(it.itemUniqueID);
-			d.itemDef = save.getInventory().getContainer(1).getItem(it.itemUniqueID).getItemDef().getRawObject();
+			PlayerInventoryItem itm = save.getInventory().getContainer(1).getItem(it.itemUniqueID);
+			if (itm == null)
+				return;
+			d.itemDef = itm.getItemDef().getRawObject();
 		}
 		d.uses = new RoomItemData.IntWrapper(it.uses);
 		if (it.inventoryModificationDate != null)
@@ -1986,7 +1989,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		d.rotZ = new RoomItemData.DoubleWrapper(it.rotation.z);
 		if (it.currentStateID != -1) {
 			d.itemState = new RoomItemData.ItemStateBlock();
-			SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+			SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 			d.itemState.itemStateID = it.currentStateID;
 			d.itemState.stateChangeDate = fmt.format(new Date(it.lastStateChange));
 			d.itemState.itemDefID = it.itemID;
@@ -2045,7 +2048,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			RoomItemInfo info = newItemData.get(crReq.itemPositionID.value);
 
 			// Assign item fields
-			SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+			SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 			if (crReq.uses != null)
 				info.uses = crReq.uses.value;
 			if (crReq.inventoryModificationDate != null)
@@ -2161,7 +2164,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		info.roomItemID = id;
 
 		// Assign item fields
-		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		info.itemID = crReq.itemID.value;
 		info.itemUniqueID = crReq.itemUniqueID.value;
 		info.inventoryModificationDate = fmt.format(new Date(System.currentTimeMillis()));
@@ -2183,15 +2186,28 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		info.position = new Vector3D(crReq.posX.value, crReq.posY.value, crReq.posZ.value);
 		info.rotation = new Vector3D(crReq.rotX.value, crReq.rotY.value, crReq.rotZ.value);
 
-		// Set states
+		// Find best state
+		boolean addedState = false;
+		ItemDefData raw = def.getRawObject();
+		if (raw.states.length >= 1) {
+			// Assign first
+			info.currentStateID = raw.states[0].stateID;
+			addedState = true;
+		}
+
+		// Use supplied states
 		if (crReq.itemState != null) {
 			// Assign
 			info.currentStateID = crReq.itemState.itemStateID;
-			info.lastStateChange = System.currentTimeMillis();
+			addedState = true;
 		}
 
+		// Add modification time
+		if (addedState)
+			info.lastStateChange = System.currentTimeMillis();
+
 		// Create state block
-		if (info.currentStateID != -1) {
+		if (addedState) {
 			ItemStateBlock stateBlock = new ItemStateBlock();
 			stateBlock.itemStateID = info.currentStateID;
 			stateBlock.stateChangeDate = fmt.format(new Date(info.lastStateChange));

@@ -279,7 +279,7 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		// Find multipliers
 		for (RankMultiplierInfo m : AchievementManager.getInstance().getServerwideRankMultipliers()) {
 			// Add
-			SimpleDateFormat fmt2 = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+			SimpleDateFormat fmt2 = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 			fmt2.setTimeZone(TimeZone.getTimeZone("UTC"));
 			RewardTypeMultiplierData data = new RewardTypeMultiplierData();
 			data.typeID = m.getPointType().getPointTypeID();

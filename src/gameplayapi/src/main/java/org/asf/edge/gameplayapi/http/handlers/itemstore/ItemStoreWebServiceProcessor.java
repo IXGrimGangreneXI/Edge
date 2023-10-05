@@ -260,7 +260,7 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 							continue;
 
 						// Create sale block
-						SimpleDateFormat fmt2 = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
+						SimpleDateFormat fmt2 = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 						fmt2.setTimeZone(TimeZone.getTimeZone("UTC"));
 						SaleBlock block = new SaleBlock();
 						block.modifier = sale.getSaleModifier();
