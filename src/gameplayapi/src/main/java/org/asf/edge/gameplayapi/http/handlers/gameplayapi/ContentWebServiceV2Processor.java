@@ -54,7 +54,6 @@ import org.asf.edge.gameplayapi.xmls.dragons.CreatePetResponseData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetCreateRequestData;
-import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;

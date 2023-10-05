@@ -1990,6 +1990,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		if (it.currentStateID != -1) {
 			d.itemState = new RoomItemData.ItemStateBlock();
 			SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
+			fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 			d.itemState.itemStateID = it.currentStateID;
 			d.itemState.stateChangeDate = fmt.format(new Date(it.lastStateChange));
 			d.itemState.itemDefID = it.itemID;
@@ -2049,6 +2050,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 			// Assign item fields
 			SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
+			fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 			if (crReq.uses != null)
 				info.uses = crReq.uses.value;
 			if (crReq.inventoryModificationDate != null)
@@ -2165,6 +2167,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Assign item fields
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		info.itemID = crReq.itemID.value;
 		info.itemUniqueID = crReq.itemUniqueID.value;
 		info.inventoryModificationDate = fmt.format(new Date(System.currentTimeMillis()));
