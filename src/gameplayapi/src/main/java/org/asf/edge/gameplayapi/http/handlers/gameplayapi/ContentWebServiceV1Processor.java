@@ -47,6 +47,11 @@ import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.xmls.data.EmptyKeyValuePairSetData;
+import org.asf.edge.common.xmls.data.KeyValuePairData;
+import org.asf.edge.common.xmls.data.KeyValuePairSetData;
+import org.asf.edge.common.xmls.items.ItemDefData;
+import org.asf.edge.common.xmls.items.inventory.InventoryItemEntryData;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.entities.rooms.PlayerRoomInfo;
@@ -55,16 +60,12 @@ import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.rooms.PlayerRoomManager;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
-import org.asf.edge.gameplayapi.xmls.data.KeyValuePairData;
-import org.asf.edge.gameplayapi.xmls.data.KeyValuePairSetData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
-import org.asf.edge.gameplayapi.xmls.data.EmptyKeyValuePairSetData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.items.ItemRedeemRequestData;
 import org.asf.edge.gameplayapi.xmls.minigamedata.GameDataSummaryData;
-import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.CurrencyUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
@@ -85,7 +86,6 @@ import org.asf.edge.gameplayapi.xmls.rooms.RoomListEntryData;
 import org.asf.edge.gameplayapi.xmls.rooms.RoomListRequestData;
 import org.asf.edge.gameplayapi.xmls.rooms.RoomUpdateResponseData;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -358,10 +358,10 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		resp.userID = account.getAccountID();
 
 		// Find items
-		ArrayList<ItemBlock> items = new ArrayList<ItemBlock>();
+		ArrayList<InventoryItemEntryData> items = new ArrayList<InventoryItemEntryData>();
 		for (PlayerInventoryItem itm : itemManager.getCommonInventory(data).getContainer(containerID).getItems()) {
 			// Add item
-			ItemBlock block = new ItemBlock();
+			InventoryItemEntryData block = new InventoryItemEntryData();
 			block.itemID = itm.getItemDefID();
 			block.quantity = itm.getQuantity();
 			block.uses = itm.getUses();
@@ -385,7 +385,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			// Find items
 			for (PlayerInventoryItem itm : itemManager.getCommonInventory(data).getContainer(containerID).getItems()) {
 				// Add item
-				ItemBlock block = new ItemBlock();
+				InventoryItemEntryData block = new InventoryItemEntryData();
 				block.itemID = itm.getItemDefID();
 				block.quantity = itm.getQuantity();
 				block.uses = itm.getUses();
@@ -399,7 +399,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 				items.add(block);
 			}
 		}
-		resp.items = items.toArray(t -> new ItemBlock[t]);
+		resp.items = items.toArray(t -> new InventoryItemEntryData[t]);
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("CI", resp));
@@ -1968,9 +1968,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			d.itemID = new RoomItemData.IntWrapper(it.itemID);
 		if (it.itemUniqueID != -1) {
 			d.itemUniqueID = new RoomItemData.IntWrapper(it.itemUniqueID);
-			d.itemDef = new RoomItemData.ItemDataBlockWrapper();
-			d.itemDef.itemDef = save.getInventory().getContainer(1).getItem(it.itemUniqueID).getItemDef()
-					.getRawObject();
+			d.itemDef = save.getInventory().getContainer(1).getItem(it.itemUniqueID).getItemDef().getRawObject();
 		}
 		if (it.uses != -1)
 			d.uses = new RoomItemData.IntWrapper(it.uses);
@@ -2177,29 +2175,11 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Find best state
 		boolean addedState = false;
-		ObjectNode raw = def.getRawObject();
-		if (raw.has("is")) {
-			// Has states
-			ArrayList<ObjectNode> states = new ArrayList<ObjectNode>();
-			JsonNode node = raw.get("is");
-			if (node.isArray()) {
-				// Go through all nodes
-				for (JsonNode n : node) {
-					if (n.has("ItemStateID")) {
-						states.add((ObjectNode) n);
-					}
-				}
-			} else if (node.has("ItemStateID")) {
-				// Go through single item
-				states.add((ObjectNode) node);
-			}
-
-			// Check
-			if (states.size() >= 1) {
-				// Assign first
-				info.currentStateID = states.get(0).get("ItemStateID").asInt();
-				addedState = true;
-			}
+		ItemDefData raw = def.getRawObject();
+		if (raw.states.length >= 1) {
+			// Assign first
+			info.currentStateID = raw.states[0].stateID;
+			addedState = true;
 		}
 
 		// Use supplied states

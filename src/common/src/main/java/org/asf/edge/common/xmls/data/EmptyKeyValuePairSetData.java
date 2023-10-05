@@ -1,4 +1,4 @@
-package org.asf.edge.gameplayapi.xmls.data;
+package org.asf.edge.common.xmls.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;

@@ -1,7 +1,7 @@
 package org.asf.edge.gameplayapi.entities.rooms;
 
 import org.asf.edge.common.entities.coordinates.Vector3D;
-import org.asf.edge.gameplayapi.xmls.data.KeyValuePairSetData;
+import org.asf.edge.common.xmls.data.KeyValuePairSetData;
 import org.asf.edge.gameplayapi.xmls.rooms.RoomItemData.ItemStatBlock;
 
 /**

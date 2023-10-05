@@ -1,22 +1,21 @@
-package org.asf.edge.gameplayapi.xmls.inventories;
-
-import org.asf.edge.common.xmls.items.inventory.InventoryItemEntryData;
+package org.asf.edge.common.xmls.items.categories;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-public class CommonInventoryData {
+public class ItemCategoryData {
 
-	@JsonProperty("uid")
-	public String userID;
+	@JsonProperty("cid")
+	public int categoryID;
+
+	@JsonProperty("cn")
+	public String categoryName;
 
 	@JsonProperty("i")
-	@JacksonXmlElementWrapper(useWrapping = false)
-	public InventoryItemEntryData[] items;
+	public String iconName;
 
 }

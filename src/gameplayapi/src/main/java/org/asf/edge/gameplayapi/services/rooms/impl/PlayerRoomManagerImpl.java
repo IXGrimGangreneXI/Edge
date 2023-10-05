@@ -8,10 +8,10 @@ import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.entities.coordinates.Vector3D;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.xmls.data.KeyValuePairSetData;
 import org.asf.edge.gameplayapi.entities.rooms.PlayerRoomInfo;
 import org.asf.edge.gameplayapi.entities.rooms.RoomItemInfo;
 import org.asf.edge.gameplayapi.services.rooms.PlayerRoomManager;
-import org.asf.edge.gameplayapi.xmls.data.KeyValuePairSetData;
 import org.asf.edge.gameplayapi.xmls.rooms.RoomItemData.ItemStatBlock;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;

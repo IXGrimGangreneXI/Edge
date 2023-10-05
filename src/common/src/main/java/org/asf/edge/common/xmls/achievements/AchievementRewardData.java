@@ -1,8 +1,8 @@
-package org.asf.edge.gameplayapi.xmls.achievements;
+package org.asf.edge.common.xmls.achievements;
 
 import java.util.UUID;
 
-import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
+import org.asf.edge.common.xmls.items.inventory.InventoryItemEntryData;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-public class AchievementRewardBlock {
+public class AchievementRewardData {
 
 	@JsonProperty("ai")
 	public int achievementID;
@@ -53,13 +53,13 @@ public class AchievementRewardBlock {
 	public int uniqueRewardItemID = 0;
 
 	@JsonProperty("ui")
-	public ItemBlock rewardItem;
+	public InventoryItemEntryData rewardItem;
 
 	@JsonProperty("d")
 	public String date = null;
 
-	public AchievementRewardBlock copy() {
-		AchievementRewardBlock cp = new AchievementRewardBlock();
+	public AchievementRewardData copy() {
+		AchievementRewardData cp = new AchievementRewardData();
 		cp.achievementID = achievementID;
 		cp.itemID = itemID;
 		cp.amount = amount;

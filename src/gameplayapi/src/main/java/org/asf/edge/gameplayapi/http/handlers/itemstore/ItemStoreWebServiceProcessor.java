@@ -33,6 +33,7 @@ import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.xmls.items.ItemDefData;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.xmls.items.GetStoreRequestData;
 import org.asf.edge.gameplayapi.xmls.items.GetStoreResponseData;
@@ -40,7 +41,6 @@ import org.asf.edge.gameplayapi.xmls.items.ItemStoreResponseObject;
 import org.asf.edge.gameplayapi.xmls.items.ItemStoreResponseObject.SaleBlock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.google.gson.JsonObject;
@@ -195,7 +195,7 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 				storeData.storeName = store.getName();
 				storeData.storeDescription = store.getDescription();
 				storeData.items = Stream.of(store.getItems()).map(t -> t.getRawObject())
-						.toArray(t -> new ObjectNode[t]);
+						.toArray(t -> new ItemDefData[t]);
 
 				// Load popular items
 				ArrayList<ItemStoreResponseObject.PopularItemBlock> items = new ArrayList<ItemStoreResponseObject.PopularItemBlock>();

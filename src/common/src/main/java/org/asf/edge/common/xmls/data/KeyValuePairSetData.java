@@ -1,4 +1,4 @@
-package org.asf.edge.gameplayapi.xmls.data;
+package org.asf.edge.common.xmls.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -13,12 +13,12 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class KeyValuePairSetData {
 
-	@JacksonXmlProperty(isAttribute = true)
+	@JacksonXmlProperty(localName = "xmlns", isAttribute = true)
 	public String xmlns = "";
 
 	@JsonProperty("Pair")
 	@JsonInclude(Include.NON_NULL)
 	@JacksonXmlElementWrapper(useWrapping = false)
-	public KeyValuePairData[] items;
+	public KeyValuePairData[] items = new KeyValuePairData[0];
 
 }

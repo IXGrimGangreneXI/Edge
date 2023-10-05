@@ -1,7 +1,7 @@
 package org.asf.edge.gameplayapi.xmls.quests;
 
+import org.asf.edge.common.xmls.achievements.AchievementRewardData;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
-import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardBlock;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -55,7 +55,7 @@ public class SetTaskStateResultData {
 
 		@JsonProperty("A")
 		@JacksonXmlElementWrapper(useWrapping = false)
-		public AchievementRewardBlock[] rewards;
+		public AchievementRewardData[] rewards;
 
 	}
 

@@ -83,12 +83,12 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 	private void runItem() {
 		// Run multipliers
 		if (getItemDef().hasAttribute("RewardMultiplier")
-				&& getItemDef().getAttribute("RewardMultiplier").getValue().asText().equalsIgnoreCase("true")
+				&& getItemDef().getAttribute("RewardMultiplier").getValue().equalsIgnoreCase("true")
 				&& data.getSave() != null) {
 			// Load
-			int factor = getItemDef().getAttribute("MultiplierFactor").getValue().asInt();
-			int rewardType = getItemDef().getAttribute("MultiplierRewardType").getValue().asInt();
-			int effectTime = getItemDef().getAttribute("MultiplierEffectTime").getValue().asInt();
+			int factor = Integer.parseInt(getItemDef().getAttribute("MultiplierFactor").getValue());
+			int rewardType = Integer.parseInt(getItemDef().getAttribute("MultiplierRewardType").getValue());
+			int effectTime = Integer.parseInt(getItemDef().getAttribute("MultiplierEffectTime").getValue());
 
 			// Apply
 			AchievementManager.getInstance().addUserRankMultiplier(data.getSave(), new RankMultiplierInfo(

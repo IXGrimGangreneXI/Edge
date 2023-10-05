@@ -3,10 +3,9 @@ package org.asf.edge.gameplayapi.util.inventory;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.xmls.items.ItemDefData;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.CurrencyUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * 
@@ -52,9 +51,9 @@ public abstract class AbstractItemRedemptionHandler {
 	public static class RedemptionResult {
 		private boolean success;
 		private ItemUpdateBlock update;
-		private ObjectNode infoBlock;
+		private ItemDefData infoBlock;
 
-		public RedemptionResult(boolean success, ItemUpdateBlock update, ObjectNode infoBlock) {
+		public RedemptionResult(boolean success, ItemUpdateBlock update, ItemDefData infoBlock) {
 			this.success = success;
 			this.update = update;
 			this.infoBlock = infoBlock;
@@ -81,9 +80,9 @@ public abstract class AbstractItemRedemptionHandler {
 		/**
 		 * Retrieves the item definition
 		 * 
-		 * @return ObjectNode instance or null (may be null even if successful)
+		 * @return ItemDefData instance or null (may be null even if successful)
 		 */
-		public ObjectNode getItemDef() {
+		public ItemDefData getItemDef() {
 			return infoBlock;
 		}
 
@@ -95,11 +94,11 @@ public abstract class AbstractItemRedemptionHandler {
 			return new RedemptionResult(true, null, null);
 		}
 
-		public static RedemptionResult failure(ObjectNode info, ItemUpdateBlock update) {
+		public static RedemptionResult failure(ItemDefData info, ItemUpdateBlock update) {
 			return new RedemptionResult(false, update, info);
 		}
 
-		public static RedemptionResult success(ObjectNode info, ItemUpdateBlock update) {
+		public static RedemptionResult success(ItemDefData info, ItemUpdateBlock update) {
 			return new RedemptionResult(true, update, info);
 		}
 

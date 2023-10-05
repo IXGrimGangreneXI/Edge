@@ -46,6 +46,7 @@ import org.asf.edge.common.util.TripleDesUtil;
 import org.bouncycastle.util.encoders.Base32;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 
@@ -63,6 +64,7 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 	private static XmlMapper mapper = new XmlMapper();
 	static {
 		mapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true);
+		mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 	}
 
 	/**

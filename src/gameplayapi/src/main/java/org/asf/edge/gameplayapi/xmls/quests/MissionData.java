@@ -1,6 +1,6 @@
 package org.asf.edge.gameplayapi.xmls.quests;
 
-import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardBlock;
+import org.asf.edge.common.xmls.achievements.AchievementRewardData;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -60,12 +60,12 @@ public class MissionData {
 	@JsonProperty("AR")
 	@JacksonXmlElementWrapper(useWrapping = false)
 	@JsonInclude(Include.NON_NULL)
-	public AchievementRewardBlock[] rewards;
+	public AchievementRewardData[] rewards;
 
 	@JsonProperty("AAR")
 	@JacksonXmlElementWrapper(useWrapping = false)
 	@JsonInclude(Include.NON_NULL)
-	public AchievementRewardBlock[] acceptanceRewards;
+	public AchievementRewardData[] acceptanceRewards;
 
 	@JsonProperty("RPT")
 	public String repeatable;
@@ -75,7 +75,7 @@ public class MissionData {
 		cp.staticData = staticData;
 		cp.acceptanceAchievementID = acceptanceAchievementID;
 		if (acceptanceRewards != null) {
-			cp.acceptanceRewards = new AchievementRewardBlock[acceptanceRewards.length];
+			cp.acceptanceRewards = new AchievementRewardData[acceptanceRewards.length];
 			for (int i = 0; i < cp.acceptanceRewards.length; i++)
 				cp.acceptanceRewards[i] = acceptanceRewards[i].copy();
 		}
@@ -100,7 +100,7 @@ public class MissionData {
 				cp.tasks[i] = tasks[i].copy();
 		}
 		if (rewards != null) {
-			cp.rewards = new AchievementRewardBlock[rewards.length];
+			cp.rewards = new AchievementRewardData[rewards.length];
 			for (int i = 0; i < cp.rewards.length; i++)
 				cp.rewards[i] = rewards[i].copy();
 		}

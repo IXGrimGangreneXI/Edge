@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 
-import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardBlock;
+import org.asf.edge.common.xmls.achievements.AchievementRewardData;
 import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardList;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestData;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestRewardBlock;
@@ -295,7 +295,7 @@ public class AchievementRewardDataConverter {
 
 										// Import rewards
 										if (rewardData.rewards != null) {
-											for (AchievementRewardBlock reward : rewardData.rewards) {
+											for (AchievementRewardData reward : rewardData.rewards) {
 												// Create or load entry
 												AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
 														.get(reward.rewardID + "-" + reward.pointTypeID);

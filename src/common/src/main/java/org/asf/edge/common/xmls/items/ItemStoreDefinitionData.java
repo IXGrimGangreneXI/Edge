@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -26,18 +25,18 @@ public class ItemStoreDefinitionData {
 	@JsonProperty("is")
 	@JacksonXmlElementWrapper(useWrapping = false)
 	@JsonInclude(Include.NON_DEFAULT)
-	public ObjectNode[] items;
+	public ItemDefData[] items;
 
 	/**
 	 * Retrieves items by ID
 	 * 
 	 * @param id Item ID
-	 * @return ObjectNode instance or null
+	 * @return ItemDefData instance or null
 	 */
 	@JsonIgnore
-	public ObjectNode getItem(int id) {
-		for (ObjectNode nd : items)
-			if (nd.get("id").asInt() == id)
+	public ItemDefData getItem(int id) {
+		for (ItemDefData nd : items)
+			if (nd.id == id)
 				return nd;
 		return null;
 	}
@@ -51,7 +50,7 @@ public class ItemStoreDefinitionData {
 	public int[] getItems() {
 		int[] arr = new int[items.length];
 		for (int i = 0; i < arr.length; i++)
-			arr[i] = items[i].get("id").asInt();
+			arr[i] = items[i].id;
 		return arr;
 	}
 

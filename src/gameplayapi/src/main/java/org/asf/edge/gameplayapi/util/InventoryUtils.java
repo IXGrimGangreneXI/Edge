@@ -20,6 +20,8 @@ import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.util.RandomSelectorUtil;
+import org.asf.edge.common.xmls.items.ItemDefData;
+import org.asf.edge.common.xmls.items.relation.ItemRelationData;
 import org.asf.edge.gameplayapi.events.items.InventoryUtilsLoadEvent;
 import org.asf.edge.gameplayapi.util.inventory.AbstractInventorySecurityValidator;
 import org.asf.edge.gameplayapi.util.inventory.AbstractItemRedemptionHandler;
@@ -38,8 +40,6 @@ import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.Cur
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.PrizeItemInfo;
 import org.asf.edge.modules.eventbus.EventBus;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
@@ -192,12 +192,9 @@ public class InventoryUtils {
 				ItemInfo itm = itemManager.getItemDefinition(req.defID);
 				if (isMysteryBox(itm)) {
 					// Verify rewards
-					for (JsonNode nd : getRelationsOfType("Prize", itm)) {
-						if (!nd.has("id") || !nd.has("wt"))
-							return false; // Invalid object
-
+					for (ItemRelationData nd : getRelationsOfType("Prize", itm)) {
 						// Check item def
-						ItemInfo itm2 = itemManager.getItemDefinition(nd.get("id").asInt());
+						ItemInfo itm2 = itemManager.getItemDefinition(nd.itemID);
 						if (itm2 == null)
 							return false; // Invalid item ID
 					}
@@ -246,13 +243,11 @@ public class InventoryUtils {
 					for (int l = 0; l < req.quantity; l++) {
 						// Gather prize items
 						HashMap<ItemRedemptionInfo, Integer> prizes = new HashMap<ItemRedemptionInfo, Integer>();
-						for (JsonNode nd : getRelationsOfType("Prize", itm)) {
+						for (ItemRelationData nd : getRelationsOfType("Prize", itm)) {
 							// Load item info
-							int weight = nd.get("wt").asInt();
-							int defID = nd.get("id").asInt();
-							int quantity = 1;
-							if (nd.has("q"))
-								quantity = nd.get("q").asInt();
+							int weight = nd.weight;
+							int defID = nd.itemID;
+							int quantity = nd.quantity;
 							if (quantity == 0)
 								quantity = 1;
 
@@ -271,11 +266,11 @@ public class InventoryUtils {
 							PrizeItemInfo obj = new PrizeItemInfo();
 							obj.boxItemID = itm.getID();
 							obj.prizeItemID = prize.defID;
-							obj.mysteryPrizeItems = new ObjectNode[0];
+							obj.mysteryPrizeItems = new ItemDefData[0];
 							ItemInfo itm2 = itemManager.getItemDefinition(prize.defID);
 							if (isBundle(itm2) || isMysteryBox(itm2)) {
 								// Add as item
-								obj.mysteryPrizeItems = new ObjectNode[] { itm2.getRawObject() };
+								obj.mysteryPrizeItems = new ItemDefData[] { itm2.getRawObject() };
 							}
 
 							// Add
@@ -297,12 +292,10 @@ public class InventoryUtils {
 			// Check if its a bundle
 			if (isBundle(itm)) {
 				// Add bundle items
-				for (JsonNode nd : getRelationsOfType("Bundle", itm)) {
+				for (ItemRelationData nd : getRelationsOfType("Bundle", itm)) {
 					// Load item info
-					int defID = nd.get("id").asInt();
-					int quantity = 1;
-					if (nd.has("q"))
-						quantity = nd.get("q").asInt();
+					int defID = nd.itemID;
+					int quantity = nd.quantity;
 					if (quantity == 0)
 						quantity = 1;
 
@@ -341,7 +334,7 @@ public class InventoryUtils {
 				}
 
 				// Add to prize info if needed
-				ObjectNode infoBlock = resp.getItemDef();
+				ItemDefData infoBlock = resp.getItemDef();
 				if (infoBlock != null && prizeInfo != null) {
 					// Add
 					prizeInfo.mysteryPrizeItems = appendTo(prizeInfo.mysteryPrizeItems, infoBlock);
@@ -359,8 +352,8 @@ public class InventoryUtils {
 		return false;
 	}
 
-	private static ObjectNode[] appendTo(ObjectNode[] arr, ObjectNode block) {
-		ObjectNode[] newB = new ObjectNode[arr.length + 1];
+	private static ItemDefData[] appendTo(ItemDefData[] arr, ItemDefData block) {
+		ItemDefData[] newB = new ItemDefData[arr.length + 1];
 		for (int i = 0; i < newB.length; i++) {
 			if (i >= arr.length)
 				newB[i] = block;
@@ -373,12 +366,9 @@ public class InventoryUtils {
 	private static boolean verifyBundle(ItemInfo itm) {
 		if (isBundle(itm)) {
 			// Verify rewards
-			for (JsonNode nd : getRelationsOfType("Bundle", itm)) {
-				if (!nd.has("id"))
-					return false; // Invalid object
-
+			for (ItemRelationData nd : getRelationsOfType("Bundle", itm)) {
 				// Check item def
-				ItemInfo itm2 = itemManager.getItemDefinition(nd.get("id").asInt());
+				ItemInfo itm2 = itemManager.getItemDefinition(nd.itemID);
 				if (itm2 == null)
 					return false; // Invalid item ID
 
@@ -390,87 +380,53 @@ public class InventoryUtils {
 		return true;
 	}
 
-	private static JsonNode[] getRelationsOfType(String type, ItemInfo itm) {
-		ArrayList<JsonNode> nodes = new ArrayList<JsonNode>();
+	private static ItemRelationData[] getRelationsOfType(String type, ItemInfo itm) {
+		ArrayList<ItemRelationData> rels = new ArrayList<ItemRelationData>();
 
-		// Check item def
-		JsonNode node = itm.getRawObject().get("r");
-		if (node.isArray()) {
-			// Go through all nodes
-			for (JsonNode n : node) {
-				if (n.has("t")) {
-					if (n.get("t").asText().equalsIgnoreCase(type))
-						nodes.add(n);
-				}
-			}
-		} else if (node.has("t")) {
-			// Go through single item
-			if (node.get("t").asText().equalsIgnoreCase(type))
-				nodes.add(node);
+		// Go through relations
+		for (ItemRelationData n : itm.getRawObject().relations) {
+			if (n.type.equalsIgnoreCase(type))
+				rels.add(n);
 		}
 
 		// Return
-		return nodes.toArray(t -> new JsonNode[t]);
+		return rels.toArray(t -> new ItemRelationData[t]);
 	}
 
 	private static boolean isMysteryBox(ItemInfo def) {
-		// Check item def
-		if (!def.getRawObject().has("r"))
-			return false;
-		JsonNode node = def.getRawObject().get("r");
-		if (node.isArray()) {
-			// Go through all nodes
-			for (JsonNode n : node) {
-				if (isMysteryItem(n)) {
-					// Its a mystery box
-					return true;
-				}
+		// Go through relations
+		for (ItemRelationData n : def.getRawObject().relations) {
+			if (isMysteryItem(n)) {
+				// Its a mystery box
+				return true;
 			}
-
-			// Not a mystery box
-			return false;
 		}
 
-		// Go through single node
-		return isMysteryItem(node);
+		// Not a mystery box
+		return false;
 	}
 
-	private static boolean isMysteryItem(JsonNode node) {
+	private static boolean isMysteryItem(ItemRelationData rel) {
 		// Check type
-		if (node.has("t")) {
-			return node.get("t").asText().equalsIgnoreCase("Prize");
-		}
-		return false;
+		return rel.type.equalsIgnoreCase("Prize");
 	}
 
 	private static boolean isBundle(ItemInfo def) {
-		// Check item def
-		if (!def.getRawObject().has("r"))
-			return false;
-		JsonNode node = def.getRawObject().get("r");
-		if (node.isArray()) {
-			// Go through all nodes
-			for (JsonNode n : node) {
-				if (isBundleItem(n)) {
-					// Its a bundle
-					return true;
-				}
+		// Go through relations
+		for (ItemRelationData n : def.getRawObject().relations) {
+			if (isBundleItem(n)) {
+				// Its a bundle
+				return true;
 			}
-
-			// Not a bundle
-			return false;
 		}
 
-		// Go through single node
-		return isBundleItem(node);
+		// Not a bundle
+		return false;
 	}
 
-	private static boolean isBundleItem(JsonNode node) {
+	private static boolean isBundleItem(ItemRelationData rel) {
 		// Check type
-		if (node.has("t")) {
-			return node.get("t").asText().equalsIgnoreCase("Bundle");
-		}
-		return false;
+		return rel.type.equalsIgnoreCase("Bundle");
 	}
 
 	/**

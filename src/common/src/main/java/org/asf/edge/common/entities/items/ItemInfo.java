@@ -8,9 +8,9 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.asf.edge.common.services.items.ItemManager;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.asf.edge.common.xmls.items.ItemDefData;
+import org.asf.edge.common.xmls.items.attributes.ItemAttributeData;
+import org.asf.edge.common.xmls.items.categories.ItemCategoryData;
 
 /**
  * 
@@ -23,75 +23,40 @@ public class ItemInfo {
 	private int id;
 	private String name;
 	private String description;
-	private ObjectNode raw;
+	private ItemDefData raw;
 	private ItemCategoryInfo[] categories;
 	private ItemAttributeInfo[] attributes;
 
 	private int costGems;
 	private int costCoins;
 
-	public ItemInfo(int id, String name, String description, ObjectNode raw) {
+	public ItemInfo(int id, String name, String description, ItemDefData raw) {
 		this.id = id;
 		this.name = name;
 		this.description = description;
 		this.raw = raw;
 
-		costCoins = raw.get("ct").asInt();
-		costGems = raw.get("ct2").asInt();
+		costCoins = raw.costCoins;
+		costGems = raw.costGems;
 
 		loadCategories();
 		loadAttributes();
 	}
 
 	private void loadAttributes() {
-		ObjectNode raw = getRawObject();
-		if (!raw.has("at")) {
-			attributes = new ItemAttributeInfo[0];
-			return;
-		}
-
 		// Go through attributes
 		ArrayList<ItemAttributeInfo> attrs = new ArrayList<ItemAttributeInfo>();
-		JsonNode node = raw.get("at");
-		if (node.isArray()) {
-			// Go through all nodes
-			for (JsonNode n : node) {
-				if (n.has("k") && n.has("v")) {
-					ItemAttributeInfo attr = new ItemAttributeInfo(n.get("k").asText(), n.get("v"));
-					attrs.add(attr);
-				}
-			}
-		} else if (node.has("k") && node.has("v")) {
-			// Go through single item
-			ItemAttributeInfo attr = new ItemAttributeInfo(node.get("k").asText(), node.get("v"));
-			attrs.add(attr);
+		for (ItemAttributeData attr : raw.attributes) {
+			attrs.add(new ItemAttributeInfo(attr.key, attr.value));
 		}
 		attributes = attrs.toArray(t -> new ItemAttributeInfo[t]);
 	}
 
 	private void loadCategories() {
-		if (!raw.has("c")) {
-			categories = new ItemCategoryInfo[0];
-			return;
-		}
-
 		// Go through categories
 		ArrayList<ItemCategoryInfo> cats = new ArrayList<ItemCategoryInfo>();
-		JsonNode node = raw.get("c");
-		if (node.isArray()) {
-			// Go through all nodes
-			for (JsonNode n : node) {
-				if (n.has("cid") && n.has("cn") && n.has("i")) {
-					ItemCategoryInfo c = new ItemCategoryInfo(n.get("cid").asInt(), n.get("cn").asText(),
-							n.get("i").asText());
-					cats.add(c);
-				}
-			}
-		} else if (node.has("cid") && node.has("cn") && node.has("i")) {
-			// Go through single item
-			ItemCategoryInfo c = new ItemCategoryInfo(node.get("cid").asInt(), node.get("cn").asText(),
-					node.get("i").asText());
-			cats.add(c);
+		for (ItemCategoryData cat : raw.categories) {
+			cats.add(new ItemCategoryInfo(cat.categoryID, cat.categoryName, cat.iconName));
 		}
 		categories = cats.toArray(t -> new ItemCategoryInfo[t]);
 	}
@@ -315,20 +280,20 @@ public class ItemInfo {
 	/**
 	 * Retrieves the raw item object
 	 * 
-	 * @return ObjectNode instance
+	 * @return ItemDefData instance
 	 */
-	public ObjectNode getRawObject() {
+	public ItemDefData getRawObject() {
 		return raw;
 	}
 
 	public void reloadDef() {
 		// Reload
-		id = raw.get("id").asInt();
-		name = raw.get("itn").asText();
-		description = raw.get("d").asText();
+		id = raw.id;
+		name = raw.name;
+		description = raw.description;
 
-		costCoins = raw.get("ct").asInt();
-		costGems = raw.get("ct2").asInt();
+		costCoins = raw.costCoins;
+		costGems = raw.costGems;
 
 		loadCategories();
 		loadAttributes();

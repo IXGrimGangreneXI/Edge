@@ -9,6 +9,7 @@ import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.util.RandomSelectorUtil;
+import org.asf.edge.common.xmls.items.ItemDefData;
 import org.asf.edge.common.xmls.items.ItemStoreDefinitionData;
 import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest;
 import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest.DefaultItemBlock;
@@ -17,6 +18,8 @@ import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -41,7 +44,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -139,7 +141,7 @@ public class ItemManagerImpl extends ItemManager {
 			// Save sales to memory
 			this.currentRandomSales = currentRandomSales;
 			this.upcomingRandomSales = upcomingRandomSales;
-		} catch (IOException e) {
+		} catch (Exception e) {
 			logger.error("Failed to load current random sales", e);
 		}
 
@@ -415,6 +417,7 @@ public class ItemManagerImpl extends ItemManager {
 
 			// Load object
 			XmlMapper mapper = new XmlMapper();
+			mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 			ItemRegistryManifest reg = mapper.reader().readValue(data, ItemRegistryManifest.class);
 
 			// Load default items
@@ -423,7 +426,8 @@ public class ItemManagerImpl extends ItemManager {
 			// Load items
 			for (ObjectNode def : reg.itemDefs) {
 				// Register item
-				ItemInfo itm = new ItemInfo(def.get("id").asInt(), def.get("itn").asText(), def.get("d").asText(), def);
+				ItemInfo itm = new ItemInfo(def.get("id").asInt(), def.get("itn").asText(), def.get("d").asText(),
+						mapper.convertValue(def, ItemDefData.class));
 				itemDefs.put(itm.getID(), itm);
 				logger.debug("Registered item: " + itm.getID() + ": " + itm.getName());
 			}
@@ -445,6 +449,7 @@ public class ItemManagerImpl extends ItemManager {
 
 			// Load into map
 			XmlMapper mapper = new XmlMapper();
+			mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 			ItemStoreDefinitionData[] stores = mapper.reader().readValue(data, ItemStoreDefinitionData[].class);
 
 			// Load stores
@@ -454,13 +459,13 @@ public class ItemManagerImpl extends ItemManager {
 				ItemInfo[] items = new ItemInfo[store.items.length];
 				for (int i = 0; i < items.length; i++) {
 					// Register item
-					if (!itemDefs.containsKey(store.items[i].get("id").asInt())) {
-						items[i] = new ItemInfo(store.items[i].get("id").asInt(), store.items[i].get("itn").asText(),
-								store.items[i].get("d").asText(), store.items[i]);
+					if (!itemDefs.containsKey(store.items[i].id)) {
+						items[i] = new ItemInfo(store.items[i].id, store.items[i].name, store.items[i].description,
+								store.items[i]);
 						itemDefs.put(items[i].getID(), items[i]);
 						logger.debug("Registered item: " + items[i].getID() + ": " + items[i].getName());
 					} else {
-						items[i] = itemDefs.get(store.items[i].get("id").asInt());
+						items[i] = itemDefs.get(store.items[i].id);
 					}
 				}
 				storeDefs.put(store.storeID,
@@ -645,6 +650,7 @@ public class ItemManagerImpl extends ItemManager {
 
 				// Load transformer
 				XmlMapper mapper = new XmlMapper();
+				mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 				ObjectNode def = mapper.reader().readValue(new String(strm.readAllBytes(), "UTF-8"), ObjectNode.class);
 				strm.close();
 
@@ -652,7 +658,7 @@ public class ItemManagerImpl extends ItemManager {
 				if (!itemDefs.containsKey(def.get("id").asInt())) {
 					// Register
 					ItemInfo itm = new ItemInfo(def.get("id").asInt(), def.get("itn").asText(), def.get("d").asText(),
-							def);
+							mapper.convertValue(def, ItemDefData.class));
 					if (!itemDefs.containsKey(itm.getID())) {
 						itemDefs.put(itm.getID(), itm);
 						logger.debug("Registered item: " + itm.getID() + ": " + itm.getName());
@@ -664,16 +670,8 @@ public class ItemManagerImpl extends ItemManager {
 						throw new IllegalArgumentException("Item definition not found: " + def.get("id").asInt());
 
 					// Update it
-					ObjectNode obj = itm.getRawObject();
-					Iterator<String> names = def.fieldNames();
-					while (names.hasNext()) {
-						String key = names.next();
-
-						// Update field
-						if (obj.has(key))
-							obj.remove(key);
-						obj.set(key, def.get(key));
-					}
+					ItemDefData obj = itm.getRawObject();
+					mapper.updateValue(obj, def);
 					itm.reloadDef();
 					logger.debug("Updated item: " + itm.getID() + ": " + itm.getName());
 				}
@@ -722,6 +720,7 @@ public class ItemManagerImpl extends ItemManager {
 
 					// Load transformer
 					XmlMapper mapper = new XmlMapper();
+					mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 					ObjectNode def = mapper.reader().readValue(new String(strm.readAllBytes(), "UTF-8"),
 							ObjectNode.class);
 					strm.close();
@@ -730,7 +729,7 @@ public class ItemManagerImpl extends ItemManager {
 					if (!itemDefs.containsKey(def.get("id").asInt())) {
 						// Register
 						ItemInfo itm = new ItemInfo(def.get("id").asInt(), def.get("itn").asText(),
-								def.get("d").asText(), def);
+								def.get("d").asText(), mapper.convertValue(def, ItemDefData.class));
 						if (!itemDefs.containsKey(itm.getID())) {
 							itemDefs.put(itm.getID(), itm);
 							logger.debug("Registered item: " + itm.getID() + ": " + itm.getName());
@@ -742,16 +741,8 @@ public class ItemManagerImpl extends ItemManager {
 							throw new IllegalArgumentException("Item definition not found: " + def.get("id").asInt());
 
 						// Update it
-						ObjectNode obj = itm.getRawObject();
-						Iterator<String> names = def.fieldNames();
-						while (names.hasNext()) {
-							String key = names.next();
-
-							// Update field
-							if (obj.has(key))
-								obj.remove(key);
-							obj.set(key, def.get(key));
-						}
+						ItemDefData obj = itm.getRawObject();
+						mapper.updateValue(obj, def);
 						itm.reloadDef();
 						logger.debug("Updated item: " + itm.getID() + ": " + itm.getName());
 					}
@@ -927,7 +918,8 @@ public class ItemManagerImpl extends ItemManager {
 								"Invalid currency type in transformer item, expected either 'gems' or 'coins'");
 
 					// Apply
-					ObjectNode newNode = def.getRawObject().deepCopy();
+					ObjectMapper mapper = new ObjectMapper();
+					ObjectNode newNode = mapper.convertValue(def.getRawObject(), ObjectNode.class);
 					if (trans.has("cost")) {
 						newNode.set("ct", new IntNode(-1));
 						newNode.set("ct2", new IntNode(0));
@@ -938,7 +930,8 @@ public class ItemManagerImpl extends ItemManager {
 					}
 
 					// Create new def
-					ItemInfo newDef = new ItemInfo(def.getID(), def.getDescription(), def.getDescription(), newNode);
+					ItemInfo newDef = new ItemInfo(def.getID(), def.getDescription(), def.getDescription(),
+							mapper.convertValue(newNode, ItemDefData.class));
 					items.put(id, newDef);
 				} else {
 					// Remove
@@ -1011,15 +1004,12 @@ public class ItemManagerImpl extends ItemManager {
 			throw new IllegalArgumentException("Item definition not found: " + id);
 
 		// Update it
-		ObjectNode obj = itm.getRawObject();
-		Iterator<String> names = rawData.fieldNames();
-		while (names.hasNext()) {
-			String key = names.next();
-
-			// Update field
-			if (obj.has(key))
-				obj.remove(key);
-			obj.set(key, rawData.get(key));
+		ObjectMapper mapper = new ObjectMapper();
+		ItemDefData obj = itm.getRawObject();
+		try {
+			mapper.updateValue(obj, rawData);
+		} catch (JsonMappingException e) {
+			throw new RuntimeException(e);
 		}
 		itm.reloadDef();
 		logger.debug("Updated item: " + itm.getID() + ": " + itm.getName());

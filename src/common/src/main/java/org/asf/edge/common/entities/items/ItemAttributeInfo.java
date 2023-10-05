@@ -1,7 +1,5 @@
 package org.asf.edge.common.entities.items;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 /**
  * 
  * Item attribute information
@@ -11,9 +9,9 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public class ItemAttributeInfo {
 	private String key;
-	private JsonNode value;
+	private String value;
 
-	public ItemAttributeInfo(String key, JsonNode value) {
+	public ItemAttributeInfo(String key, String value) {
 		this.key = key;
 		this.value = value;
 	}
@@ -32,7 +30,7 @@ public class ItemAttributeInfo {
 	 * 
 	 * @return Attribute value
 	 */
-	public JsonNode getValue() {
+	public String getValue() {
 		return value;
 	}
 }

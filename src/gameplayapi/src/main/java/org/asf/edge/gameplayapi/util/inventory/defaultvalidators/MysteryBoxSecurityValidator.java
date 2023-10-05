@@ -6,10 +6,9 @@ import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.xmls.items.relation.ItemRelationData;
 import org.asf.edge.gameplayapi.util.inventory.AbstractInventorySecurityValidator;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 public class MysteryBoxSecurityValidator extends AbstractInventorySecurityValidator {
 
@@ -29,38 +28,26 @@ public class MysteryBoxSecurityValidator extends AbstractInventorySecurityValida
 
 		// Check box
 		if (!isMysteryBox(def))
-			return true;		
+			return true;
 		return false;
 	}
 
 	private static boolean isMysteryBox(ItemInfo def) {
-		// Check item def
-		if (!def.getRawObject().has("r"))
-			return false;
-		JsonNode node = def.getRawObject().get("r");
-		if (node.isArray()) {
-			// Go through all nodes
-			for (JsonNode n : node) {
-				if (isMysteryItem(n)) {
-					// Its a mystery box
-					return true;
-				}
+		// Go through relations
+		for (ItemRelationData n : def.getRawObject().relations) {
+			if (isMysteryItem(n)) {
+				// Its a mystery box
+				return true;
 			}
-
-			// Not a mystery box
-			return false;
 		}
 
-		// Go through single node
-		return isMysteryItem(node);
+		// Not a mystery box
+		return false;
 	}
 
-	private static boolean isMysteryItem(JsonNode node) {
+	private static boolean isMysteryItem(ItemRelationData rel) {
 		// Check type
-		if (node.has("t")) {
-			return node.get("t").asText().equalsIgnoreCase("Prize");
-		}
-		return false;
+		return rel.type.equalsIgnoreCase("Prize");
 	}
 
 }

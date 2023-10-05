@@ -14,9 +14,9 @@ import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.items.ItemManager;
-import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardBlock;
+import org.asf.edge.common.xmls.achievements.AchievementRewardData;
+import org.asf.edge.common.xmls.items.inventory.InventoryItemEntryData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
-import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -46,12 +46,12 @@ public class RewardsUtil {
 	 * @return Array of AchievementRewardBlock instances
 	 * @throws IOException If giving rewards fails
 	 */
-	public static AchievementRewardBlock[] giveRewardsTo(AccountSaveContainer save, AchievementRewardBlock[] rewardDefs,
+	public static AchievementRewardData[] giveRewardsTo(AccountSaveContainer save, AchievementRewardData[] rewardDefs,
 			boolean wasGivenBefore, int invContainer) throws IOException {
 		// Go through rewards
-		ArrayList<AchievementRewardBlock> rewards = new ArrayList<AchievementRewardBlock>();
+		ArrayList<AchievementRewardData> rewards = new ArrayList<AchievementRewardData>();
 		if (rewardDefs != null) {
-			for (AchievementRewardBlock reward : rewardDefs) {
+			for (AchievementRewardData reward : rewardDefs) {
 				if (!reward.allowMultiple && wasGivenBefore)
 					continue;
 
@@ -139,7 +139,7 @@ public class RewardsUtil {
 					reward.uniqueRewardItemID = itm.getUniqueID();
 
 					// Add item
-					ItemBlock block = new ItemBlock();
+					InventoryItemEntryData block = new InventoryItemEntryData();
 					block.itemID = itm.getItemDefID();
 					block.quantity = itm.getQuantity();
 					block.uses = itm.getUses();
@@ -164,7 +164,7 @@ public class RewardsUtil {
 		}
 
 		// Return
-		return rewards.toArray(t -> new AchievementRewardBlock[t]);
+		return rewards.toArray(t -> new AchievementRewardData[t]);
 	}
 
 	private static String rankUserID(AccountSaveContainer save, RankTypeID id)
@@ -211,10 +211,10 @@ public class RewardsUtil {
 	 * @param invContainer   Inventory container ID
 	 * @throws IOException If giving rewards fails
 	 */
-	public static void addRewards(AccountSaveContainer save, AchievementRewardBlock[] rewardDefs,
-			boolean wasGivenBefore, int invContainer) throws IOException {
+	public static void addRewards(AccountSaveContainer save, AchievementRewardData[] rewardDefs, boolean wasGivenBefore,
+			int invContainer) throws IOException {
 		if (rewardDefs != null) {
-			for (AchievementRewardBlock reward : rewardDefs) {
+			for (AchievementRewardData reward : rewardDefs) {
 				if (!reward.allowMultiple && wasGivenBefore)
 					continue;
 
@@ -285,7 +285,7 @@ public class RewardsUtil {
 					}
 
 					// Add item
-					ItemBlock block = new ItemBlock();
+					InventoryItemEntryData block = new InventoryItemEntryData();
 					block.itemID = itm.getItemDefID();
 					block.quantity = itm.getQuantity();
 					block.uses = itm.getUses();

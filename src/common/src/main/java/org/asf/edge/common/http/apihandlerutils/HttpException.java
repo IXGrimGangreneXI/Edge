@@ -1,6 +1,5 @@
 package org.asf.edge.common.http.apihandlerutils;
 
-import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 
 /**

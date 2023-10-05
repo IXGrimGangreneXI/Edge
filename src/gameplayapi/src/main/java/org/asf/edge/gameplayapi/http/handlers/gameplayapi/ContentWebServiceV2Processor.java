@@ -42,6 +42,7 @@ import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.xmls.items.inventory.InventoryItemEntryData;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
@@ -59,7 +60,6 @@ import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
-import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData.ItemBlock;
 import org.asf.edge.gameplayapi.xmls.items.ItemPurchaseRequestData;
 import org.asf.edge.gameplayapi.xmls.minigamedata.GameDataSummaryData;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData.SuggestionResultBlock;
@@ -1003,11 +1003,11 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			resp.userID = tkn.saveID;
 
 		// Find items
-		ArrayList<ItemBlock> items = new ArrayList<ItemBlock>();
+		ArrayList<InventoryItemEntryData> items = new ArrayList<InventoryItemEntryData>();
 		for (PlayerInventoryItem itm : itemManager.getCommonInventory(data).getContainer(request.containerID)
 				.getItems()) {
 			// Add item
-			ItemBlock block = new ItemBlock();
+			InventoryItemEntryData block = new InventoryItemEntryData();
 			block.itemID = itm.getItemDefID();
 			block.quantity = itm.getQuantity();
 			block.uses = itm.getUses();
@@ -1020,7 +1020,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 				block.data = def.getRawObject();
 			items.add(block);
 		}
-		resp.items = items.toArray(t -> new ItemBlock[t]);
+		resp.items = items.toArray(t -> new InventoryItemEntryData[t]);
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("CI", resp));
