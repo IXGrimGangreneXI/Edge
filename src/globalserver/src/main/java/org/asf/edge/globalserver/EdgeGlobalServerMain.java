@@ -49,7 +49,7 @@ public class EdgeGlobalServerMain {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
 		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
-		System.out.println("                Full Server Version: 1.0.0.A3                ");
+		System.out.println("                 AIO Server Version 1.0.0.A3                 ");
 		System.out.println("                                                             ");
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("");
@@ -78,8 +78,8 @@ public class EdgeGlobalServerMain {
 		}
 
 		// Logger
-		Logger logger = LogManager.getLogger("FULLSERVER");
-		logger.info("EDGE Global (full) server is starting!");
+		Logger logger = LogManager.getLogger("AOISERVER");
+		logger.info("EDGE Global (All in One) server is starting!");
 		logger.info("Edge version: " + EdgeServerEnvironment.getEdgeVersion());
 		logger.info("Content server version: " + EdgeContentServer.CONTENT_SERVER_VERSION);
 		logger.info("Common API version: " + EdgeCommonApiServer.COMMON_API_VERSION);
