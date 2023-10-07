@@ -83,6 +83,8 @@ import org.asf.edge.gameplayapi.xmls.rooms.RoomList;
 import org.asf.edge.gameplayapi.xmls.rooms.RoomListEntryData;
 import org.asf.edge.gameplayapi.xmls.rooms.RoomListRequestData;
 import org.asf.edge.gameplayapi.xmls.rooms.RoomUpdateResponseData;
+import org.asf.edge.gameplayapi.xmls.rooms.SetItemStateRequestData;
+import org.asf.edge.gameplayapi.xmls.rooms.SetItemStateResponseData;
 
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -2219,6 +2221,46 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		newItemData.put(info.roomItemID, info);
 		createdItems.add(info.roomItemID);
 		return true;
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult setNextItemState(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, AccountSaveContainer save,
+			@SodRequestParam("setNextItemStateRequest") SetItemStateRequestData request) throws IOException {
+		if (manager == null)
+			manager = AccountManager.getInstance();
+		if (roomManager == null)
+			roomManager = PlayerRoomManager.getInstance();
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Find item
+		RoomItemInfo item = roomManager.getRoomItem(request.roomItemID, save);
+		if (item == null) {
+			// Error
+			SetItemStateResponseData resp = new SetItemStateResponseData();
+			resp.errorCode = 255;
+			resp.success = false;
+			return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+		}
+		if (true) {
+			// Error
+			SetItemStateResponseData resp = new SetItemStateResponseData();
+			resp.errorCode = 255;
+			resp.success = false;
+			return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+		}
+
+		// Build response
+		SetItemStateResponseData resp = new SetItemStateResponseData();
+		resp.errorCode = 1;
+		resp.success = true;
+
+		// Return
+		return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
 	}
 
 	@SodRequest
