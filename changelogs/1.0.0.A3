@@ -8,6 +8,7 @@ Changes in 1.0.0.A3:
 - Fixed alpha rally
 
 Fixed quests:
+- Fixed quests such as Dragon Rearing returning to a previous task on relog
 - Fixed missing rewards for the second quest of Friendship Festival 2023 (many thanks to the SoDOff team for helping us out!!!)
 - Fixed the 'Hatch your Egg' quest not being completed (many thanks to the SoDOff team for helping us out!!!)
 - Fixed lab quests breaking the game (many thanks to the SoDOff team for helping us out!!!)

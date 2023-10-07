@@ -1130,30 +1130,77 @@ public class QuestManagerImpl extends QuestManager {
 		}
 
 		private boolean isCompletedMission(MissionData mission) {
-			// Check completed tasks
-			if (mission.tasks != null) {
-				int taskCount = mission.tasks.length;
-				int completedTasks = (int) Stream.of(mission.tasks).filter(t -> t.completed > 0).count();
-				if (completedTasks >= taskCount) {
-					// The following checks are disabled as disabling them may fix a bug, if it
-					// causes issues instead they should be re-enabled
+			// Check criteria
+			if (mission.missionRules != null && mission.missionRules.criteria != null
+					&& mission.missionRules.criteria.rules != null && mission.missionRules.criteria.rules.length != 0) {
+				// Read minimal rules
+				int minCompletedRules = mission.missionRules.criteria.min;
+				if (mission.missionRules.criteria.type.equals("all"))
+					minCompletedRules = mission.missionRules.criteria.rules.length;
 
-//					// Tasks completed
-//					// Check child quests
-//					if (mission.childMissions != null) {
-//						for (MissionData ch : mission.childMissions) {
-//							// Check child quest mission
-//							if (!isCompletedMission(ch))
-//								return false;
-//						}
-//					}
+				// Go through rules
+				int completedRules = 0;
+				for (MissionData.MissionRulesBlock.CriteriaBlock.RuleInfoBlock rule : mission.missionRules.criteria.rules) {
+					// Handle type
+					switch (rule.type) {
 
-					// This quest has been completed
-					return true;
+					case 1: {
+						// Task
+
+						// Find mission
+						MissionData questD = mission;
+						if (rule.missionID != mission.id) {
+							// Find quest
+							UserQuestInfo uQuest = QuestManagerImpl.this.getUserQuest(save, rule.missionID);
+							if (uQuest == null)
+								break;
+							questD = uQuest.getData();
+						}
+
+						// Find task
+						if (questD.tasks != null) {
+							Optional<MissionData.TaskBlock> task = Stream.of(questD.tasks).filter(t -> t.id == rule.id)
+									.findFirst();
+							if (task.isPresent()) {
+								// Check
+								if (task.get().completed > 0)
+									completedRules++;
+							}
+						}
+
+						break;
+					}
+
+					case 2: {
+						// Mission
+
+						// Find mission
+						MissionData tMission = QuestManagerImpl.this.getQuestDef(rule.id);
+						if (tMission != null) {
+							// Check completion
+							if (QuestManagerImpl.this.getUserQuest(save, rule.id).isCompleted())
+								completedRules++;
+						}
+
+						break;
+					}
+
+					default: {
+						// Unknown
+						completedRules++;
+						break;
+					}
+
+					}
 				}
-				return false;
-			} else
-				return true; // No tasks
+
+				// Check
+				if (completedRules < minCompletedRules)
+					return false;
+			}
+
+			// Complete
+			return true;
 		}
 
 		@Override
