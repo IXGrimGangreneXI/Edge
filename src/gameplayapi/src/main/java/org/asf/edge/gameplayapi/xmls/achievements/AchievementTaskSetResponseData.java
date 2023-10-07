@@ -1,9 +1,14 @@
 package org.asf.edge.gameplayapi.xmls.achievements;
 
+import org.asf.edge.common.xmls.achievements.AchievementRewardData;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 
@@ -67,6 +72,11 @@ public class AchievementTaskSetResponseData {
 
 	@JsonProperty("l")
 	public IntWrapper level;
+
+	@JsonInclude(Include.NON_NULL)
+	@JsonProperty("AR")
+	@JacksonXmlElementWrapper(useWrapping = false)
+	public AchievementRewardData[] rewards;
 
 	@JsonProperty("aid")
 	public IntWrapper achievementTaskGroupID = null;
