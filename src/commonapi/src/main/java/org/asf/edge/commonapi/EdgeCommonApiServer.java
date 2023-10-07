@@ -34,8 +34,6 @@ import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.achievements.impl.AchievementManagerImpl;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
-import org.asf.edge.common.services.config.ConfigProviderService;
-import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
 import org.asf.edge.commonapi.config.CommonApiServerConfig;
 
 /**
@@ -167,11 +165,6 @@ public class EdgeCommonApiServer implements IBaseServer {
 		// Assign servers
 		server = config.server;
 		internalServer = config.internalServer;
-
-		// Config service
-		logger.info("Setting up config service");
-		ServiceManager.registerServiceImplementation(ConfigProviderService.class, new ConfigProviderServiceImpl());
-		ServiceManager.selectServiceImplementation(ConfigProviderService.class);
 
 		// Register content source
 		logger.debug("Adding case-insensitive content sources...");

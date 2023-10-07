@@ -30,8 +30,6 @@ import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
-import org.asf.edge.common.services.config.ConfigProviderService;
-import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.common.services.messages.WsMessageService;
@@ -156,11 +154,6 @@ public class EdgeMMOServer implements IBaseServer {
 
 		// Assign server
 		server = config.server;
-
-		// Config service
-		logger.info("Setting up config service");
-		ServiceManager.registerServiceImplementation(ConfigProviderService.class, new ConfigProviderServiceImpl());
-		ServiceManager.selectServiceImplementation(ConfigProviderService.class);
 
 		// Call event
 		logger.debug("Dispatching event...");

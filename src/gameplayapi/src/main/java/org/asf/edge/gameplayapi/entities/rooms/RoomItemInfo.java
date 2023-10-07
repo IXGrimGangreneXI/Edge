@@ -13,6 +13,8 @@ import org.asf.edge.gameplayapi.xmls.rooms.RoomItemData.ItemStatBlock;
  */
 public class RoomItemInfo {
 
+	public String roomID = null;
+
 	public int roomItemID = -1;
 	public int parentID = -1;
 

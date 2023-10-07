@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
@@ -100,8 +99,6 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	private static PlayerRoomManager roomManager;
 	private static ItemManager itemManager;
 	private static QuestManager questManager;
-
-	private static Random rnd = new Random();
 
 	public ContentWebServiceV1Processor(EdgeGameplayApiServer server) {
 		super(server);
@@ -2156,12 +2153,6 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			info.parentID = crReq.parentID.value;
 		}
 
-		// Create ID
-		int id = rnd.nextInt(0, Integer.MAX_VALUE);
-		while (newItemData.containsKey(id))
-			id = rnd.nextInt(0, Integer.MAX_VALUE);
-		info.roomItemID = id;
-
 		// Assign item fields
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -2219,6 +2210,9 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			stateBlock.itemPositionID = info.roomItemID;
 			statesL.add(stateBlock);
 		}
+
+		// Create
+		info = roomManager.createRoomItem(info, save);
 
 		// Success
 		crReq.result = info;

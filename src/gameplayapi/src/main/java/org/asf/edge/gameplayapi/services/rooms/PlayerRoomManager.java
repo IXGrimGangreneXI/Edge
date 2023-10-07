@@ -4,6 +4,7 @@ import org.asf.edge.common.services.AbstractService;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.gameplayapi.entities.rooms.PlayerRoomInfo;
+import org.asf.edge.gameplayapi.entities.rooms.RoomItemInfo;
 
 /**
  * 
@@ -72,5 +73,48 @@ public abstract class PlayerRoomManager extends AbstractService {
 	 * @return True if the room exists, false otherwise
 	 */
 	public abstract boolean roomExists(String roomID, AccountSaveContainer save);
+
+	/**
+	 * Checks if room items exists
+	 * 
+	 * @param itemID Room item ID
+	 * @param save   Player save
+	 * @return True if the room exists, false otherwise
+	 */
+	public abstract boolean roomItemExists(int itemID, AccountSaveContainer save);
+
+	/**
+	 * Deletes room items
+	 * 
+	 * @param itemID Room item ID
+	 * @param save   Player save
+	 */
+	public abstract void deleteRoomItem(int itemID, AccountSaveContainer save);
+
+	/**
+	 * Retrieves room items by ID
+	 * 
+	 * @param itemID Room item ID
+	 * @param save   Player save
+	 * @return RoomItemInfo instance or null
+	 */
+	public abstract RoomItemInfo getRoomItem(int itemID, AccountSaveContainer save);
+
+	/**
+	 * Saves room items
+	 * 
+	 * @param item Item to save
+	 * @param save Player save
+	 */
+	public abstract void setRoomItem(RoomItemInfo item, AccountSaveContainer save);
+
+	/**
+	 * Creates room items
+	 * 
+	 * @param item Item data to use
+	 * @param save Player save
+	 * @return RoomItemInfo instance with new item ID
+	 */
+	public abstract RoomItemInfo createRoomItem(RoomItemInfo item, AccountSaveContainer save);
 
 }

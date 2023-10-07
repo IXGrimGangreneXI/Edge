@@ -15,6 +15,8 @@ import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.commondata.CommonDataManager;
+import org.asf.edge.common.services.config.ConfigProviderService;
+import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
 
@@ -36,13 +38,18 @@ public class EdgeCommonApiServerMain {
 		EdgeServerEnvironment.initAll();
 		EdgeServerEnvironment.addServerType("commonapi");
 
-		// Run updater if needed
-		CommonUpdater.init("commonapi", "stable", EdgeCommonApiServer.COMMON_API_VERSION,
-				new File(EdgeCommonApiServerMain.class.getProtectionDomain().getCodeSource().getLocation().toURI()));
-
 		// Logger
 		Logger logger = LogManager.getLogger("COMMONAPI");
 		logger.info("Preparing to start...");
+
+		// Config service
+		logger.info("Setting up config service...");
+		ServiceManager.registerServiceImplementation(ConfigProviderService.class, new ConfigProviderServiceImpl());
+		ServiceManager.selectServiceImplementation(ConfigProviderService.class);
+
+		// Run updater if needed
+		CommonUpdater.init("commonapi", "stable", EdgeCommonApiServer.COMMON_API_VERSION,
+				new File(EdgeCommonApiServerMain.class.getProtectionDomain().getCodeSource().getLocation().toURI()));
 
 		// Load modules
 		ModuleManager.init();

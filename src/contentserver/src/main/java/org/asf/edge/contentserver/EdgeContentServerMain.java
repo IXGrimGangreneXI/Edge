@@ -10,6 +10,9 @@ import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.EdgeServerEnvironment;
+import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.services.config.ConfigProviderService;
+import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
 import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -28,6 +31,15 @@ public class EdgeContentServerMain {
 		// Splash
 		EdgeContentServer.printSplash();
 
+		// Logger
+		Logger logger = LogManager.getLogger("CONTENTSERVER");
+		logger.info("Preparing to start...");
+
+		// Config service
+		logger.info("Setting up config service");
+		ServiceManager.registerServiceImplementation(ConfigProviderService.class, new ConfigProviderServiceImpl());
+		ServiceManager.selectServiceImplementation(ConfigProviderService.class);
+
 		// Common init
 		EdgeServerEnvironment.initAll();
 		EdgeServerEnvironment.addServerType("contentserver");
@@ -35,10 +47,6 @@ public class EdgeContentServerMain {
 		// Run updater if needed
 		CommonUpdater.init("contentserver", "stable", EdgeContentServer.CONTENT_SERVER_VERSION,
 				new File(EdgeContentServerMain.class.getProtectionDomain().getCodeSource().getLocation().toURI()));
-
-		// Logger
-		Logger logger = LogManager.getLogger("CONTENTSERVER");
-		logger.info("Preparing to start...");
 
 		// Load modules
 		ModuleManager.init();

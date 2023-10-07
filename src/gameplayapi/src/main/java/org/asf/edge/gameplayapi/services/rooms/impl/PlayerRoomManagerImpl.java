@@ -2,6 +2,7 @@ package org.asf.edge.gameplayapi.services.rooms.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,6 +24,7 @@ import com.google.gson.JsonObject;
 public class PlayerRoomManagerImpl extends PlayerRoomManager {
 
 	private Logger logger;
+	private static Random rnd = new Random();
 
 	@Override
 	public void initService() {
@@ -98,11 +100,140 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 			AccountDataContainer data = save.getSaveData();
 			data = data.getChildContainer("rooms");
 
-			// Create room
+			// Check room
 			return data.entryExists("room-" + roomID);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public boolean roomItemExists(int itemID, AccountSaveContainer save) {
+		try {
+			// Load data
+			AccountDataContainer data = save.getSaveData();
+			data = data.getChildContainer("roomitems");
+
+			// Check item
+			return data.entryExists("item-" + itemID);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public void deleteRoomItem(int itemID, AccountSaveContainer save) {
+		try {
+			// Load data
+			AccountDataContainer data = save.getSaveData();
+			data = data.getChildContainer("roomitems");
+
+			// Check item
+			if (data.entryExists("item-" + itemID))
+				data.deleteEntry("item-" + itemID);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public RoomItemInfo getRoomItem(int itemID, AccountSaveContainer save) {
+		try {
+			// Load data
+			AccountDataContainer data = save.getSaveData();
+			data = data.getChildContainer("roomitems");
+
+			// Check item
+			if (data.entryExists("item-" + itemID)) {
+				JsonObject rObj = data.getEntry("item-" + itemID).getAsJsonObject();
+				RoomItemInfo item = new RoomItemInfo();
+				item.roomItemID = itemID;
+				item.roomID = rObj.get("roomID").getAsString();
+				item.parentID = rObj.get("parentID").getAsInt();
+				item.itemID = rObj.get("itemID").getAsInt();
+				item.itemUniqueID = rObj.get("itemUniqueID").getAsInt();
+				item.uses = rObj.get("uses").getAsInt();
+				item.currentStateID = rObj.get("currentStateID").getAsInt();
+				item.lastStateChange = rObj.get("lastStateChange").getAsLong();
+				if (rObj.has("inventoryModificationDate"))
+					item.inventoryModificationDate = rObj.get("inventoryModificationDate").getAsString();
+				if (rObj.has("itemAttributes"))
+					item.itemAttributes = new XmlMapper().readValue(rObj.get("itemAttributes").getAsString(),
+							KeyValuePairSetData.class);
+				if (rObj.has("itemStats"))
+					item.itemStats = new XmlMapper().readValue(rObj.get("itemStats").getAsString(),
+							ItemStatBlock.class);
+				item.position = new Vector3D(rObj.get("position").getAsJsonObject().get("x").getAsDouble(),
+						rObj.get("position").getAsJsonObject().get("y").getAsDouble(),
+						rObj.get("position").getAsJsonObject().get("z").getAsDouble());
+				item.rotation = new Vector3D(rObj.get("rotation").getAsJsonObject().get("x").getAsDouble(),
+						rObj.get("rotation").getAsJsonObject().get("y").getAsDouble(),
+						rObj.get("rotation").getAsJsonObject().get("z").getAsDouble());
+				return item;
+			}
+		} catch (IOException e) {
+		}
+		return null;
+	}
+
+	@Override
+	public void setRoomItem(RoomItemInfo itm, AccountSaveContainer save) {
+		try {
+			// Create mapper
+			XmlMapper mapper = new XmlMapper();
+			mapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true);
+
+			// Assign
+			JsonObject rI = new JsonObject();
+			rI.addProperty("roomID", itm.roomID);
+			rI.addProperty("parentID", itm.parentID);
+			rI.addProperty("itemID", itm.itemID);
+			rI.addProperty("itemUniqueID", itm.itemUniqueID);
+			rI.addProperty("uses", itm.uses);
+			rI.addProperty("currentStateID", itm.currentStateID);
+			rI.addProperty("lastStateChange", itm.lastStateChange);
+			if (itm.inventoryModificationDate != null)
+				rI.addProperty("inventoryModificationDate", itm.inventoryModificationDate);
+			if (itm.itemAttributes != null)
+				rI.addProperty("itemAttributes",
+						mapper.writer().withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL)
+								.withRootName("ItemAttributeData").writeValueAsString(itm.itemAttributes));
+			if (itm.itemStats != null)
+				rI.addProperty("itemStats", mapper.writer().withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL)
+						.withRootName("ItemStatData").writeValueAsString(itm.itemStats));
+			JsonObject pos = new JsonObject();
+			pos.addProperty("x", itm.position.x);
+			pos.addProperty("y", itm.position.y);
+			pos.addProperty("z", itm.position.z);
+			rI.add("position", pos);
+			JsonObject rot = new JsonObject();
+			rot.addProperty("x", itm.rotation.x);
+			rot.addProperty("y", itm.rotation.y);
+			rot.addProperty("z", itm.rotation.z);
+			rI.add("rotation", rot);
+
+			// Save data
+			AccountDataContainer data = save.getSaveData();
+			data = data.getChildContainer("roomitems");
+			data.setEntry("item-", rI);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public RoomItemInfo createRoomItem(RoomItemInfo itm, AccountSaveContainer save) {
+		// Create ID
+		int id = rnd.nextInt(0, Integer.MAX_VALUE);
+		while (roomItemExists(id, save))
+			id = rnd.nextInt(0, Integer.MAX_VALUE);
+		itm.roomItemID = id;
+
+		// Save
+		setRoomItem(itm, save);
+
+		// Return
+		return itm;
 	}
 
 	public class PlayerRoomInfoImpl extends PlayerRoomInfo {
@@ -146,35 +277,10 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 			ArrayList<RoomItemInfo> items = new ArrayList<RoomItemInfo>();
 
 			// Load
-			try {
-				for (JsonElement ele : itms) {
-					JsonObject rObj = ele.getAsJsonObject();
-					RoomItemInfo item = new RoomItemInfo();
-					item.roomItemID = rObj.get("roomItemID").getAsInt();
-					item.parentID = rObj.get("parentID").getAsInt();
-					item.itemID = rObj.get("itemID").getAsInt();
-					item.itemUniqueID = rObj.get("itemUniqueID").getAsInt();
-					item.uses = rObj.get("uses").getAsInt();
-					item.currentStateID = rObj.get("currentStateID").getAsInt();
-					item.lastStateChange = rObj.get("lastStateChange").getAsLong();
-					if (rObj.has("inventoryModificationDate"))
-						item.inventoryModificationDate = rObj.get("inventoryModificationDate").getAsString();
-					if (rObj.has("itemAttributes"))
-						item.itemAttributes = new XmlMapper().readValue(rObj.get("itemAttributes").getAsString(),
-								KeyValuePairSetData.class);
-					if (rObj.has("itemStats"))
-						item.itemStats = new XmlMapper().readValue(rObj.get("itemStats").getAsString(),
-								ItemStatBlock.class);
-					item.position = new Vector3D(rObj.get("position").getAsJsonObject().get("x").getAsDouble(),
-							rObj.get("position").getAsJsonObject().get("y").getAsDouble(),
-							rObj.get("position").getAsJsonObject().get("z").getAsDouble());
-					item.rotation = new Vector3D(rObj.get("rotation").getAsJsonObject().get("x").getAsDouble(),
-							rObj.get("rotation").getAsJsonObject().get("y").getAsDouble(),
-							rObj.get("rotation").getAsJsonObject().get("z").getAsDouble());
-					items.add(item);
-				}
-			} catch (IOException e) {
-				throw new RuntimeException(e);
+			for (JsonElement ele : itms) {
+				RoomItemInfo itm = getRoomItem(ele.getAsInt(), save);
+				if (itm != null && itm.roomID == roomID)
+					items.add(itm);
 			}
 
 			// Return
@@ -190,40 +296,12 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 			XmlMapper mapper = new XmlMapper();
 			mapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true);
 			for (RoomItemInfo itm : items) {
-				try {
-					// Assign
-					JsonObject rI = new JsonObject();
-					rI.addProperty("roomItemID", itm.roomItemID);
-					rI.addProperty("parentID", itm.parentID);
-					rI.addProperty("itemID", itm.itemID);
-					rI.addProperty("itemUniqueID", itm.itemUniqueID);
-					rI.addProperty("uses", itm.uses);
-					rI.addProperty("currentStateID", itm.currentStateID);
-					rI.addProperty("lastStateChange", itm.lastStateChange);
-					if (itm.inventoryModificationDate != null)
-						rI.addProperty("inventoryModificationDate", itm.inventoryModificationDate);
-					if (itm.itemAttributes != null)
-						rI.addProperty("itemAttributes",
-								mapper.writer().withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL)
-										.withRootName("ItemAttributeData").writeValueAsString(itm.itemAttributes));
-					if (itm.itemStats != null)
-						rI.addProperty("itemStats",
-								mapper.writer().withFeatures(ToXmlGenerator.Feature.WRITE_NULLS_AS_XSI_NIL)
-										.withRootName("ItemStatData").writeValueAsString(itm.itemStats));
-					JsonObject pos = new JsonObject();
-					pos.addProperty("x", itm.position.x);
-					pos.addProperty("y", itm.position.y);
-					pos.addProperty("z", itm.position.z);
-					rI.add("position", pos);
-					JsonObject rot = new JsonObject();
-					rot.addProperty("x", itm.rotation.x);
-					rot.addProperty("y", itm.rotation.y);
-					rot.addProperty("z", itm.rotation.z);
-					rI.add("rotation", rot);
-					arr.add(rI);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
+				// Assign
+				itm.roomID = roomID;
+				arr.add(itm.roomItemID);
+
+				// Save item
+				setRoomItem(itm, save);
 			}
 
 			// Set item ID

@@ -13,9 +13,6 @@ import org.asf.edge.contentserver.http.postprocessors.ApplicationManifestPreProc
 import org.asf.edge.contentserver.http.postprocessors.ServerDownPreprocessor;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.common.IBaseServer;
-import org.asf.edge.common.services.ServiceManager;
-import org.asf.edge.common.services.config.ConfigProviderService;
-import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
 import org.asf.edge.contentserver.events.server.ContentServerSetupEvent;
 import org.asf.edge.contentserver.events.server.ContentServerStartupEvent;
 import org.asf.edge.contentserver.config.ContentServerConfig;
@@ -115,11 +112,6 @@ public class EdgeContentServer implements IBaseServer {
 
 		// Assign server
 		server = config.server;
-
-		// Config service
-		logger.info("Setting up config service");
-		ServiceManager.registerServiceImplementation(ConfigProviderService.class, new ConfigProviderServiceImpl());
-		ServiceManager.selectServiceImplementation(ConfigProviderService.class);
 
 		// Prepare data folder
 		File dataPath = new File(config.contentDataPath);

@@ -15,6 +15,8 @@ import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.commondata.CommonDataManager;
+import org.asf.edge.common.services.config.ConfigProviderService;
+import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.modules.gridapi.commands.CommandContext;
@@ -44,6 +46,11 @@ public class EdgeGridApiServerMain {
 		// Logger
 		Logger logger = LogManager.getLogger("GRIDAPI");
 		logger.info("Preparing to start...");
+
+		// Config service
+		logger.info("Setting up config service");
+		ServiceManager.registerServiceImplementation(ConfigProviderService.class, new ConfigProviderServiceImpl());
+		ServiceManager.selectServiceImplementation(ConfigProviderService.class);
 
 		// Load modules
 		ModuleManager.init();

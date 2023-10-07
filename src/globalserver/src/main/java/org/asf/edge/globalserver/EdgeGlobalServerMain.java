@@ -16,6 +16,8 @@ import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.commondata.CommonDataManager;
+import org.asf.edge.common.services.config.ConfigProviderService;
+import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
 import org.asf.edge.contentserver.EdgeContentServer;
 import org.asf.edge.contentserver.config.ContentServerConfig;
 import org.asf.edge.contentserver.events.config.ContentServerConfigLoadedEvent;
@@ -62,6 +64,22 @@ public class EdgeGlobalServerMain {
 		EdgeServerEnvironment.addServerType("gameplayapi");
 		EdgeServerEnvironment.addServerType("mmoserver");
 
+		// Logger
+		Logger logger = LogManager.getLogger("AOISERVER");
+		logger.info("EDGE Global (All in One) server is starting!");
+		logger.info("Edge version: " + EdgeServerEnvironment.getEdgeVersion());
+		logger.info("Content server version: " + EdgeContentServer.CONTENT_SERVER_VERSION);
+		logger.info("Common API version: " + EdgeCommonApiServer.COMMON_API_VERSION);
+		logger.info("Gameplay API server version: " + EdgeGameplayApiServer.GAMEPLAY_API_VERSION);
+		logger.info("MMO server version: " + EdgeMMOServer.MMO_SERVER_VERSION);
+		logger.info("Global server version: " + GLOBAL_SERVER_VERSION);
+		logger.info("Preparing to start...");
+
+		// Config service
+		logger.info("Setting up config service...");
+		ServiceManager.registerServiceImplementation(ConfigProviderService.class, new ConfigProviderServiceImpl());
+		ServiceManager.selectServiceImplementation(ConfigProviderService.class);
+
 		// Run updater if needed
 		CommonUpdater.init("globalserver", "stable", EdgeGlobalServerMain.GLOBAL_SERVER_VERSION,
 				new File(EdgeGlobalServerMain.class.getProtectionDomain().getCodeSource().getLocation().toURI()));
@@ -76,17 +94,6 @@ public class EdgeGlobalServerMain {
 				SentinelUpdateManager.init(listUrl, currentVersion);
 			}
 		}
-
-		// Logger
-		Logger logger = LogManager.getLogger("AOISERVER");
-		logger.info("EDGE Global (All in One) server is starting!");
-		logger.info("Edge version: " + EdgeServerEnvironment.getEdgeVersion());
-		logger.info("Content server version: " + EdgeContentServer.CONTENT_SERVER_VERSION);
-		logger.info("Common API version: " + EdgeCommonApiServer.COMMON_API_VERSION);
-		logger.info("Gameplay API server version: " + EdgeGameplayApiServer.GAMEPLAY_API_VERSION);
-		logger.info("MMO server version: " + EdgeMMOServer.MMO_SERVER_VERSION);
-		logger.info("Global server version: " + GLOBAL_SERVER_VERSION);
-		logger.info("Preparing to start...");
 
 		// Load modules
 		ModuleManager.init();
