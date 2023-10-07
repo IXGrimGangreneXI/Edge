@@ -25,8 +25,6 @@ import org.asf.edge.common.xmls.items.state.ItemStateData;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
 import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardList;
-import org.asf.edge.gameplayapi.xmls.achievements.AchievementTaskSetResponseData;
-import org.asf.edge.gameplayapi.xmls.achievements.AchievementTaskSetResponseList;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestData;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestRewardBlock;
 import org.asf.edge.gameplayapi.xmls.achievements.edgespecific.AchievementRewardDefData;
@@ -340,123 +338,124 @@ public class AchievementRewardDataConverter {
 										// Save
 										rewards.put(achievementID, def);
 									}
-								} else if (u.getPath()
-										.equalsIgnoreCase("/V2/AchievementWebService.asmx/SetUserAchievementTask")) {
-									// Decode request
-									byte[] dec = Base64.getDecoder().decode(
-											obj.get("request").getAsJsonObject().get("requestBody").getAsString());
-
-									// Check encoding
-									JsonObject headers = obj.get("request").getAsJsonObject().get("headers")
-											.getAsJsonObject();
-									if (headers.has("Content-Encoding")
-											&& headers.get("Content-Encoding").getAsString().equalsIgnoreCase("gzip")) {
-										GZIPInputStream strm = new GZIPInputStream(new ByteArrayInputStream(dec));
-										dec = strm.readAllBytes();
-										strm.close();
-									}
+								}
+//								else if (u.getPath()
+//										.equalsIgnoreCase("/V2/AchievementWebService.asmx/SetUserAchievementTask")) {
+//									// Decode request
+//									byte[] dec = Base64.getDecoder().decode(
+//											obj.get("request").getAsJsonObject().get("requestBody").getAsString());
 //
-//									// Parse response
-//									String reqBody = new String(dec, "UTF-8");
-//									Map<String, String> payload = parseForm(reqBody);
+//									// Check encoding
+//									JsonObject headers = obj.get("request").getAsJsonObject().get("headers")
+//											.getAsJsonObject();
+//									if (headers.has("Content-Encoding")
+//											&& headers.get("Content-Encoding").getAsString().equalsIgnoreCase("gzip")) {
+//										GZIPInputStream strm = new GZIPInputStream(new ByteArrayInputStream(dec));
+//										dec = strm.readAllBytes();
+//										strm.close();
+//									}
+////
+////									// Parse response
+////									String reqBody = new String(dec, "UTF-8");
+////									Map<String, String> payload = parseForm(reqBody);
+////
+////									// Compute key
+////									String apiKey = payload.get("apiKey");
+////									String secret = "56BB211B-CF06-48E1-9C1D-E40B5173D759";
+////									if (EdgeWebService.API_SECRET_MAP.containsKey(apiKey.toUpperCase()))
+////										secret = EdgeWebService.API_SECRET_MAP.get(apiKey.toUpperCase());
+////									byte[] key;
+////									try {
+////										MessageDigest digest = MessageDigest.getInstance("MD5");
+////										key = digest.digest(secret.getBytes("UTF-16LE"));
+////									} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+////										throw new RuntimeException(e);
+////									}
+////
+////									// Decrypt request
+////									byte[] decrypt = TripleDesUtil.decrypt(
+////											Base64.getDecoder().decode(payload.get("achievementTaskSetRequest")), key);
+////									String reqPayloadBody = new String(decrypt, "UTF-16LE");
+////									AchievementTaskSetRequestList req = mapper.readValue(reqPayloadBody,
+////											AchievementTaskSetRequestList.class);
+////
+//									// Decode response
+//									dec = Base64.getDecoder().decode(
+//											obj.get("response").getAsJsonObject().get("responseBody").getAsString());
 //
-//									// Compute key
-//									String apiKey = payload.get("apiKey");
-//									String secret = "56BB211B-CF06-48E1-9C1D-E40B5173D759";
-//									if (EdgeWebService.API_SECRET_MAP.containsKey(apiKey.toUpperCase()))
-//										secret = EdgeWebService.API_SECRET_MAP.get(apiKey.toUpperCase());
-//									byte[] key;
-//									try {
-//										MessageDigest digest = MessageDigest.getInstance("MD5");
-//										key = digest.digest(secret.getBytes("UTF-16LE"));
-//									} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-//										throw new RuntimeException(e);
+//									// Check encoding
+//									headers = obj.get("response").getAsJsonObject().get("headers").getAsJsonObject();
+//									if (headers.has("Content-Encoding")
+//											&& headers.get("Content-Encoding").getAsString().equalsIgnoreCase("gzip")) {
+//										GZIPInputStream strm = new GZIPInputStream(new ByteArrayInputStream(dec));
+//										dec = strm.readAllBytes();
+//										strm.close();
 //									}
 //
-//									// Decrypt request
-//									byte[] decrypt = TripleDesUtil.decrypt(
-//											Base64.getDecoder().decode(payload.get("achievementTaskSetRequest")), key);
-//									String reqPayloadBody = new String(decrypt, "UTF-16LE");
-//									AchievementTaskSetRequestList req = mapper.readValue(reqPayloadBody,
-//											AchievementTaskSetRequestList.class);
+//									// Parse response
+//									String resBody = new String(dec, "UTF-8");
+//									AchievementTaskSetResponseList resp = mapper.readValue(resBody,
+//											AchievementTaskSetResponseList.class);
 //
-									// Decode response
-									dec = Base64.getDecoder().decode(
-											obj.get("response").getAsJsonObject().get("responseBody").getAsString());
-
-									// Check encoding
-									headers = obj.get("response").getAsJsonObject().get("headers").getAsJsonObject();
-									if (headers.has("Content-Encoding")
-											&& headers.get("Content-Encoding").getAsString().equalsIgnoreCase("gzip")) {
-										GZIPInputStream strm = new GZIPInputStream(new ByteArrayInputStream(dec));
-										dec = strm.readAllBytes();
-										strm.close();
-									}
-
-									// Parse response
-									String resBody = new String(dec, "UTF-8");
-									AchievementTaskSetResponseList resp = mapper.readValue(resBody,
-											AchievementTaskSetResponseList.class);
-
-									// Go through requests
-									if (resp != null) {
-										for (AchievementTaskSetResponseData data : resp.responses) {
-											// Go over rewards
-											if (data.rewards != null) {
-												// Load achievement ID
-												int achievementID = data.achievementInfoID.value;
-
-												// Load or create def
-												AchievementRewardDefData def = rewards.get(achievementID);
-												if (def == null)
-													def = new AchievementRewardDefData();
-
-												// Populate with existing data
-												def.achievementID = achievementID;
-												LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock> rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
-												if (def.rewards != null) {
-													for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
-														rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID,
-																reward);
-													}
-												}
-
-												// Import rewards
-												for (AchievementRewardData reward : data.rewards) {
-													// Create or load entry
-													AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
-															.get(reward.rewardID + "-" + reward.pointTypeID);
-													if (entry == null) {
-														// Create
-														entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
-														entry.rewardID = reward.rewardID;
-														entry.pointTypeID = reward.pointTypeID;
-														entry.itemID = reward.itemID;
-														entry.allowMultiple = reward.allowMultiple;
-														rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID,
-																entry);
-													}
-
-													// Apply edits
-													entry.entityTypeID = reward.entityTypeID;
-
-													// Compute minimal and maximum values
-													if ((reward.amount / 2) < entry.minAmount || entry.minAmount == 0)
-														entry.minAmount = (reward.amount / 2);
-													if (reward.amount > entry.maxAmount)
-														entry.maxAmount = (reward.amount / 2);
-												}
-
-												// Add rewards
-												def.rewards = rewardEntries.values().toArray(
-														t -> new AchievementRewardDefData.AchievementRewardEntryBlock[t]);
-
-												// Save
-												rewards.put(achievementID, def);
-											}
-										}
-									}
-								}
+//									// Go through requests
+//									if (resp != null) {
+//										for (AchievementTaskSetResponseData data : resp.responses) {
+//											// Go over rewards
+//											if (data.rewards != null) {
+//												// Load achievement ID
+//												int achievementID = data.achievementInfoID.value;
+//
+//												// Load or create def
+//												AchievementRewardDefData def = rewards.get(achievementID);
+//												if (def == null)
+//													def = new AchievementRewardDefData();
+//
+//												// Populate with existing data
+//												def.achievementID = achievementID;
+//												LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock> rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
+//												if (def.rewards != null) {
+//													for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
+//														rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID,
+//																reward);
+//													}
+//												}
+//
+//												// Import rewards
+//												for (AchievementRewardData reward : data.rewards) {
+//													// Create or load entry
+//													AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
+//															.get(reward.rewardID + "-" + reward.pointTypeID);
+//													if (entry == null) {
+//														// Create
+//														entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
+//														entry.rewardID = reward.rewardID;
+//														entry.pointTypeID = reward.pointTypeID;
+//														entry.itemID = reward.itemID;
+//														entry.allowMultiple = reward.allowMultiple;
+//														rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID,
+//																entry);
+//													}
+//
+//													// Apply edits
+//													entry.entityTypeID = reward.entityTypeID;
+//
+//													// Compute minimal and maximum values
+//													if ((reward.amount / 2) < entry.minAmount || entry.minAmount == 0)
+//														entry.minAmount = (reward.amount / 2);
+//													if (reward.amount > entry.maxAmount)
+//														entry.maxAmount = (reward.amount / 2);
+//												}
+//
+//												// Add rewards
+//												def.rewards = rewardEntries.values().toArray(
+//														t -> new AchievementRewardDefData.AchievementRewardEntryBlock[t]);
+//
+//												// Save
+//												rewards.put(achievementID, def);
+//											}
+//										}
+//									}
+//								}
 							} else
 								throw new IOException("Invalid file");
 						}

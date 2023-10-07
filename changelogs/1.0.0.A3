@@ -17,7 +17,7 @@ Fixed quests:
 
 New features:
 - Implemented hideouts
-- Implemented PARTIAL farm support (still very early in development, may be buggy)
+- Implemented farm support (farming is still in early in development, may be buggy)
 - Implemented support for 1.x dragon mechanics, stats should now persist in 1.x versions
 - Implemented basic quest support for 1.x versions (many thanks to the SoDOff team for pointing out the issues with it)
 - Implemented support for <2.8 avatar data (2.5 and below should have avatars, tho not all versions may work, if there are versions that dont work with avatars, open a bug report)

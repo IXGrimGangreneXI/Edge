@@ -72,6 +72,8 @@ public class ConfigurationWebServiceProcessor extends EdgeWebService<EdgeCommonA
 							addr = host;
 						}
 					}
+					if (host.equals("localhost"))
+						host = "127.0.0.1";
 				}
 
 				// Create block

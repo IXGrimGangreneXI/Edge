@@ -106,7 +106,7 @@ public abstract class PlayerRoomManager extends AbstractService {
 	 * @param item Item to save
 	 * @param save Player save
 	 */
-	public abstract void setRoomItem(RoomItemInfo item, AccountSaveContainer save);
+	public abstract void saveRoomItem(RoomItemInfo item, AccountSaveContainer save);
 
 	/**
 	 * Creates room items

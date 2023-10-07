@@ -67,7 +67,6 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 				roomD.addProperty("roomName", save.getUsername());
 				roomD.addProperty("itemID", -1);
 				roomD.addProperty("creativePoints", 0);
-				roomD.addProperty("listed", false);
 				roomD.add("items", new JsonArray());
 				data.setEntry("room-" + roomID, roomD);
 			}
@@ -177,7 +176,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 	}
 
 	@Override
-	public void setRoomItem(RoomItemInfo itm, AccountSaveContainer save) {
+	public void saveRoomItem(RoomItemInfo itm, AccountSaveContainer save) {
 		try {
 			// Create mapper
 			XmlMapper mapper = new XmlMapper();
@@ -189,7 +188,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 			rI.addProperty("parentID", itm.parentID);
 			rI.addProperty("itemID", itm.itemID);
 			rI.addProperty("itemUniqueID", itm.itemUniqueID);
-			rI.addProperty("uses", itm.uses);
+			rI.addProperty("uses", itm.getCurrentUses(save));
 			rI.addProperty("currentStateID", itm.currentStateID);
 			rI.addProperty("lastStateChange", itm.lastStateChange);
 			if (itm.inventoryModificationDate != null)
@@ -230,7 +229,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 		itm.roomItemID = id;
 
 		// Save
-		setRoomItem(itm, save);
+		saveRoomItem(itm, save);
 
 		// Return
 		return itm;
@@ -279,7 +278,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 			// Load
 			for (JsonElement ele : itms) {
 				RoomItemInfo itm = getRoomItem(ele.getAsInt(), save);
-				if (itm != null && itm.roomID == roomID)
+				if (itm != null && itm.roomID.equals(roomID))
 					items.add(itm);
 			}
 
@@ -303,7 +302,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 				arr.add(itm.roomItemID);
 
 				// Save item
-				setRoomItem(itm, save);
+				saveRoomItem(itm, save);
 			}
 
 			// Set item ID

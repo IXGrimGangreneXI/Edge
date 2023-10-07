@@ -12,7 +12,7 @@ public class ItemStateRuleData {
 
 	@JsonProperty("Criterias")
 	@JacksonXmlElementWrapper(useWrapping = false)
-	public ItemStateCriteriaData[] criteria = new ItemStateCriteriaData[0];
+	public ItemStateCriteriaWrapperData[] criteria = new ItemStateCriteriaWrapperData[0];
 
 	@JsonProperty("CompletionAction")
 	public ItemStateCompletionAction completionAction;

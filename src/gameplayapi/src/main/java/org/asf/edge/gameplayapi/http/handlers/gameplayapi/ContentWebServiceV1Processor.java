@@ -50,6 +50,12 @@ import org.asf.edge.common.xmls.data.KeyValuePairData;
 import org.asf.edge.common.xmls.data.KeyValuePairSetData;
 import org.asf.edge.common.xmls.items.ItemDefData;
 import org.asf.edge.common.xmls.items.inventory.InventoryItemEntryData;
+import org.asf.edge.common.xmls.items.state.ItemStateCriteriaWrapperData;
+import org.asf.edge.common.xmls.items.state.ItemStateData;
+import org.asf.edge.common.xmls.items.state.criteria.ItemStateConsumableCriteriaData;
+import org.asf.edge.common.xmls.items.state.criteria.ItemStateExpiryCriteriaData;
+import org.asf.edge.common.xmls.items.state.criteria.ItemStateLengthCriteriaData;
+import org.asf.edge.common.xmls.items.state.criteria.ItemStateSpeedUpCriteriaData;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.entities.rooms.PlayerRoomInfo;
@@ -57,6 +63,7 @@ import org.asf.edge.gameplayapi.entities.rooms.RoomItemInfo;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.rooms.PlayerRoomManager;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
+import org.asf.edge.gameplayapi.util.RewardsUtil;
 import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
@@ -1969,7 +1976,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			d.itemUniqueID = new RoomItemData.IntWrapper(it.itemUniqueID);
 			d.itemDef = ItemManager.getInstance().getItemDefinition(it.itemID).getRawObject();
 		}
-		d.uses = new RoomItemData.IntWrapper(it.uses);
+		d.uses = new RoomItemData.IntWrapper(it.getCurrentUses(save));
 		if (it.inventoryModificationDate != null)
 			d.inventoryModificationDate = new RoomItemData.StringWrapper(it.inventoryModificationDate);
 		if (it.itemAttributes != null)
@@ -2198,10 +2205,6 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			addedState = true;
 		}
 
-		// Add modification time
-		if (addedState)
-			info.lastStateChange = System.currentTimeMillis();
-
 		// Create
 		info = roomManager.createRoomItem(info, save);
 
@@ -2246,18 +2249,291 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			resp.success = false;
 			return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
 		}
-		if (true) {
-			// Error
-			SetItemStateResponseData resp = new SetItemStateResponseData();
-			resp.errorCode = 255;
-			resp.success = false;
-			return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
-		}
+
+		// Find room
+		PlayerRoomInfo room = roomManager.getRoom(item.roomID, save);
+		RoomItemInfo[] roomItems = room.getItems();
 
 		// Build response
 		SetItemStateResponseData resp = new SetItemStateResponseData();
 		resp.errorCode = 1;
 		resp.success = true;
+
+		// Find inventory item
+		PlayerInventoryItem invItm = itemManager.getCommonInventory(save.getSaveData()).getContainer(1)
+				.getItem(request.itemUniqueID);
+		if (invItm == null) {
+			// Error
+			resp.errorCode = 4; // 4 = cannot find inventory item
+			resp.success = false;
+			return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+		}
+
+		// Get current state
+		ItemDefData def = invItm.getItemDef().getRawObject();
+		Optional<ItemStateData> stateO = Stream.of(def.states).filter(t -> t.stateID == item.currentStateID)
+				.findFirst();
+		if (!stateO.isPresent()) {
+			// Error
+			resp.errorCode = 10; // 10 = cannot find state
+			resp.success = false;
+			return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+		}
+		ItemStateData state = stateO.get();
+
+		// Check criteria
+		if (state.rules == null || state.rules.criteria.length == 0) {
+			// Error
+			resp.errorCode = 12; // 12 = cannot find criteria
+			resp.success = false;
+			return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+		}
+
+		// Handle transition
+		int nextState = -1;
+		if (state.rules.completionAction != null) {
+			switch (state.rules.completionAction.transitionMode) {
+
+			case 1: {
+				// Next state
+
+				// Find next state
+				int i = 0;
+				ItemStateData[] states = Stream.of(def.states).sorted((t1, t2) -> Integer.compare(t1.order, t2.order))
+						.toArray(t -> new ItemStateData[t]);
+				for (ItemStateData st : states) {
+					if (st == state) {
+						// Next state is the one
+						if (i + 1 < states.length) {
+							nextState = states[i + 1].stateID;
+							break;
+						}
+					}
+					i++;
+				}
+
+				break;
+			}
+
+			case 3: {
+				// Deletion
+				nextState = -2;
+				break;
+			}
+
+			case 4: {
+				// Initial state
+
+				// Find state
+				ItemStateData st = null;
+				for (ItemStateData st2 : def.states) {
+					if (st == null || st2.order < st.order)
+						st = st2;
+				}
+
+				// Assign
+				if (st != null)
+					nextState = st.stateID;
+
+			}
+
+			}
+		}
+
+		// Go through criteria
+		for (ItemStateCriteriaWrapperData criteria : state.rules.criteria) {
+			switch (criteria.criteriaType) {
+
+			case 1:
+				// Length criteria
+				if (!request.isSpeedUp) {
+					// Check time passed
+					ItemStateLengthCriteriaData crit = (ItemStateLengthCriteriaData) criteria.criteriaData;
+					if (System.currentTimeMillis() - item.lastStateChange < crit.period * 1000) {
+						// Error
+						resp.errorCode = 3; // 3 = time not reached
+						resp.success = false;
+						return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+					}
+				}
+				break;
+
+			case 2:
+				// Consumable criteria
+				if (!request.isSpeedUp) {
+					// Find item
+					ItemStateConsumableCriteriaData crit = (ItemStateConsumableCriteriaData) criteria.criteriaData;
+
+					// Check
+					if (crit.appliesUses) {
+						// Find from room
+						Optional<RoomItemInfo> targetItmO = Stream.of(roomItems).filter(t -> t.itemID == crit.itemID)
+								.findFirst();
+						if (targetItmO.isPresent()) {
+							// Check uses
+							RoomItemInfo targetItm = targetItmO.get();
+							if (targetItm.getCurrentUses(save) >= crit.amount) {
+								// Decrease target uses
+								targetItm.uses = targetItm.getCurrentUses(save) - crit.amount;
+							} else {
+								// Error
+								resp.errorCode = 5; // 5 = less uses than required
+								resp.success = false;
+								return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+							}
+						} else {
+							// Error
+							resp.errorCode = 5; // 5 = less uses than required
+							resp.success = false;
+							return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+						}
+					} else {
+						// Find items
+						PlayerInventoryItem itm = itemManager.getCommonInventory(save.getSaveData()).getContainer(1)
+								.findFirst(crit.itemID);
+						if (itm == null || itm.getQuantity() < crit.amount) {
+							// Error
+							resp.errorCode = 7; // 7 = quantity less than required
+							resp.success = false;
+							return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+						}
+
+						// Decrease
+						itm.remove(crit.amount);
+					}
+				}
+				break;
+
+			case 5:
+				// Expiry criteria
+				if (!request.isSpeedUp) {
+					// Check time passed
+					ItemStateExpiryCriteriaData crit = (ItemStateExpiryCriteriaData) criteria.criteriaData;
+					if (System.currentTimeMillis() - item.lastStateChange >= crit.period * 1000) {
+						// Expiry
+						nextState = crit.targetState;
+					}
+				}
+				break;
+
+			case 4:
+				// Speed up criteria
+				if (request.isSpeedUp) {
+					ItemStateSpeedUpCriteriaData crit = (ItemStateSpeedUpCriteriaData) criteria.criteriaData;
+
+					// Check
+					if (crit.appliesUses) {
+						// Find from room
+						Optional<RoomItemInfo> targetItmO = Stream.of(roomItems).filter(t -> t.itemID == crit.itemID)
+								.findFirst();
+						if (targetItmO.isPresent()) {
+							// Check uses
+							RoomItemInfo targetItm = targetItmO.get();
+							if (targetItm.getCurrentUses(save) >= crit.amount) {
+								// Decrease target uses
+								targetItm.uses = targetItm.getCurrentUses(save) - crit.amount;
+							} else {
+								// Error
+								resp.errorCode = 2; // 2 = cannot override criteria
+								resp.success = false;
+								return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+							}
+						} else {
+							// Error
+							resp.errorCode = 2; // 2 = cannot override criteria
+							resp.success = false;
+							return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+						}
+					} else {
+						// Find item
+						PlayerInventoryItem itm = itemManager.getCommonInventory(save.getSaveData()).getContainer(1)
+								.findFirst(crit.itemID);
+						if (itm == null || itm.getQuantity() < crit.amount) {
+							// Attempt purchase
+							PlayerInventoryItem itmF = itm;
+							InventoryUpdateResponseData purchase = InventoryUtils.purchaseItems(request.storeID,
+									new ItemRedemptionInfo[] { new ItemRedemptionInfo() {
+										{
+											defID = crit.itemID;
+											quantity = crit.amount;
+											if (itmF != null)
+												quantity -= itmF.getQuantity();
+											containerID = 1;
+										}
+									} }, account, save, false);
+							if (!purchase.success) {
+								// Error
+								resp.errorCode = 2; // 2 = cannot override criteria
+								resp.success = false;
+								return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+							}
+							itm = itemManager.getCommonInventory(save.getSaveData()).getContainer(1)
+									.findFirst(crit.itemID);
+						}
+
+						// Decrease
+						itm.remove(crit.amount);
+					}
+
+					// Apply
+					if (crit.speedUpUses) {
+						// Apply uses speedup
+						item.uses = crit.speedUpUsesCount;
+					}
+
+					// Move state
+					if (crit.changesState) {
+						// Set state
+						nextState = crit.targetState;
+					}
+				}
+				break;
+
+			}
+		}
+
+		// Check state
+		int nextStateF = nextState;
+		if (nextState == -1 || (nextState != -2 && !Stream.of(def.states).anyMatch(t -> t.stateID == nextStateF))) {
+			// Error
+			resp.errorCode = 9; // 9 = transition failed
+			resp.success = false;
+			return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+		}
+
+		// Transition
+		if (nextState == -2) {
+			// Delete item
+			roomManager.deleteRoomItem(item.roomItemID, save);
+
+			// Remove from room
+			ArrayList<RoomItemInfo> newItems = new ArrayList<RoomItemInfo>();
+			for (RoomItemInfo itm : roomItems) {
+				if (itm.roomItemID != item.roomItemID)
+					newItems.add(itm);
+			}
+			room.setItems(newItems.toArray(t -> new RoomItemInfo[t]));
+		} else {
+			// Set state
+			item.currentStateID = nextState;
+			item.lastStateChange = System.currentTimeMillis();
+
+			// Save item
+			roomManager.saveRoomItem(item, save);
+		}
+
+		// Apply rewards
+		resp.rewards = RewardsUtil.giveRewardsTo(save, state.rewards, false, 1);
+
+		// Create state object
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
+		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+		resp.state = new RoomItemData.ItemStateBlock();
+		resp.state.itemDefID = item.itemID;
+		resp.state.itemUniqueID = item.itemUniqueID;
+		resp.state.itemPositionID = item.roomItemID;
+		resp.state.stateChangeDate = fmt.format(new Date(item.lastStateChange));
+		resp.state.itemStateID = item.currentStateID;
 
 		// Return
 		return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));

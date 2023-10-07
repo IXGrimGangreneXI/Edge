@@ -22,7 +22,7 @@ public class SetItemStateResponseData {
 	@JsonProperty("UIS")
 	public ItemStateBlock state;
 
-	@JsonProperty("AS")
+	@JsonProperty("RS")
 	@JacksonXmlElementWrapper(useWrapping = false)
 	public AchievementRewardData[] rewards;
 }

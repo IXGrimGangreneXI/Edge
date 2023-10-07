@@ -173,6 +173,7 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 
 			// Remove item if no uses are left
 			usesLeft--;
+			setUses(usesLeft);
 			if (usesLeft <= 0) {
 				remove(1);
 				if (quantity <= 0)

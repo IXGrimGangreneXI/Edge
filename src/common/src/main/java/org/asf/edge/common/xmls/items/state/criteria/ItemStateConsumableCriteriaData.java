@@ -1,4 +1,4 @@
-package org.asf.edge.gameplayapi.xmls.rooms;
+package org.asf.edge.common.xmls.items.state.criteria;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -7,18 +7,15 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-public class SetItemStateRequestData {
+public class ItemStateConsumableCriteriaData extends ItemStateBaseCriteriaData {
 
-	@JsonProperty("SID")
-	public int storeID;
+	@JsonProperty("ItemID")
+	public int itemID;
 
-	@JsonProperty("CIID")
-	public int itemUniqueID;
+	@JsonProperty("ConsumeUses")
+	public boolean appliesUses;
 
-	@JsonProperty("UIPID")
-	public int roomItemID;
-
-	@JsonProperty("OSC")
-	public boolean isSpeedUp;
+	@JsonProperty("Amount")
+	public int amount;
 
 }
