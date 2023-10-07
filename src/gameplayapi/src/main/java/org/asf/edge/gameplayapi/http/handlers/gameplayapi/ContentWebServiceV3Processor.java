@@ -168,6 +168,7 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 								if (level == 20) {
 									if (rank.getTotalScore() < r.getValue())
 										rank.setTotalScore(r.getValue());
+									break;
 								}
 								level++;
 							}
@@ -189,6 +190,7 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 								if (level == 10) {
 									if (rank.getTotalScore() < r.getValue())
 										rank.setTotalScore(r.getValue());
+									break;
 								}
 								level++;
 							}

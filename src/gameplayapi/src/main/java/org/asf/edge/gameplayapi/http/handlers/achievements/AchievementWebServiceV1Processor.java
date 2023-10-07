@@ -187,6 +187,51 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 
 			// Get ranks
 			for (EntityRankInfo rank : AchievementManager.getInstance().getRanks(save, dragon.get("eid").asText())) {
+				// Check
+				if (rank.getTypeID() == RankTypeID.DRAGON) {
+					// Check age
+					if (dragon.has("gs") && dragon.get("gs").has("n")) {
+						String stage = dragon.get("gs").get("n").asText().toUpperCase();
+						switch (stage) {
+
+						case "TITAN": {
+							// Boost to level 20
+
+							// Add XP if needed
+							int level = 1;
+							for (RankInfo r : achievementManager.getRankDefinitionsByPointType(8)) {
+								if (level == 20) {
+									if (rank.getTotalScore() < r.getValue())
+										rank.setTotalScore(r.getValue());
+									break;
+								}
+								level++;
+							}
+
+							break;
+						}
+
+						case "ADULT": {
+							// Boost to level 10
+
+							// Add XP if needed
+							int level = 1;
+							for (RankInfo r : achievementManager.getRankDefinitionsByPointType(8)) {
+								if (level == 10) {
+									if (rank.getTotalScore() < r.getValue())
+										rank.setTotalScore(r.getValue());
+									break;
+								}
+								level++;
+							}
+
+							break;
+						}
+
+						}
+					}
+				}
+
 				// Add rank
 				AchievementInfoList.AchievementBlock r = new AchievementInfoList.AchievementBlock();
 				r.userID = new AchievementInfoList.AchievementBlock.StringWrapper(rank.getEntityID());
