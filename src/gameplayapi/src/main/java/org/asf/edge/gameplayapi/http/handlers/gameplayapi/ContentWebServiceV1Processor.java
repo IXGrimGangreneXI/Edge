@@ -1941,7 +1941,6 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		list.roomItems = itmData.toArray(t -> new RoomItemData[t]);
 		String res = req.generateXmlValue("ArrayOfUserItemPosition", list);
 		return ok("text/xml", res);
-
 	}
 
 	private void addItem(ArrayList<RoomItemData> itmData, RoomItemInfo it, RoomItemInfo[] itms,
@@ -2109,7 +2108,8 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			// Save
 			room.setItems(newItemData.values().toArray(t -> new RoomItemInfo[t]));
 		}
-		return ok("text/xml", req.generateXmlValue("UIPSRS", resp));
+		String res = req.generateXmlValue("UIPSRS", resp);
+		return ok("text/xml", res);
 	}
 
 	private boolean handleCreate(HashMap<Integer, RoomItemInfo> newItemData, PlayerRoomInfo room,
@@ -2200,6 +2200,9 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		if (addedState)
 			info.lastStateChange = System.currentTimeMillis();
 
+		// Create
+		info = roomManager.createRoomItem(info, save);
+
 		// Create state block
 		if (addedState) {
 			ItemStateBlock stateBlock = new ItemStateBlock();
@@ -2210,9 +2213,6 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			stateBlock.itemPositionID = info.roomItemID;
 			statesL.add(stateBlock);
 		}
-
-		// Create
-		info = roomManager.createRoomItem(info, save);
 
 		// Success
 		crReq.result = info;
