@@ -7,6 +7,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.ConnectiveHttpServer;
 import org.asf.edge.common.IBaseServer;
+import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.services.config.ConfigProviderService;
+import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.util.LogWindow;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -107,6 +110,11 @@ public class EdgeGridApiServer implements IBaseServer {
 
 		// Assign server
 		server = config.server;
+
+		// Config service
+		logger.info("Setting up config service");
+		ServiceManager.registerServiceImplementation(ConfigProviderService.class, new ConfigProviderServiceImpl());
+		ServiceManager.selectServiceImplementation(ConfigProviderService.class);
 
 		// Register content source
 		logger.debug("Adding case-insensitive content source...");

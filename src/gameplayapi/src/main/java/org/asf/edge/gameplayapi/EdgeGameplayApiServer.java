@@ -34,6 +34,8 @@ import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.achievements.impl.AchievementManagerImpl;
 import org.asf.edge.common.services.commondata.CommonDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
+import org.asf.edge.common.services.config.ConfigProviderService;
+import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.common.services.leaderboard.LeaderboardManager;
@@ -147,6 +149,11 @@ public class EdgeGameplayApiServer implements IBaseServer {
 
 		// Assign server
 		server = config.server;
+
+		// Config service
+		logger.info("Setting up config service");
+		ServiceManager.registerServiceImplementation(ConfigProviderService.class, new ConfigProviderServiceImpl());
+		ServiceManager.selectServiceImplementation(ConfigProviderService.class);
 
 		// Register content source
 		logger.debug("Adding case-insensitive content source...");

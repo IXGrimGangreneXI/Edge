@@ -14,12 +14,22 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 
+import org.asf.edge.common.entities.items.ItemInfo;
+import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
+import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.common.xmls.achievements.AchievementRewardData;
+import org.asf.edge.common.xmls.items.ItemDefData;
+import org.asf.edge.common.xmls.items.state.ItemStateData;
+import org.asf.edge.gameplayapi.services.quests.QuestManager;
+import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
 import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardList;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestData;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestRewardBlock;
 import org.asf.edge.gameplayapi.xmls.achievements.edgespecific.AchievementRewardDefData;
 import org.asf.edge.gameplayapi.xmls.achievements.edgespecific.AchievementRewardDefList;
+import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
@@ -314,10 +324,10 @@ public class AchievementRewardDataConverter {
 												entry.entityTypeID = reward.entityTypeID;
 
 												// Compute minimal and maximum values
-												if (reward.amount < entry.minAmount || entry.minAmount == 0)
-													entry.minAmount = reward.amount;
+												if ((reward.amount / 2) < entry.minAmount || entry.minAmount == 0)
+													entry.minAmount = (reward.amount / 2);
 												if (reward.amount > entry.maxAmount)
-													entry.maxAmount = reward.amount;
+													entry.maxAmount = (reward.amount / 2);
 											}
 										}
 
@@ -341,6 +351,179 @@ public class AchievementRewardDataConverter {
 					}
 				}
 			}, new File(args[i]));
+		}
+
+		// Go over item achievements
+		System.out.println("Finding item states...");
+		ServiceManager.registerServiceImplementation(ItemManager.class, new ItemManagerImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(ItemManager.class);
+		for (ItemInfo itm : ItemManager.getInstance().getAllItemDefinitions()) {
+			ItemDefData iDef = itm.getRawObject();
+			if (iDef.states != null) {
+				for (ItemStateData state : iDef.states) {
+					if (state.rewards != null && state.rewards.length != 0) {
+						System.out.println("Importing rewards of: " + iDef.id + " state " + state.stateID);
+						int achievementID = state.achievementID;
+
+						// Load or create def
+						AchievementRewardDefData def = rewards.get(achievementID);
+						if (def == null)
+							def = new AchievementRewardDefData();
+
+						// Populate with existing data
+						def.achievementID = achievementID;
+						LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock> rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
+						if (def.rewards != null) {
+							for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
+								rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
+							}
+						}
+
+						// Import rewards
+						for (AchievementRewardData reward : state.rewards) {
+							// Create or load entry
+							AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
+									.get(reward.rewardID + "-" + reward.pointTypeID);
+							if (entry == null) {
+								// Create
+								entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
+								entry.rewardID = reward.rewardID;
+								entry.pointTypeID = reward.pointTypeID;
+								entry.itemID = reward.itemID;
+								entry.allowMultiple = reward.allowMultiple;
+								rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+							}
+
+							// Apply edits
+							entry.entityTypeID = reward.entityTypeID;
+
+							// Compute minimal and maximum values
+							if (reward.amount < entry.minAmount || entry.minAmount == 0)
+								entry.minAmount = reward.amount;
+							if (reward.amount > entry.maxAmount)
+								entry.maxAmount = reward.amount;
+						}
+
+						// Add rewards
+						def.rewards = rewardEntries.values()
+								.toArray(t -> new AchievementRewardDefData.AchievementRewardEntryBlock[t]);
+
+						// Save
+						rewards.put(achievementID, def);
+					}
+				}
+			}
+		}
+
+		// Go over quest achievements
+		System.out.println("Finding quest reward data...");
+		ServiceManager.registerServiceImplementation(QuestManager.class, new QuestManagerImpl(),
+				ServiceImplementationPriorityLevels.DEFAULT);
+		ServiceManager.selectServiceImplementation(QuestManager.class);
+		for (MissionData qDef : QuestManager.getInstance().getAllQuestDefs()) {
+			if ((qDef.acceptanceRewards != null && qDef.acceptanceRewards.length != 0)
+					|| (qDef.rewards != null && qDef.rewards.length != 0)) {
+				System.out.println("Importing rewards of: " + qDef.id);
+
+				// Go through acceptance rewards
+				if (qDef.acceptanceRewards != null) {
+					int achievementID = qDef.acceptanceAchievementID;
+
+					// Load or create def
+					AchievementRewardDefData def = rewards.get(achievementID);
+					if (def == null)
+						def = new AchievementRewardDefData();
+
+					// Populate with existing data
+					def.achievementID = achievementID;
+					LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock> rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
+					if (def.rewards != null) {
+						for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
+							rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
+						}
+					}
+
+					// Import rewards
+					for (AchievementRewardData reward : qDef.acceptanceRewards) {
+						// Create or load entry
+						AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
+								.get(reward.rewardID + "-" + reward.pointTypeID);
+						if (entry == null) {
+							// Create
+							entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
+							entry.rewardID = reward.rewardID;
+							entry.pointTypeID = reward.pointTypeID;
+							entry.itemID = reward.itemID;
+							entry.allowMultiple = reward.allowMultiple;
+							rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+						}
+
+						// Apply edits
+						entry.entityTypeID = reward.entityTypeID;
+
+						// Compute minimal and maximum values
+						entry.minAmount = reward.minAmount;
+						entry.maxAmount = reward.maxAmount;
+					}
+
+					// Add rewards
+					def.rewards = rewardEntries.values()
+							.toArray(t -> new AchievementRewardDefData.AchievementRewardEntryBlock[t]);
+
+					// Save
+					rewards.put(achievementID, def);
+				}
+
+				// Go through rewards
+				if (qDef.rewards != null) {
+					int achievementID = qDef.achievementID;
+
+					// Load or create def
+					AchievementRewardDefData def = rewards.get(achievementID);
+					if (def == null)
+						def = new AchievementRewardDefData();
+
+					// Populate with existing data
+					def.achievementID = achievementID;
+					LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock> rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
+					if (def.rewards != null) {
+						for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
+							rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
+						}
+					}
+
+					// Import rewards
+					for (AchievementRewardData reward : qDef.rewards) {
+						// Create or load entry
+						AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
+								.get(reward.rewardID + "-" + reward.pointTypeID);
+						if (entry == null) {
+							// Create
+							entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
+							entry.rewardID = reward.rewardID;
+							entry.pointTypeID = reward.pointTypeID;
+							entry.itemID = reward.itemID;
+							entry.allowMultiple = reward.allowMultiple;
+							rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+						}
+
+						// Apply edits
+						entry.entityTypeID = reward.entityTypeID;
+
+						// Compute minimal and maximum values
+						entry.minAmount = reward.minAmount;
+						entry.maxAmount = reward.maxAmount;
+					}
+
+					// Add rewards
+					def.rewards = rewardEntries.values()
+							.toArray(t -> new AchievementRewardDefData.AchievementRewardEntryBlock[t]);
+
+					// Save
+					rewards.put(achievementID, def);
+				}
+			}
 		}
 
 		// Save

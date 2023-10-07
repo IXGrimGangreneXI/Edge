@@ -188,116 +188,109 @@ public class QuestManagerImpl extends QuestManager {
 	public void initService() {
 		logger = LogManager.getLogger("QuestManager");
 
-		// Start reload watchdog
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("QUESTMANAGER");
-		try {
-			if (!cont.entryExists("lastreload")) {
-				lastReloadTime = System.currentTimeMillis();
-				cont.setEntry("lastreload", new JsonPrimitive(lastReloadTime));
-			} else
-				lastReloadTime = cont.getEntry("lastreload").getAsLong();
-		} catch (IOException e) {
-		}
-		AsyncTaskManager.runAsync(() -> {
-			while (true) {
-				// Check reload
-				try {
-					long reload = cont.getEntry("lastreload").getAsLong();
-					if (reload > lastReloadTime) {
-						// Trigger reload
-						lastReloadTime = reload;
-						loadQuests();
-					}
-				} catch (IOException e) {
-				}
-				try {
-					Thread.sleep(30000);
-				} catch (InterruptedException e) {
-				}
-			}
-		});
-
 		// Load
 		loadQuests();
 
 		// Load update time
-		if (!ConfigProviderService.getInstance().configExists("server", "questversion")) {
+		try {
+			if (!ConfigProviderService.getInstance().configExists("server", "questversion")) {
+				try {
+					JsonObject conf = new JsonObject();
+					conf.addProperty("__COMMENT1__",
+							"this file controls the quest version, each time quest data is updated this file should also be updated to hold a new version ID");
+					conf.addProperty("__COMMENT2__",
+							"you MUST update this file manually otherwise quests wont be recomputed after user content updates");
+					conf.addProperty("version", System.currentTimeMillis());
+					ConfigProviderService.getInstance().saveConfig("server", "questversion", conf);
+				} catch (IOException e) {
+				}
+			}
 			try {
-				JsonObject conf = new JsonObject();
-				conf.addProperty("__COMMENT1__",
-						"this file controls the quest version, each time quest data is updated this file should also be updated to hold a new version ID");
-				conf.addProperty("__COMMENT2__",
-						"you MUST update this file manually otherwise quests wont be recomputed after user content updates");
-				conf.addProperty("version", System.currentTimeMillis());
-				ConfigProviderService.getInstance().saveConfig("server", "questversion", conf);
+				lastQuestUpdateVersion = ConfigProviderService.getInstance().loadConfig("server", "questversion")
+						.get("version").getAsString();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		} catch (Exception e) {
+			logger.error("Failed to load update time", e);
+		}
+
+		// Start reload watchdog
+		try {
+			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("QUESTMANAGER");
+			try {
+				if (!cont.entryExists("lastreload")) {
+					lastReloadTime = System.currentTimeMillis();
+					cont.setEntry("lastreload", new JsonPrimitive(lastReloadTime));
+				} else
+					lastReloadTime = cont.getEntry("lastreload").getAsLong();
 			} catch (IOException e) {
 			}
-		}
-		try {
-			lastQuestUpdateVersion = ConfigProviderService.getInstance().loadConfig("server", "questversion")
-					.get("version").getAsString();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+			AsyncTaskManager.runAsync(() -> {
+				while (true) {
+					// Check reload
+					try {
+						long reload = cont.getEntry("lastreload").getAsLong();
+						if (reload > lastReloadTime) {
+							// Trigger reload
+							lastReloadTime = reload;
+							loadQuests();
+						}
+					} catch (IOException e) {
+					}
+					try {
+						Thread.sleep(30000);
+					} catch (InterruptedException e) {
+					}
+				}
+			});
 
-		// Start quest date check watchdog
-		try {
-			if (!cont.entryExists("lastupdate")) {
-				lastQuestUpdateTime = System.currentTimeMillis();
-				cont.setEntry("lastupdate", new JsonPrimitive(lastQuestUpdateTime));
-			} else
-				lastQuestUpdateTime = cont.getEntry("lastupdate").getAsLong();
-		} catch (IOException e) {
-		}
-		AsyncTaskManager.runAsync(() -> {
-			while (true) {
-				// Check quest defs
-				try {
-					// Check all quest defs
-					JsonArray allDateActiveDefsLast = new JsonArray();
-					if (cont.entryExists("activedefs"))
-						allDateActiveDefsLast = cont.getEntry("activedefs").getAsJsonArray();
-					ArrayList<String> defsActiveLast = new ArrayList<String>();
-					ArrayList<String> defsActiveCurrent = new ArrayList<String>();
-					for (JsonElement el : allDateActiveDefsLast)
-						defsActiveLast.add(el.getAsString());
+			// Start quest date check watchdog
+			try {
+				if (!cont.entryExists("lastupdate")) {
+					lastQuestUpdateTime = System.currentTimeMillis();
+					cont.setEntry("lastupdate", new JsonPrimitive(lastQuestUpdateTime));
+				} else
+					lastQuestUpdateTime = cont.getEntry("lastupdate").getAsLong();
+			} catch (IOException e) {
+			}
+			AsyncTaskManager.runAsync(() -> {
+				while (true) {
+					// Check quest defs
+					try {
+						// Check all quest defs
+						JsonArray allDateActiveDefsLast = new JsonArray();
+						if (cont.entryExists("activedefs"))
+							allDateActiveDefsLast = cont.getEntry("activedefs").getAsJsonArray();
+						ArrayList<String> defsActiveLast = new ArrayList<String>();
+						ArrayList<String> defsActiveCurrent = new ArrayList<String>();
+						for (JsonElement el : allDateActiveDefsLast)
+							defsActiveLast.add(el.getAsString());
 
-					// Load current defs
-					for (MissionData def : this.getAllQuestDefs()) {
-						boolean active = true;
+						// Load current defs
+						for (MissionData def : this.getAllQuestDefs()) {
+							boolean active = true;
 
-						// Check prerequisites
-						if (def.missionRules != null) {
-							if (def.missionRules.prerequisites != null) {
-								for (PrerequisiteInfoBlock req : def.missionRules.prerequisites) {
-									if (!req.clientRule) {
-										// Check type
-										switch (req.type) {
+							// Check prerequisites
+							if (def.missionRules != null) {
+								if (def.missionRules.prerequisites != null) {
+									for (PrerequisiteInfoBlock req : def.missionRules.prerequisites) {
+										if (!req.clientRule) {
+											// Check type
+											switch (req.type) {
 
-										// Date range rule
-										case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.DATERANGE: {
-											// Parse
-											String[] dStrs = req.value.split(",");
-											if (dStrs.length == 2) {
-												String startDate = dStrs[0];
-												String endDate = dStrs[1];
+											// Date range rule
+											case MissionRulesBlock.PrerequisiteInfoBlock.PrerequisiteRuleTypes.DATERANGE: {
+												// Parse
+												String[] dStrs = req.value.split(",");
+												if (dStrs.length == 2) {
+													String startDate = dStrs[0];
+													String endDate = dStrs[1];
 
-												try {
-													// Parse dates
-													SimpleDateFormat fmt = new SimpleDateFormat(
-															"MM'-'dd'-'yyyy HH':'mm':'ss");
-													Date start = fmt.parse(startDate);
-													Date end = fmt.parse(endDate);
-
-													// Check
-													Date now = new Date(System.currentTimeMillis());
-													if (start.before(now) || end.after(now)) {
-														active = false;
-													}
-												} catch (ParseException e) {
 													try {
 														// Parse dates
-														SimpleDateFormat fmt = new SimpleDateFormat("MM'-'dd'-'yyyy");
+														SimpleDateFormat fmt = new SimpleDateFormat(
+																"MM'-'dd'-'yyyy HH':'mm':'ss");
 														Date start = fmt.parse(startDate);
 														Date end = fmt.parse(endDate);
 
@@ -306,11 +299,11 @@ public class QuestManagerImpl extends QuestManager {
 														if (start.before(now) || end.after(now)) {
 															active = false;
 														}
-													} catch (ParseException e2) {
+													} catch (ParseException e) {
 														try {
 															// Parse dates
 															SimpleDateFormat fmt = new SimpleDateFormat(
-																	"dd'/'MM'/'yyyy");
+																	"MM'-'dd'-'yyyy");
 															Date start = fmt.parse(startDate);
 															Date end = fmt.parse(endDate);
 
@@ -319,67 +312,83 @@ public class QuestManagerImpl extends QuestManager {
 															if (start.before(now) || end.after(now)) {
 																active = false;
 															}
-														} catch (ParseException e3) {
-															throw new RuntimeException(e);
+														} catch (ParseException e2) {
+															try {
+																// Parse dates
+																SimpleDateFormat fmt = new SimpleDateFormat(
+																		"dd'/'MM'/'yyyy");
+																Date start = fmt.parse(startDate);
+																Date end = fmt.parse(endDate);
+
+																// Check
+																Date now = new Date(System.currentTimeMillis());
+																if (start.before(now) || end.after(now)) {
+																	active = false;
+																}
+															} catch (ParseException e3) {
+																throw new RuntimeException(e);
+															}
 														}
 													}
 												}
+
+												break;
 											}
 
-											break;
-										}
-
+											}
 										}
 									}
 								}
 							}
+
+							// Check
+							if (active)
+								defsActiveCurrent.add(def.id + "-" + def.version);
 						}
 
-						// Check
-						if (active)
-							defsActiveCurrent.add(def.id + "-" + def.version);
-					}
-
-					// Check def lists
-					boolean changed = false;
-					if (defsActiveCurrent.size() != defsActiveLast.size()) {
-						changed = true;
-					} else {
-						// Go through the lists
-						for (String d : defsActiveCurrent) {
-							if (!defsActiveLast.contains(d)) {
-								changed = true;
-								break;
+						// Check def lists
+						boolean changed = false;
+						if (defsActiveCurrent.size() != defsActiveLast.size()) {
+							changed = true;
+						} else {
+							// Go through the lists
+							for (String d : defsActiveCurrent) {
+								if (!defsActiveLast.contains(d)) {
+									changed = true;
+									break;
+								}
+							}
+							for (String d : defsActiveLast) {
+								if (!defsActiveCurrent.contains(d)) {
+									changed = true;
+									break;
+								}
 							}
 						}
-						for (String d : defsActiveLast) {
-							if (!defsActiveCurrent.contains(d)) {
-								changed = true;
-								break;
-							}
+
+						// If changed, update
+						if (changed) {
+							// Create new def list
+							JsonArray newDefs = new JsonArray();
+							for (String d : defsActiveCurrent)
+								newDefs.add(d);
+							cont.setEntry("activedefs", newDefs);
+
+							// Update time
+							lastQuestUpdateTime = System.currentTimeMillis();
+							cont.setEntry("lastupdate", new JsonPrimitive(lastQuestUpdateTime));
 						}
+					} catch (IOException e) {
 					}
-
-					// If changed, update
-					if (changed) {
-						// Create new def list
-						JsonArray newDefs = new JsonArray();
-						for (String d : defsActiveCurrent)
-							newDefs.add(d);
-						cont.setEntry("activedefs", newDefs);
-
-						// Update time
-						lastQuestUpdateTime = System.currentTimeMillis();
-						cont.setEntry("lastupdate", new JsonPrimitive(lastQuestUpdateTime));
+					try {
+						Thread.sleep(30000);
+					} catch (InterruptedException e) {
 					}
-				} catch (IOException e) {
 				}
-				try {
-					Thread.sleep(30000);
-				} catch (InterruptedException e) {
-				}
-			}
-		});
+			});
+		} catch (Exception e) {
+			logger.error("Failed to start watchdogs!", e);
+		}
 	}
 
 	private void loadQuests() {

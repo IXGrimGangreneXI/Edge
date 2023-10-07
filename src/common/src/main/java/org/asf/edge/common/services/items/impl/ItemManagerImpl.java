@@ -628,6 +628,8 @@ public class ItemManagerImpl extends ItemManager {
 			randomSaleConfig = config;
 		} catch (IOException | ParseException e) {
 			throw new RuntimeException(e);
+		} catch (IllegalArgumentException e) {
+			logger.error("Failed to configure sales", e);
 		}
 
 		// Apply

@@ -108,13 +108,22 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
 	public FunctionResult setUserAchievementAndGetReward(FunctionInfo func, ServiceRequestInfo req,
-			AccountSaveContainer save) throws IOException {
+			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
 		// Handle task reward request
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
 
 		// TODO: stubbed
 		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", new AchievementRewardList()));
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult setAchievementAndGetReward(FunctionInfo func, ServiceRequestInfo req,
+			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
+		return setUserAchievementAndGetReward(func, req, save, achievementID);
 	}
 
 	@SodRequest
