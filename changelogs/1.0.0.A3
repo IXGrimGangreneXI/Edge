@@ -25,6 +25,7 @@ New features:
 - Added a method to retrieve the edge version: `EdgeServerEnvironment.getEdgeVersion()`, it will retrieve the current Edge version of the server
 - Added various account and save management events to the event bus
 - Added various quest events to the event bus
+- Implemented dragon age-up XP
 
 Sentinel changes:
 - Added the Project Edge banner and icon to the launcher (may need reinstall for it to fully work), credits to arrowheadg for the banner and credits to ellenbellen for the icon

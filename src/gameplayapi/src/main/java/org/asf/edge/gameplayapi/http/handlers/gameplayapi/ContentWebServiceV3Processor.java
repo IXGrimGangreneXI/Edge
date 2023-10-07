@@ -9,6 +9,11 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
+import org.asf.edge.common.entities.achivements.EntityRankInfo;
+import org.asf.edge.common.entities.achivements.RankInfo;
+import org.asf.edge.common.entities.achivements.RankTypeID;
+import org.asf.edge.common.entities.items.ItemAttributeInfo;
+import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
@@ -16,6 +21,7 @@ import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
@@ -25,6 +31,7 @@ import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateResponseData;
+import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -138,6 +145,62 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		DragonData dragonUpdate = request.dragonData;
+
+		// Read items
+		if (request.commonInventoryRequests != null && request.commonInventoryRequests.length != 0) {
+			for (SetCommonInventoryRequestData itmReq : request.commonInventoryRequests) {
+				ItemInfo def = itemManager.getItemDefinition(itmReq.itemID);
+				for (ItemAttributeInfo attr : def.getAttributes()) {
+					if (attr.getKey().equals("NewPetStage")) {
+						switch (attr.getValue()) {
+
+						case "TITAN": {
+							// Boost to level 20
+
+							// Get rank
+							AchievementManager manager = AchievementManager.getInstance();
+							EntityRankInfo rank = AchievementManager.getInstance().getRank(save, cdragon.entityID,
+									RankTypeID.DRAGON);
+
+							// Add XP
+							int level = 1;
+							for (RankInfo r : manager.getRankDefinitionsByPointType(8)) {
+								if (level == 20) {
+									if (rank.getTotalScore() < r.getValue())
+										rank.setTotalScore(r.getValue());
+								}
+								level++;
+							}
+
+							break;
+						}
+
+						case "ADULT": {
+							// Boost to level 10
+
+							// Get rank
+							AchievementManager manager = AchievementManager.getInstance();
+							EntityRankInfo rank = AchievementManager.getInstance().getRank(save, cdragon.entityID,
+									RankTypeID.DRAGON);
+
+							// Add XP
+							int level = 1;
+							for (RankInfo r : manager.getRankDefinitionsByPointType(8)) {
+								if (level == 10) {
+									if (rank.getTotalScore() < r.getValue())
+										rank.setTotalScore(r.getValue());
+								}
+								level++;
+							}
+
+							break;
+						}
+
+						}
+					}
+				}
+			}
+		}
 
 		// Merge data
 		if (dragonUpdate.accessories != null)
