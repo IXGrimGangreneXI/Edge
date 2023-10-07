@@ -215,7 +215,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 			// Save data
 			AccountDataContainer data = save.getSaveData();
 			data = data.getChildContainer("roomitems");
-			data.setEntry("item-", rI);
+			data.setEntry("item-" + itm.roomItemID, rI);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -297,6 +297,8 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 			mapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true);
 			for (RoomItemInfo itm : items) {
 				// Assign
+				if (itm.roomItemID == -1)
+					itm = createRoomItem(itm, save);
 				itm.roomID = roomID;
 				arr.add(itm.roomItemID);
 
