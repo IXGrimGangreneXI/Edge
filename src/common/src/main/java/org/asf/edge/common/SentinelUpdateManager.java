@@ -45,7 +45,7 @@ public class SentinelUpdateManager {
 	private static String nextVersion = null;
 	private static String listURL = null;
 
-	private static int updateTimeRemaining = -1;
+	private static long updateRestartTimestamp;
 
 	/**
 	 * Checks if the Sentinel Update Manager is enabled
@@ -136,7 +136,7 @@ public class SentinelUpdateManager {
 		if (updating) {
 			cancelUpdate = true;
 			nextVersion = null;
-			updateTimeRemaining = -1;
+			updateRestartTimestamp = -1;
 			EventBus.getInstance().dispatchEvent(new UpdateCancelEvent());
 
 			// Notify everyone
@@ -176,31 +176,24 @@ public class SentinelUpdateManager {
 			EventBus.getInstance().dispatchEvent(new ServerUpdateEvent(nextVersion, mins));
 
 			// Run countdown
-			final int minutes = mins;
+			updateRestartTimestamp = System.currentTimeMillis() + (mins * 60 * 1000);
 			Thread th = new Thread(() -> {
-				int remaining = minutes;
-				updateTimeRemaining = remaining;
 				while (!cancelUpdate) {
 					// Update shutdown if countdown reaches zero
-					if (remaining <= 0 || AccountManager.getInstance().getOnlinePlayerIDs().length == 0) {
+					int remainingTime = (int) ((System.currentTimeMillis() - updateRestartTimestamp) / 1000 / 60);
+					if (remainingTime <= 0 || AccountManager.getInstance().getOnlinePlayerIDs().length == 0) {
 						updateShutdown();
 						cancelUpdate = false;
 						return;
 					}
 
 					// Wait
-					for (int i = 0; i < 60; i++) {
-						if (cancelUpdate)
-							break;
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {
-						}
+					if (cancelUpdate)
+						break;
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
 					}
-
-					// Count down
-					remaining--;
-					updateTimeRemaining = remaining;
 				}
 				cancelUpdate = false;
 				updating = false;
@@ -283,12 +276,13 @@ public class SentinelUpdateManager {
 	 */
 	public static void warnPlayerIfUpdating(AccountObject account) {
 		// Check
-		if (updating && updateTimeRemaining != -1) {
+		if (updating && updateRestartTimestamp != -1) {
 			// Create message
+			int remainingTime = (int) ((System.currentTimeMillis() - updateRestartTimestamp) / 1000 / 60);
 			SimpleDateFormat fmt = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss a", Locale.US);
 			fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 			String message;
-			switch (updateTimeRemaining) {
+			switch (remainingTime) {
 
 			case 10:
 			case 5:
@@ -304,12 +298,11 @@ public class SentinelUpdateManager {
 			default:
 				if (nextVersion != null)
 					message = "Project Edge has a update available! Launcher restart is scheduled at "
-							+ fmt.format(new Date(System.currentTimeMillis() + (updateTimeRemaining * 60 * 1000)))
-							+ " UTC. Updating to " + nextVersion + "."
+							+ fmt.format(new Date(updateRestartTimestamp)) + " UTC. Updating to " + nextVersion + "."
 							+ "\n\nWhen the launcher restarts, the game will be left open unless there are client mod updates, note that there may be errors until the update finishes and restarts the servers.";
 				else
 					message = "Project Edge has a update available! Launcher restart is scheduled at "
-							+ fmt.format(new Date(System.currentTimeMillis() + (updateTimeRemaining * 60 * 1000)))
+							+ fmt.format(new Date(updateRestartTimestamp))
 							+ " UTC.\n\nWhen the launcher restarts, the game will be left open unless there are client mod updates, note that there may be errors until the update finishes and restarts the servers.";
 				break;
 

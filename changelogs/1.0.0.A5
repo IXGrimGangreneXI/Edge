@@ -1,0 +1,2 @@
+Changes in 1.0.0.A5:
+- Improved the automatic Sentinel updater to work with timestamps instead of a timer loop
