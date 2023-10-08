@@ -156,277 +156,30 @@ public class InventoryUtils {
 			currency.setEntry("coins", new JsonPrimitive(currencyUpdate.coinCount));
 		}
 
+		// Rebuild update list for 2.x support without quantity fields
+		ArrayList<ItemUpdateBlock> itemLstNew = new ArrayList<ItemUpdateBlock>();
+		for (ItemUpdateBlock block : itemLst) {
+			if (block.quantity <= 0)
+				itemLstNew.add(block);
+			else {
+				for (int i = 0; i < block.quantity; i++) {
+					ItemUpdateBlock nB = new ItemUpdateBlock();
+					nB.quantity = 1;
+					nB.itemID = block.itemID;
+					nB.itemUniqueID = block.itemUniqueID;
+					itemLstNew.add(nB);
+				}
+			}
+		}
+
 		// Set response
 		resp.prizeItems = prizeLst.toArray(t -> new PrizeItemInfo[t]);
-		resp.updateItems = itemLst.toArray(t -> new ItemUpdateBlock[t]);
+		resp.updateItems = itemLstNew.toArray(t -> new ItemUpdateBlock[t]);
 		if (resp.prizeItems.length == 0)
 			resp.prizeItems = null;
 		if (resp.updateItems.length == 0)
 			resp.updateItems = null;
 		return resp;
-	}
-
-	private static boolean processItemRedemption(ItemRedemptionInfo[] items, AccountObject account,
-			AccountSaveContainer save, boolean openMysteryBoxes, ArrayList<ItemUpdateBlock> itemLst,
-			ArrayList<PrizeItemInfo> prizeLst, CurrencyUpdateBlock currencyUpdate, PrizeItemInfo prizeInfo,
-			BiFunction<ItemInfo, Integer, Boolean> itemRedemptionValidationCall,
-			BiFunction<ItemInfo, Integer, Boolean> itemRedemptionCall, Consumer<ItemInfo> innerItemRedemptionCall) {
-		// Verify items
-		for (ItemRedemptionInfo req : items) {
-			// Check item def
-			ItemInfo itm = itemManager.getItemDefinition(req.defID);
-			if (itm == null)
-				return false; // Invalid item ID
-
-			// Check
-			if (itemRedemptionValidationCall != null)
-				if (!itemRedemptionValidationCall.apply(itm, req.quantity))
-					return false;
-		}
-
-		// Verify mystery boxes
-		if (openMysteryBoxes) {
-			// Go through redemption requests
-			for (ItemRedemptionInfo req : items) {
-				// Check if mystery box
-				ItemInfo itm = itemManager.getItemDefinition(req.defID);
-				if (isMysteryBox(itm)) {
-					// Verify rewards
-					for (ItemRelationData nd : getRelationsOfType("Prize", itm)) {
-						// Check item def
-						ItemInfo itm2 = itemManager.getItemDefinition(nd.itemID);
-						if (itm2 == null)
-							return false; // Invalid item ID
-					}
-				}
-			}
-		}
-
-		// Verify bundles
-		for (ItemRedemptionInfo req : items) {
-			// Check if bundle
-			ItemInfo itm = itemManager.getItemDefinition(req.defID);
-			if (!verifyBundle(itm))
-				return false;
-		}
-
-		// Handle items
-		for (ItemRedemptionInfo req : items) {
-			// Pull ID
-			ItemInfo itm = itemManager.getItemDefinition(req.defID);
-
-			// Check if its a bundle or box
-			if (!isBundle(itm) && (!openMysteryBoxes || !isMysteryBox(itm))) {
-				// Attempt redemption
-				if (itemRedemptionCall != null)
-					if (!itemRedemptionCall.apply(itm, req.quantity))
-						return false;
-
-				// Regular item
-				if (!addItem(itm, req, account, save, itemLst, prizeLst, currencyUpdate, prizeInfo))
-					return false;
-
-				// Call
-				if (innerItemRedemptionCall != null)
-					innerItemRedemptionCall.accept(itm);
-			}
-		}
-
-		// Handle mystery boxes
-		if (openMysteryBoxes) {
-			for (ItemRedemptionInfo req : items) {
-				// Pull ID
-				ItemInfo itm = itemManager.getItemDefinition(req.defID);
-
-				// Check if its a box
-				if (isMysteryBox(itm)) {
-					for (int l = 0; l < req.quantity; l++) {
-						// Gather prize items
-						HashMap<ItemRedemptionInfo, Integer> prizes = new HashMap<ItemRedemptionInfo, Integer>();
-						for (ItemRelationData nd : getRelationsOfType("Prize", itm)) {
-							// Load item info
-							int weight = nd.weight;
-							int defID = nd.itemID;
-							int quantity = nd.quantity;
-							if (quantity == 0)
-								quantity = 1;
-
-							// Add items to prize pool
-							ItemRedemptionInfo it = new ItemRedemptionInfo();
-							it.defID = defID;
-							it.quantity = quantity;
-							it.containerID = req.containerID;
-							prizes.put(it, weight);
-						}
-
-						// Select prize
-						ItemRedemptionInfo prize = RandomSelectorUtil.selectWeighted(prizes);
-						if (prize != null) {
-							// Create info object
-							PrizeItemInfo obj = new PrizeItemInfo();
-							obj.boxItemID = itm.getID();
-							obj.prizeItemID = prize.defID;
-							obj.mysteryPrizeItems = new ItemDefData[0];
-							ItemInfo itm2 = itemManager.getItemDefinition(prize.defID);
-							if (isBundle(itm2) || isMysteryBox(itm2)) {
-								// Add as item
-								obj.mysteryPrizeItems = new ItemDefData[] { itm2.getRawObject() };
-							}
-
-							// Add
-							if (!processItemRedemption(new ItemRedemptionInfo[] { prize }, account, save, false,
-									itemLst, prizeLst, currencyUpdate, obj, null, null, innerItemRedemptionCall))
-								return false;
-							prizeLst.add(obj);
-						}
-					}
-				}
-			}
-		}
-
-		// Handle bundles
-		for (ItemRedemptionInfo req : items) {
-			// Pull ID
-			ItemInfo itm = itemManager.getItemDefinition(req.defID);
-
-			// Check if its a bundle
-			if (isBundle(itm)) {
-				// Add bundle items
-				for (ItemRelationData nd : getRelationsOfType("Bundle", itm)) {
-					// Load item info
-					int defID = nd.itemID;
-					int quantity = nd.quantity;
-					if (quantity == 0)
-						quantity = 1;
-
-					// Add items
-					ItemRedemptionInfo it = new ItemRedemptionInfo();
-					it.defID = defID;
-					it.quantity = quantity * req.quantity;
-					it.containerID = req.containerID;
-
-					// Add
-					if (!processItemRedemption(new ItemRedemptionInfo[] { it }, account, save, false, itemLst, prizeLst,
-							currencyUpdate, null, null, null, innerItemRedemptionCall))
-						return false;
-				}
-			}
-		}
-
-		// Success status
-		return true;
-	}
-
-	private static boolean addItem(ItemInfo itm, ItemRedemptionInfo req, AccountObject account,
-			AccountSaveContainer save, ArrayList<ItemUpdateBlock> itemLst, ArrayList<PrizeItemInfo> prizeLst,
-			CurrencyUpdateBlock currencyUpdate, PrizeItemInfo prizeInfo) {
-		// Find handler
-		for (AbstractItemRedemptionHandler handler : handlers) {
-			if (handler.canHandle(itm)) {
-				// Handle
-				RedemptionResult resp = handler.handleRedemption(itm, req, account, save, currencyUpdate);
-
-				// Handle update
-				ItemUpdateBlock block = resp.getUpdate();
-				if (block != null) {
-					// Add update
-					itemLst.add(block);
-				}
-
-				// Add to prize info if needed
-				ItemDefData infoBlock = resp.getItemDef();
-				if (infoBlock != null && prizeInfo != null) {
-					// Add
-					prizeInfo.mysteryPrizeItems = appendTo(prizeInfo.mysteryPrizeItems, infoBlock);
-				}
-
-				// If failed, return result
-				if (!resp.isSuccessful())
-					return false;
-
-				// Delegate if needed, else return result
-				if (!handler.delegating())
-					return true;
-			}
-		}
-		return false;
-	}
-
-	private static ItemDefData[] appendTo(ItemDefData[] arr, ItemDefData block) {
-		ItemDefData[] newB = new ItemDefData[arr.length + 1];
-		for (int i = 0; i < newB.length; i++) {
-			if (i >= arr.length)
-				newB[i] = block;
-			else
-				newB[i] = arr[i];
-		}
-		return newB;
-	}
-
-	private static boolean verifyBundle(ItemInfo itm) {
-		if (isBundle(itm)) {
-			// Verify rewards
-			for (ItemRelationData nd : getRelationsOfType("Bundle", itm)) {
-				// Check item def
-				ItemInfo itm2 = itemManager.getItemDefinition(nd.itemID);
-				if (itm2 == null)
-					return false; // Invalid item ID
-
-				// Check nested bundles
-				if (!verifyBundle(itm2))
-					return false;
-			}
-		}
-		return true;
-	}
-
-	private static ItemRelationData[] getRelationsOfType(String type, ItemInfo itm) {
-		ArrayList<ItemRelationData> rels = new ArrayList<ItemRelationData>();
-
-		// Go through relations
-		for (ItemRelationData n : itm.getRawObject().relations) {
-			if (n.type.equalsIgnoreCase(type))
-				rels.add(n);
-		}
-
-		// Return
-		return rels.toArray(t -> new ItemRelationData[t]);
-	}
-
-	private static boolean isMysteryBox(ItemInfo def) {
-		// Go through relations
-		for (ItemRelationData n : def.getRawObject().relations) {
-			if (isMysteryItem(n)) {
-				// Its a mystery box
-				return true;
-			}
-		}
-
-		// Not a mystery box
-		return false;
-	}
-
-	private static boolean isMysteryItem(ItemRelationData rel) {
-		// Check type
-		return rel.type.equalsIgnoreCase("Prize");
-	}
-
-	private static boolean isBundle(ItemInfo def) {
-		// Go through relations
-		for (ItemRelationData n : def.getRawObject().relations) {
-			if (isBundleItem(n)) {
-				// Its a bundle
-				return true;
-			}
-		}
-
-		// Not a bundle
-		return false;
-	}
-
-	private static boolean isBundleItem(ItemRelationData rel) {
-		// Check type
-		return rel.type.equalsIgnoreCase("Bundle");
 	}
 
 	/**
@@ -523,14 +276,30 @@ public class InventoryUtils {
 					ItemUpdateBlock b = new ItemUpdateBlock();
 					b.itemID = itm.getItemDefID();
 					b.itemUniqueID = itm.getUniqueID();
-					b.addedQuantity = request.quantity;
+					b.quantity = request.quantity;
 					updates.add(b);
 				}
 			}
 		}
 
+		// Rebuild update list for 2.x support without quantity fields
+		ArrayList<ItemUpdateBlock> itemLstNew = new ArrayList<ItemUpdateBlock>();
+		for (ItemUpdateBlock block : updates) {
+			if (block.quantity <= 0)
+				itemLstNew.add(block);
+			else {
+				for (int i = 0; i < block.quantity; i++) {
+					ItemUpdateBlock nB = new ItemUpdateBlock();
+					nB.quantity = 1;
+					nB.itemID = block.itemID;
+					nB.itemUniqueID = block.itemUniqueID;
+					itemLstNew.add(nB);
+				}
+			}
+		}
+
 		// Set response
-		resp.updateItems = updates.toArray(t -> new ItemUpdateBlock[t]);
+		resp.updateItems = itemLstNew.toArray(t -> new ItemUpdateBlock[t]);
 		return resp;
 	}
 
@@ -700,9 +469,25 @@ public class InventoryUtils {
 				currency.setEntry("coins", new JsonPrimitive(currencyUpdate.coinCount));
 			}
 
+			// Rebuild update list for 2.x support without quantity fields
+			ArrayList<ItemUpdateBlock> itemLstNew = new ArrayList<ItemUpdateBlock>();
+			for (ItemUpdateBlock block : itemLst) {
+				if (block.quantity <= 0)
+					itemLstNew.add(block);
+				else {
+					for (int i = 0; i < block.quantity; i++) {
+						ItemUpdateBlock nB = new ItemUpdateBlock();
+						nB.quantity = 1;
+						nB.itemID = block.itemID;
+						nB.itemUniqueID = block.itemUniqueID;
+						itemLstNew.add(nB);
+					}
+				}
+			}
+
 			// Set response
 			resp.prizeItems = prizeLst.toArray(t -> new PrizeItemInfo[t]);
-			resp.updateItems = itemLst.toArray(t -> new ItemUpdateBlock[t]);
+			resp.updateItems = itemLstNew.toArray(t -> new ItemUpdateBlock[t]);
 			if (resp.prizeItems.length == 0)
 				resp.prizeItems = null;
 			if (resp.updateItems.length == 0)
@@ -712,6 +497,273 @@ public class InventoryUtils {
 		InventoryUpdateResponseData fail = new InventoryUpdateResponseData();
 		fail.success = false;
 		return fail;
+	}
+
+	private static boolean processItemRedemption(ItemRedemptionInfo[] items, AccountObject account,
+			AccountSaveContainer save, boolean openMysteryBoxes, ArrayList<ItemUpdateBlock> itemLst,
+			ArrayList<PrizeItemInfo> prizeLst, CurrencyUpdateBlock currencyUpdate, PrizeItemInfo prizeInfo,
+			BiFunction<ItemInfo, Integer, Boolean> itemRedemptionValidationCall,
+			BiFunction<ItemInfo, Integer, Boolean> itemRedemptionCall, Consumer<ItemInfo> innerItemRedemptionCall) {
+		// Verify items
+		for (ItemRedemptionInfo req : items) {
+			// Check item def
+			ItemInfo itm = itemManager.getItemDefinition(req.defID);
+			if (itm == null)
+				return false; // Invalid item ID
+
+			// Check
+			if (itemRedemptionValidationCall != null)
+				if (!itemRedemptionValidationCall.apply(itm, req.quantity))
+					return false;
+		}
+
+		// Verify mystery boxes
+		if (openMysteryBoxes) {
+			// Go through redemption requests
+			for (ItemRedemptionInfo req : items) {
+				// Check if mystery box
+				ItemInfo itm = itemManager.getItemDefinition(req.defID);
+				if (isMysteryBox(itm)) {
+					// Verify rewards
+					for (ItemRelationData nd : getRelationsOfType("Prize", itm)) {
+						// Check item def
+						ItemInfo itm2 = itemManager.getItemDefinition(nd.itemID);
+						if (itm2 == null)
+							return false; // Invalid item ID
+					}
+				}
+			}
+		}
+
+		// Verify bundles
+		for (ItemRedemptionInfo req : items) {
+			// Check if bundle
+			ItemInfo itm = itemManager.getItemDefinition(req.defID);
+			if (!verifyBundle(itm))
+				return false;
+		}
+
+		// Handle items
+		for (ItemRedemptionInfo req : items) {
+			// Pull ID
+			ItemInfo itm = itemManager.getItemDefinition(req.defID);
+
+			// Check if its a bundle or box
+			if (!isBundle(itm) && (!openMysteryBoxes || !isMysteryBox(itm))) {
+				// Attempt redemption
+				if (itemRedemptionCall != null)
+					if (!itemRedemptionCall.apply(itm, req.quantity))
+						return false;
+
+				// Regular item
+				if (!addItem(itm, req, account, save, itemLst, prizeLst, currencyUpdate, prizeInfo))
+					return false;
+
+				// Call
+				if (innerItemRedemptionCall != null)
+					innerItemRedemptionCall.accept(itm);
+			}
+		}
+
+		// Handle mystery boxes
+		if (openMysteryBoxes) {
+			for (ItemRedemptionInfo req : items) {
+				// Pull ID
+				ItemInfo itm = itemManager.getItemDefinition(req.defID);
+
+				// Check if its a box
+				if (isMysteryBox(itm)) {
+					for (int l = 0; l < req.quantity; l++) {
+						// Gather prize items
+						HashMap<ItemRedemptionInfo, Integer> prizes = new HashMap<ItemRedemptionInfo, Integer>();
+						for (ItemRelationData nd : getRelationsOfType("Prize", itm)) {
+							// Load item info
+							int weight = nd.weight;
+							int defID = nd.itemID;
+							int quantity = nd.quantity;
+							if (quantity == 0)
+								quantity = 1;
+
+							// Add items to prize pool
+							ItemRedemptionInfo it = new ItemRedemptionInfo();
+							it.defID = defID;
+							it.quantity = quantity;
+							it.containerID = req.containerID;
+							prizes.put(it, weight);
+						}
+
+						// Select prize
+						ItemRedemptionInfo prize = RandomSelectorUtil.selectWeighted(prizes);
+						if (prize != null) {
+							// Create info object
+							PrizeItemInfo obj = new PrizeItemInfo();
+							obj.boxItemID = itm.getID();
+							obj.prizeItemID = prize.defID;
+							obj.mysteryPrizeItems = new ItemDefData[0];
+							ItemInfo itm2 = itemManager.getItemDefinition(prize.defID);
+							if (isBundle(itm2) || isMysteryBox(itm2)) {
+								// Add as item
+								obj.mysteryPrizeItems = new ItemDefData[] { itm2.getRawObject() };
+							}
+
+							// Add
+							if (!processItemRedemption(new ItemRedemptionInfo[] { prize }, account, save, false,
+									itemLst, prizeLst, currencyUpdate, obj, null, null, innerItemRedemptionCall))
+								return false;
+							prizeLst.add(obj);
+						}
+					}
+				}
+			}
+		}
+
+		// Handle bundles
+		for (ItemRedemptionInfo req : items) {
+			// Pull ID
+			ItemInfo itm = itemManager.getItemDefinition(req.defID);
+
+			// Check if its a bundle
+			if (isBundle(itm)) {
+				// Add bundle items
+				for (ItemRelationData nd : getRelationsOfType("Bundle", itm)) {
+					// Load item info
+					int defID = nd.itemID;
+					int quantity = nd.quantity;
+					if (quantity == 0)
+						quantity = 1;
+
+					// Add items
+					ItemRedemptionInfo it = new ItemRedemptionInfo();
+					it.defID = defID;
+					it.quantity = quantity * req.quantity;
+					it.containerID = req.containerID;
+
+					// Add
+					if (!processItemRedemption(new ItemRedemptionInfo[] { it }, account, save, false, itemLst, prizeLst,
+							currencyUpdate, null, null, null, innerItemRedemptionCall))
+						return false;
+				}
+			}
+		}
+
+		// Success status
+		return true;
+	}
+
+	private static boolean addItem(ItemInfo itm, ItemRedemptionInfo req, AccountObject account,
+			AccountSaveContainer save, ArrayList<ItemUpdateBlock> itemLst, ArrayList<PrizeItemInfo> prizeLst,
+			CurrencyUpdateBlock currencyUpdate, PrizeItemInfo prizeInfo) {
+		// Find handler
+		for (AbstractItemRedemptionHandler handler : handlers) {
+			if (handler.canHandle(itm)) {
+				// Handle
+				RedemptionResult resp = handler.handleRedemption(itm, req, account, save, currencyUpdate);
+
+				// Handle update
+				for (ItemUpdateBlock block : resp.getUpdates()) {
+					if (block != null) {
+						// Add update
+						itemLst.add(block);
+
+						// Add to prize info if needed
+						ItemInfo def = itemManager.getItemDefinition(block.itemID);
+						if (def != null) {
+							ItemDefData infoBlock = def.getRawObject();
+							if (infoBlock != null && prizeInfo != null) {
+								// Add
+								prizeInfo.mysteryPrizeItems = appendTo(prizeInfo.mysteryPrizeItems, infoBlock);
+							}
+						}
+					}
+				}
+
+				// If failed, return result
+				if (!resp.isSuccessful())
+					return false;
+
+				// Delegate if needed, else return result
+				if (!handler.delegating())
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private static ItemDefData[] appendTo(ItemDefData[] arr, ItemDefData block) {
+		ItemDefData[] newB = new ItemDefData[arr.length + 1];
+		for (int i = 0; i < newB.length; i++) {
+			if (i >= arr.length)
+				newB[i] = block;
+			else
+				newB[i] = arr[i];
+		}
+		return newB;
+	}
+
+	private static boolean verifyBundle(ItemInfo itm) {
+		if (isBundle(itm)) {
+			// Verify rewards
+			for (ItemRelationData nd : getRelationsOfType("Bundle", itm)) {
+				// Check item def
+				ItemInfo itm2 = itemManager.getItemDefinition(nd.itemID);
+				if (itm2 == null)
+					return false; // Invalid item ID
+
+				// Check nested bundles
+				if (!verifyBundle(itm2))
+					return false;
+			}
+		}
+		return true;
+	}
+
+	private static ItemRelationData[] getRelationsOfType(String type, ItemInfo itm) {
+		ArrayList<ItemRelationData> rels = new ArrayList<ItemRelationData>();
+
+		// Go through relations
+		for (ItemRelationData n : itm.getRawObject().relations) {
+			if (n.type.equalsIgnoreCase(type))
+				rels.add(n);
+		}
+
+		// Return
+		return rels.toArray(t -> new ItemRelationData[t]);
+	}
+
+	private static boolean isMysteryBox(ItemInfo def) {
+		// Go through relations
+		for (ItemRelationData n : def.getRawObject().relations) {
+			if (isMysteryItem(n)) {
+				// Its a mystery box
+				return true;
+			}
+		}
+
+		// Not a mystery box
+		return false;
+	}
+
+	private static boolean isMysteryItem(ItemRelationData rel) {
+		// Check type
+		return rel.type.equalsIgnoreCase("Prize");
+	}
+
+	private static boolean isBundle(ItemInfo def) {
+		// Go through relations
+		for (ItemRelationData n : def.getRawObject().relations) {
+			if (isBundleItem(n)) {
+				// Its a bundle
+				return true;
+			}
+		}
+
+		// Not a bundle
+		return false;
+	}
+
+	private static boolean isBundleItem(ItemRelationData rel) {
+		// Check type
+		return rel.type.equalsIgnoreCase("Bundle");
 	}
 
 }

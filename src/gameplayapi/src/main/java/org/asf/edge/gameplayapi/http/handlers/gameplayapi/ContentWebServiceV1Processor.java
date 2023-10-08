@@ -1661,7 +1661,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			ItemUpdateBlock b = new ItemUpdateBlock();
 			b.itemID = itm.getItemDefID();
 			b.itemUniqueID = itm.getUniqueID();
-			b.addedQuantity = -1;
+			b.quantity = -1;
 			response.updateItems = appendTo(response.updateItems, b);
 		}
 

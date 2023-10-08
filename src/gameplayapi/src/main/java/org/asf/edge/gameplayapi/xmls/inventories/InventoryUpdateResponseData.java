@@ -56,7 +56,7 @@ public class InventoryUpdateResponseData {
 		public int itemUniqueID;
 
 		@JsonProperty("qty")
-		public int addedQuantity;
+		public int quantity;
 
 	}
 

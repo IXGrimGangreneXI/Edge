@@ -3,7 +3,6 @@ package org.asf.edge.gameplayapi.util.inventory;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
-import org.asf.edge.common.xmls.items.ItemDefData;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.CurrencyUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
 
@@ -50,13 +49,11 @@ public abstract class AbstractItemRedemptionHandler {
 
 	public static class RedemptionResult {
 		private boolean success;
-		private ItemUpdateBlock update;
-		private ItemDefData infoBlock;
+		private ItemUpdateBlock[] updates;
 
-		public RedemptionResult(boolean success, ItemUpdateBlock update, ItemDefData infoBlock) {
+		public RedemptionResult(boolean success, ItemUpdateBlock[] updates) {
 			this.success = success;
-			this.update = update;
-			this.infoBlock = infoBlock;
+			this.updates = updates;
 		}
 
 		/**
@@ -69,37 +66,28 @@ public abstract class AbstractItemRedemptionHandler {
 		}
 
 		/**
-		 * Retrieves the item update block
+		 * Retrieves the updated item blocks
 		 * 
-		 * @return ItemUpdateBlock or null (may be null even if successful)
+		 * @return Array of ItemUpdateBlock instances
 		 */
-		public ItemUpdateBlock getUpdate() {
-			return update;
-		}
-
-		/**
-		 * Retrieves the item definition
-		 * 
-		 * @return ItemDefData instance or null (may be null even if successful)
-		 */
-		public ItemDefData getItemDef() {
-			return infoBlock;
+		public ItemUpdateBlock[] getUpdates() {
+			return updates;
 		}
 
 		public static RedemptionResult failure() {
-			return new RedemptionResult(false, null, null);
+			return new RedemptionResult(false, null);
 		}
 
 		public static RedemptionResult success() {
-			return new RedemptionResult(true, null, null);
+			return new RedemptionResult(true, null);
 		}
 
-		public static RedemptionResult failure(ItemDefData info, ItemUpdateBlock update) {
-			return new RedemptionResult(false, update, info);
+		public static RedemptionResult failure(ItemUpdateBlock... updates) {
+			return new RedemptionResult(false, updates);
 		}
 
-		public static RedemptionResult success(ItemDefData info, ItemUpdateBlock update) {
-			return new RedemptionResult(true, update, info);
+		public static RedemptionResult success(ItemUpdateBlock... updates) {
+			return new RedemptionResult(true, updates);
 		}
 
 	}

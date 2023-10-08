@@ -39,11 +39,11 @@ public class ProfileSlotItemRedemptionHandler extends AbstractItemRedemptionHand
 			ItemUpdateBlock b = new ItemUpdateBlock();
 			b.itemID = itm.getItemDefID();
 			b.itemUniqueID = itm.getUniqueID();
-			b.addedQuantity = req.quantity;
+			b.quantity = req.quantity;
 			update = b;
 		}
 
-		return RedemptionResult.success(itm.getItemDef().getRawObject(), update);
+		return RedemptionResult.success(update);
 	}
 
 }

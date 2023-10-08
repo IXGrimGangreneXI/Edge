@@ -39,12 +39,12 @@ public class DefaultItemRedemptionHandler extends AbstractItemRedemptionHandler 
 			ItemUpdateBlock b = new ItemUpdateBlock();
 			b.itemID = itm.getItemDefID();
 			b.itemUniqueID = itm.getUniqueID();
-			b.addedQuantity = req.quantity;
+			b.quantity = req.quantity;
 			update = b;
 		}
 
 		// Return
-		return RedemptionResult.success(itm.getItemDef().getRawObject(), update);
+		return RedemptionResult.success(update);
 	}
 
 }
