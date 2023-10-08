@@ -1,3 +1,3 @@
-Changes in 1.0.0.A5:
+Changes in a0.5:
 - Improved the automatic Sentinel updater to work with timestamps instead of a timer loop
 - Fixed item calls for 2.x and below not using proper quantity
