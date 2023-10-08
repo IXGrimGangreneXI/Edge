@@ -1,0 +1,7 @@
+Changes in 1.0.0.A4:
+
+
+Fixes in 1.0.0.A4:
+- Fixed Edge content server accidentally starting while it doesnt need to when using sentinel (this patches players being unable to run multiple servers with Sentinel running)
+
+New features:

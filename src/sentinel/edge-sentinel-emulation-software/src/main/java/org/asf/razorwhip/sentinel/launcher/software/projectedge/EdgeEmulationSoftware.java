@@ -321,6 +321,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 						args.add("-DsentinelLauncherEdgeSoftwareUpdateList=" + listURL);
 						args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
 					}
+					args.add("-DdisableContentServer=true");
 
 					// Add main class
 					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
@@ -347,6 +348,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 						args.add("-DsentinelLauncherEdgeSoftwareUpdateList=" + listURL);
 						args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
 					}
+					args.add("-DdisableContentServer=true");
 
 					// Add main class
 					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");

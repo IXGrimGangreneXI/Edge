@@ -41,7 +41,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class EdgeGlobalServerMain {
-	public static final String GLOBAL_SERVER_VERSION = "1.0.0.A3";
+	public static final String GLOBAL_SERVER_VERSION = "1.0.0.A4";
 
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		// Set locale
@@ -51,7 +51,7 @@ public class EdgeGlobalServerMain {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
 		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
-		System.out.println("                 AIO Server Version 1.0.0.A3                 ");
+		System.out.println("                 AIO Server Version 1.0.0.A4                 ");
 		System.out.println("                                                             ");
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("");
@@ -192,7 +192,9 @@ public class EdgeGlobalServerMain {
 		// Content server
 		logger.debug("Configuring content server settings...");
 		JsonObject contentSrvJson = configData.get("contentServer").getAsJsonObject();
-		boolean contentDisabled = contentSrvJson.has("disabled") && contentSrvJson.get("disabled").getAsBoolean();
+		boolean contentDisabled = (contentSrvJson.has("disabled") && contentSrvJson.get("disabled").getAsBoolean())
+				|| (System.getProperty("disableContentServer") != null
+						&& !System.getProperty("disableContentServer").equalsIgnoreCase("false"));
 		if (!contentDisabled) {
 			if (contentSrvConfig.server == null) {
 				logger.debug("Loading listening settings...");
@@ -229,7 +231,9 @@ public class EdgeGlobalServerMain {
 		// Common api server
 		logger.debug("Configuring Common API server settings...");
 		JsonObject cApiJson = configData.get("commonApiServer").getAsJsonObject();
-		boolean capiDisabled = cApiJson.has("disabled") && cApiJson.get("disabled").getAsBoolean();
+		boolean capiDisabled = cApiJson.has("disabled") && cApiJson.get("disabled").getAsBoolean()
+				|| (System.getProperty("disableCommonApiServer") != null
+						&& !System.getProperty("disableCommonApiServer").equalsIgnoreCase("false"));
 		if (!capiDisabled) {
 			if (cApiConfig.server == null) {
 				logger.debug("Loading listening settings...");
@@ -265,7 +269,9 @@ public class EdgeGlobalServerMain {
 		// Gameplay api server
 		logger.debug("Configuring Gameplay API server settings...");
 		JsonObject gpApiJson = configData.get("gameplayApiServer").getAsJsonObject();
-		boolean gapiDisabled = gpApiJson.has("disabled") && gpApiJson.get("disabled").getAsBoolean();
+		boolean gapiDisabled = gpApiJson.has("disabled") && gpApiJson.get("disabled").getAsBoolean()
+				|| (System.getProperty("disableGameplayApiServer") != null
+						&& !System.getProperty("disableGameplayApiServer").equalsIgnoreCase("false"));
 		if (!gapiDisabled) {
 			if (gpApiConfig.server == null) {
 				logger.debug("Loading listening settings...");
@@ -287,7 +293,9 @@ public class EdgeGlobalServerMain {
 		// MMO server
 		logger.debug("Configuring MMO server settings...");
 		JsonObject mmoSrvJson = configData.get("mmoServer").getAsJsonObject();
-		boolean mmoSrvDisabled = mmoSrvJson.has("disabled") && mmoSrvJson.get("disabled").getAsBoolean();
+		boolean mmoSrvDisabled = mmoSrvJson.has("disabled") && mmoSrvJson.get("disabled").getAsBoolean()
+				|| (System.getProperty("disableMMOServer") != null
+						&& !System.getProperty("disableMMOServer").equalsIgnoreCase("false"));
 		if (!mmoSrvDisabled) {
 			if (mmoSrvConfig.server == null) {
 				logger.debug("Loading listening settings...");
