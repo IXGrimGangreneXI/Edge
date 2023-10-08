@@ -2365,16 +2365,23 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 					ItemStateConsumableCriteriaData crit = (ItemStateConsumableCriteriaData) criteria.criteriaData;
 
 					// Check
-					if (crit.appliesUses) {
-						// Find from room
-						Optional<RoomItemInfo> targetItmO = Stream.of(roomItems).filter(t -> t.itemID == crit.itemID)
-								.findFirst();
-						if (targetItmO.isPresent()) {
-							// Check uses
-							RoomItemInfo targetItm = targetItmO.get();
-							if (targetItm.getCurrentUses(save) >= crit.amount) {
-								// Decrease target uses
-								targetItm.uses = targetItm.getCurrentUses(save) - crit.amount;
+					if (crit.amount != 0) {
+						if (crit.appliesUses) {
+							// Find from room
+							Optional<RoomItemInfo> targetItmO = Stream.of(roomItems)
+									.filter(t -> t.itemID == crit.itemID).findFirst();
+							if (targetItmO.isPresent()) {
+								// Check uses
+								RoomItemInfo targetItm = targetItmO.get();
+								if (targetItm.getCurrentUses(save) >= crit.amount) {
+									// Decrease target uses
+									targetItm.uses = targetItm.getCurrentUses(save) - crit.amount;
+								} else {
+									// Error
+									resp.errorCode = 5; // 5 = less uses than required
+									resp.success = false;
+									return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+								}
 							} else {
 								// Error
 								resp.errorCode = 5; // 5 = less uses than required
@@ -2382,24 +2389,19 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 								return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
 							}
 						} else {
-							// Error
-							resp.errorCode = 5; // 5 = less uses than required
-							resp.success = false;
-							return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
-						}
-					} else {
-						// Find items
-						PlayerInventoryItem itm = itemManager.getCommonInventory(save.getSaveData()).getContainer(1)
-								.findFirst(crit.itemID);
-						if (itm == null || itm.getQuantity() < crit.amount) {
-							// Error
-							resp.errorCode = 7; // 7 = quantity less than required
-							resp.success = false;
-							return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
-						}
+							// Find items
+							PlayerInventoryItem itm = itemManager.getCommonInventory(save.getSaveData()).getContainer(1)
+									.findFirst(crit.itemID);
+							if (itm == null || itm.getQuantity() < crit.amount) {
+								// Error
+								resp.errorCode = 7; // 7 = quantity less than required
+								resp.success = false;
+								return ok("text/xml", req.generateXmlValue("SetNextItemStateResult", resp));
+							}
 
-						// Decrease
-						itm.remove(crit.amount);
+							// Decrease
+							itm.remove(crit.amount);
+						}
 					}
 				}
 				break;

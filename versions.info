@@ -4,5 +4,5 @@ sentinel=1.0.0.A4
 globalserver=1.0.0.A4
 contentserver=1.0.0.A3
 commonapi=1.0.0.A3
-gameplayapi=1.0.0.A3
+gameplayapi=1.0.0.A4
 mmoserver=1.0.0.A3
