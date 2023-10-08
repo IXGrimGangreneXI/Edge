@@ -4,4 +4,4 @@ Changes in 1.0.0.A4:
 Fixes in 1.0.0.A4:
 - Fixed Sentinel not being restarted by the updater when its trying to restart (REQUIRES REINSTALL FOR THIS TO WORK, THE UPDATER OF SENTINEL IS NOT UPDATED BY SENTINEL ITSSELF)
 - Fixed Edge content server accidentally starting while it doesnt need to when using sentinel (this patches players being unable to run multiple servers with Sentinel running)
-- Fixed farming requiring you to placce a well even if items have water needs set to 0 (why did they remove the well-)
+- Fixed farming requiring you to place a well even if items have water needs set to 0 (why did they remove the well-)
