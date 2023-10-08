@@ -12,6 +12,7 @@ function copyUpdateData() {
 	package="$3"
 
     mkdir -p build/updatedata/projectedge.net/httpdocs/updates/$package || exit 1
+    mkdir -p build/updatedata/projectedge.net/httpdocs/updates/$package/$ch/$version
     cp -rfv build/update/$package/$version build/updatedata/projectedge.net/httpdocs/updates/$package/$ch/$version || exit 1
     echo -n "$version" > build/updatedata/projectedge.net/httpdocs/updates/$package/$ch/update.info
 }

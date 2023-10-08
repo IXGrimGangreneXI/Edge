@@ -25,7 +25,7 @@ import org.asf.edge.contentserver.config.ContentServerConfig;
  *
  */
 public class EdgeContentServer implements IBaseServer {
-	public static final String CONTENT_SERVER_VERSION = "1.0.0.A2";
+	public static final String CONTENT_SERVER_VERSION = "1.0.0.A3";
 
 	private Logger logger;
 	private ContentServerConfig config;
