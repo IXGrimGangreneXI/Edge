@@ -361,7 +361,7 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 				+ " updated dragon '" + oldName + "' (ID " + cdragon.entityID + "), updated: " + updateStr);
 
 		// Log
-		if (wasSelected != request.setAsSelected) {
+		if (wasSelected != cdragon.isSelected) {
 			if (request.setAsSelected)
 				getServerInstance().getLogger().info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
 						+ " selected dragon '" + cdragon.name + "' (ID " + cdragon.entityID + ")");

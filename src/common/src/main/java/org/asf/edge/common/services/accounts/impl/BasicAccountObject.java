@@ -337,6 +337,8 @@ public abstract class BasicAccountObject extends AccountObject {
 		try {
 			getAccountData().getChildContainer("accountdata").setEntry("ismultiplayerenabled",
 					new JsonPrimitive(state));
+			logger.info("Set multiplayer to " + (state ? "enabled" : "disabled") + " for account " + getUsername()
+					+ " (ID " + getAccountID() + ")");
 		} catch (IOException e) {
 			logger.error("Failed to execute database query request while trying to update multiplayer state of ID '"
 					+ id + "'", e);
@@ -347,6 +349,8 @@ public abstract class BasicAccountObject extends AccountObject {
 	public void setChatEnabled(boolean state) {
 		try {
 			getAccountData().getChildContainer("accountdata").setEntry("ischatenabled", new JsonPrimitive(state));
+			logger.info("Set chat to " + (state ? "enabled" : "disabled") + " for account " + getUsername() + " (ID "
+					+ getAccountID() + ")");
 		} catch (IOException e) {
 			logger.error(
 					"Failed to execute database query request while trying to update chat state of ID '" + id + "'", e);
@@ -358,6 +362,8 @@ public abstract class BasicAccountObject extends AccountObject {
 		try {
 			getAccountData().getChildContainer("accountdata").setEntry("isstrictchatfilterenabled",
 					new JsonPrimitive(state));
+			logger.info("Set strict-chat to " + (state ? "enabled" : "disabled") + " for account " + getUsername()
+					+ " (ID " + getAccountID() + ")");
 		} catch (IOException e) {
 			logger.error("Failed to execute database query request while trying to update chat filter state of ID '"
 					+ id + "'", e);
