@@ -122,7 +122,7 @@ public class AccountDownloader {
 
 	private void downloadData() {
 		setValue(0);
-		
+
 		// Prepare
 		Logger logger = LogManager.getLogger("Downloader");
 		logger.info("Verifying settings...");
@@ -901,7 +901,7 @@ public class AccountDownloader {
 		panel.add(lblNewLabel);
 
 		boxServer = new JTextField();
-		boxServer.setText("https://aerialworks.ddns.net:5320/API/ProjectEdge/");
+		boxServer.setText("http://localhost:5321/API/ProjectEdge/Accounts/");
 		boxServer.setBounds(12, 32, 576, 21);
 		panel.add(boxServer);
 		boxServer.setColumns(10);

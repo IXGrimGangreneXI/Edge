@@ -1,4 +1,4 @@
-package org.asf.edge.gameplayapi.http.handlers.edgespecific;
+package org.asf.edge.commonapi.http.handlers.api.edgespecific;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,7 +11,6 @@ import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
-import org.asf.edge.common.events.accounts.saves.AccountSaveAuthenticatedEvent;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -22,11 +21,9 @@ import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
-import org.asf.edge.common.services.textfilter.result.FilterResult;
-import org.asf.edge.common.services.textfilter.result.WordMatch;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
-import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
+import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonArray;
@@ -37,165 +34,26 @@ import com.google.gson.JsonPrimitive;
 
 /**
  * 
- * Edge API endpoint, holds public edge-specific API features
+ * Edge API endpoint for account management, holds public edge-specific API
+ * features for accounts
  * 
  * @author Sky Swimmer
  *
  */
-public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
+public class EdgeAccountApiService extends EdgeWebService<EdgeCommonApiServer> {
 
-	public EdgeApiService(EdgeGameplayApiServer server) {
+	public EdgeAccountApiService(EdgeCommonApiServer server) {
 		super(server);
 	}
 
 	@Override
 	public HttpPushProcessor createNewInstance() {
-		return new EdgeApiService(getServerInstance());
+		return new EdgeAccountApiService(getServerInstance());
 	}
 
 	@Override
 	public String path() {
-		return "/API/ProjectEdge/";
-	}
-
-	// TODO: profile and account updating
-
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getProfileByID(FunctionInfo func) throws IOException {
-		// Load request
-		JsonObject request;
-		try {
-			// Parse and check
-			request = JsonParser.parseString(func.getRequest().getRequestBodyAsString()).getAsJsonObject();
-			if (!request.has("id"))
-				throw new IOException();
-		} catch (Exception e) {
-			// Bad request
-			return response(400, "Bad request", "text/json",
-					"{\"error\":\"Invalid request body, expecting a JSON with a 'id' field\"}");
-		}
-
-		// Load request into memory
-		String id = request.get("id").getAsString();
-
-		// Find account manager
-		AccountManager manager = AccountManager.getInstance();
-
-		// Find save
-		AccountSaveContainer save = manager.getSaveByID(id);
-		if (save == null) {
-			// Error
-			return response(404, "Not found", "text/json", "{\"error\":\"save_not_found\"}");
-		}
-
-		// Build response
-		AccountObject acc = save.getAccount();
-		JsonObject resp = new JsonObject();
-		resp.addProperty("saveId", save.getSaveID());
-		resp.addProperty("saveUsername", save.getUsername());
-		resp.addProperty("registrationTime", acc.getRegistrationTimestamp());
-		resp.addProperty("saveCreationTime", save.getCreationTime());
-
-		// Find avatar
-		JsonElement ele = save.getSaveData().getEntry("avatar");
-		if (ele != null) {
-			resp.add("avatar", ele);
-		}
-
-		// Rank data
-		JsonArray rankData = new JsonArray();
-		for (EntityRankInfo rank : AchievementManager.getInstance().getRanks(save, id)) {
-			if (rank.getRank() == null)
-				continue;
-			JsonObject rObj = new JsonObject();
-			rObj.addProperty("rankID", rank.getRank().getID());
-			rObj.addProperty("rankGlobalID", rank.getRank().getGlobalID());
-			rObj.addProperty("pointTypeID", rank.getRank().getPointTypeID());
-			rObj.addProperty("level", AchievementManager.getInstance().getRankIndex(rank.getRank()) + 1);
-			rObj.addProperty("points", rank.getTotalScore());
-			rankData.add(rObj);
-		}
-		resp.add("ranks", rankData);
-
-		// Return
-		return ok("text/json", resp.toString());
-	}
-
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult getProfileByName(FunctionInfo func) throws IOException {
-		// Load request
-		JsonObject request;
-		try {
-			// Parse and check
-			request = JsonParser.parseString(func.getRequest().getRequestBodyAsString()).getAsJsonObject();
-			if (!request.has("name"))
-				throw new IOException();
-		} catch (Exception e) {
-			// Bad request
-			return response(400, "Bad request", "text/json",
-					"{\"error\":\"Invalid request body, expecting a JSON with a 'name' field\"}");
-		}
-
-		// Load request into memory
-		String name = request.get("name").getAsString();
-
-		// Find account manager
-		AccountManager manager = AccountManager.getInstance();
-
-		// Find save
-		String accID = manager.getAccountIdBySaveUsername(name);
-		if (accID == null) {
-			// Error
-			return response(404, "Not found", "text/json", "{\"error\":\"save_not_found\"}");
-		}
-		AccountObject acc = manager.getAccount(accID);
-		if (acc == null) {
-			// Error
-			return response(404, "Not found", "text/json", "{\"error\":\"save_not_found\"}");
-		}
-		AccountSaveContainer save = null;
-		for (String saveID : acc.getSaveIDs()) {
-			AccountSaveContainer sv = acc.getSave(saveID);
-			if (sv.getUsername().equalsIgnoreCase(name)) {
-				save = sv;
-				break;
-			}
-		}
-		if (save == null) {
-			// Error
-			return response(404, "Not found", "text/json", "{\"error\":\"save_not_found\"}");
-		}
-
-		// Build response
-		JsonObject resp = new JsonObject();
-		resp.addProperty("saveId", save.getSaveID());
-		resp.addProperty("saveUsername", save.getUsername());
-		resp.addProperty("registrationTime", acc.getRegistrationTimestamp());
-		resp.addProperty("saveCreationTime", save.getCreationTime());
-
-		// Find avatar
-		JsonElement ele = save.getSaveData().getEntry("avatar");
-		if (ele != null) {
-			resp.add("avatar", ele);
-		}
-
-		// Rank data
-		JsonArray rankData = new JsonArray();
-		for (EntityRankInfo rank : AchievementManager.getInstance().getRanks(save, save.getSaveID())) {
-			if (rank.getRank() == null)
-				continue;
-			JsonObject rObj = new JsonObject();
-			rObj.addProperty("rankID", rank.getRank().getID());
-			rObj.addProperty("rankGlobalID", rank.getRank().getGlobalID());
-			rObj.addProperty("pointTypeID", rank.getRank().getPointTypeID());
-			rObj.addProperty("level", AchievementManager.getInstance().getRankIndex(rank.getRank()) + 1);
-			rObj.addProperty("points", rank.getTotalScore());
-			rankData.add(rObj);
-		}
-		resp.add("ranks", rankData);
-
-		// Return
-		return ok("text/json", resp.toString());
+		return "/API/ProjectEdge/Accounts/";
 	}
 
 	@Function(allowedMethods = { "POST" })
@@ -637,9 +495,9 @@ public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
 		return ok("text/json", resp.toString());
 	}
 
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult authenticateSave(FunctionInfo func) throws IOException {
-		// Authenticate for save
+	@Function
+	public FunctionResult getAccountDetails(FunctionInfo func) throws IOException {
+		// Account details
 
 		// Check authentication
 		if (!func.getRequest().hasHeader("Authorization")
@@ -658,89 +516,59 @@ public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
 			return response(401, "Unauthorized", "text/json", "{\"error\":\"Authorization token invalid\"}");
 		}
 
-		// Load request
-		JsonObject request;
-		try {
-			// Parse and check
-			request = JsonParser.parseString(func.getRequest().getRequestBodyAsString()).getAsJsonObject();
-			if (!request.has("saveID"))
-				throw new IOException();
-		} catch (Exception e) {
-			// Bad request
-			return response(400, "Bad request", "text/json",
-					"{\"error\":\"Invalid request body, expecting a JSON with a 'saveID' field\"}");
-		}
-
-		// Pull save ID
-		String saveID = request.get("saveID").getAsString();
-
-		// Locate save
-		AccountSaveContainer save = acc.getSave(saveID);
-		if (save == null) {
-			// Error
-			return response(404, "Not found", "text/json", "{\"error\":\"save_not_found\"}");
-		}
-
-		// Build save-specific token
-		tkn = new SessionToken();
-		tkn.accountID = acc.getAccountID();
-		tkn.saveID = saveID;
-		tkn.lastLoginTime = acc.getLastLoginTime();
-		tkn.capabilities = new String[] { "api", "gp" };
-
-		// Log
-		getServerInstance().getLogger().info("Viking selected for account " + acc.getAccountID() + ": selected viking '"
-				+ save.getUsername() + "' (ID " + save.getSaveID() + ") from API.");
-		save.getAccount().ping(true);
-
-		// Dispatch event
-		EventBus.getInstance()
-				.dispatchEvent(new AccountSaveAuthenticatedEvent(acc, save, AccountManager.getInstance()));
-
-		// Encode
-		token = tkn.toTokenString();
-
 		// Build response
 		JsonObject resp = new JsonObject();
-		resp.addProperty("token", token);
 		resp.addProperty("accountId", acc.getAccountID());
 		resp.addProperty("accountUsername", acc.getUsername());
-		resp.addProperty("saveId", save.getSaveID());
-		resp.addProperty("saveUsername", save.getUsername());
+		resp.addProperty("accountEmail", acc.getAccountEmail());
 		resp.addProperty("lastLoginTime", acc.getLastLoginTime());
 		resp.addProperty("registrationTime", acc.getRegistrationTimestamp());
-		resp.addProperty("saveCreationTime", save.getCreationTime());
 		resp.addProperty("multiplayerEnabled", acc.isMultiplayerEnabled());
 		resp.addProperty("chatEnabled", acc.isChatEnabled());
 		resp.addProperty("strictChat", acc.isStrictChatFilterEnabled());
 
-		// Find avatar
-		JsonElement ele = save.getSaveData().getEntry("avatar");
-		if (ele != null) {
-			resp.add("avatar", ele);
-		}
+		// Add profiles
+		JsonObject profiles = new JsonObject();
+		for (String save : acc.getSaveIDs()) {
+			AccountSaveContainer sv = acc.getSave(save);
+			if (sv != null) {
+				JsonObject profile = new JsonObject();
+				profile.addProperty("username", sv.getUsername());
 
-		// Rank data
-		JsonArray rankData = new JsonArray();
-		for (EntityRankInfo rank : AchievementManager.getInstance().getRanks(save, saveID)) {
-			if (rank.getRank() == null)
-				continue;
-			JsonObject rObj = new JsonObject();
-			rObj.addProperty("rankID", rank.getRank().getID());
-			rObj.addProperty("rankGlobalID", rank.getRank().getGlobalID());
-			rObj.addProperty("pointTypeID", rank.getRank().getPointTypeID());
-			rObj.addProperty("level", AchievementManager.getInstance().getRankIndex(rank.getRank()) + 1);
-			rObj.addProperty("points", rank.getTotalScore());
-			rankData.add(rObj);
+				// Find avatar
+				JsonElement ele = sv.getSaveData().getEntry("avatar");
+				if (ele != null) {
+					profile.add("avatar", ele);
+				}
+
+				// Rank data
+				JsonArray rankData = new JsonArray();
+				for (EntityRankInfo rank : AchievementManager.getInstance().getRanks(sv, save)) {
+					if (rank.getRank() == null)
+						continue;
+					JsonObject rObj = new JsonObject();
+					rObj.addProperty("rankID", rank.getRank().getID());
+					rObj.addProperty("rankGlobalID", rank.getRank().getGlobalID());
+					rObj.addProperty("pointTypeID", rank.getRank().getPointTypeID());
+					rObj.addProperty("level", AchievementManager.getInstance().getRankIndex(rank.getRank()) + 1);
+					rObj.addProperty("points", rank.getTotalScore());
+					rankData.add(rObj);
+				}
+				profile.add("ranks", rankData);
+
+				// Add
+				profile.addProperty("creationTime", sv.getCreationTime());
+				profiles.add(save, profile);
+			}
 		}
-		resp.add("ranks", rankData);
+		resp.add("profiles", profiles);
 
 		// Return
 		return ok("text/json", resp.toString());
 	}
 
 	@Function(allowedMethods = { "POST" })
-	public FunctionResult createSave(FunctionInfo func) throws IOException {
+	public FunctionResult updateAccount(FunctionInfo func) throws IOException {
 		// Save details
 
 		// Check authentication
@@ -765,210 +593,158 @@ public class EdgeApiService extends EdgeWebService<EdgeGameplayApiServer> {
 		try {
 			// Parse and check
 			request = JsonParser.parseString(func.getRequest().getRequestBodyAsString()).getAsJsonObject();
-			if (!request.has("saveUsername"))
-				throw new IOException();
 		} catch (Exception e) {
 			// Bad request
-			return response(400, "Bad request", "text/json",
-					"{\"error\":\"Invalid request body, expecting a JSON with a 'saveUsername' field\"}");
+			return response(400, "Bad request", "text/json", "{\"error\":\"Invalid request body\"}");
 		}
 
 		// Find account manager
 		AccountManager manager = AccountManager.getInstance();
 
-		// Pull save username
-		String saveUsername = request.get("saveUsername").getAsString();
+		// Update account
+		String newUsername = null;
+		if (request.has("accountUsername")) {
+			String username = request.get("accountUsername").getAsString();
 
-		// Check validity
-		if (!manager.isValidUsername(saveUsername)) {
-			// Invalid name
-			return response(400, "Bad request", "text/json", "{\"error\":\"invalid_username\"}");
-		}
-
-		// Check filters
-		if (TextFilterService.getInstance().isFiltered(saveUsername, true)) {
-			// Invalid name
-			return response(400, "Bad request", "text/json", "{\"error\":\"inappropriate_username\"}");
-		}
-
-		// Check if in use
-		boolean inUse = false;
-		if (!acc.getUsername().equalsIgnoreCase(saveUsername) && manager.isUsernameTaken(saveUsername)) {
-			inUse = true;
-		} else {
-			// Check if in use by any saves
-			AccountObject accF = acc;
-			if (Stream.of(accF.getSaveIDs()).map(t -> accF.getSave(t)).anyMatch(t -> {
-				return t.getUsername().equalsIgnoreCase(saveUsername);
-			})) {
-				inUse = true;
+			// Check validity
+			if (!manager.isValidUsername(username)) {
+				// Invalid name
+				return response(400, "Bad request", "text/json", "{\"error\":\"invalid_username\"}");
 			}
+
+			// Check filters
+			if (TextFilterService.getInstance().isFiltered(username, true)) {
+				// Invalid name
+				return response(400, "Bad request", "text/json", "{\"error\":\"inappropriate_username\"}");
+			}
+
+			// Check if in use
+			boolean inUse = false;
+			if (!acc.getUsername().equalsIgnoreCase(username) && manager.isUsernameTaken(username)) {
+				inUse = true;
+			} else {
+				// Check if in use by any saves
+				AccountObject accF = acc;
+				if (Stream.of(acc.getSaveIDs()).map(t -> accF.getSave(t)).anyMatch(t -> {
+					return t.getUsername().equalsIgnoreCase(username);
+				})) {
+					inUse = true;
+				}
+			}
+			if (inUse) {
+				return response(400, "Bad request", "text/json", "{\"error\":\"username_in_use\"}");
+			}
+
+			// Set for update
+			newUsername = username;
 		}
-		if (inUse) {
-			// Invalid name
-			return response(400, "Bad request", "text/json", "{\"error\":\"username_in_use\"}");
+		String newPassword = null;
+		if (request.has("accountPassword")) {
+			String password = request.get("accountPassword").getAsString();
+
+			// Check password validity
+			if (!manager.isValidPassword(password)) {
+				// Error
+				return response(400, "Bad request", "text/json", "{\"error\":\"invalid_password\"}");
+			}
+
+			// Set for update
+			newPassword = password;
+		}
+		String newEmail = null;
+		if (request.has("accountEmail")) {
+			String email = request.get("accountEmail").getAsString();
+
+			// Check if email is taken
+			if (manager.getAccountIDByEmail(email) != null) {
+				// Error
+				return response(400, "Bad request", "text/json", "{\"error\":\"email_in_use\"}");
+			}
+
+			// Set for update
+			newEmail = email;
+		}
+		if (request.has("multiplayerEnabled")) {
+			acc.setMultiplayerEnabled(request.get("multiplayerEnabled").getAsBoolean());
+		}
+		if (request.has("chatEnabled")) {
+			acc.setMultiplayerEnabled(request.get("chatEnabled").getAsBoolean());
+		}
+		if (request.has("strictChat")) {
+			acc.setMultiplayerEnabled(request.get("strictChat").getAsBoolean());
 		}
 
-		// Create save
-		AccountSaveContainer save = acc.createSave(saveUsername);
-		if (save == null) {
-			// Error
-			return response(500, "Internal server error", "text/json", "{\"error\":\"save_creation_failure\"}");
+		// Update
+		if (newUsername != null) {
+			// Update
+			if (!acc.updateUsername(newUsername))
+				return response(500, "Internal server error", "text/json", "{\"error\":\"server_error\"}");
+			acc.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+					new JsonPrimitive(System.currentTimeMillis()));
 		}
-
-		// Build save-specific token
-		tkn = new SessionToken();
-		tkn.accountID = acc.getAccountID();
-		tkn.saveID = save.getSaveID();
-		tkn.lastLoginTime = acc.getLastLoginTime();
-		tkn.capabilities = new String[] { "api", "gp" };
-
-		// Log
-		getServerInstance().getLogger().info("Viking created for account " + acc.getAccountID() + ": selected viking '"
-				+ save.getUsername() + "' (ID " + save.getSaveID() + ") from API.");
-		save.getAccount().ping(true);
-
-		// Encode
-		token = tkn.toTokenString();
+		if (newPassword != null) {
+			// Update
+			if (!acc.updatePassword(newPassword.toCharArray()))
+				return response(500, "Internal server error", "text/json", "{\"error\":\"server_error\"}");
+			acc.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+					new JsonPrimitive(System.currentTimeMillis()));
+		}
+		if (newEmail != null) {
+			// Update
+			if (!acc.updateEmail(newEmail))
+				return response(500, "Internal server error", "text/json", "{\"error\":\"server_error\"}");
+			acc.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+					new JsonPrimitive(System.currentTimeMillis()));
+		}
 
 		// Build response
 		JsonObject resp = new JsonObject();
-		resp.addProperty("token", token);
 		resp.addProperty("accountId", acc.getAccountID());
 		resp.addProperty("accountUsername", acc.getUsername());
-		resp.addProperty("saveId", save.getSaveID());
-		resp.addProperty("saveUsername", save.getUsername());
+		resp.addProperty("accountEmail", acc.getAccountEmail());
 		resp.addProperty("lastLoginTime", acc.getLastLoginTime());
 		resp.addProperty("registrationTime", acc.getRegistrationTimestamp());
-		resp.addProperty("saveCreationTime", save.getCreationTime());
 		resp.addProperty("multiplayerEnabled", acc.isMultiplayerEnabled());
 		resp.addProperty("chatEnabled", acc.isChatEnabled());
 		resp.addProperty("strictChat", acc.isStrictChatFilterEnabled());
 
-		// Find avatar
-		JsonElement ele = save.getSaveData().getEntry("avatar");
-		if (ele != null) {
-			resp.add("avatar", ele);
-		}
+		// Add profiles
+		JsonObject profiles = new JsonObject();
+		for (String save : acc.getSaveIDs()) {
+			AccountSaveContainer sv = acc.getSave(save);
+			if (sv != null) {
+				JsonObject profile = new JsonObject();
+				profile.addProperty("username", sv.getUsername());
 
-		// Rank data
-		JsonArray rankData = new JsonArray();
-		for (EntityRankInfo rank : AchievementManager.getInstance().getRanks(save, save.getSaveID())) {
-			if (rank.getRank() == null)
-				continue;
-			JsonObject rObj = new JsonObject();
-			rObj.addProperty("rankID", rank.getRank().getID());
-			rObj.addProperty("rankGlobalID", rank.getRank().getGlobalID());
-			rObj.addProperty("pointTypeID", rank.getRank().getPointTypeID());
-			rObj.addProperty("level", AchievementManager.getInstance().getRankIndex(rank.getRank()) + 1);
-			rObj.addProperty("points", rank.getTotalScore());
-			rankData.add(rObj);
+				// Find avatar
+				JsonElement ele = sv.getSaveData().getEntry("avatar");
+				if (ele != null) {
+					profile.add("avatar", ele);
+				}
+
+				// Rank data
+				JsonArray rankData = new JsonArray();
+				for (EntityRankInfo rank : AchievementManager.getInstance().getRanks(sv, save)) {
+					if (rank.getRank() == null)
+						continue;
+					JsonObject rObj = new JsonObject();
+					rObj.addProperty("rankID", rank.getRank().getID());
+					rObj.addProperty("rankGlobalID", rank.getRank().getGlobalID());
+					rObj.addProperty("pointTypeID", rank.getRank().getPointTypeID());
+					rObj.addProperty("level", AchievementManager.getInstance().getRankIndex(rank.getRank()) + 1);
+					rObj.addProperty("points", rank.getTotalScore());
+					rankData.add(rObj);
+				}
+				profile.add("ranks", rankData);
+
+				profile.addProperty("creationTime", sv.getCreationTime());
+				profiles.add(save, profile);
+			}
 		}
-		resp.add("ranks", rankData);
+		resp.add("profiles", profiles);
 
 		// Return
 		return ok("text/json", resp.toString());
-	}
-
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult deleteSave(FunctionInfo func) throws IOException {
-		// Save details
-
-		// Check authentication
-		if (!func.getRequest().hasHeader("Authorization")
-				|| !func.getRequest().getHeader("Authorization").getValue().toLowerCase().startsWith("bearer ")) {
-			// Error
-			return response(401, "Unauthorized", "text/json", "{\"error\":\"Missing authorization token\"}");
-		}
-
-		// Read token
-		String token = func.getRequest().getHeader("Authorization").getValue().substring("bearer ".length());
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(token);
-		AccountObject acc = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			return response(401, "Unauthorized", "text/json", "{\"error\":\"Authorization token invalid\"}");
-		}
-
-		// Load request
-		JsonObject request;
-		try {
-			// Parse and check
-			request = JsonParser.parseString(func.getRequest().getRequestBodyAsString()).getAsJsonObject();
-			if (!request.has("saveID"))
-				throw new IOException();
-		} catch (Exception e) {
-			// Bad request
-			return response(400, "Bad request", "text/json",
-					"{\"error\":\"Invalid request body, expecting a JSON with a 'saveID' field\"}");
-		}
-
-		// Pull save ID
-		String saveID = request.get("saveID").getAsString();
-
-		// Locate save
-		AccountSaveContainer save = acc.getSave(saveID);
-		if (save == null) {
-			// Error
-			return response(404, "Not found", "text/json", "{\"error\":\"save_not_found\"}");
-		}
-
-		// Delete
-		save.deleteSave();
-
-		// Log
-		getServerInstance().getLogger().info("Save deleted: " + acc.getAccountID() + ".");
-
-		// Build response
-		JsonObject resp = new JsonObject();
-		resp.addProperty("deleted", true);
-
-		// Return
-		return ok("text/json", resp.toString());
-	}
-
-	@Function(allowedMethods = { "POST" })
-	public FunctionResult textFilter(FunctionInfo func) {
-		// Edge text filter
-
-		// Load request
-		JsonObject request;
-		try {
-			// Parse and check
-			request = JsonParser.parseString(func.getRequest().getRequestBodyAsString()).getAsJsonObject();
-			if (!request.has("message") || !request.has("strictMode"))
-				throw new IOException();
-		} catch (Exception e) {
-			// Bad request
-			return response(400, "Bad request");
-		}
-
-		// Run filter
-		String message = request.get("message").getAsString();
-		boolean strictMode = request.get("strictMode").getAsBoolean();
-		FilterResult result = TextFilterService.getInstance().filter(message, strictMode);
-
-		// Build response match list
-		JsonArray matches = new JsonArray();
-		for (WordMatch match : result.getMatches()) {
-			JsonObject m = new JsonObject();
-			m.addProperty("phrase", match.getPhraseFilter().getPhrase());
-			m.addProperty("matchedPhrase", match.getMatchedPhrase());
-			m.addProperty("reason", match.getReason());
-			m.addProperty("severity", match.getSeverity().toString());
-			matches.add(m);
-		}
-
-		// Build response
-		JsonObject res = new JsonObject();
-		res.addProperty("isFiltered", result.isMatch());
-		res.addProperty("resultMessage", result.getFilterResult());
-		res.addProperty("resultSeverity", result.getSeverity().toString());
-		res.add("matches", matches);
-
-		// Return result
-		return ok("text/json", res.toString());
 	}
 
 	@Function(allowedMethods = { "POST" })

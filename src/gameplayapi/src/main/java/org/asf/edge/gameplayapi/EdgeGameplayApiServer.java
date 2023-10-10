@@ -46,7 +46,6 @@ import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.minigamedata.impl.MinigameDataManagerImpl;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.util.LogWindow;
-import org.asf.edge.gameplayapi.http.handlers.edgespecific.EdgeApiService;
 import org.asf.edge.gameplayapi.events.server.GameplayApiServerSetupEvent;
 import org.asf.edge.gameplayapi.events.server.GameplayApiServerStartupEvent;
 import org.asf.edge.gameplayapi.commands.CommandContext;
@@ -181,7 +180,10 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		server.registerProcessor(new MissionWebServiceProcessor(this));
 		server.registerProcessor(new AchievementWebServiceV1Processor(this));
 		server.registerProcessor(new AchievementWebServiceV2Processor(this));
-		server.registerProcessor(new EdgeApiService(this));
+
+		// Edge API
+		logger.debug("Configuring Edge API request handlers...");
+		// TODO
 
 		// Bind command handler
 		logger.info("Binding command handler to GUI terminal...");

@@ -550,9 +550,12 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		manager.setExperimentName("EXPERIMENT_ACHIEVEMENTSV1_SUPPORT",
 				"Support for V1 achievement system (gameplay rewards)");
 
-		manager.registerExperiment("EXPERIMENT_MMO_SERVER_SUPPORT");
-		manager.setExperimentName("EXPERIMENT_MMO_SERVER_SUPPORT",
-				"MMO server support (EXTREMELY WIP, LAN ONLY AT THE MOMENT)");
+		manager.registerExperiment("EXPERIMENT_DT_ITEM_SUPPORT");
+		manager.setExperimentName("EXPERIMENT_DT_ITEM_SUPPORT", "Support for Dragon Tactics items");
+
+//		manager.registerExperiment("EXPERIMENT_MMO_SERVER_SUPPORT");
+//		manager.setExperimentName("EXPERIMENT_MMO_SERVER_SUPPORT",
+//				"Multiplayer server support (EXTREMELY WIP, LAN ONLY AT THE MOMENT)");
 	}
 
 }

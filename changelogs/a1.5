@@ -8,6 +8,21 @@ Changes in a1.5:
 New features in a1.5:
 - Added the experiment manager (experimental features)
 
+Edge-specific API Changes in a1.5:
+- Refactored the Edge API, there now are multiple API service endpoints:
+ - Common API:
+  - /API/ProjectEdge/Accounts: account management (EdgeAccountApiService):
+  - /API/ProjectEdge/Saves: save management (EdgeSaveApiService)
+  - /API/ProjectEdge/TextFilter: text filter (EdgeTextFilterApiService)
+- Added new API calls:
+ - Common API:
+  - /API/ProjectEdge/Accounts: (see EdgeAccountApiService)
+   - GetAccountDetails - retrieves details about Edge accounts
+   - UpdateAccount - changes account properties
+  - /API/ProjectEdge/Saves: (see EdgeSaveApiService)
+   - GetSaveDetails - retrieves details about Edge saevs
+   - UpdateSave - changes save properties
+
 Changes to sentinel in a1.5:
 - Fixed some visual bugs in Sentinel
 - Fixed issues where Sentinel errors with SGA files should they not be on disk even if the archive is up to update
