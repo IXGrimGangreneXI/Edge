@@ -2,6 +2,7 @@ package org.asf.edge.gameplayapi.http.handlers.gameplayapi;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -206,7 +207,7 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Merge data
 		String updateStr = "";
-		if (dragonUpdate.accessories != null) {
+		if (dragonUpdate.accessories != null && !Arrays.equals(dragonUpdate.accessories, cdragon.accessories)) {
 			cdragon.accessories = dragonUpdate.accessories;
 			if (!updateStr.isEmpty())
 				updateStr += ", ";
@@ -241,70 +242,70 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 			}
 		}
 		String oldName = cdragon.name;
-		if (dragonUpdate.colors != null) {
+		if (dragonUpdate.colors != null && !Arrays.equals(dragonUpdate.colors, cdragon.colors)) {
 			cdragon.colors = dragonUpdate.colors;
 
 			if (!updateStr.isEmpty())
 				updateStr += ", ";
 			updateStr += "colors";
 		}
-		if (dragonUpdate.gender != null) {
+		if (dragonUpdate.gender != null && !dragonUpdate.gender.equals(cdragon.gender)) {
 			cdragon.gender = dragonUpdate.gender;
 
 			if (!updateStr.isEmpty())
 				updateStr += ", ";
 			updateStr += "gender";
 		}
-		if (dragonUpdate.geometry != null) {
+		if (dragonUpdate.geometry != null && !dragonUpdate.geometry.equals(cdragon.geometry)) {
 			cdragon.geometry = dragonUpdate.geometry;
 
 			if (!updateStr.isEmpty())
 				updateStr += ", ";
 			updateStr += "geometry";
 		}
-		if (dragonUpdate.texture != null) {
+		if (dragonUpdate.texture != null && !dragonUpdate.texture.equals(cdragon.texture)) {
 			cdragon.texture = dragonUpdate.texture;
 
 			if (!updateStr.isEmpty())
 				updateStr += ", ";
 			updateStr += "texture";
 		}
-		if (dragonUpdate.skills != null) {
+		if (dragonUpdate.skills != null && !Arrays.equals(dragonUpdate.skills, cdragon.skills)) {
 			cdragon.skills = dragonUpdate.skills;
 
 			if (!updateStr.isEmpty())
 				updateStr += ", ";
 			updateStr += "skills";
 		}
-		if (dragonUpdate.growthState != null) {
+		if (dragonUpdate.growthState != null && !dragonUpdate.growthState.equals(cdragon.growthState)) {
 			cdragon.growthState = dragonUpdate.growthState;
 
 			if (!updateStr.isEmpty())
 				updateStr += ", ";
 			updateStr += "growth";
 		}
-		if (dragonUpdate.imagePosition != null) {
+		if (dragonUpdate.imagePosition != null && !dragonUpdate.imagePosition.equals(cdragon.imagePosition)) {
 			cdragon.imagePosition = dragonUpdate.imagePosition;
 
 			if (!updateStr.isEmpty())
 				updateStr += ", ";
 			updateStr += "image";
 		}
-		if (dragonUpdate.states != null) {
+		if (dragonUpdate.states != null && !Arrays.equals(dragonUpdate.states, cdragon.states)) {
 			cdragon.states = dragonUpdate.states;
 
 			if (!updateStr.isEmpty())
 				updateStr += ", ";
 			updateStr += "states";
 		}
-		if (dragonUpdate.typeID != null) {
+		if (dragonUpdate.typeID != null && !dragonUpdate.typeID.equals(cdragon.typeID)) {
 			cdragon.typeID = dragonUpdate.typeID;
 
 			if (!updateStr.isEmpty())
 				updateStr += ", ";
 			updateStr += "type (new type: " + dragonUpdate.typeID + ")";
 		}
-		if (dragonUpdate.name != null) {
+		if (dragonUpdate.name != null && !cdragon.name.equals(dragonUpdate.name)) {
 			cdragon.name = dragonUpdate.name;
 
 			if (!updateStr.isEmpty())
@@ -339,7 +340,11 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Set current as active if needed
-		cdragon.isSelected = request.setAsSelected;
+		boolean wasSelected = cdragon.isSelected;
+		if (request.setAsSelected)
+			cdragon.isSelected = true;
+		if (request.setAsUnselected)
+			cdragon.isSelected = false;
 
 		// Save dragon
 		data.setEntry("dragon-" + id, new JsonPrimitive(req.generateXmlValue("RaisedPetData", cdragon)));
@@ -356,8 +361,14 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 				+ " updated dragon '" + oldName + "' (ID " + cdragon.entityID + "), updated: " + updateStr);
 
 		// Log
-		getServerInstance().getLogger().info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
-				+ " selected dragon '" + cdragon.name + "' (ID " + cdragon.entityID + ")");
+		if (wasSelected != request.setAsSelected) {
+			if (request.setAsSelected)
+				getServerInstance().getLogger().info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+						+ " selected dragon '" + cdragon.name + "' (ID " + cdragon.entityID + ")");
+			else
+				getServerInstance().getLogger().info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+						+ " de-selected dragon '" + cdragon.name + "' (ID " + cdragon.entityID + ")");
+		}
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("SetRaisedPetResponse", resp));

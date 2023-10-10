@@ -23,6 +23,9 @@ public class PetUpdateRequestData {
 	@JsonProperty("SASP")
 	public boolean setAsSelected;
 
+	@JsonProperty("SASU") // EDGE specific
+	public boolean setAsUnselected;
+
 	@JsonProperty("USOP")
 	public boolean deselectOtherDragons;
 

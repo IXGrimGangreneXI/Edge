@@ -969,9 +969,9 @@ public class AchievementManagerImpl extends AchievementManager {
 						reward.achievementID = achievementID;
 
 						// Add XP
-						if (userID != null)
-							reward.amount = AchievementManager.getInstance().getRank(save, userID, id)
-									.addPoints(reward.amount);
+						EntityRankInfo r = AchievementManager.getInstance().getRank(save, userID, id);
+						if (userID != null && r != null)
+							reward.amount = r.addPoints(reward.amount);
 
 						// Add to reward string
 						if (!rewardStr.isEmpty())
