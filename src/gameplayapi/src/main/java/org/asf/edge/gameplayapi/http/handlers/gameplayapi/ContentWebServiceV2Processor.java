@@ -51,7 +51,7 @@ import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
 import org.asf.edge.gameplayapi.xmls.avatars.SetAvatarResultData;
 import org.asf.edge.gameplayapi.xmls.avatars.SetDisplayNameRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.CreatePetResponseData;
-import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
+import org.asf.edge.common.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetCreateRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateResponseData;

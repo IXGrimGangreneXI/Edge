@@ -2,6 +2,8 @@ package org.asf.edge.common.services.achievements.impl;
 
 import java.io.IOException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.entities.achivements.RankInfo;
 import org.asf.edge.common.entities.achivements.RankTypeID;
@@ -22,6 +24,10 @@ public class DragonRankContainer extends EntityRankInfo {
 	private AccountSaveContainer save;
 	private AccountDataContainer data;
 	private String dragonEntityID;
+	private String dragonNumericID;
+	private String lastName;
+
+	private Logger logger = LogManager.getLogger("AchievementManager");
 
 	public DragonRankContainer(AccountSaveContainer save, String dragonEntityID) throws IOException {
 		this.save = save;
@@ -51,6 +57,8 @@ public class DragonRankContainer extends EntityRankInfo {
 					String id = dragon.get("eid").asText();
 					if (id.equals(dragonEntityID)) {
 						found = true;
+						dragonNumericID = did;
+						lastName = dragon.get("n").asText();
 						break;
 					}
 				}
@@ -97,6 +105,23 @@ public class DragonRankContainer extends EntityRankInfo {
 			// Dispatch event
 			EventBus.getInstance().dispatchEvent(new RankChangedEvent(AchievementManager.getInstance(), save, this,
 					currentRank, newRank, current, value));
+
+			// Log
+			try {
+				AccountDataContainer d = save.getSaveData().getChildContainer("dragons");
+				if (d.entryExists("dragon-" + dragonNumericID)) {
+					ObjectNode dragon = new XmlMapper().readValue(d.getEntry("dragon-" + dragonNumericID).getAsString(),
+							ObjectNode.class);
+					String id = dragon.get("eid").asText();
+					if (id.equals(dragonEntityID)) {
+						lastName = dragon.get("n").asText();
+					}
+				}
+			} catch (IOException e) {
+			}
+			logger.info("Updated dragon rank " + getTypeID() + " of '" + lastName + "' (owner " + save.getUsername()
+					+ ", ID " + save.getSaveID() + ") to " + value + " points, rank name: " + newRank.getName()
+					+ " (level" + (AchievementManager.getInstance().getRankIndex(newRank) + 1) + ")");
 		} catch (IOException e) {
 		}
 	}

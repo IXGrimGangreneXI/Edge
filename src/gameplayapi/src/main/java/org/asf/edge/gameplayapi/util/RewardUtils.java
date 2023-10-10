@@ -16,7 +16,7 @@ import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.xmls.achievements.AchievementRewardData;
 import org.asf.edge.common.xmls.items.inventory.InventoryItemEntryData;
-import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
+import org.asf.edge.common.xmls.dragons.DragonData;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -30,9 +30,9 @@ import com.google.gson.JsonPrimitive;
  * Reward Utility Class
  * 
  * @author Sky Swimmer
- *
+ * 
  */
-public class RewardsUtil {
+public class RewardUtils {
 
 	private static Random rnd = new Random();
 

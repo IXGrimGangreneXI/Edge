@@ -1,6 +1,7 @@
 package org.asf.edge.common.experiments;
 
 import java.io.IOException;
+
 import org.asf.edge.common.services.config.ConfigProviderService;
 
 import com.google.gson.JsonObject;
@@ -14,11 +15,6 @@ public class EdgeExperimentManager extends ExperimentManager {
 	@Override
 	protected void init() {
 		EdgeDefaultExperiments.registerExperiments(implementation);
-	}
-
-	@Override
-	protected void registerExperimentInterfaces(String key) {
-		// TODO
 	}
 
 	@Override

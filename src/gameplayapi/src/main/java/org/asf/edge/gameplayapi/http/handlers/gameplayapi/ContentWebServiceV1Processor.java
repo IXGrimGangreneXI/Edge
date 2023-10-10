@@ -25,6 +25,8 @@ import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.entities.minigamedata.MinigameData;
 import org.asf.edge.common.entities.minigamedata.MinigameDataRequest;
 import org.asf.edge.common.entities.minigamedata.MinigameSaveRequest;
+import org.asf.edge.common.experiments.EdgeDefaultExperiments;
+import org.asf.edge.common.experiments.ExperimentManager;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
@@ -40,6 +42,7 @@ import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
@@ -63,9 +66,8 @@ import org.asf.edge.gameplayapi.entities.rooms.RoomItemInfo;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.rooms.PlayerRoomManager;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
-import org.asf.edge.gameplayapi.util.RewardsUtil;
+import org.asf.edge.gameplayapi.util.RewardUtils;
 import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
-import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
@@ -92,6 +94,7 @@ import org.asf.edge.gameplayapi.xmls.rooms.RoomListRequestData;
 import org.asf.edge.gameplayapi.xmls.rooms.RoomUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.rooms.SetItemStateRequestData;
 import org.asf.edge.gameplayapi.xmls.rooms.SetItemStateResponseData;
+import org.asf.edge.common.xmls.dragons.DragonData;
 
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -2527,7 +2530,10 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Apply rewards
-		resp.rewards = RewardsUtil.giveRewardsTo(save, state.rewards, false, 1);
+		if (!ExperimentManager.getInstance().isExperimentEnabled(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT))
+			resp.rewards = RewardUtils.giveRewardsTo(save, state.rewards, false, 1);
+		else
+			resp.rewards = AchievementManager.getInstance().unlockAchievement(save, state.achievementID);
 
 		// Create state object
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");

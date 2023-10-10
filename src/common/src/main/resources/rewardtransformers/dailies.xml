@@ -1,0 +1,52 @@
+<Transformers>
+    <Transformer>
+        <AchievementID>201195</AchievementID>
+        <Mode>Merge</Mode>
+        <Reward>
+            <RewardID>552</RewardID>
+            <PointTypeID>5</PointTypeID>
+            
+            <TransformAllowMultiple>true</TransformAllowMultiple>
+        </Reward>
+    </Transformer>
+    <Transformer>
+        <AchievementID>201194</AchievementID>
+        <Mode>Merge</Mode>
+        <Reward>
+			<RewardID>1417</RewardID>
+			<PointTypeID>6</PointTypeID>
+			
+            <TransformAllowMultiple>true</TransformAllowMultiple>
+        </Reward>
+    </Transformer>
+    <Transformer>
+        <AchievementID>201196</AchievementID>
+        <Mode>Merge</Mode>
+        <Reward>
+			<RewardID>1420</RewardID>
+			<PointTypeID>5</PointTypeID>
+			
+            <TransformAllowMultiple>true</TransformAllowMultiple>
+        </Reward>
+    </Transformer>
+    <Transformer>
+        <AchievementID>201197</AchievementID>
+        <Mode>Merge</Mode>
+        <Reward>
+			<RewardID>1419</RewardID>
+			<PointTypeID>6</PointTypeID>
+			
+            <TransformAllowMultiple>true</TransformAllowMultiple>
+        </Reward>
+    </Transformer>
+    <Transformer>
+        <AchievementID>201198</AchievementID>
+        <Mode>Merge</Mode>
+        <Reward>
+			<RewardID>1610</RewardID>
+			<PointTypeID>5</PointTypeID>
+			
+            <TransformAllowMultiple>true</TransformAllowMultiple>
+        </Reward>
+    </Transformer>
+</Transformers>

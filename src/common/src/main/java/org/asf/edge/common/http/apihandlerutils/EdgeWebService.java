@@ -19,6 +19,7 @@ import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.IBaseServer;
 import org.asf.edge.common.entities.items.PlayerInventory;
+import org.asf.edge.common.experiments.ExperimentManager;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
 import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
 import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireCapabilities;
@@ -32,6 +33,7 @@ import org.asf.edge.common.http.apihandlerutils.functions.SodTokenSecured;
 import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireSave;
 import org.asf.edge.common.http.apihandlerutils.functions.AccountData;
 import org.asf.edge.common.http.apihandlerutils.functions.AccountInventory;
+import org.asf.edge.common.http.apihandlerutils.functions.ExperimentalFeature;
 import org.asf.edge.common.http.apihandlerutils.functions.Function;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
 import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
@@ -146,6 +148,22 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 					if (!meth.isAnnotationPresent(SodRequest.class) && (meth.getParameterTypes().length != 1
 							|| !meth.getParameterTypes()[0].isAssignableFrom(FunctionInfo.class)))
 						continue;
+
+					// Check experimental
+					if (meth.isAnnotationPresent(ExperimentalFeature.class)) {
+						// Check
+						ExperimentalFeature anno = meth.getAnnotation(ExperimentalFeature.class);
+						String key = anno.value();
+						if (anno.isReverse()) {
+							// Check
+							if (ExperimentManager.getInstance().isExperimentEnabled(key))
+								continue;
+						} else {
+							// Check
+							if (!ExperimentManager.getInstance().isExperimentEnabled(key))
+								continue;
+						}
+					}
 
 					// Load name
 					String name = meth.getName();

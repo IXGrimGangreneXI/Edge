@@ -81,7 +81,7 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 			return;
 
 		// Load XML
-		InputStream strm = getClass().getClassLoader().getResourceAsStream("rankattrs.xml");
+		InputStream strm = getClass().getClassLoader().getResourceAsStream("achievementdata/rankattrs.xml");
 		String data = new String(strm.readAllBytes(), "UTF-8");
 		strm.close();
 		setResponseContent("text/xml", data);

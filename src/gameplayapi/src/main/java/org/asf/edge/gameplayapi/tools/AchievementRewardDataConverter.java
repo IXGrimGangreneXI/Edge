@@ -20,6 +20,8 @@ import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.common.xmls.achievements.AchievementRewardData;
+import org.asf.edge.common.xmls.achievements.edgespecific.AchievementRewardDefData;
+import org.asf.edge.common.xmls.achievements.edgespecific.AchievementRewardDefList;
 import org.asf.edge.common.xmls.items.ItemDefData;
 import org.asf.edge.common.xmls.items.state.ItemStateData;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
@@ -27,8 +29,6 @@ import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
 import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardList;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestData;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestRewardBlock;
-import org.asf.edge.gameplayapi.xmls.achievements.edgespecific.AchievementRewardDefData;
-import org.asf.edge.gameplayapi.xmls.achievements.edgespecific.AchievementRewardDefList;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -108,9 +108,6 @@ public class AchievementRewardDataConverter {
 										rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
 									}
 
-									// Apply edits
-									entry.entityTypeID = reward.entityTypeID;
-
 									// Compute minimal and maximum values
 									if (reward.amount < entry.minAmount || entry.minAmount == 0)
 										entry.minAmount = reward.amount;
@@ -154,9 +151,6 @@ public class AchievementRewardDataConverter {
 										entry.itemID = reward.itemID;
 										rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
 									}
-
-									// Apply edits
-									entry.entityTypeID = reward.entityTypeID;
 
 									// Compute minimal and maximum values
 									if (reward.amount < entry.minAmount || entry.minAmount == 0)
@@ -248,6 +242,8 @@ public class AchievementRewardDataConverter {
 								if (u.getPath()
 										.equalsIgnoreCase("/AchievementWebService.asmx/SetUserAchievementAndGetReward")
 										|| u.getPath().equalsIgnoreCase(
+												"/AchievementWebService.asmx/SetAchievementAndGetReward")
+										|| u.getPath().equalsIgnoreCase(
 												"/AchievementWebService.asmx/SetAchievementByEntityIDs")) {
 
 									// Decode request
@@ -320,14 +316,19 @@ public class AchievementRewardDataConverter {
 															entry);
 												}
 
-												// Apply edits
-												entry.entityTypeID = reward.entityTypeID;
+												// Apply
+												if (!entry.allowMultiple)
+													entry.allowMultiple = reward.allowMultiple;
 
 												// Compute minimal and maximum values
-												if ((reward.amount / 2) < entry.minAmount || entry.minAmount == 0)
-													entry.minAmount = (reward.amount / 2);
+												int am = reward.amount;
+												if (reward.pointTypeID == 1 || reward.pointTypeID == 8
+														|| reward.pointTypeID == 12)
+													am = am / 2;
+												if (am < entry.minAmount || entry.minAmount == 0)
+													entry.minAmount = am;
 												if (reward.amount > entry.maxAmount)
-													entry.maxAmount = (reward.amount / 2);
+													entry.maxAmount = am;
 											}
 										}
 
@@ -436,14 +437,19 @@ public class AchievementRewardDataConverter {
 //																entry);
 //													}
 //
-//													// Apply edits
-//													entry.entityTypeID = reward.entityTypeID;
+//													// Apply
+//													if (!entry.allowMultiple)
+//														entry.allowMultiple = reward.allowMultiple;
 //
 //													// Compute minimal and maximum values
-//													if ((reward.amount / 2) < entry.minAmount || entry.minAmount == 0)
-//														entry.minAmount = (reward.amount / 2);
+//													int am = reward.amount;
+//													if (reward.pointTypeID == 1 || reward.pointTypeID == 8
+//															|| reward.pointTypeID == 12)
+//														am = am / 2;
+//													if (am < entry.minAmount || entry.minAmount == 0)
+//														entry.minAmount = am;
 //													if (reward.amount > entry.maxAmount)
-//														entry.maxAmount = (reward.amount / 2);
+//														entry.maxAmount = am;
 //												}
 //
 //												// Add rewards
@@ -508,12 +514,12 @@ public class AchievementRewardDataConverter {
 								entry.rewardID = reward.rewardID;
 								entry.pointTypeID = reward.pointTypeID;
 								entry.itemID = reward.itemID;
-								entry.allowMultiple = reward.allowMultiple;
+								entry.allowMultiple = true;
 								rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
 							}
 
-							// Apply edits
-							entry.entityTypeID = reward.entityTypeID;
+							// Apply
+							entry.allowMultiple = true;
 
 							// Compute minimal and maximum values
 							if (reward.amount < entry.minAmount || entry.minAmount == 0)
@@ -576,8 +582,9 @@ public class AchievementRewardDataConverter {
 							rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
 						}
 
-						// Apply edits
-						entry.entityTypeID = reward.entityTypeID;
+						// Apply
+						if (!entry.allowMultiple)
+							entry.allowMultiple = reward.allowMultiple;
 
 						// Compute minimal and maximum values
 						entry.minAmount = reward.minAmount;
@@ -624,9 +631,6 @@ public class AchievementRewardDataConverter {
 							entry.allowMultiple = reward.allowMultiple;
 							rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
 						}
-
-						// Apply edits
-						entry.entityTypeID = reward.entityTypeID;
 
 						// Compute minimal and maximum values
 						entry.minAmount = reward.minAmount;

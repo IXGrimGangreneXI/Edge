@@ -1,4 +1,4 @@
-package org.asf.edge.gameplayapi.xmls.dragons;
+package org.asf.edge.common.xmls.dragons;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;

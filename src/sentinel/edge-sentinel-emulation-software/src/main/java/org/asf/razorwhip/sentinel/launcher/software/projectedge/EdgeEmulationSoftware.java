@@ -80,9 +80,10 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 	}
 
 	@Override
-	public void prepareLaunchWithStreamingAssets(String assetArchiveURL, File assetModifications,
-			ActiveArchiveInformation archive, JsonObject archiveDef, JsonObject descriptorDef, String clientVersion,
-			File clientDir, Runnable successCallback, Consumer<String> errorCallback) {
+	public void prepareLaunchWithStreamingAssets(String assetArchiveURL, AssetInformation[] collectedAssets,
+			AssetInformation[] allAssets, File assetModifications, ActiveArchiveInformation archive,
+			JsonObject archiveDef, JsonObject descriptorDef, String clientVersion, File clientDir,
+			Runnable successCallback, Consumer<String> errorCallback) {
 		prepareLaunch(successCallback, errorCallback);
 	}
 
@@ -545,8 +546,13 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		manager.registerExperiment("EXPERIMENT_LEGACY_INVENTORY_SUPPORT");
 		manager.setExperimentName("EXPERIMENT_LEGACY_INVENTORY_SUPPORT", "1.x/2.x inventory enhancements");
 
-		manager.registerExperiment("MMO_SERVER_SUPPORT");
-		manager.setExperimentName("MMO_SERVER_SUPPORT", "MMO server support (EXTREMELY WIP, LAN ONLY AT THE MOMENT)");
+		manager.registerExperiment("EXPERIMENT_ACHIEVEMENTSV1_SUPPORT");
+		manager.setExperimentName("EXPERIMENT_ACHIEVEMENTSV1_SUPPORT",
+				"Support for V1 achievement system (gameplay rewards)");
+
+		manager.registerExperiment("EXPERIMENT_MMO_SERVER_SUPPORT");
+		manager.setExperimentName("EXPERIMENT_MMO_SERVER_SUPPORT",
+				"MMO server support (EXTREMELY WIP, LAN ONLY AT THE MOMENT)");
 	}
 
 }

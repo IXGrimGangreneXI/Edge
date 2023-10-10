@@ -10,6 +10,7 @@ import org.asf.edge.common.entities.achivements.RankTypeID;
 import org.asf.edge.common.services.AbstractService;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.xmls.achievements.AchievementRewardData;
 import org.asf.edge.common.xmls.achievements.UserRankData;
 
 /**
@@ -197,6 +198,76 @@ public abstract class AchievementManager extends AbstractService {
 	 * @return Modified point value
 	 */
 	public abstract int applyModifiers(AccountSaveContainer save, int value, RankTypeID type);
+
+	/**
+	 * Adds achievement rewards of the given achievement reward ID to the player (V1
+	 * achievement system)
+	 * 
+	 * @param save           User save
+	 * @param achievementID  Achievement ID
+	 * @param wasGivenBefore True if the rewards were given before, false otherwise
+	 * @param entityIDs      Dragon entity IDs
+	 * @return Array of AchievementRewardData instances
+	 */
+	public abstract AchievementRewardData[] giveAchievementRewards(AccountSaveContainer save, int achievementID,
+			boolean wasGivenBefore, String... entityIDs);
+
+	/**
+	 * Unlocks achievements and adds achievement rewards of the given achievement
+	 * reward ID to the player (V1 achievement system)
+	 * 
+	 * @param save           User save
+	 * @param achievementID  Achievement ID
+	 * @param wasGivenBefore True if the rewards were given before, false otherwise
+	 * @param entityIDs      Dragon entity IDs
+	 * @return Array of AchievementRewardData instances
+	 */
+	public AchievementRewardData[] unlockAchievement(AccountSaveContainer save, int achievementID,
+			String... entityIDs) {
+		// Check
+		boolean wasUnlocked = hasUnlockedAchievement(save, achievementID);
+		AchievementRewardData[] res = giveAchievementRewards(save, achievementID, wasUnlocked, entityIDs);
+		if (!wasUnlocked)
+			unlockAchievement(save, achievementID);
+		return res;
+	}
+
+	/**
+	 * Unlocks achievements and adds achievement rewards of the given achievement
+	 * reward ID to the player (V1 achievement system)
+	 * 
+	 * @param save           User save
+	 * @param achievementID  Achievement ID
+	 * @param wasGivenBefore True if the rewards were given before, false otherwise
+	 * @param entityIDs      Dragon entity IDs
+	 * @return Array of AchievementRewardData instances
+	 */
+	public AchievementRewardData[] unlockAchievement(AccountSaveContainer save, int achievementID,
+			boolean wasGivenBefore, String... entityIDs) {
+		// Check
+		boolean wasUnlocked = hasUnlockedAchievement(save, achievementID);
+		AchievementRewardData[] res = giveAchievementRewards(save, achievementID, wasGivenBefore, entityIDs);
+		if (!wasUnlocked)
+			unlockAchievement(save, achievementID);
+		return res;
+	}
+
+	/**
+	 * Called to mark achievements as unlocked
+	 * 
+	 * @param save          User save
+	 * @param achievementID Achievement ID
+	 */
+	protected abstract void unlockAchievement(AccountSaveContainer save, int achievementID);
+
+	/**
+	 * Checks if achievements have been unlocked
+	 * 
+	 * @param save          User save
+	 * @param achievementID Achievement ID
+	 * @return True if unlocked, false otherwise
+	 */
+	public abstract boolean hasUnlockedAchievement(AccountSaveContainer save, int achievementID);
 
 	/**
 	 * Called to reload achievement and rank data from disk

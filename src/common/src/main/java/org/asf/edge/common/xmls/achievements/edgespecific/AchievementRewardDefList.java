@@ -1,6 +1,4 @@
-package org.asf.edge.gameplayapi.xmls.achievements.edgespecific;
-
-import org.asf.edge.common.xmls.achievements.edgespecific.AchievementRewardDefData;
+package org.asf.edge.common.xmls.achievements.edgespecific;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;

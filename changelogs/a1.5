@@ -1,6 +1,7 @@
 Changes in a1.5:
 - Fixed room/farm item positions not being saved and items not being removed
 - Improved the automatic Sentinel updater to work with timestamps instead of a timer loop
+- Renamed RewardsUtil to RewardUtils to match the other utility class naming scheme
 
 New features in a1.5:
 - Added the experiment manager (experimental features)
@@ -8,12 +9,16 @@ New features in a1.5:
 Changes to sentinel in a1.5:
 - Fixed some visual bugs in Sentinel
 - Fixed issues where Sentinel errors with SGA files should they not be on disk even if the archive is up to update
+- Should all files be available, Sentinel will now allow you to launch with local assests even if downloading is disabled
 - Improved the payload manager selection box
 - Added the experimental feature window
 
 New experimental features: (NOT ENABLED BY DEFAULT)
 - Enhanced support for item calls for 2.x and below not using proper quantity
+- Support for v1 achievement system (implements gameplay rewards)
+- Support for stable quest rewards (part of the v1 achievement system)
+- Implemented daily rewards (part of the v1 achievement system)
 
 As of this version, its now possible to select experimental features from Sentinel.
 To enable experimental features, in Sentinel, go to launch options -> more options -> experimental features.
-Experimental features are NOT enabled by default and must be selected in Sentinel.
+Experimental features are NOT enabled by default and must be manually enabled via Sentinel or via server configuration files.

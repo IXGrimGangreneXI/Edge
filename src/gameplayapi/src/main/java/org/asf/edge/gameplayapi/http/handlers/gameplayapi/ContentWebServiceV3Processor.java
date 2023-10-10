@@ -28,7 +28,7 @@ import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
-import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
+import org.asf.edge.common.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;

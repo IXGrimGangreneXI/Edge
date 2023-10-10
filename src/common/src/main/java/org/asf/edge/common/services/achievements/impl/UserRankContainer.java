@@ -2,6 +2,8 @@ package org.asf.edge.common.services.achievements.impl;
 
 import java.io.IOException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.entities.achivements.RankInfo;
 import org.asf.edge.common.entities.achivements.RankTypeID;
@@ -18,6 +20,8 @@ public class UserRankContainer extends EntityRankInfo {
 	private AccountDataContainer data;
 	private AccountSaveContainer save;
 	private RankTypeID type;
+
+	private Logger logger = LogManager.getLogger("AchievementManager");
 
 	public UserRankContainer(RankTypeID type, AccountSaveContainer save) {
 		this.type = type;
@@ -67,6 +71,11 @@ public class UserRankContainer extends EntityRankInfo {
 			// Dispatch event
 			EventBus.getInstance().dispatchEvent(new RankChangedEvent(AchievementManager.getInstance(), save, this,
 					currentRank, newRank, current, value));
+
+			// Log
+			logger.info("Updated player rank " + getTypeID() + " of '" + save.getUsername() + "' (ID "
+					+ save.getSaveID() + ") to " + value + " points, rank name: " + newRank.getName() + " (level"
+					+ (AchievementManager.getInstance().getRankIndex(newRank) + 1) + ")");
 		} catch (IOException e) {
 		}
 	}

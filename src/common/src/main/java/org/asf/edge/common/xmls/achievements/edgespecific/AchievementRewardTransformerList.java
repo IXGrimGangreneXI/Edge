@@ -1,6 +1,4 @@
-package org.asf.edge.gameplayapi.xmls.achievements.edgespecific;
-
-import org.asf.edge.common.xmls.achievements.edgespecific.AchievementRewardDefData;
+package org.asf.edge.common.xmls.achievements.edgespecific;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -12,11 +10,11 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-public class AchievementRewardDefList {
+public class AchievementRewardTransformerList {
 
 	@JsonInclude(Include.NON_NULL)
-	@JsonProperty("RewardDefs")
+	@JsonProperty("Transformer")
 	@JacksonXmlElementWrapper(useWrapping = false)
-	public AchievementRewardDefData[] rewards;
+	public AchievementRewardTransformerData[] transformers = new AchievementRewardTransformerData[0];
 
 }

@@ -13,6 +13,7 @@ import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.entities.achivements.RankInfo;
 import org.asf.edge.common.entities.achivements.RankMultiplierInfo;
 import org.asf.edge.common.entities.achivements.RankTypeID;
+import org.asf.edge.common.experiments.EdgeDefaultExperiments;
 import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
 import org.asf.edge.common.http.apihandlerutils.functions.*;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
@@ -103,44 +104,6 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementTaskInfo", lst));
 	}
 
-	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
-	public FunctionResult setUserAchievementAndGetReward(FunctionInfo func, ServiceRequestInfo req,
-			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
-		// Handle task reward request
-		if (achievementManager == null)
-			achievementManager = AchievementManager.getInstance();
-
-		// TODO: stubbed
-		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", new AchievementRewardList()));
-	}
-
-	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
-	public FunctionResult setAchievementAndGetReward(FunctionInfo func, ServiceRequestInfo req,
-			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
-		return setUserAchievementAndGetReward(func, req, save, achievementID);
-	}
-
-	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
-	public FunctionResult setAchievementByEntityIDs(FunctionInfo func, ServiceRequestInfo req,
-			AccountSaveContainer save, @SodRequestParam int achievementID, @SodRequestParam String groupID,
-			@SodRequestParam AchievementDragonIdList petIDs) throws IOException {
-		// Handle task reward request
-		if (achievementManager == null)
-			achievementManager = AchievementManager.getInstance();
-
-		// TODO: stubbed
-		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", new AchievementRewardList()));
-	}
-
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 	private static class AchievementTaskInfoList {
@@ -152,6 +115,91 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		@JacksonXmlElementWrapper(useWrapping = false)
 		public ObjectNode[] achievementTasks;
 
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	@Function("SetUserAchievementAndGetReward")
+	@ExperimentalFeature(value = EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT, isReverse = true)
+	public FunctionResult setUserAchievementAndGetRewardDummy(FunctionInfo func, ServiceRequestInfo req,
+			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
+		// Handle task reward request
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
+		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", new AchievementRewardList()));
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	@Function("SetAchievementAndGetReward")
+	@ExperimentalFeature(value = EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT, isReverse = true)
+	public FunctionResult setAchievementAndGetRewardDummy(FunctionInfo func, ServiceRequestInfo req,
+			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
+		return setUserAchievementAndGetRewardDummy(func, req, save, achievementID);
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	@Function("SetAchievementByEntityIDs")
+	@ExperimentalFeature(value = EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT, isReverse = true)
+	public FunctionResult setAchievementByEntityIDsDummy(FunctionInfo func, ServiceRequestInfo req,
+			AccountSaveContainer save, @SodRequestParam int achievementID, @SodRequestParam String groupID,
+			@SodRequestParam AchievementDragonIdList petIDs) throws IOException {
+		// Handle task reward request
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
+		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", new AchievementRewardList()));
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	@ExperimentalFeature(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)
+	public FunctionResult setUserAchievementAndGetReward(FunctionInfo func, ServiceRequestInfo req,
+			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
+		// Handle task reward request
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
+
+		// Call manager
+		AchievementRewardList lst = new AchievementRewardList();
+		lst.rewards = achievementManager.unlockAchievement(save, achievementID);
+		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", lst));
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	@ExperimentalFeature(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)
+	public FunctionResult setAchievementAndGetReward(FunctionInfo func, ServiceRequestInfo req,
+			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
+		return setUserAchievementAndGetReward(func, req, save, achievementID);
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	@ExperimentalFeature(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)
+	public FunctionResult setAchievementByEntityIDs(FunctionInfo func, ServiceRequestInfo req,
+			AccountSaveContainer save, @SodRequestParam int achievementID, @SodRequestParam String groupID,
+			@SodRequestParam AchievementDragonIdList petIDs) throws IOException {
+		// Handle task reward request
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
+
+		// Call manager
+		AchievementRewardList lst = new AchievementRewardList();
+		lst.rewards = achievementManager.unlockAchievement(save, achievementID, petIDs.ids);
+		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", lst));
 	}
 
 	@SodRequest

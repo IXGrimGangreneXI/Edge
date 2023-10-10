@@ -23,6 +23,8 @@ import org.asf.edge.common.events.achievements.RankChangedEvent;
 import org.asf.edge.common.events.items.InventoryItemCreateEvent;
 import org.asf.edge.common.events.items.InventoryItemDeleteEvent;
 import org.asf.edge.common.events.items.InventoryItemQuantityUpdateEvent;
+import org.asf.edge.common.experiments.EdgeDefaultExperiments;
+import org.asf.edge.common.experiments.ExperimentManager;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -41,8 +43,8 @@ import org.asf.edge.gameplayapi.events.quests.QuestTaskProgressionEvent;
 import org.asf.edge.gameplayapi.events.quests.QuestUnlockEvent;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
-import org.asf.edge.gameplayapi.util.RewardsUtil;
-import org.asf.edge.gameplayapi.xmls.dragons.DragonData;
+import org.asf.edge.gameplayapi.util.RewardUtils;
+import org.asf.edge.common.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData.MissionRulesBlock;
@@ -986,15 +988,14 @@ public class QuestManagerImpl extends QuestManager {
 			}
 
 			// Acceptance rewards
-
-			// Achievements
-			// TODO: achievements
-
-			// Go through rewards
-			try {
-				RewardsUtil.addRewards(save, def.acceptanceRewards, isCompleted(), 1);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
+			if (!ExperimentManager.getInstance().isExperimentEnabled(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)) {
+				try {
+					RewardUtils.addRewards(save, def.acceptanceRewards, isCompleted(), 1);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			} else {
+				AchievementManager.getInstance().unlockAchievement(save, def.acceptanceAchievementID);
 			}
 
 			// Dispatch event
@@ -1116,11 +1117,15 @@ public class QuestManagerImpl extends QuestManager {
 					i.missionID = getQuestID();
 					MissionData missionD = getDef();
 
-					// Give achievements
-					// TODO: achievements
-
-					// Give rewards
-					i.rewards = RewardsUtil.giveRewardsTo(save, missionD.rewards, wasCompleted, invContainer);
+					if (!ExperimentManager.getInstance()
+							.isExperimentEnabled(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)) {
+						// Give rewards
+						i.rewards = RewardUtils.giveRewardsTo(save, missionD.rewards, wasCompleted, invContainer);
+					} else {
+						// Unlock achievement and give rewards
+						i.rewards = AchievementManager.getInstance().unlockAchievement(save, missionD.achievementID,
+								wasCompleted);
+					}
 
 					// Add object
 					completedMissions.add(i);
