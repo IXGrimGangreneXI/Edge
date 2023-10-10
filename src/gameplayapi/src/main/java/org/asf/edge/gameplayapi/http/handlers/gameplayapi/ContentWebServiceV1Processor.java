@@ -2057,11 +2057,11 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 				info.uses = crReq.uses.value;
 			if (crReq.inventoryModificationDate != null)
 				info.inventoryModificationDate = crReq.inventoryModificationDate.value;
-			if (crReq.itemID != null) {
+			if (crReq.itemID != null && crReq.itemID.value != 0) {
 				info.itemID = crReq.itemID.value;
 				info.inventoryModificationDate = fmt.format(new Date(System.currentTimeMillis()));
 			}
-			if (crReq.itemUniqueID != null) {
+			if (crReq.itemUniqueID != null && crReq.itemUniqueID.value != 0) {
 				info.itemUniqueID = crReq.itemUniqueID.value;
 				info.inventoryModificationDate = fmt.format(new Date(System.currentTimeMillis()));
 			}
@@ -2094,6 +2094,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			// Add modification time
 			if (addedState)
 				info.lastStateChange = System.currentTimeMillis();
+			roomManager.saveRoomItem(info, save);
 		}
 
 		// Handle removal requests
@@ -2104,6 +2105,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 			// Remove
 			newItemData.remove(id);
+			roomManager.deleteRoomItem(id, save);
 		}
 
 		// Return
