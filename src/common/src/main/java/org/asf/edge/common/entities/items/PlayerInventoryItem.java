@@ -40,6 +40,13 @@ public abstract class PlayerInventoryItem {
 	public abstract int getQuantity();
 
 	/**
+	 * Retrieves the item attribute set
+	 * 
+	 * @return PlayerInventoryItemAttributes instance containing item attributes
+	 */
+	public abstract PlayerInventoryItemAttributes getAttributes();
+
+	/**
 	 * Deletes the item
 	 */
 	public abstract void delete();

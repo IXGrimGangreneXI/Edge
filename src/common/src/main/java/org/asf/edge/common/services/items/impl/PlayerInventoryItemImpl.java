@@ -9,6 +9,7 @@ import org.asf.edge.common.entities.achivements.RankTypeID;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
+import org.asf.edge.common.entities.items.PlayerInventoryItemAttributes;
 import org.asf.edge.common.events.items.InventoryItemDeleteEvent;
 import org.asf.edge.common.events.items.InventoryItemQuantityUpdateEvent;
 import org.asf.edge.common.events.items.InventoryItemUsesUpdateEvent;
@@ -28,11 +29,14 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 	private PlayerInventoryContainer cont;
 
 	private long lastUpdate = System.currentTimeMillis();
+	private JsonObject attributes = new JsonObject();
 
 	private int defID;
 	private int uniqueID;
 	private int quantity;
 	private int uses;
+
+	private PlayerInventoryItemAttributes attrCont;
 
 	public PlayerInventoryItemImpl(AccountDataContainer data, int uniqueID, int defID, int quantity, int uses,
 			AccountObject account, PlayerInventory inv, PlayerInventoryContainer cont) {
@@ -44,6 +48,18 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 		this.account = account;
 		this.inv = inv;
 		this.cont = cont;
+
+		// Find item
+		try {
+			JsonElement ele = data.getChildContainer("d-" + defID).getEntry("u-" + uniqueID);
+			if (ele == null)
+				return;
+			JsonObject itm = ele.getAsJsonObject();
+			attributes = new JsonObject();
+			if (itm.has("attributes") && !itm.get("attributes").isJsonNull())
+				attributes = itm.get("attributes").getAsJsonObject();
+		} catch (IOException e) {
+		}
 	}
 
 	private void updateInfo() {
@@ -62,6 +78,9 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 			JsonObject itm = ele.getAsJsonObject();
 			quantity = itm.get("quantity").getAsInt();
 			uses = itm.get("uses").getAsInt();
+			attributes = new JsonObject();
+			if (itm.has("attributes"))
+				attributes = itm.get("attributes").getAsJsonObject();
 		} catch (IOException e) {
 			// Log error
 			LogManager.getLogger("ItemManager").error("Failed to refresh data of inventory item " + uniqueID, e);
@@ -74,6 +93,7 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 			JsonObject itm = new JsonObject();
 			itm.addProperty("quantity", quantity);
 			itm.addProperty("uses", uses);
+			itm.add("attributes", attributes);
 			data.getChildContainer("d-" + defID).setEntry("u-" + uniqueID, itm);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -202,5 +222,73 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public PlayerInventoryItemAttributes getAttributes() {
+		// Update
+		updateInfo();
+
+		// Return
+		if (attrCont == null) {
+			attrCont = new PlayerInventoryItemAttributes() {
+
+				@Override
+				public String[] getAttributeKeys() {
+					synchronized (attributes) {
+						return attributes.keySet().toArray(t -> new String[t]);
+					}
+				}
+
+				@Override
+				public String getValue(String key) {
+					synchronized (attributes) {
+						if (attributes.has(key))
+							return attributes.get(key).getAsJsonObject().get("value").getAsString();
+						return null;
+					}
+				}
+
+				@Override
+				public void removeValue(String key) {
+					synchronized (attributes) {
+						// Check
+						if (!attributes.has(key))
+							return;
+
+						// Remove
+						attributes.remove(key);
+					}
+
+					// Save
+					writeUpdate();
+				}
+
+				@Override
+				public void setValue(String key, String value) {
+					synchronized (attributes) {
+						// Set
+						JsonObject o = new JsonObject();
+						o.addProperty("value", value);
+						o.addProperty("time", System.currentTimeMillis());
+						attributes.add(key, o);
+					}
+
+					// Save
+					writeUpdate();
+				}
+
+				@Override
+				public long getValueUpdateTime(String key) {
+					synchronized (attributes) {
+						if (attributes.has(key))
+							return attributes.get(key).getAsJsonObject().get("time").getAsLong();
+						return -1;
+					}
+				}
+
+			};
+		}
+		return attrCont;
 	}
 }

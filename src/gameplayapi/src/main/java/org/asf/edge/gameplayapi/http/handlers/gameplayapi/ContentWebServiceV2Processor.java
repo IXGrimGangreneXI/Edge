@@ -1002,6 +1002,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			block.quantity = itm.getQuantity();
 			block.uses = itm.getUses();
 			block.uniqueItemID = itm.getUniqueID();
+			block.itemAttributes = itm.getAttributes().toAttributeData();
 			// TODO: stats and attributes
 
 			// Add data info from item manager

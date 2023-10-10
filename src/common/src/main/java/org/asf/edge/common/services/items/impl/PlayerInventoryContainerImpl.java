@@ -190,6 +190,7 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 			JsonObject itm = new JsonObject();
 			itm.addProperty("quantity", quantity);
 			itm.addProperty("uses", uses);
+			itm.add("attributes", new JsonObject());
 			item.setEntry("u-" + uniqueID, itm);
 
 			// Write def ID

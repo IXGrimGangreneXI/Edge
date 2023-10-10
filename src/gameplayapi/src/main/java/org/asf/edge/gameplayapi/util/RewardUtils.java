@@ -144,6 +144,7 @@ public class RewardUtils {
 					block.quantity = itm.getQuantity();
 					block.uses = itm.getUses();
 					block.uniqueItemID = itm.getUniqueID();
+					block.itemAttributes = itm.getAttributes().toAttributeData();
 					// TODO: stats and attributes
 
 					// Add data info from item manager
@@ -290,6 +291,7 @@ public class RewardUtils {
 					block.quantity = itm.getQuantity();
 					block.uses = itm.getUses();
 					block.uniqueItemID = itm.getUniqueID();
+					block.itemAttributes = itm.getAttributes().toAttributeData();
 					// TODO: stats and attributes
 
 					// Add data info from item manager

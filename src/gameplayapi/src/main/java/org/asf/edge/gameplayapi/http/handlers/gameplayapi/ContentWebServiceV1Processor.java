@@ -22,6 +22,7 @@ import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
+import org.asf.edge.common.entities.items.PlayerInventoryItemAttributes;
 import org.asf.edge.common.entities.minigamedata.MinigameData;
 import org.asf.edge.common.entities.minigamedata.MinigameDataRequest;
 import org.asf.edge.common.entities.minigamedata.MinigameSaveRequest;
@@ -367,6 +368,8 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Find items
 		ArrayList<InventoryItemEntryData> items = new ArrayList<InventoryItemEntryData>();
+
+		// Pull account-wide inventory, for compatibility with legacy versions
 		for (PlayerInventoryItem itm : itemManager.getCommonInventory(data).getContainer(containerID).getItems()) {
 			// Add item
 			InventoryItemEntryData block = new InventoryItemEntryData();
@@ -374,6 +377,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			block.quantity = itm.getQuantity();
 			block.uses = itm.getUses();
 			block.uniqueItemID = itm.getUniqueID();
+			block.itemAttributes = itm.getAttributes().toAttributeData();
 			// TODO: stats and attributes
 
 			// Add data info from item manager
@@ -383,7 +387,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			items.add(block);
 		}
 		if (tkn.saveID != null) {
-			// Pull account-wide inventory, for compatibility with legacy versions
+			// Pull save inventory data
 			data = account.getSave(tkn.saveID).getSaveData();
 
 			// Retrieve container
@@ -398,6 +402,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 				block.quantity = itm.getQuantity();
 				block.uses = itm.getUses();
 				block.uniqueItemID = itm.getUniqueID();
+				block.itemAttributes = itm.getAttributes().toAttributeData();
 				// TODO: stats and attributes
 
 				// Add data info from item manager
@@ -411,6 +416,40 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("CI", resp));
+	}
+
+	@SodRequest
+	@SodTokenSecured
+	public FunctionResult setCommonInventoryAttribute(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam int commonInventoryID,
+			@SodRequestParam("pairxml") KeyValuePairSetData pairXml) throws IOException {
+		if (itemManager == null)
+			itemManager = ItemManager.getInstance();
+
+		// Retrieve container info
+		AccountDataContainer data = account.getAccountData();
+		int containerID = Integer.parseInt(req.payload.getOrDefault("ContainerId", "1"));
+
+		// Load data container
+		if (tkn.saveID != null)
+			data = account.getSave(tkn.saveID).getSaveData();
+
+		// Load inventory container
+		PlayerInventoryContainer cont = itemManager.getCommonInventory(data).getContainer(containerID);
+
+		// Find item
+		PlayerInventoryItem itm = cont.getItem(commonInventoryID);
+		if (itm == null)
+			return ok("text/xml", req.generateXmlValue("boolean", false));
+
+		// Apply attributes
+		PlayerInventoryItemAttributes attrs = itm.getAttributes();
+		for (KeyValuePairData pair : pairXml.items) {
+			attrs.setValue(pair.key, pair.value);
+		}
+
+		// Return
+		return ok("text/xml", req.generateXmlValue("boolean", true));
 	}
 
 	@LegacyFunction(allowedMethods = { "POST" })

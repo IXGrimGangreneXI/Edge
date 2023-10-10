@@ -1070,7 +1070,8 @@ public class AchievementManagerImpl extends AchievementManager {
 					block.quantity = itm.getQuantity();
 					block.uses = itm.getUses();
 					block.uniqueItemID = itm.getUniqueID();
-					// TODO: stats and attributes
+					block.itemAttributes = itm.getAttributes().toAttributeData();
+					// TODO: tier and attributes
 
 					// Add data info from item manager
 					ItemInfo def = ItemManager.getInstance().getItemDefinition(block.itemID);
