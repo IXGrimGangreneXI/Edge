@@ -216,10 +216,9 @@ public abstract class AchievementManager extends AbstractService {
 	 * Unlocks achievements and adds achievement rewards of the given achievement
 	 * reward ID to the player (V1 achievement system)
 	 * 
-	 * @param save           User save
-	 * @param achievementID  Achievement ID
-	 * @param wasGivenBefore True if the rewards were given before, false otherwise
-	 * @param entityIDs      Dragon entity IDs
+	 * @param save          User save
+	 * @param achievementID Achievement ID
+	 * @param entityIDs     Dragon entity IDs
 	 * @return Array of AchievementRewardData instances
 	 */
 	public AchievementRewardData[] unlockAchievement(AccountSaveContainer save, int achievementID,
