@@ -940,37 +940,20 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		}
 	}
 
-	@LegacyFunction(allowedMethods = { "POST" })
-	public void getSelectedRaisedPet(LegacyFunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	public FunctionResult getSelectedRaisedPet(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam String userId) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
 
-		// Handle dragon data request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return;
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			setResponseStatus(404, "Not found");
-			return;
-		}
-
-		// Parse request
-		String userID = req.payload.get("userId");
-
 		// Retrieve container
-		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
+		if (userId.equals(account.getAccountID()) || account.getSave(userId) != null) {
 			AccountDataContainer data = account.getAccountData();
-			if (!userID.equals(account.getAccountID()))
-				data = account.getSave(userID).getSaveData();
+			if (!userId.equals(account.getAccountID()))
+				data = account.getSave(userId).getSaveData();
 
 			// Pull dragons
 			data = data.getChildContainer("dragons");
@@ -1019,43 +1002,29 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			if (dragons.size() != 0) {
 				DragonListData ls = new DragonListData();
 				ls.dragons = dragons.toArray(t -> new DragonData[t]);
-				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", ls));
+				return ok("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", ls));
 			} else
-				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", null));
+				return ok("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", null));
 		} else {
 			// ???
-			setResponseStatus(403, "Forbidden, attempted to interact with other user's data (devs please inspect)");
+			return response(403, "Forbidden, attempted to interact with other user's data (devs please inspect)");
 		}
 	}
 
-	@LegacyFunction(allowedMethods = { "POST" })
-	public void setSelectedPet(LegacyFunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult setSelectedPet(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, AccountSaveContainer save, @SodRequestParam String raisedPetID,
+			@SodRequestParam boolean unselectOtherPets) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
 
-		// Handle dragon data request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return;
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			setResponseStatus(404, "Not found");
-			return;
-		}
-
-		// Parse request
-		String dragonID = req.payload.get("raisedPetID");
-
 		// Retrieve container
-		AccountDataContainer data = account.getSave(tkn.saveID).getSaveData();
+		AccountDataContainer data = save.getSaveData();
 
 		// Pull dragons
 		data = data.getChildContainer("dragons");
@@ -1065,20 +1034,46 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		else
 			data.setEntry("dragonlist", dragonIds);
 
-		// Select dragon and deselect old
+		// Select dragon and deselect old if needed
 		boolean found = false;
 		for (JsonElement ele : dragonIds) {
 			String id = ele.getAsString();
 			ObjectNode dragon = req.parseXmlValue(data.getEntry("dragon-" + id).getAsString(), ObjectNode.class);
 
 			// Check if active
-			if (id.equals(dragonID) || dragon.get("is").asBoolean()) {
+			if (id.equals(raisedPetID) || dragon.get("is").asBoolean()) {
 				// Select/deselect
-				if (id.equals(dragonID)) {
-					dragon.set("is", BooleanNode.TRUE);
+				if (id.equals(raisedPetID)) {
+					// Determine state
+					boolean state = true;
+					if (req.payload.containsKey("selected"))
+						state = req.payload.get("selected").contentEquals("true");
+
+					// Log
+					if (!state)
+						getServerInstance().getLogger()
+								.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+										+ " de-selected dragon '" + dragon.get("n").asText() + "' (ID "
+										+ dragon.get("eid").asText() + ")");
+					else
+						getServerInstance().getLogger()
+								.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+										+ " selected dragon '" + dragon.get("n").asText() + "' (ID "
+										+ dragon.get("eid").asText() + ")");
+
+					// Assign state
+					dragon.set("is", state ? BooleanNode.TRUE : BooleanNode.FALSE);
 					found = true;
-				} else
+				} else if (unselectOtherPets) {
+					// Log
+					getServerInstance().getLogger()
+							.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+									+ " de-selected dragon '" + dragon.get("n").asText() + "' (ID "
+									+ dragon.get("eid").asText() + ")");
+
+					// Assign state
 					dragon.set("is", BooleanNode.FALSE);
+				}
 
 				// Save
 				data.setEntry("dragon-" + id, new JsonPrimitive(req.generateXmlValue("RaisedPetData", dragon)));
@@ -1086,41 +1081,27 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Set response
-		setResponseContent("text/xml", req.generateXmlValue("boolean", found));
+		return ok("text/xml", req.generateXmlValue("boolean", found));
 	}
 
-	@LegacyFunction(allowedMethods = { "POST" })
-	public void getUnselectedPetByTypes(LegacyFunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	public FunctionResult getUnselectedPetByTypes(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam String userId, @SodRequestParam String petTypeIDs)
+			throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
 
-		// Handle dragon data request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return;
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			setResponseStatus(404, "Not found");
-			return;
-		}
-
 		// Parse request
-		String userID = req.payload.get("userId");
-		String[] types = req.payload.get("petTypeIDs").split(",");
+		String[] types = petTypeIDs.split(",");
 
 		// Retrieve container
-		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
+		if (userId.equals(account.getAccountID()) || account.getSave(userId) != null) {
 			AccountDataContainer data = account.getAccountData();
-			if (!userID.equals(account.getAccountID()))
-				data = account.getSave(userID).getSaveData();
+			if (!userId.equals(account.getAccountID()))
+				data = account.getSave(userId).getSaveData();
 
 			// Pull dragons
 			data = data.getChildContainer("dragons");
@@ -1168,11 +1149,11 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			if (dragons.size() != 0) {
 				DragonListData ls = new DragonListData();
 				ls.dragons = dragons.toArray(t -> new DragonData[t]);
-				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", ls));
+				return ok("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", ls));
 			} else
-				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", null));
+				return ok("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", null));
 		} else {
-			setResponseStatus(403, "Forbidden");
+			return response(403, "Forbidden");
 		}
 	}
 

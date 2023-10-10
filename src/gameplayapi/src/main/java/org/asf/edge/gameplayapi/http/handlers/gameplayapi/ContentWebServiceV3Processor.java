@@ -205,8 +205,13 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Merge data
-		if (dragonUpdate.accessories != null)
+		String updateStr = "";
+		if (dragonUpdate.accessories != null) {
 			cdragon.accessories = dragonUpdate.accessories;
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "accessories";
+		}
 		if (dragonUpdate.attributes != null) {
 			if (cdragon.attributes == null)
 				cdragon.attributes = new ObjectNode[0];
@@ -229,35 +234,89 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 					newA[i] = attr;
 					cdragon.attributes = newA;
 				}
+
+				if (!updateStr.isEmpty())
+					updateStr += ", ";
+				updateStr += "attribute: " + key + "=" + attr.get("v").asText();
 			}
 		}
-		if (dragonUpdate.colors != null)
+		String oldName = cdragon.name;
+		if (dragonUpdate.colors != null) {
 			cdragon.colors = dragonUpdate.colors;
-		if (dragonUpdate.gender != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "colors";
+		}
+		if (dragonUpdate.gender != null) {
 			cdragon.gender = dragonUpdate.gender;
-		if (dragonUpdate.geometry != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "gender";
+		}
+		if (dragonUpdate.geometry != null) {
 			cdragon.geometry = dragonUpdate.geometry;
-		if (dragonUpdate.texture != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "geometry";
+		}
+		if (dragonUpdate.texture != null) {
 			cdragon.texture = dragonUpdate.texture;
-		if (dragonUpdate.skills != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "texture";
+		}
+		if (dragonUpdate.skills != null) {
 			cdragon.skills = dragonUpdate.skills;
-		if (dragonUpdate.growthState != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "skills";
+		}
+		if (dragonUpdate.growthState != null) {
 			cdragon.growthState = dragonUpdate.growthState;
-		if (dragonUpdate.imagePosition != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "growth";
+		}
+		if (dragonUpdate.imagePosition != null) {
 			cdragon.imagePosition = dragonUpdate.imagePosition;
-		if (dragonUpdate.states != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "image";
+		}
+		if (dragonUpdate.states != null) {
 			cdragon.states = dragonUpdate.states;
-		if (dragonUpdate.typeID != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "states";
+		}
+		if (dragonUpdate.typeID != null) {
 			cdragon.typeID = dragonUpdate.typeID;
-		if (dragonUpdate.name != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "type (new type: " + dragonUpdate.typeID + ")";
+		}
+		if (dragonUpdate.name != null) {
 			cdragon.name = dragonUpdate.name;
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "name (new name: " + dragonUpdate.name + ")";
+		}
 
 		// Set update time
 		cdragon.updateDate = fmt.format(new Date()); // Update time
 
-		// Set active if needed
-		if (request.setAsSelected) {
-			// Deselect old
+		// Deselect old
+		if (request.deselectOtherDragons) {
 			for (JsonElement ele : dragonIds) {
 				String did = ele.getAsString();
 				ObjectNode ddragon = req.parseXmlValue(data.getEntry("dragon-" + did).getAsString(), ObjectNode.class);
@@ -267,14 +326,20 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 					// deselect
 					ddragon.set("is", BooleanNode.FALSE);
 
+					// Log
+					getServerInstance().getLogger()
+							.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+									+ " de-selected dragon '" + ddragon.get("n").asText() + "' (ID "
+									+ ddragon.get("eid").asText() + ")");
+
 					// Save
 					data.setEntry("dragon-" + did, new JsonPrimitive(req.generateXmlValue("RaisedPetData", ddragon)));
 				}
 			}
-
-			// Set current as active
-			cdragon.isSelected = true;
 		}
+
+		// Set current as active if needed
+		cdragon.isSelected = request.setAsSelected;
 
 		// Save dragon
 		data.setEntry("dragon-" + id, new JsonPrimitive(req.generateXmlValue("RaisedPetData", cdragon)));
@@ -285,6 +350,14 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 			resp.inventoryUpdate = InventoryUtils.processCommonInventorySet(request.commonInventoryRequests,
 					save.getSaveData(), (request.containerID == -1 ? 1 : request.containerID));
 		}
+
+		// Log
+		getServerInstance().getLogger().info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+				+ " updated dragon '" + oldName + "' (ID " + cdragon.entityID + "), updated: " + updateStr);
+
+		// Log
+		getServerInstance().getLogger().info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+				+ " selected dragon '" + cdragon.name + "' (ID " + cdragon.entityID + ")");
 
 		// Set response
 		setResponseContent("text/xml", req.generateXmlValue("SetRaisedPetResponse", resp));

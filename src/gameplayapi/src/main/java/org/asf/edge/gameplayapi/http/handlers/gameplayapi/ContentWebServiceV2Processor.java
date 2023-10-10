@@ -843,34 +843,18 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		setResponseContent("text/xml", req.generateXmlValue("NameValidationResponse", resp));
 	}
 
-	@LegacyFunction(allowedMethods = { "POST" })
-	public void createPet(LegacyFunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult createPet(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn, AccountObject account,
+			AccountSaveContainer save, @SodRequestParam PetCreateRequestData request) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
 
-		// Handle dragon request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return;
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS || !tkn.hasCapability("gp")) {
-			// Error
-			setResponseStatus(404, "Not found");
-			return;
-		}
-
 		// Parse request
-		PetCreateRequestData request = req.parseXmlValue(req.payload.get("request"), PetCreateRequestData.class);
-
-		// Find save
-		AccountSaveContainer save = account.getSave(tkn.saveID);
 		AccountDataContainer data = save.getSaveData();
 
 		// Prepare response
@@ -885,8 +869,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			data.setEntry("dragonlist", dragonIds);
 		if (dragonIds.size() >= Integer.MAX_VALUE - 1) {
 			// Too many dragons
-			setResponseStatus(400, "Bad request, too many dragons");
-			return;
+			return response(400, "Bad request, too many dragons");
 		}
 
 		// Create dragon ID
@@ -921,9 +904,8 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		dragon.set("cdt", new TextNode(fmt.format(new Date()))); // Creation time
 		dragon.set("upd", new TextNode(fmt.format(new Date()))); // Update time
 
-		// Set active if needed
-		if (request.setAsSelected) {
-			// Deselect old
+		// Deselect old
+		if (request.deselectOtherDragons) {
 			for (JsonElement ele : dragonIds) {
 				String did = ele.getAsString();
 				ObjectNode ddragon = req.parseXmlValue(data.getEntry("dragon-" + did).getAsString(), ObjectNode.class);
@@ -937,10 +919,10 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 					data.setEntry("dragon-" + did, new JsonPrimitive(req.generateXmlValue("RaisedPetData", ddragon)));
 				}
 			}
-
-			// Set current as active
-			dragon.set("is", BooleanNode.TRUE);
 		}
+
+		// Set current as active if needed
+		dragon.set("is", request.setAsSelected ? BooleanNode.TRUE : BooleanNode.FALSE);
 
 		// Save to list
 		dragonIds = data.getEntry("dragonlist").getAsJsonArray();
@@ -960,7 +942,13 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		// Set response
 		resp.dragonData = dragon.deepCopy();
 		resp.dragonData.set("ispetcreated", BooleanNode.TRUE);
-		setResponseContent("text/xml", req.generateXmlValue("CPR", resp));
+
+		// Log
+		getServerInstance().getLogger().info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+				+ " created new dragon '" + dragon.get("n").asText() + "' (ID " + dragon.get("eid").asText() + ")");
+
+		// Return
+		return ok("text/xml", req.generateXmlValue("CPR", resp));
 	}
 
 	@LegacyFunction(allowedMethods = { "POST" })
@@ -1025,37 +1013,20 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		setResponseContent("text/xml", req.generateXmlValue("CI", resp));
 	}
 
-	@LegacyFunction(allowedMethods = { "POST" })
-	public void getAllActivePetsByuserId(LegacyFunctionInfo func) throws IOException {
+	@SodRequest
+	@SodTokenSecured
+	public FunctionResult getAllActivePetsByuserId(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, @SodRequestParam String userId) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
 
-		// Handle dragon data request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
-		if (req == null)
-			return;
-		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
-
-		// Read token
-		SessionToken tkn = new SessionToken();
-		TokenParseResult res = tkn.parseToken(apiToken);
-		AccountObject account = tkn.account;
-		if (res != TokenParseResult.SUCCESS) {
-			// Error
-			setResponseStatus(404, "Not found");
-			return;
-		}
-
-		// Parse request
-		String userID = req.payload.get("userId");
-
 		// Retrieve container
-		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
+		if (userId.equals(account.getAccountID()) || account.getSave(userId) != null) {
 			AccountDataContainer data = account.getAccountData();
-			if (!userID.equals(account.getAccountID()))
-				data = account.getSave(userID).getSaveData();
+			if (!userId.equals(account.getAccountID()))
+				data = account.getSave(userId).getSaveData();
 
 			// Pull dragons
 			data = data.getChildContainer("dragons");
@@ -1104,11 +1075,11 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			if (dragons.size() != 0) {
 				DragonListData ls = new DragonListData();
 				ls.dragons = dragons.toArray(t -> new DragonData[t]);
-				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", ls));
+				return ok("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", ls));
 			} else
-				setResponseContent("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", null));
+				return ok("text/xml", req.generateXmlValue("ArrayOfRaisedPetData", null));
 		} else {
-			setResponseStatus(403, "Forbidden");
+			return response(403, "Forbidden");
 		}
 	}
 
@@ -1302,8 +1273,13 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		DragonData dragonUpdate = raisedPetData;
 
 		// Merge data
-		if (dragonUpdate.accessories != null)
+		String updateStr = "";
+		if (dragonUpdate.accessories != null) {
 			cdragon.accessories = dragonUpdate.accessories;
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "accessories";
+		}
 		if (dragonUpdate.attributes != null) {
 			if (cdragon.attributes == null)
 				cdragon.attributes = new ObjectNode[0];
@@ -1326,34 +1302,93 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 					newA[i] = attr;
 					cdragon.attributes = newA;
 				}
+
+				if (!updateStr.isEmpty())
+					updateStr += ", ";
+				updateStr += "attribute: " + key + "=" + attr.get("v").asText();
 			}
 		}
-		if (dragonUpdate.colors != null)
+		String oldName = cdragon.name;
+		if (dragonUpdate.colors != null) {
 			cdragon.colors = dragonUpdate.colors;
-		if (dragonUpdate.gender != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "colors";
+		}
+		if (dragonUpdate.gender != null) {
 			cdragon.gender = dragonUpdate.gender;
-		if (dragonUpdate.geometry != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "gender";
+		}
+		if (dragonUpdate.geometry != null) {
 			cdragon.geometry = dragonUpdate.geometry;
-		if (dragonUpdate.texture != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "geometry";
+		}
+		if (dragonUpdate.texture != null) {
 			cdragon.texture = dragonUpdate.texture;
-		if (dragonUpdate.skills != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "texture";
+		}
+		if (dragonUpdate.skills != null) {
 			cdragon.skills = dragonUpdate.skills;
-		if (dragonUpdate.growthState != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "skills";
+		}
+		if (dragonUpdate.growthState != null) {
 			cdragon.growthState = dragonUpdate.growthState;
-		if (dragonUpdate.imagePosition != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "growth";
+		}
+		if (dragonUpdate.imagePosition != null) {
 			cdragon.imagePosition = dragonUpdate.imagePosition;
-		if (dragonUpdate.states != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "image";
+		}
+		if (dragonUpdate.states != null) {
 			cdragon.states = dragonUpdate.states;
-		if (dragonUpdate.typeID != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "states";
+		}
+		if (dragonUpdate.typeID != null) {
 			cdragon.typeID = dragonUpdate.typeID;
-		if (dragonUpdate.name != null)
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "type (new type: " + dragonUpdate.typeID + ")";
+		}
+		if (dragonUpdate.name != null) {
 			cdragon.name = dragonUpdate.name;
+
+			if (!updateStr.isEmpty())
+				updateStr += ", ";
+			updateStr += "name (new name: " + dragonUpdate.name + ")";
+		}
 
 		// Set update time
 		cdragon.updateDate = fmt.format(new Date()); // Update time
 
 		// Save dragon
 		data.setEntry("dragon-" + id, new JsonPrimitive(req.generateXmlValue("RaisedPetData", cdragon)));
+
+		// Log
+		getServerInstance().getLogger().info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+				+ " updated dragon '" + oldName + "' (ID " + cdragon.entityID + "), updated: " + updateStr);
 
 		// Set response
 		return ok("text/xml", req.generateXmlValue("SetRaisedPetResponse", resp));

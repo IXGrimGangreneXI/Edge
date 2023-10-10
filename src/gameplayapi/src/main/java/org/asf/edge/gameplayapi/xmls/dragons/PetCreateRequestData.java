@@ -22,6 +22,9 @@ public class PetCreateRequestData {
 	@JsonProperty("SASP")
 	public boolean setAsSelected;
 
+	@JsonProperty("USOP")
+	public boolean deselectOtherDragons;
+
 	@JsonProperty("cid")
 	public int containerID = -1;
 
