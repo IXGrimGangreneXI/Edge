@@ -142,6 +142,9 @@ public class DatabaseAccountObject extends BasicAccountObject {
 		if (oldMail != null)
 			EventBus.getInstance().dispatchEvent(new AccountEmailUpdateEvent(oldMail, email, this, manager));
 
+		// Log
+		getLogger().info("Updated email of " + getUsername() + " (ID " + getAccountID() + ")");
+
 		// Return
 		return true;
 	}
@@ -369,6 +372,9 @@ public class DatabaseAccountObject extends BasicAccountObject {
 				((DatabaseSaveContainer) getSave(saveObj.get("id").getAsString())).doDeleteSave();
 				MinigameDataManager.getInstance().deleteDataFor(saveObj.get("id").getAsString());
 			}
+
+			// Log
+			getLogger().info("Deleted account " + getUsername() + " (ID " + getAccountID() + ")");
 		} catch (SQLException e) {
 			getLogger().error(
 					"Failed to execute database query request while trying to delete account '" + getAccountID() + "'",

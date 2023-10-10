@@ -154,6 +154,11 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 			// Dispatch event
 			EventBus.getInstance().dispatchEvent(new AccountSaveUsernameUpdateEvent(oldName, name, acc, this, manager));
 
+			// Log
+			getLogger().info("Updated save username of " + oldName + " (ID " + getSaveID() + ") to '" + getUsername()
+					+ "' of account " + getUsername() + " (ID " + getAccountID() + ")");
+
+			// Return
 			return true;
 		}
 		return false;
@@ -172,6 +177,10 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 
 		// Dispatch event
 		EventBus.getInstance().dispatchEvent(new AccountSaveDeletedEvent(acc, this, manager));
+
+		// Log
+		getLogger().info("Deleted save " + getUsername() + " (ID " + getSaveID() + ") of account " + getUsername()
+				+ " (ID " + getAccountID() + ")");
 	}
 
 	@Override

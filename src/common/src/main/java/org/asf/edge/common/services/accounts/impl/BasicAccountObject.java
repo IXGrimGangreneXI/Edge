@@ -238,6 +238,10 @@ public abstract class BasicAccountObject extends AccountObject {
 
 			// Dispatch event
 			EventBus.getInstance().dispatchEvent(new AccountUsernameUpdateEvent(oldName, name, this, manager));
+
+			// Log
+			getLogger().info("Updated account username of " + oldName + " (ID " + getAccountID() + ") to '"
+					+ getUsername() + "'");
 		}
 
 		// Return
@@ -265,6 +269,9 @@ public abstract class BasicAccountObject extends AccountObject {
 
 		// Dispatch event
 		EventBus.getInstance().dispatchEvent(new AccountPasswordUpdateEvent(this, manager));
+
+		// Log
+		getLogger().info("Updated password of " + getUsername() + " (ID " + getAccountID() + ")");
 
 		// Return
 		return true;
@@ -327,6 +334,9 @@ public abstract class BasicAccountObject extends AccountObject {
 
 		// Dispatch event
 		EventBus.getInstance().dispatchEvent(new GuestAccountMigrationEvent(this, manager));
+
+		// Log
+		getLogger().info("Migrated guest account " + getAccountID() + ", new username: " + getUsername());
 
 		// Return
 		return true;
@@ -441,6 +451,10 @@ public abstract class BasicAccountObject extends AccountObject {
 
 			// Dispatch event
 			EventBus.getInstance().dispatchEvent(new AccountSaveCreatedEvent(this, sv, manager));
+
+			// Log
+			logger.info("Created save " + sv.getUsername() + " (ID " + sv.getSaveID() + ") in account " + getUsername()
+					+ " (ID " + getAccountID() + ")");
 		}
 		return sv;
 	}
