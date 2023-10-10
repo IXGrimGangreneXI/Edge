@@ -1,8 +1,8 @@
 channel=stable
 
 sentinel=1.0.0.A15
-globalserver=a1.5
-contentserver=a1.5
-commonapi=a1.5
-gameplayapi=a1.5
-mmoserver=a1.5
+globalserver=a1.6
+contentserver=a1.6
+commonapi=a1.6
+gameplayapi=a1.6
+mmoserver=a1.6
