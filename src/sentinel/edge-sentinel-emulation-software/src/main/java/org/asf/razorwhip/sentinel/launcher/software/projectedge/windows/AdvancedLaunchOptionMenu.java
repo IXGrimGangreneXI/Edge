@@ -10,6 +10,7 @@ import javax.swing.border.EmptyBorder;
 
 import org.asf.razorwhip.sentinel.launcher.AssetManager;
 import org.asf.razorwhip.sentinel.launcher.PayloadManager;
+import org.asf.razorwhip.sentinel.launcher.experiments.SentinelExperimentManager;
 
 import java.awt.Dimension;
 import java.awt.event.ActionListener;
@@ -45,7 +46,7 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 	}
 
 	private void initialize() {
-		setBounds(100, 100, 340, 329);
+		setBounds(100, 100, 340, 373);
 		getContentPane().setLayout(new BorderLayout());
 		setModal(true);
 		setLocationRelativeTo(null);
@@ -54,7 +55,7 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		{
 			JPanel panel = new JPanel();
-			panel.setPreferredSize(new Dimension(320, 280));
+			panel.setPreferredSize(new Dimension(320, 325));
 			contentPanel.add(panel);
 			panel.setLayout(null);
 
@@ -110,13 +111,22 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 			btnNewButton_3_1.setBounds(12, 188, 296, 27);
 			panel.add(btnNewButton_3_1);
 
+			JButton btnNewButton_3_3 = new JButton("Experimental features");
+			btnNewButton_3_3.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					SentinelExperimentManager.showExperimentManagerWindow();
+				}
+			});
+			btnNewButton_3_3.setBounds(12, 223, 296, 27);
+			panel.add(btnNewButton_3_3);
+
 			JButton btnNewButton_3_1_1 = new JButton("Back");
 			btnNewButton_3_1_1.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					dispose();
 				}
 			});
-			btnNewButton_3_1_1.setBounds(12, 242, 296, 27);
+			btnNewButton_3_1_1.setBounds(12, 286, 296, 27);
 			panel.add(btnNewButton_3_1_1);
 		}
 	}

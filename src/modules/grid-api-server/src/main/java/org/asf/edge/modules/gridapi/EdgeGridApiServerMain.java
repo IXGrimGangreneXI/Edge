@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.EdgeServerEnvironment;
+import org.asf.edge.common.experiments.ExperimentManager;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
@@ -54,6 +55,9 @@ public class EdgeGridApiServerMain {
 
 		// Load modules
 		ModuleManager.init();
+
+		// Save experiment manager config
+		ExperimentManager.getInstance().saveConfig();
 
 		// Create config object
 		GridApiServerConfig config = new GridApiServerConfig();

@@ -10,6 +10,7 @@ import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.EdgeServerEnvironment;
+import org.asf.edge.common.experiments.ExperimentManager;
 import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
@@ -46,6 +47,9 @@ public class EdgeGameplayApiServerMain {
 
 		// Load modules
 		ModuleManager.init();
+
+		// Save experiment manager config
+		ExperimentManager.getInstance().saveConfig();
 
 		// Create config object
 		GameplayApiServerConfig config = new GameplayApiServerConfig();

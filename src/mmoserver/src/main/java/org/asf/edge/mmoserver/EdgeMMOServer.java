@@ -49,7 +49,7 @@ import org.asf.edge.mmoserver.entities.smartfox.RoomVariable;
  *
  */
 public class EdgeMMOServer implements IBaseServer {
-	public static final String MMO_SERVER_VERSION = "1.0.0.A3";
+	public static final String MMO_SERVER_VERSION = "a1.5";
 
 	private Logger logger;
 	private MMOServerConfig config;
@@ -68,7 +68,7 @@ public class EdgeMMOServer implements IBaseServer {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
 		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
-		System.out.println("                 MMO Server Version 1.0.0.A3                 ");
+		System.out.println("                   MMO Server Version a1.5                   ");
 		System.out.println("                                                             ");
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("");

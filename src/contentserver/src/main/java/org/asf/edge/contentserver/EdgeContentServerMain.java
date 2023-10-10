@@ -10,6 +10,7 @@ import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.EdgeServerEnvironment;
+import org.asf.edge.common.experiments.ExperimentManager;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
@@ -50,6 +51,9 @@ public class EdgeContentServerMain {
 
 		// Load modules
 		ModuleManager.init();
+
+		// Save experiment manager config
+		ExperimentManager.getInstance().saveConfig();
 
 		// Create config object
 		ContentServerConfig config = new ContentServerConfig();

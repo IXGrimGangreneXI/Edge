@@ -9,6 +9,8 @@ import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.ItemInfo.CostInfo;
+import org.asf.edge.common.experiments.EdgeDefaultExperiments;
+import org.asf.edge.common.experiments.ExperimentManager;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
@@ -156,25 +158,28 @@ public class InventoryUtils {
 			currency.setEntry("coins", new JsonPrimitive(currencyUpdate.coinCount));
 		}
 
-		// Rebuild update list for 2.x support without quantity fields
-		ArrayList<ItemUpdateBlock> itemLstNew = new ArrayList<ItemUpdateBlock>();
-		for (ItemUpdateBlock block : itemLst) {
-			if (block.quantity <= 0)
-				itemLstNew.add(block);
-			else {
-				for (int i = 0; i < block.quantity; i++) {
-					ItemUpdateBlock nB = new ItemUpdateBlock();
-					nB.quantity = 1;
-					nB.itemID = block.itemID;
-					nB.itemUniqueID = block.itemUniqueID;
-					itemLstNew.add(nB);
+		if (ExperimentManager.getInstance().isExperimentEnabled(EdgeDefaultExperiments.LEGACY_INVENTORY_SUPPORT)) {
+			// Rebuild update list for 2.x support without quantity fields
+			ArrayList<ItemUpdateBlock> itemLstNew = new ArrayList<ItemUpdateBlock>();
+			for (ItemUpdateBlock block : itemLst) {
+				if (block.quantity <= 0)
+					itemLstNew.add(block);
+				else {
+					for (int i = 0; i < block.quantity; i++) {
+						ItemUpdateBlock nB = new ItemUpdateBlock();
+						nB.quantity = 1;
+						nB.itemID = block.itemID;
+						nB.itemUniqueID = block.itemUniqueID;
+						itemLstNew.add(nB);
+					}
 				}
 			}
+			itemLst = itemLstNew;
 		}
 
 		// Set response
 		resp.prizeItems = prizeLst.toArray(t -> new PrizeItemInfo[t]);
-		resp.updateItems = itemLstNew.toArray(t -> new ItemUpdateBlock[t]);
+		resp.updateItems = itemLst.toArray(t -> new ItemUpdateBlock[t]);
 		if (resp.prizeItems.length == 0)
 			resp.prizeItems = null;
 		if (resp.updateItems.length == 0)
@@ -282,24 +287,27 @@ public class InventoryUtils {
 			}
 		}
 
-		// Rebuild update list for 2.x support without quantity fields
-		ArrayList<ItemUpdateBlock> itemLstNew = new ArrayList<ItemUpdateBlock>();
-		for (ItemUpdateBlock block : updates) {
-			if (block.quantity <= 0)
-				itemLstNew.add(block);
-			else {
-				for (int i = 0; i < block.quantity; i++) {
-					ItemUpdateBlock nB = new ItemUpdateBlock();
-					nB.quantity = 1;
-					nB.itemID = block.itemID;
-					nB.itemUniqueID = block.itemUniqueID;
-					itemLstNew.add(nB);
+		if (ExperimentManager.getInstance().isExperimentEnabled(EdgeDefaultExperiments.LEGACY_INVENTORY_SUPPORT)) {
+			// Rebuild update list for 2.x support without quantity fields
+			ArrayList<ItemUpdateBlock> itemLstNew = new ArrayList<ItemUpdateBlock>();
+			for (ItemUpdateBlock block : updates) {
+				if (block.quantity <= 0)
+					itemLstNew.add(block);
+				else {
+					for (int i = 0; i < block.quantity; i++) {
+						ItemUpdateBlock nB = new ItemUpdateBlock();
+						nB.quantity = 1;
+						nB.itemID = block.itemID;
+						nB.itemUniqueID = block.itemUniqueID;
+						itemLstNew.add(nB);
+					}
 				}
 			}
+			updates = itemLstNew;
 		}
 
 		// Set response
-		resp.updateItems = itemLstNew.toArray(t -> new ItemUpdateBlock[t]);
+		resp.updateItems = updates.toArray(t -> new ItemUpdateBlock[t]);
 		return resp;
 	}
 
@@ -469,25 +477,28 @@ public class InventoryUtils {
 				currency.setEntry("coins", new JsonPrimitive(currencyUpdate.coinCount));
 			}
 
-			// Rebuild update list for 2.x support without quantity fields
-			ArrayList<ItemUpdateBlock> itemLstNew = new ArrayList<ItemUpdateBlock>();
-			for (ItemUpdateBlock block : itemLst) {
-				if (block.quantity <= 0)
-					itemLstNew.add(block);
-				else {
-					for (int i = 0; i < block.quantity; i++) {
-						ItemUpdateBlock nB = new ItemUpdateBlock();
-						nB.quantity = 1;
-						nB.itemID = block.itemID;
-						nB.itemUniqueID = block.itemUniqueID;
-						itemLstNew.add(nB);
+			if (ExperimentManager.getInstance().isExperimentEnabled(EdgeDefaultExperiments.LEGACY_INVENTORY_SUPPORT)) {
+				// Rebuild update list for 2.x support without quantity fields
+				ArrayList<ItemUpdateBlock> itemLstNew = new ArrayList<ItemUpdateBlock>();
+				for (ItemUpdateBlock block : itemLst) {
+					if (block.quantity <= 0)
+						itemLstNew.add(block);
+					else {
+						for (int i = 0; i < block.quantity; i++) {
+							ItemUpdateBlock nB = new ItemUpdateBlock();
+							nB.quantity = 1;
+							nB.itemID = block.itemID;
+							nB.itemUniqueID = block.itemUniqueID;
+							itemLstNew.add(nB);
+						}
 					}
 				}
+				itemLst = itemLstNew;
 			}
 
 			// Set response
 			resp.prizeItems = prizeLst.toArray(t -> new PrizeItemInfo[t]);
-			resp.updateItems = itemLstNew.toArray(t -> new ItemUpdateBlock[t]);
+			resp.updateItems = itemLst.toArray(t -> new ItemUpdateBlock[t]);
 			if (resp.prizeItems.length == 0)
 				resp.prizeItems = null;
 			if (resp.updateItems.length == 0)

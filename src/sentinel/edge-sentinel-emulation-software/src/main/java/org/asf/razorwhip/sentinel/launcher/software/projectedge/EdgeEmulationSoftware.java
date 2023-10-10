@@ -18,6 +18,7 @@ import org.asf.razorwhip.sentinel.launcher.assets.ActiveArchiveInformation;
 import org.asf.razorwhip.sentinel.launcher.assets.AssetInformation;
 import org.asf.razorwhip.sentinel.launcher.descriptors.data.LauncherController;
 import org.asf.razorwhip.sentinel.launcher.descriptors.data.ServerEndpoints;
+import org.asf.razorwhip.sentinel.launcher.experiments.ExperimentManager;
 import org.asf.razorwhip.sentinel.launcher.software.projectedge.windows.LaunchOptionMenu;
 
 import com.google.gson.JsonArray;
@@ -56,6 +57,9 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+
+		// Register experiments
+		registerExperiments();
 	}
 
 	@Override
@@ -322,6 +326,9 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 						args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
 					}
 					args.add("-DdisableContentServer=true");
+					if (System.getProperty("enableAllExperiments") != null)
+						args.add("-DenableAllExperiments");
+					args.add("-DdisableMmoUnlessExperimentEnabled");
 
 					// Add main class
 					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
@@ -349,6 +356,9 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 						args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
 					}
 					args.add("-DdisableContentServer=true");
+					if (System.getProperty("enableAllExperiments") != null)
+						args.add("-DenableAllExperiments");
+					args.add("-DdisableMmoUnlessExperimentEnabled");
 
 					// Add main class
 					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
@@ -361,6 +371,12 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 
 				// Start
 				try {
+					// Copy experiment config
+					ExperimentManager.getInstance().saveConfig();
+					Files.writeString(Path.of("server/experiments.json"),
+							Files.readString(Path.of("experiments.json")));
+
+					// Start server
 					startServer(builder, launchMode);
 				} catch (IOException e) {
 					throw new RuntimeException(e);
@@ -521,6 +537,16 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 			// Exit
 			serverProc.destroy();
 		}
+	}
+
+	private void registerExperiments() {
+		ExperimentManager manager = ExperimentManager.getInstance();
+
+		manager.registerExperiment("EXPERIMENT_LEGACY_INVENTORY_SUPPORT");
+		manager.setExperimentName("EXPERIMENT_LEGACY_INVENTORY_SUPPORT", "1.x/2.x inventory enhancements");
+
+		manager.registerExperiment("MMO_SERVER_SUPPORT");
+		manager.setExperimentName("MMO_SERVER_SUPPORT", "MMO server support (EXTREMELY WIP, LAN ONLY AT THE MOMENT)");
 	}
 
 }

@@ -11,6 +11,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.SentinelUpdateManager;
+import org.asf.edge.common.experiments.EdgeDefaultExperiments;
+import org.asf.edge.common.experiments.ExperimentManager;
 import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
@@ -41,7 +43,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class EdgeGlobalServerMain {
-	public static final String GLOBAL_SERVER_VERSION = "a0.5";
+	public static final String GLOBAL_SERVER_VERSION = "a1.5";
 
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		// Set locale
@@ -51,7 +53,7 @@ public class EdgeGlobalServerMain {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
 		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
-		System.out.println("                 AIO Server Version a0.5                 ");
+		System.out.println("                   AIO Server Version a1.5                   ");
 		System.out.println("                                                             ");
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("");
@@ -97,6 +99,9 @@ public class EdgeGlobalServerMain {
 
 		// Load modules
 		ModuleManager.init();
+
+		// Save experiment manager config
+		ExperimentManager.getInstance().saveConfig();
 
 		// Create config objects
 		ContentServerConfig contentSrvConfig = new ContentServerConfig();
@@ -296,6 +301,9 @@ public class EdgeGlobalServerMain {
 		boolean mmoSrvDisabled = mmoSrvJson.has("disabled") && mmoSrvJson.get("disabled").getAsBoolean()
 				|| (System.getProperty("disableMMOServer") != null
 						&& !System.getProperty("disableMMOServer").equalsIgnoreCase("false"));
+		if (System.getProperty("disableMmoUnlessExperimentEnabled") != null
+				&& !ExperimentManager.getInstance().isExperimentEnabled(EdgeDefaultExperiments.MMO_SERVER_SUPPORT))
+			mmoSrvDisabled = true;
 		if (!mmoSrvDisabled) {
 			if (mmoSrvConfig.server == null) {
 				logger.debug("Loading listening settings...");

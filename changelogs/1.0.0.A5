@@ -1,5 +1,0 @@
-Changes in a0.5:
-- Fixed room/farm item positions not being saved and items not being removed
-- Improved the automatic Sentinel updater to work with timestamps instead of a timer loop
-- Fixed item calls for 2.x and below not using proper quantity
-- Fixed some visual bugs in Sentinel

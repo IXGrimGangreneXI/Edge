@@ -3,7 +3,7 @@ plugins {
 	id 'maven-publish'
 }
 
-version = "a0.5"
+version = "a1.5"
 group = "org.asf.edge"
 
 sourceCompatibility = '1.17'

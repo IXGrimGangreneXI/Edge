@@ -60,7 +60,7 @@ import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
  *
  */
 public class EdgeGameplayApiServer implements IBaseServer {
-	public static final String GAMEPLAY_API_VERSION = "a0.5";
+	public static final String GAMEPLAY_API_VERSION = "a1.5";
 
 	private Logger logger;
 	private GameplayApiServerConfig config;
@@ -76,7 +76,7 @@ public class EdgeGameplayApiServer implements IBaseServer {
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("                                                             ");
 		System.out.println("    EDGE - Fan-made server software for School of Dragons    ");
-		System.out.println("            Gameplay API Server Version: a0.5            ");
+		System.out.println("              Gameplay API Server Version: a1.5              ");
 		System.out.println("                                                             ");
 		System.out.println("-------------------------------------------------------------");
 		System.out.println("");

@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.UUID;
 
+import org.asf.edge.common.experiments.EdgeExperimentManager;
 import org.asf.edge.common.util.LogWindow;
 
 import com.google.gson.JsonParser;
@@ -19,10 +20,11 @@ import com.google.gson.JsonParser;
  *
  */
 public class EdgeServerEnvironment {
-	private static final String EDGE_VERSION = "a0.5";
+	private static final String EDGE_VERSION = "a1.5";
 
 	private static boolean logInited;
 	private static boolean serverIDInited;
+	private static boolean experimentsInited;
 	private static boolean debugMode;
 
 	private static ArrayList<String> serverTypes = new ArrayList<String>();
@@ -73,7 +75,18 @@ public class EdgeServerEnvironment {
 	 */
 	public static void initAll() {
 		initLogging();
+		initExperiments();
 		initServerID();
+	}
+
+	/**
+	 * Inits the experiment manager
+	 */
+	public static void initExperiments() {
+		if (experimentsInited)
+			return;
+		experimentsInited = true;
+		EdgeExperimentManager.bindManager();
 	}
 
 	/**
@@ -129,10 +142,12 @@ public class EdgeServerEnvironment {
 
 		// Setup logging
 		if (System.getProperty("debugMode") != null) {
-			System.setProperty("log4j2.configurationFile", EdgeServerEnvironment.class.getResource("/log4j2-ide.xml").toString());
+			System.setProperty("log4j2.configurationFile",
+					EdgeServerEnvironment.class.getResource("/log4j2-ide.xml").toString());
 			debugMode = true;
 		} else {
-			System.setProperty("log4j2.configurationFile", EdgeServerEnvironment.class.getResource("/log4j2.xml").toString());
+			System.setProperty("log4j2.configurationFile",
+					EdgeServerEnvironment.class.getResource("/log4j2.xml").toString());
 		}
 
 		// Open graphical
