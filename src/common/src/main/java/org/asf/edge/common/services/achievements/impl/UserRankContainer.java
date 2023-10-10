@@ -74,7 +74,7 @@ public class UserRankContainer extends EntityRankInfo {
 
 			// Log
 			logger.info("Updated player rank " + getTypeID() + " of '" + save.getUsername() + "' (ID "
-					+ save.getSaveID() + ") to " + value + " points, rank name: " + newRank.getName() + " (level"
+					+ save.getSaveID() + ") to " + value + " points, rank name: " + newRank.getName() + " (level "
 					+ (AchievementManager.getInstance().getRankIndex(newRank) + 1) + ")");
 		} catch (IOException e) {
 		}

@@ -28,6 +28,7 @@ import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
 import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardList;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestData;
+import org.asf.edge.gameplayapi.xmls.achievements.StableQuestDragonAchievementBlock;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestRewardBlock;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 
@@ -122,6 +123,54 @@ public class AchievementRewardDataConverter {
 								// Save
 								rewards.put(data.winAchievementID, def);
 
+								// Generate victory rewards for non-default achievements
+								for (StableQuestDragonAchievementBlock ach : data.winAchievements) {
+									// Load or create def
+									def = rewards.get(ach.achievementID);
+									if (def == null)
+										def = new AchievementRewardDefData();
+
+									// Populate with existing data
+									def.achievementID = ach.achievementID;
+									rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
+									if (def.rewards != null) {
+										for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
+											rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
+										}
+									}
+
+									// Copy default achievements
+									for (StableQuestRewardBlock reward : data.winRewards) {
+										// Create or load entry
+										AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
+												.get(reward.rewardID + "-" + reward.pointTypeID);
+										if (entry == null) {
+											// Create
+											entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
+											entry.rewardID = reward.rewardID;
+											entry.pointTypeID = reward.pointTypeID;
+											entry.itemID = reward.itemID;
+											rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+										}
+
+										// Compute minimal and maximum values
+										int am = reward.amount;
+										if (reward.pointTypeID == 8)
+											am = am / ach.dragonCount;
+										if (am < entry.minAmount || entry.minAmount == 0)
+											entry.minAmount = am;
+										if (am > entry.maxAmount)
+											entry.maxAmount = am;
+									}
+
+									// Add rewards
+									def.rewards = rewardEntries.values()
+											.toArray(t -> new AchievementRewardDefData.AchievementRewardEntryBlock[t]);
+
+									// Save
+									rewards.put(ach.achievementID, def);
+								}
+
 								// Import lose rewards
 
 								// Load or create def
@@ -165,6 +214,54 @@ public class AchievementRewardDataConverter {
 
 								// Save
 								rewards.put(data.loseAchievementID, def);
+
+								// Generate defeat rewards for non-default achievements
+								for (StableQuestDragonAchievementBlock ach : data.loseAchievements) {
+									// Load or create def
+									def = rewards.get(ach.achievementID);
+									if (def == null)
+										def = new AchievementRewardDefData();
+
+									// Populate with existing data
+									def.achievementID = ach.achievementID;
+									rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
+									if (def.rewards != null) {
+										for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
+											rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
+										}
+									}
+
+									// Copy default achievements
+									for (StableQuestRewardBlock reward : data.loseRewards) {
+										// Create or load entry
+										AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
+												.get(reward.rewardID + "-" + reward.pointTypeID);
+										if (entry == null) {
+											// Create
+											entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
+											entry.rewardID = reward.rewardID;
+											entry.pointTypeID = reward.pointTypeID;
+											entry.itemID = reward.itemID;
+											rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+										}
+
+										// Compute minimal and maximum values
+										int am = reward.amount;
+										if (reward.pointTypeID == 8)
+											am = am / ach.dragonCount;
+										if (am < entry.minAmount || entry.minAmount == 0)
+											entry.minAmount = am;
+										if (am > entry.maxAmount)
+											entry.maxAmount = am;
+									}
+
+									// Add rewards
+									def.rewards = rewardEntries.values()
+											.toArray(t -> new AchievementRewardDefData.AchievementRewardEntryBlock[t]);
+
+									// Save
+									rewards.put(ach.achievementID, def);
+								}
 							}
 						}
 					} catch (IOException e) {

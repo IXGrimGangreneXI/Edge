@@ -23,11 +23,11 @@ public class StableQuestData {
 
 		@JsonInclude(Include.NON_NULL)
 		@JacksonXmlElementWrapper(useWrapping = false)
-		public StableQuestDragonAchievementBlock[] winAchievements;
+		public StableQuestDragonAchievementBlock[] winAchievements = new StableQuestDragonAchievementBlock[0];
 
 		@JsonInclude(Include.NON_NULL)
 		@JacksonXmlElementWrapper(useWrapping = false)
-		public StableQuestDragonAchievementBlock[] loseAchievements;
+		public StableQuestDragonAchievementBlock[] loseAchievements = new StableQuestDragonAchievementBlock[0];
 
 		@JsonProperty("WinAchID")
 		public int winAchievementID;

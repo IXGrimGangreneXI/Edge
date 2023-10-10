@@ -39,33 +39,30 @@ public class DragonRankContainer extends EntityRankInfo {
 			throw new RuntimeException(e);
 		}
 
-		// Check dragon existence
-		if (!data.entryExists("total")) {
-			// Find dragon
-			AccountDataContainer d = save.getSaveData().getChildContainer("dragons");
-			JsonArray dragonIds;
-			if (d.entryExists("dragonlist"))
-				dragonIds = d.getEntry("dragonlist").getAsJsonArray();
-			else
-				throw new IOException("Dragon not found");
-			boolean found = false;
-			for (JsonElement ele : dragonIds) {
-				String did = ele.getAsString();
-				if (d.entryExists("dragon-" + did)) {
-					ObjectNode dragon = new XmlMapper().readValue(d.getEntry("dragon-" + did).getAsString(),
-							ObjectNode.class);
-					String id = dragon.get("eid").asText();
-					if (id.equals(dragonEntityID)) {
-						found = true;
-						dragonNumericID = did;
-						lastName = dragon.get("n").asText();
-						break;
-					}
+		// Find dragon
+		AccountDataContainer d = save.getSaveData().getChildContainer("dragons");
+		JsonArray dragonIds;
+		if (d.entryExists("dragonlist"))
+			dragonIds = d.getEntry("dragonlist").getAsJsonArray();
+		else
+			throw new IOException("Dragon not found");
+		boolean found = false;
+		for (JsonElement ele : dragonIds) {
+			String did = ele.getAsString();
+			if (d.entryExists("dragon-" + did)) {
+				ObjectNode dragon = new XmlMapper().readValue(d.getEntry("dragon-" + did).getAsString(),
+						ObjectNode.class);
+				String id = dragon.get("eid").asText();
+				if (id.equals(dragonEntityID)) {
+					found = true;
+					dragonNumericID = did;
+					lastName = dragon.get("n").asText();
+					break;
 				}
 			}
-			if (!found)
-				throw new IOException("Dragon not found");
 		}
+		if (!found)
+			throw new IOException("Dragon not found");
 	}
 
 	@Override
@@ -121,7 +118,7 @@ public class DragonRankContainer extends EntityRankInfo {
 			}
 			logger.info("Updated dragon rank " + getTypeID() + " of '" + lastName + "' (owner " + save.getUsername()
 					+ ", ID " + save.getSaveID() + ") to " + value + " points, rank name: " + newRank.getName()
-					+ " (level" + (AchievementManager.getInstance().getRankIndex(newRank) + 1) + ")");
+					+ " (level " + (AchievementManager.getInstance().getRankIndex(newRank) + 1) + ")");
 		} catch (IOException e) {
 		}
 	}

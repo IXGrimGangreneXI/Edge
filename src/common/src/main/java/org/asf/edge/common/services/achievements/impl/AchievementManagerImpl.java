@@ -974,6 +974,13 @@ public class AchievementManagerImpl extends AchievementManager {
 					} else {
 						// Add for each dragon
 						for (String dragonID : entityIDs) {
+							// Add reward if needed
+							if (reward.entityID != null)
+								rewards.add(reward);
+
+							// Copy reward
+							reward = reward.copy();
+
 							// Use amount and type ID
 							// Find type ID
 							RankTypeID id = RankTypeID.getByTypeID(reward.pointTypeID);
