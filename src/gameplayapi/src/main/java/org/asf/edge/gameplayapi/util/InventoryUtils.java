@@ -3,8 +3,9 @@ package org.asf.edge.gameplayapi.util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
 import org.asf.edge.common.entities.items.ItemInfo;
@@ -132,6 +133,26 @@ public class InventoryUtils {
 		currencyUpdate.userID = save.getSaveID();
 		resp.success = true;
 
+		// Verify and create item string
+		String itemStr = "";
+		for (ItemRedemptionInfo itm : items) {
+			ItemInfo def = itemManager.getItemDefinition(itm.defID);
+			if (def == null) {
+				// Invalid item ID
+				InventoryUpdateResponseData fail = new InventoryUpdateResponseData();
+				fail.success = false;
+				return fail;
+			}
+
+			// Add to string
+			if (!itemStr.isEmpty())
+				itemStr += ", ";
+			itemStr += itm.quantity + " "
+					+ (itm.quantity == 1 ? def.getRawObject().name
+							: (def.getRawObject().namePlural == null ? def.getRawObject().name
+									: def.getRawObject().namePlural));
+		}
+
 		// Load currency
 		AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
 		int currentC = 300;
@@ -145,8 +166,35 @@ public class InventoryUtils {
 		currencyUpdate.gemCount = currentG;
 
 		// Handle requests
+		UpdateLog log = new UpdateLog();
+		log.updateStr = "";
 		resp.success = processItemRedemption(items, account, save, openMysteryBoxes, itemLst, prizeLst, currencyUpdate,
-				null, null, null, null);
+				null, null, null, (itm, quant) -> {
+					// Add to string
+					if (!log.updateStr.isEmpty())
+						log.updateStr += ", ";
+					int updated = quant;
+					if (updated < 0)
+						updated = -quant;
+					log.count++;
+					log.updateStr += (updated < 0 ? "removed" : "added") + " " + updated + " "
+							+ (updated == 1 ? itm.getRawObject().name
+									: (itm.getRawObject().namePlural == null ? itm.getRawObject().name
+											: itm.getRawObject().namePlural));
+				});
+
+		// Log
+		if (!resp.success) {
+			// Log fail
+			LogManager.getLogger("ItemManager").info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+					+ " failed to redeem items (" + itemStr + ") as it was aborted by server/module code");
+		} else {
+			// Log success
+			LogManager.getLogger("ItemManager")
+					.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")" + " successfully redeemed "
+							+ items.length + " items (" + itemStr + ") and updated " + log.count + " items ("
+							+ log.updateStr + ")");
+		}
 
 		// Save
 		if (currencyUpdate.gemCount != currentG) {
@@ -187,6 +235,11 @@ public class InventoryUtils {
 		return resp;
 	}
 
+	private static class UpdateLog {
+		public int count;
+		public String updateStr;
+	}
+
 	/**
 	 * Processes common inventory requests
 	 * 
@@ -202,6 +255,7 @@ public class InventoryUtils {
 		// Prepare response
 		InventoryUpdateResponseData resp = new InventoryUpdateResponseData();
 		ArrayList<ItemUpdateBlock> updates = new ArrayList<ItemUpdateBlock>();
+		HashMap<PlayerInventoryItem, Integer> itemOldQuantities = new LinkedHashMap<PlayerInventoryItem, Integer>();
 		resp.success = true;
 
 		// Handle requests
@@ -264,6 +318,7 @@ public class InventoryUtils {
 				if (itm != null || request.quantity > 0) {
 					if (itm == null)
 						itm = cont.createItem(request.itemID, 0);
+					itemOldQuantities.put(itm, itm.getQuantity());
 
 					// Update
 					newQuant = itm.getQuantity() + request.quantity;
@@ -306,6 +361,46 @@ public class InventoryUtils {
 			updates = itemLstNew;
 		}
 
+		// Build string
+		int count = 0;
+		String itemStr = "";
+		for (PlayerInventoryItem itm : itemOldQuantities.keySet()) {
+			int oldQ = itemOldQuantities.get(itm);
+			int newQ = itm.getQuantity();
+			if (newQ != oldQ) {
+				if (oldQ < newQ) {
+					int added = newQ - oldQ;
+					ItemInfo def = itm.getItemDef();
+
+					// Add to string
+					if (!itemStr.isEmpty())
+						itemStr += ", ";
+					itemStr += "added " + added + " "
+							+ (added == 1 ? def.getRawObject().name
+									: (def.getRawObject().namePlural == null ? def.getRawObject().name
+											: def.getRawObject().namePlural));
+				} else {
+					int removed = oldQ - newQ;
+					ItemInfo def = itm.getItemDef();
+
+					// Add to string
+					if (!itemStr.isEmpty())
+						itemStr += ", ";
+					itemStr += "removed " + removed + " "
+							+ (removed == 1 ? def.getRawObject().name
+									: (def.getRawObject().namePlural == null ? def.getRawObject().name
+											: def.getRawObject().namePlural));
+				}
+				count++;
+			}
+		}
+
+		// Log
+		LogManager.getLogger("ItemManager").info("Updated inventory of "
+				+ (data.getSave() == null ? data.getAccount().getUsername() : data.getSave().getUsername()) + " (ID "
+				+ (data.getSave() == null ? data.getAccount().getAccountID() : data.getSave().getSaveID()) + ")"
+				+ " successfully updated " + count + " items (" + itemStr + ")");
+
 		// Set response
 		resp.updateItems = updates.toArray(t -> new ItemUpdateBlock[t]);
 		return resp;
@@ -327,6 +422,9 @@ public class InventoryUtils {
 			AccountObject account, AccountSaveContainer save, boolean openMysteryBoxes) throws IOException {
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
+
+		// Item string
+		String itemStr = "";
 
 		// Find store
 		ItemStoreInfo store = ItemManager.getInstance().getStore(shopID);
@@ -351,7 +449,8 @@ public class InventoryUtils {
 			int costGemsTotal = 0;
 			int costCoinsTotal = 0;
 			for (ItemRedemptionInfo itm : items) {
-				if (store.getItem(itm.defID) == null) {
+				ItemInfo def = store.getItem(itm.defID);
+				if (def == null) {
 					// Invalid item ID
 					InventoryUpdateResponseData fail = new InventoryUpdateResponseData();
 					fail.success = false;
@@ -375,6 +474,14 @@ public class InventoryUtils {
 						costCoinsTotal += cost.cost * itm.quantity;
 					}
 				}
+
+				// Add to string
+				if (!itemStr.isEmpty())
+					itemStr += ", ";
+				itemStr += itm.quantity + " "
+						+ (itm.quantity == 1 ? def.getRawObject().name
+								: (def.getRawObject().namePlural == null ? def.getRawObject().name
+										: def.getRawObject().namePlural));
 			}
 
 			// Check
@@ -382,11 +489,25 @@ public class InventoryUtils {
 				// Not enough gems
 				InventoryUpdateResponseData fail = new InventoryUpdateResponseData();
 				fail.success = false;
+
+				// Log
+				LogManager.getLogger("ItemManager").info("Player " + save.getUsername() + " (ID " + save.getSaveID()
+						+ ")" + " failed to purchase items (" + itemStr + ") as they did not have enough gems (needed "
+						+ costGemsTotal + " but had " + currencyUpdate.gemCount + ")");
+
+				// Return
 				return fail;
 			} else if (costCoinsTotal > currencyUpdate.coinCount) {
 				// Not enough coins
 				InventoryUpdateResponseData fail = new InventoryUpdateResponseData();
 				fail.success = false;
+
+				// Log
+				LogManager.getLogger("ItemManager").info("Player " + save.getUsername() + " (ID " + save.getSaveID()
+						+ ")" + " failed to purchase items (" + itemStr + ") as they did not have enough coins (needed "
+						+ costGemsTotal + " but had " + currencyUpdate.coinCount + ")");
+
+				// Return
 				return fail;
 			}
 
@@ -467,6 +588,22 @@ public class InventoryUtils {
 						return true;
 					}, null);
 
+			// Check
+			if (resp.success) {
+				// Log
+				int count = 0;
+				for (ItemRedemptionInfo req : items) {
+					if (req.quantity > 0)
+						count += req.quantity;
+				}
+				LogManager.getLogger("ItemManager").info("Player " + save.getUsername() + " (ID " + save.getSaveID()
+						+ ")" + " successfully purchased " + count + " items (" + itemStr + ")");
+			} else {
+				// Log
+				LogManager.getLogger("ItemManager").info("Player " + save.getUsername() + " (ID " + save.getSaveID()
+						+ ")" + " failed to purchase items (" + itemStr + ") as it was aborted by server/module code");
+			}
+
 			// Save
 			if (currencyUpdate.gemCount != currentG) {
 				resp.currencyUpdate = currencyUpdate;
@@ -514,7 +651,8 @@ public class InventoryUtils {
 			AccountSaveContainer save, boolean openMysteryBoxes, ArrayList<ItemUpdateBlock> itemLst,
 			ArrayList<PrizeItemInfo> prizeLst, CurrencyUpdateBlock currencyUpdate, PrizeItemInfo prizeInfo,
 			BiFunction<ItemInfo, Integer, Boolean> itemRedemptionValidationCall,
-			BiFunction<ItemInfo, Integer, Boolean> itemRedemptionCall, Consumer<ItemInfo> innerItemRedemptionCall) {
+			BiFunction<ItemInfo, Integer, Boolean> itemRedemptionCall,
+			BiConsumer<ItemInfo, Integer> innerItemRedemptionCall) {
 		// Verify items
 		for (ItemRedemptionInfo req : items) {
 			// Check item def
@@ -572,7 +710,7 @@ public class InventoryUtils {
 
 				// Call
 				if (innerItemRedemptionCall != null)
-					innerItemRedemptionCall.accept(itm);
+					innerItemRedemptionCall.accept(itm, req.quantity);
 			}
 		}
 

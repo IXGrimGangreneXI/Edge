@@ -921,6 +921,7 @@ public class AchievementManagerImpl extends AchievementManager {
 			// Create list
 			ArrayList<AchievementRewardData> rewards = new ArrayList<AchievementRewardData>();
 			AchievementRewardEntryBlock[] rewardData = this.rewards.get(achievementID);
+			String rewardStr = "";
 
 			// Go through rewards
 			for (AchievementRewardEntryBlock rewardDef : rewardData) {
@@ -971,7 +972,18 @@ public class AchievementManagerImpl extends AchievementManager {
 						if (userID != null)
 							reward.amount = AchievementManager.getInstance().getRank(save, userID, id)
 									.addPoints(reward.amount);
+
+						// Add to reward string
+						if (!rewardStr.isEmpty())
+							rewardStr += ", ";
+						rewardStr += reward.amount + " " + id + " points";
 					} else {
+						int totalA = 0;
+
+						// Use amount and type ID
+						// Find type ID
+						RankTypeID id = RankTypeID.getByTypeID(reward.pointTypeID);
+
 						// Add for each dragon
 						for (String dragonID : entityIDs) {
 							// Add reward if needed
@@ -981,10 +993,6 @@ public class AchievementManagerImpl extends AchievementManager {
 							// Copy reward
 							reward = reward.copy();
 
-							// Use amount and type ID
-							// Find type ID
-							RankTypeID id = RankTypeID.getByTypeID(reward.pointTypeID);
-
 							// Check
 							reward.entityID = UUID.fromString(dragonID);
 							reward.achievementID = achievementID;
@@ -993,7 +1001,13 @@ public class AchievementManagerImpl extends AchievementManager {
 							EntityRankInfo r = AchievementManager.getInstance().getRank(save, dragonID, id);
 							if (r != null)
 								reward.amount = r.addPoints(reward.amount);
+							totalA += reward.amount;
 						}
+
+						// Add to reward string
+						if (!rewardStr.isEmpty())
+							rewardStr += ", ";
+						rewardStr += totalA + " " + id + " points";
 					}
 
 					break;
@@ -1008,6 +1022,11 @@ public class AchievementManagerImpl extends AchievementManager {
 						currentC = currency.getEntry("coins").getAsInt();
 					currency.setEntry("coins", new JsonPrimitive(currentC + reward.amount));
 					reward.achievementID = achievementID;
+
+					// Add to reward string
+					if (!rewardStr.isEmpty())
+						rewardStr += ", ";
+					rewardStr += reward.amount + " coins";
 					break;
 				}
 
@@ -1021,6 +1040,11 @@ public class AchievementManagerImpl extends AchievementManager {
 						currentG = currencyAccWide.getEntry("gems").getAsInt();
 					currencyAccWide.setEntry("gems", new JsonPrimitive(currentG + reward.amount));
 					reward.achievementID = achievementID;
+
+					// Add to reward string
+					if (!rewardStr.isEmpty())
+						rewardStr += ", ";
+					rewardStr += reward.amount + " gems";
 					break;
 				}
 
@@ -1055,6 +1079,12 @@ public class AchievementManagerImpl extends AchievementManager {
 
 					// Set block
 					reward.rewardItem = block;
+
+					// Add to reward string
+					if (!rewardStr.isEmpty())
+						rewardStr += ", ";
+					rewardStr += reward.amount + " "
+							+ (reward.amount == 1 ? def.getRawObject().name : def.getRawObject().namePlural);
 					break;
 				}
 
@@ -1065,6 +1095,9 @@ public class AchievementManagerImpl extends AchievementManager {
 			}
 
 			// Return
+			logger.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")"
+					+ " received rewards of achievement " + achievementID + ", gave " + rewards.size() + " rewards. ("
+					+ rewardStr + ")");
 			return rewards.toArray(t -> new AchievementRewardData[t]);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -1076,6 +1109,8 @@ public class AchievementManagerImpl extends AchievementManager {
 		try {
 			AccountDataContainer data = save.getSaveData().getChildContainer("achievements-v1");
 			data.setEntry("unlocked-" + achievementID, new JsonPrimitive(true));
+			logger.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")" + " unlocked achievement "
+					+ achievementID);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

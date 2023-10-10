@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -67,6 +68,7 @@ public class AchievementRewardDataConverter {
 		}
 
 		// Load all data
+		ArrayList<Integer> stableQuestRewards = new ArrayList<Integer>();
 		for (int i = 1; i < args.length; i++) {
 			runForFiles(file -> {
 				// Check file
@@ -89,25 +91,31 @@ public class AchievementRewardDataConverter {
 								// Populate with existing data
 								def.achievementID = data.winAchievementID;
 								LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock> rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
-								if (def.rewards != null) {
-									for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
-										rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
-									}
-								}
+
+								// Add to rewards if needed
+								boolean allowMultipleOverride = false;
+								if (stableQuestRewards.contains(def.achievementID)) {
+									allowMultipleOverride = true;
+								} else
+									stableQuestRewards.add(def.achievementID);
 
 								// Import
 								for (StableQuestRewardBlock reward : data.winRewards) {
 									// Create or load entry
 									AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
-											.get(reward.rewardID + "-" + reward.pointTypeID);
+											.get(reward.itemID + "-" + reward.pointTypeID);
 									if (entry == null) {
 										// Create
 										entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
 										entry.rewardID = reward.rewardID;
 										entry.pointTypeID = reward.pointTypeID;
 										entry.itemID = reward.itemID;
-										rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+										rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, entry);
 									}
+
+									// Check
+									if (allowMultipleOverride)
+										entry.allowMultiple = true;
 
 									// Compute minimal and maximum values
 									if (reward.amount < entry.minAmount || entry.minAmount == 0)
@@ -125,6 +133,10 @@ public class AchievementRewardDataConverter {
 
 								// Generate victory rewards for non-default achievements
 								for (StableQuestDragonAchievementBlock ach : data.winAchievements) {
+									if (ach.achievementID == data.loseAchievementID
+											|| ach.achievementID == data.winAchievementID)
+										continue;
+
 									// Load or create def
 									def = rewards.get(ach.achievementID);
 									if (def == null)
@@ -133,25 +145,31 @@ public class AchievementRewardDataConverter {
 									// Populate with existing data
 									def.achievementID = ach.achievementID;
 									rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
-									if (def.rewards != null) {
-										for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
-											rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
-										}
-									}
+
+									// Add to rewards if needed
+									allowMultipleOverride = false;
+									if (stableQuestRewards.contains(def.achievementID)) {
+										allowMultipleOverride = true;
+									} else
+										stableQuestRewards.add(def.achievementID);
 
 									// Copy default achievements
 									for (StableQuestRewardBlock reward : data.winRewards) {
 										// Create or load entry
 										AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
-												.get(reward.rewardID + "-" + reward.pointTypeID);
+												.get(reward.itemID + "-" + reward.pointTypeID);
 										if (entry == null) {
 											// Create
 											entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
 											entry.rewardID = reward.rewardID;
 											entry.pointTypeID = reward.pointTypeID;
 											entry.itemID = reward.itemID;
-											rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+											rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, entry);
 										}
+
+										// Check
+										if (allowMultipleOverride)
+											entry.allowMultiple = true;
 
 										// Compute minimal and maximum values
 										int am = reward.amount;
@@ -181,25 +199,31 @@ public class AchievementRewardDataConverter {
 								// Populate with existing data
 								def.achievementID = data.loseAchievementID;
 								rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
-								if (def.rewards != null) {
-									for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
-										rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
-									}
-								}
+
+								// Add to rewards if needed
+								allowMultipleOverride = false;
+								if (stableQuestRewards.contains(def.achievementID)) {
+									allowMultipleOverride = true;
+								} else
+									stableQuestRewards.add(def.achievementID);
 
 								// Import
 								for (StableQuestRewardBlock reward : data.loseRewards) {
 									// Create or load entry
 									AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
-											.get(reward.rewardID + "-" + reward.pointTypeID);
+											.get(reward.itemID + "-" + reward.pointTypeID);
 									if (entry == null) {
 										// Create
 										entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
 										entry.rewardID = reward.rewardID;
 										entry.pointTypeID = reward.pointTypeID;
 										entry.itemID = reward.itemID;
-										rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+										rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, entry);
 									}
+
+									// Check
+									if (allowMultipleOverride)
+										entry.allowMultiple = true;
 
 									// Compute minimal and maximum values
 									if (reward.amount < entry.minAmount || entry.minAmount == 0)
@@ -217,6 +241,10 @@ public class AchievementRewardDataConverter {
 
 								// Generate defeat rewards for non-default achievements
 								for (StableQuestDragonAchievementBlock ach : data.loseAchievements) {
+									if (ach.achievementID == data.loseAchievementID
+											|| ach.achievementID == data.winAchievementID)
+										continue;
+
 									// Load or create def
 									def = rewards.get(ach.achievementID);
 									if (def == null)
@@ -225,25 +253,31 @@ public class AchievementRewardDataConverter {
 									// Populate with existing data
 									def.achievementID = ach.achievementID;
 									rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
-									if (def.rewards != null) {
-										for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
-											rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
-										}
-									}
+
+									// Add to rewards if needed
+									allowMultipleOverride = false;
+									if (stableQuestRewards.contains(def.achievementID)) {
+										allowMultipleOverride = true;
+									} else
+										stableQuestRewards.add(def.achievementID);
 
 									// Copy default achievements
 									for (StableQuestRewardBlock reward : data.loseRewards) {
 										// Create or load entry
 										AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
-												.get(reward.rewardID + "-" + reward.pointTypeID);
+												.get(reward.itemID + "-" + reward.pointTypeID);
 										if (entry == null) {
 											// Create
 											entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
 											entry.rewardID = reward.rewardID;
 											entry.pointTypeID = reward.pointTypeID;
 											entry.itemID = reward.itemID;
-											rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+											rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, entry);
 										}
+
+										// Check
+										if (allowMultipleOverride)
+											entry.allowMultiple = true;
 
 										// Compute minimal and maximum values
 										int am = reward.amount;
@@ -392,7 +426,7 @@ public class AchievementRewardDataConverter {
 										LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock> rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
 										if (def.rewards != null) {
 											for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
-												rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
+												rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, reward);
 											}
 										}
 
@@ -401,7 +435,7 @@ public class AchievementRewardDataConverter {
 											for (AchievementRewardData reward : rewardData.rewards) {
 												// Create or load entry
 												AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
-														.get(reward.rewardID + "-" + reward.pointTypeID);
+														.get(reward.itemID + "-" + reward.pointTypeID);
 												if (entry == null) {
 													// Create
 													entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
@@ -409,13 +443,14 @@ public class AchievementRewardDataConverter {
 													entry.pointTypeID = reward.pointTypeID;
 													entry.itemID = reward.itemID;
 													entry.allowMultiple = reward.allowMultiple;
-													rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID,
-															entry);
+													rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, entry);
 												}
 
 												// Apply
+												// Setting to true to prevent gameplay XP from breaking
+												// This will be overridden by quests
 												if (!entry.allowMultiple)
-													entry.allowMultiple = reward.allowMultiple;
+													entry.allowMultiple = true;
 
 												// Compute minimal and maximum values
 												int am = reward.amount;
@@ -513,7 +548,7 @@ public class AchievementRewardDataConverter {
 //												LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock> rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
 //												if (def.rewards != null) {
 //													for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
-//														rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID,
+//														rewardEntries.put(reward.itemID + "-" + reward.pointTypeID,
 //																reward);
 //													}
 //												}
@@ -522,7 +557,7 @@ public class AchievementRewardDataConverter {
 //												for (AchievementRewardData reward : data.rewards) {
 //													// Create or load entry
 //													AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
-//															.get(reward.rewardID + "-" + reward.pointTypeID);
+//															.get(reward.itemID + "-" + reward.pointTypeID);
 //													if (entry == null) {
 //														// Create
 //														entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
@@ -530,13 +565,15 @@ public class AchievementRewardDataConverter {
 //														entry.pointTypeID = reward.pointTypeID;
 //														entry.itemID = reward.itemID;
 //														entry.allowMultiple = reward.allowMultiple;
-//														rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID,
+//														rewardEntries.put(reward.itemID + "-" + reward.pointTypeID,
 //																entry);
 //													}
 //
 //													// Apply
+//													// Setting to true to prevent gameplay XP from breaking
+//													// This will be overridden by quests
 //													if (!entry.allowMultiple)
-//														entry.allowMultiple = reward.allowMultiple;
+//														entry.allowMultiple = true;
 //
 //													// Compute minimal and maximum values
 //													int am = reward.amount;
@@ -596,7 +633,7 @@ public class AchievementRewardDataConverter {
 						LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock> rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
 						if (def.rewards != null) {
 							for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
-								rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
+								rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, reward);
 							}
 						}
 
@@ -604,7 +641,7 @@ public class AchievementRewardDataConverter {
 						for (AchievementRewardData reward : state.rewards) {
 							// Create or load entry
 							AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
-									.get(reward.rewardID + "-" + reward.pointTypeID);
+									.get(reward.itemID + "-" + reward.pointTypeID);
 							if (entry == null) {
 								// Create
 								entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
@@ -612,7 +649,7 @@ public class AchievementRewardDataConverter {
 								entry.pointTypeID = reward.pointTypeID;
 								entry.itemID = reward.itemID;
 								entry.allowMultiple = true;
-								rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+								rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, entry);
 							}
 
 							// Apply
@@ -660,7 +697,7 @@ public class AchievementRewardDataConverter {
 					LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock> rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
 					if (def.rewards != null) {
 						for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
-							rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
+							rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, reward);
 						}
 					}
 
@@ -668,7 +705,7 @@ public class AchievementRewardDataConverter {
 					for (AchievementRewardData reward : qDef.acceptanceRewards) {
 						// Create or load entry
 						AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
-								.get(reward.rewardID + "-" + reward.pointTypeID);
+								.get(reward.itemID + "-" + reward.pointTypeID);
 						if (entry == null) {
 							// Create
 							entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
@@ -676,12 +713,11 @@ public class AchievementRewardDataConverter {
 							entry.pointTypeID = reward.pointTypeID;
 							entry.itemID = reward.itemID;
 							entry.allowMultiple = reward.allowMultiple;
-							rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+							rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, entry);
 						}
 
 						// Apply
-						if (!entry.allowMultiple)
-							entry.allowMultiple = reward.allowMultiple;
+						entry.allowMultiple = reward.allowMultiple;
 
 						// Compute minimal and maximum values
 						entry.minAmount = reward.minAmount;
@@ -710,7 +746,7 @@ public class AchievementRewardDataConverter {
 					LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock> rewardEntries = new LinkedHashMap<String, AchievementRewardDefData.AchievementRewardEntryBlock>();
 					if (def.rewards != null) {
 						for (AchievementRewardDefData.AchievementRewardEntryBlock reward : def.rewards) {
-							rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, reward);
+							rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, reward);
 						}
 					}
 
@@ -718,7 +754,7 @@ public class AchievementRewardDataConverter {
 					for (AchievementRewardData reward : qDef.rewards) {
 						// Create or load entry
 						AchievementRewardDefData.AchievementRewardEntryBlock entry = rewardEntries
-								.get(reward.rewardID + "-" + reward.pointTypeID);
+								.get(reward.itemID + "-" + reward.pointTypeID);
 						if (entry == null) {
 							// Create
 							entry = new AchievementRewardDefData.AchievementRewardEntryBlock();
@@ -726,8 +762,11 @@ public class AchievementRewardDataConverter {
 							entry.pointTypeID = reward.pointTypeID;
 							entry.itemID = reward.itemID;
 							entry.allowMultiple = reward.allowMultiple;
-							rewardEntries.put(reward.rewardID + "-" + reward.pointTypeID, entry);
+							rewardEntries.put(reward.itemID + "-" + reward.pointTypeID, entry);
 						}
+
+						// Apply
+						entry.allowMultiple = reward.allowMultiple;
 
 						// Compute minimal and maximum values
 						entry.minAmount = reward.minAmount;

@@ -61,6 +61,7 @@ import org.asf.edge.modules.eventbus.EventListener;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -987,6 +988,23 @@ public class QuestManagerImpl extends QuestManager {
 				throw new RuntimeException(e);
 			}
 
+			// Compute quest name
+			String questName = def.name;
+			if (def.staticData != null) {
+				try {
+					XmlMapper mapper = new XmlMapper();
+					ObjectNode nd = mapper.readValue(def.staticData, ObjectNode.class);
+					if (nd.has("Title")) {
+						questName = nd.get("Title").get("Text").asText();
+					}
+				} catch (Exception e) {
+				}
+			}
+
+			// Quest accept
+			logger.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ") accepted quest " + questName
+					+ " (ID " + def.id + ")");
+
 			// Acceptance rewards
 			if (!ExperimentManager.getInstance().isExperimentEnabled(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)) {
 				try {
@@ -995,7 +1013,8 @@ public class QuestManagerImpl extends QuestManager {
 					throw new RuntimeException(e);
 				}
 			} else {
-				AchievementManager.getInstance().unlockAchievement(save, def.acceptanceAchievementID);
+				if (def.acceptanceAchievementID != 0)
+					AchievementManager.getInstance().unlockAchievement(save, def.acceptanceAchievementID);
 			}
 
 			// Dispatch event
@@ -1095,8 +1114,110 @@ public class QuestManagerImpl extends QuestManager {
 			EventBus.getInstance()
 					.dispatchEvent(new QuestTaskProgressionEvent(this, task, payloadStr, save, QuestManagerImpl.this));
 
+			// Compute task name
+			String name = task.name;
+			if (task.staticData != null) {
+				try {
+					XmlMapper mapper = new XmlMapper();
+					ObjectNode nd = mapper.readValue(task.staticData, ObjectNode.class);
+					if (nd.has("Title")) {
+						name = nd.get("Title").get("Text").asText();
+					}
+				} catch (Exception e) {
+				}
+			}
+
+			// Compute quest name
+			String questName = mission.name;
+			if (mission.staticData != null) {
+				try {
+					XmlMapper mapper = new XmlMapper();
+					ObjectNode nd = mapper.readValue(mission.staticData, ObjectNode.class);
+					if (nd.has("Title")) {
+						questName = nd.get("Title").get("Text").asText();
+					}
+				} catch (Exception e) {
+				}
+			}
+
+			// Compute progress
+			int questProgPercentage = 0;
+			if (mission.missionRules != null && mission.missionRules.criteria != null
+					&& mission.missionRules.criteria.rules != null && mission.missionRules.criteria.rules.length != 0) {
+				// Read minimal rules
+				int minCompletedRules = mission.missionRules.criteria.min;
+				if (mission.missionRules.criteria.type.equals("all"))
+					minCompletedRules = mission.missionRules.criteria.rules.length;
+
+				// Go through rules
+				int completedRules = 0;
+				for (MissionData.MissionRulesBlock.CriteriaBlock.RuleInfoBlock rule : mission.missionRules.criteria.rules) {
+					// Handle type
+					switch (rule.type) {
+
+					case 1: {
+						// Task
+
+						// Find mission
+						MissionData questD = mission;
+						if (rule.missionID != mission.id) {
+							// Find quest
+							UserQuestInfo uQuest = QuestManagerImpl.this.getUserQuest(save, rule.missionID);
+							if (uQuest == null)
+								break;
+							questD = uQuest.getData();
+						}
+
+						// Find task
+						if (questD.tasks != null) {
+							Optional<MissionData.TaskBlock> tsk = Stream.of(questD.tasks).filter(t -> t.id == rule.id)
+									.findFirst();
+							if (tsk.isPresent()) {
+								// Check
+								if (tsk.get().completed > 0)
+									completedRules++;
+							}
+						}
+
+						break;
+					}
+
+					case 2: {
+						// Mission
+
+						// Find mission
+						MissionData tMission = QuestManagerImpl.this.getQuestDef(rule.id);
+						if (tMission != null) {
+							// Check completion
+							if (QuestManagerImpl.this.getUserQuest(save, rule.id).isCompleted())
+								completedRules++;
+						}
+
+						break;
+					}
+
+					default: {
+						// Unknown
+						completedRules++;
+						break;
+					}
+
+					}
+				}
+
+				// Compute percentage
+				questProgPercentage = (int) ((100d / (double) minCompletedRules) * completedRules);
+			} else {
+				questProgPercentage = 100;
+			}
+
 			// Update quests if needed
 			if (completed) {
+				// Task completion
+				logger.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ") completed task " + name
+						+ " (ID " + task.id + ")" + " of quest " + questName + " (ID " + mission.id
+						+ "), quest progress: " + questProgPercentage + "%");
+
 				// Dispatch event
 				EventBus.getInstance().dispatchEvent(
 						new QuestTaskCompletionEvent(this, task, payloadStr, save, QuestManagerImpl.this));
@@ -1123,8 +1244,9 @@ public class QuestManagerImpl extends QuestManager {
 						i.rewards = RewardUtils.giveRewardsTo(save, missionD.rewards, wasCompleted, invContainer);
 					} else {
 						// Unlock achievement and give rewards
-						i.rewards = AchievementManager.getInstance().unlockAchievement(save, missionD.achievementID,
-								wasCompleted);
+						if (missionD.achievementID != 0)
+							i.rewards = AchievementManager.getInstance().unlockAchievement(save, missionD.achievementID,
+									wasCompleted);
 					}
 
 					// Add object
@@ -1138,6 +1260,11 @@ public class QuestManagerImpl extends QuestManager {
 						recomputeQuests(save);
 					});
 				}
+			} else {
+				// Task progression
+				logger.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ") progressed task " + name
+						+ " (ID " + task.id + ")" + " of quest " + questName + " (ID " + mission.id
+						+ "), quest progress: " + questProgPercentage + "%");
 			}
 
 			return resp;
@@ -1228,6 +1355,26 @@ public class QuestManagerImpl extends QuestManager {
 			// Update status
 			questInfoData.addProperty("started", true);
 
+			// Compute quest name
+			String questName = def.name;
+			if (def.staticData != null) {
+				try {
+					XmlMapper mapper = new XmlMapper();
+					ObjectNode nd = mapper.readValue(def.staticData, ObjectNode.class);
+					if (nd.has("Title")) {
+						questName = nd.get("Title").get("Text").asText();
+					}
+				} catch (Exception e) {
+				}
+			}
+
+			// Quest start
+			logger.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ") started quest " + questName
+					+ " (ID " + def.id + ")");
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new QuestStartedEvent(this, save, QuestManagerImpl.this));
+
 			try {
 				// Save
 				data.setEntry("quest-" + def.id, questInfoData);
@@ -1238,9 +1385,6 @@ public class QuestManagerImpl extends QuestManager {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-
-			// Dispatch event
-			EventBus.getInstance().dispatchEvent(new QuestStartedEvent(this, save, QuestManagerImpl.this));
 
 			// Recompute active quests
 			AsyncTaskManager.runAsync(() -> {
@@ -1256,6 +1400,26 @@ public class QuestManagerImpl extends QuestManager {
 			questInfoData.addProperty("completed", true);
 			questInfoData.addProperty("accepted", false);
 			questInfoData.addProperty("started", false);
+
+			// Compute quest name
+			String questName = def.name;
+			if (def.staticData != null) {
+				try {
+					XmlMapper mapper = new XmlMapper();
+					ObjectNode nd = mapper.readValue(def.staticData, ObjectNode.class);
+					if (nd.has("Title")) {
+						questName = nd.get("Title").get("Text").asText();
+					}
+				} catch (Exception e) {
+				}
+			}
+
+			// Quest completed
+			logger.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ") completed quest " + questName
+					+ " (ID " + def.id + ")");
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new QuestCompletedEvent(this, save, QuestManagerImpl.this));
 
 			try {
 				// Save
@@ -1285,9 +1449,6 @@ public class QuestManagerImpl extends QuestManager {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-
-			// Dispatch event
-			EventBus.getInstance().dispatchEvent(new QuestCompletedEvent(this, save, QuestManagerImpl.this));
 
 			// Recompute active quests
 			AsyncTaskManager.runAsync(() -> {
