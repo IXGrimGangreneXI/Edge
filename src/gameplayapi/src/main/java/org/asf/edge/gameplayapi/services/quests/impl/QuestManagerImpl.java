@@ -44,6 +44,7 @@ import org.asf.edge.gameplayapi.events.quests.QuestUnlockEvent;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.util.InventoryUtils;
 import org.asf.edge.gameplayapi.util.RewardUtils;
+import org.asf.edge.common.xmls.achievements.AchievementRewardData;
 import org.asf.edge.common.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
@@ -1247,6 +1248,8 @@ public class QuestManagerImpl extends QuestManager {
 						if (missionD.achievementID != 0)
 							i.rewards = AchievementManager.getInstance().unlockAchievement(save, missionD.achievementID,
 									wasCompleted);
+						else
+							i.rewards = new AchievementRewardData[0];
 					}
 
 					// Add object

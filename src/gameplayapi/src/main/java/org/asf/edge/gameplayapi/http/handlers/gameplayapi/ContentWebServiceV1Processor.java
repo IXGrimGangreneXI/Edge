@@ -49,6 +49,7 @@ import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.xmls.achievements.AchievementRewardData;
 import org.asf.edge.common.xmls.data.EmptyKeyValuePairSetData;
 import org.asf.edge.common.xmls.data.KeyValuePairData;
 import org.asf.edge.common.xmls.data.KeyValuePairSetData;
@@ -2552,8 +2553,12 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		// Apply rewards
 		if (!ExperimentManager.getInstance().isExperimentEnabled(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT))
 			resp.rewards = RewardUtils.giveRewardsTo(save, state.rewards, false, 1);
-		else
-			resp.rewards = AchievementManager.getInstance().unlockAchievement(save, state.achievementID);
+		else {
+			if (state.achievementID != 0)
+				resp.rewards = AchievementManager.getInstance().unlockAchievement(save, state.achievementID);
+			else
+				resp.rewards = new AchievementRewardData[0];
+		}
 
 		// Create state object
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");

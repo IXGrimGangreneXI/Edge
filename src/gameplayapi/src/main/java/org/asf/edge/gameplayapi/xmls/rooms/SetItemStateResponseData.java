@@ -24,5 +24,5 @@ public class SetItemStateResponseData {
 
 	@JsonProperty("RS")
 	@JacksonXmlElementWrapper(useWrapping = false)
-	public AchievementRewardData[] rewards;
+	public AchievementRewardData[] rewards = new AchievementRewardData[0];
 }
