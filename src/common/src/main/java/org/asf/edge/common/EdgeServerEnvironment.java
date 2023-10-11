@@ -20,7 +20,7 @@ import com.google.gson.JsonParser;
  *
  */
 public class EdgeServerEnvironment {
-	private static final String EDGE_VERSION = "a1.5";
+	private static final String EDGE_VERSION = "a1.5.1";
 
 	private static boolean logInited;
 	private static boolean serverIDInited;

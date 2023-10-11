@@ -75,11 +75,11 @@ public abstract class AbstractItemRedemptionHandler {
 		}
 
 		public static RedemptionResult failure() {
-			return new RedemptionResult(false, null);
+			return new RedemptionResult(false, new ItemUpdateBlock[0]);
 		}
 
 		public static RedemptionResult success() {
-			return new RedemptionResult(true, null);
+			return new RedemptionResult(true, new ItemUpdateBlock[0]);
 		}
 
 		public static RedemptionResult failure(ItemUpdateBlock... updates) {
