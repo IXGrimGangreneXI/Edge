@@ -427,7 +427,11 @@ public class RoomInfo {
 			}
 
 			// Create SFS user
-			addSfsUser(new SfsUser(player.getClient().getSessionNumericID(), player.getSave().getSaveID(), priv));
+			addSfsUser(new SfsUser(player.getClient().getSessionNumericID(), player.getSave().getSaveID(), priv) {
+				{
+					setObject(PlayerInfo.class, player);
+				}
+			});
 
 			// Dispatch event
 			EventBus.getInstance().dispatchEvent(new PlayerRoomJoinEvent(player, this));
@@ -507,7 +511,11 @@ public class RoomInfo {
 			}
 
 			// Create SFS user
-			addSfsUser(new SfsUser(player.getClient().getSessionNumericID(), player.getSave().getSaveID(), priv, 0));
+			addSfsUser(new SfsUser(player.getClient().getSessionNumericID(), player.getSave().getSaveID(), priv, 0) {
+				{
+					setObject(PlayerInfo.class, player);
+				}
+			});
 
 			// Dispatch event
 			EventBus.getInstance().dispatchEvent(new PlayerRoomJoinSpectatorEvent(player, this));

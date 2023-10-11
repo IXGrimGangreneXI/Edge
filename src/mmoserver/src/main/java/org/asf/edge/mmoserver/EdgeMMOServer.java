@@ -11,6 +11,8 @@ import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.mmoserver.events.clients.ClientConnectedEvent;
 import org.asf.edge.mmoserver.events.clients.ClientDisconnectedEvent;
+import org.asf.edge.mmoserver.events.players.PlayerRoomJoinEvent;
+import org.asf.edge.mmoserver.events.players.PlayerRoomJoinSpectatorEvent;
 import org.asf.edge.mmoserver.events.server.MMOServerSetupDiscoveryZonesEvent;
 import org.asf.edge.mmoserver.events.server.MMOServerSetupEvent;
 import org.asf.edge.mmoserver.events.server.MMOServerStartupEvent;
@@ -19,6 +21,8 @@ import org.asf.edge.mmoserver.networking.SmartfoxServer;
 import org.asf.edge.mmoserver.networking.channels.extensions.RoomChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.ServerTimeChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.UserVarsChannel;
+import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundRefreshUserVarsMessage;
+import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundSetUserVarsMessage;
 import org.asf.edge.mmoserver.networking.impl.BitswarmSmartfoxServer;
 import org.asf.edge.mmoserver.services.ZoneManager;
 import org.asf.edge.mmoserver.services.impl.ZoneManagerImpl;
@@ -42,7 +46,10 @@ import org.asf.edge.common.util.HttpUpgradeUtil;
 import org.asf.edge.common.util.SimpleBinaryMessageClient;
 import org.asf.edge.mmoserver.config.MMOServerConfig;
 import org.asf.edge.mmoserver.entities.player.PlayerInfo;
+import org.asf.edge.mmoserver.entities.smartfox.RoomInfo;
 import org.asf.edge.mmoserver.entities.smartfox.RoomVariable;
+import org.asf.edge.mmoserver.entities.smartfox.SfsUser;
+import org.asf.edge.mmoserver.entities.smartfox.UserVariable;
 
 /**
  * 
@@ -205,6 +212,74 @@ public class EdgeMMOServer implements IBaseServer {
 		EventBus.getInstance().addEventHandler(DynamicRoomVariableSetupEvent.class, ev -> {
 			// Dynamic variables
 			setupDynamicVar(ev.getDynamicAssignmentKey(), ev.getVariable());
+		});
+		EventBus.getInstance().addEventHandler(PlayerRoomJoinEvent.class, ev -> {
+			RoomInfo room = ev.getRoom();
+			PlayerInfo plr = ev.getPlayer();
+
+			// Prepare update
+			ClientboundSetUserVarsMessage update = new ClientboundSetUserVarsMessage();
+
+			// Go through users in room
+			for (SfsUser usr : room.getSfsUserObjects()) {
+				ClientboundSetUserVarsMessage.UserVarUpdate u = new ClientboundSetUserVarsMessage.UserVarUpdate();
+				u.userID = usr.getUserNumericID();
+				for (UserVariable var : usr.getVariables()) {
+					u.vars.put(var.getName(), var.getValue());
+				}
+				update.varUpdates.add(u);
+			}
+
+			// Send update
+			try {
+				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(update);
+			} catch (IOException e) {
+			}
+
+			// Go through users in room
+			for (SfsUser usr : room.getSfsUserObjects()) {
+				// Send refresh
+				try {
+					ClientboundRefreshUserVarsMessage ref = new ClientboundRefreshUserVarsMessage();
+					ref.userID = usr.getUserNumericID();
+					plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(ref);
+				} catch (IOException e) {
+				}
+			}
+		});
+		EventBus.getInstance().addEventHandler(PlayerRoomJoinSpectatorEvent.class, ev -> {
+			RoomInfo room = ev.getRoom();
+			PlayerInfo plr = ev.getPlayer();
+
+			// Prepare update
+			ClientboundSetUserVarsMessage update = new ClientboundSetUserVarsMessage();
+
+			// Go through users in room
+			for (SfsUser usr : room.getSfsUserObjects()) {
+				ClientboundSetUserVarsMessage.UserVarUpdate u = new ClientboundSetUserVarsMessage.UserVarUpdate();
+				u.userID = usr.getUserNumericID();
+				for (UserVariable var : usr.getVariables()) {
+					u.vars.put(var.getName(), var.getValue());
+				}
+				update.varUpdates.add(u);
+			}
+
+			// Send update
+			try {
+				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(update);
+			} catch (IOException e) {
+			}
+
+			// Go through users in room
+			for (SfsUser usr : room.getSfsUserObjects()) {
+				// Send refresh
+				try {
+					ClientboundRefreshUserVarsMessage ref = new ClientboundRefreshUserVarsMessage();
+					ref.userID = usr.getUserNumericID();
+					plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(ref);
+				} catch (IOException e) {
+				}
+			}
 		});
 
 		// Select zone manager

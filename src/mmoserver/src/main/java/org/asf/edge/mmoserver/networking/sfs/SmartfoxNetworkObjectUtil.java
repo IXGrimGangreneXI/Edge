@@ -533,7 +533,7 @@ public class SmartfoxNetworkObjectUtil {
 				} else if (v instanceof Object[])
 					t = 17;
 				else if (v instanceof Map) {
-					Map<String, Object> mp = (Map<String, Object>) value;
+					Map<String, Object> mp = (Map<String, Object>) v;
 					if (!mp.containsKey("$C") || !mp.containsKey("$F"))
 						t = 18;
 					else

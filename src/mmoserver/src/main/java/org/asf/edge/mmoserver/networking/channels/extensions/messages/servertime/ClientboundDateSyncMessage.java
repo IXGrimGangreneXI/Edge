@@ -3,28 +3,28 @@ package org.asf.edge.mmoserver.networking.channels.extensions.messages.servertim
 import org.asf.edge.mmoserver.networking.packets.ISmartfoxExtensionMessage;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPayload;
 
-public class ClientboundTimeSyncMessage implements ISmartfoxExtensionMessage {
+public class ClientboundDateSyncMessage implements ISmartfoxExtensionMessage {
 
-	public long timestamp;
+	public String dateStr;
 
 	@Override
 	public ISmartfoxExtensionMessage createInstance() {
-		return new ClientboundTimeSyncMessage();
+		return new ClientboundDateSyncMessage();
 	}
 
 	@Override
 	public String messageID() {
-		return "PNG";
+		return "DT";
 	}
 
 	@Override
 	public void parse(SmartfoxPayload payload) {
-		timestamp = Long.parseLong(payload.getObjectArray("arr")[1].toString());
+		dateStr = payload.getObjectArray("arr")[1].toString();
 	}
 
 	@Override
 	public void build(SmartfoxPayload payload) {
-		payload.setObjectArray("arr", new Object[] { "PNG", Long.toString(timestamp) });
+		payload.setObjectArray("arr", new Object[] { "DT", dateStr });
 	}
 
 }
