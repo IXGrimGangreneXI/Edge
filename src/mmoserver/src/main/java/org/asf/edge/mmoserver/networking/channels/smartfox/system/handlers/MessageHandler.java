@@ -65,9 +65,9 @@ public class MessageHandler implements IPacketHandler<ServerboundMessagePacket> 
 
 			// Broadcast to users
 			for (SmartfoxClient cl : channel.getClient().getServer().getClients()) {
-				// Check if not the source player
+				// Check player
 				PlayerInfo plr2 = cl.getObject(PlayerInfo.class);
-				if (plr2 != null && cl != channel.getClient()) {
+				if (plr2 != null) {
 					// Check room
 					if (Stream.of(plr2.getJoinedRooms()).anyMatch(t -> t.getRoomID() == packet.roomID)
 							|| Stream.of(plr2.getSpectatingRooms()).anyMatch(t -> t.getRoomID() == packet.roomID)) {
