@@ -1,6 +1,6 @@
 package org.asf.edge.gameplayapi.xmls.dragons;
 
-import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
+import org.asf.edge.common.xmls.inventories.InventoryUpdateResponseData;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

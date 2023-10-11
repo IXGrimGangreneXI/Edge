@@ -49,6 +49,7 @@ import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.util.inventory.ItemRedemptionInfo;
 import org.asf.edge.common.xmls.achievements.AchievementRewardData;
 import org.asf.edge.common.xmls.data.EmptyKeyValuePairSetData;
 import org.asf.edge.common.xmls.data.KeyValuePairData;
@@ -67,17 +68,16 @@ import org.asf.edge.gameplayapi.entities.rooms.PlayerRoomInfo;
 import org.asf.edge.gameplayapi.entities.rooms.RoomItemInfo;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.services.rooms.PlayerRoomManager;
-import org.asf.edge.gameplayapi.util.InventoryUtils;
-import org.asf.edge.gameplayapi.util.RewardUtils;
-import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
+import org.asf.edge.common.util.InventoryUtil;
+import org.asf.edge.common.util.RewardUtil;
 import org.asf.edge.gameplayapi.xmls.dragons.DragonListData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
-import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
+import org.asf.edge.common.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.items.ItemRedeemRequestData;
 import org.asf.edge.gameplayapi.xmls.minigamedata.GameDataSummaryData;
-import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
-import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.CurrencyUpdateBlock;
-import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
+import org.asf.edge.common.xmls.inventories.InventoryUpdateResponseData;
+import org.asf.edge.common.xmls.inventories.InventoryUpdateResponseData.CurrencyUpdateBlock;
+import org.asf.edge.common.xmls.inventories.InventoryUpdateResponseData.ItemUpdateBlock;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData.MissionRulesBlock.PrerequisiteInfoBlock;
@@ -223,7 +223,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Run request
-		InventoryUpdateResponseData response = InventoryUtils.purchaseItems(storeID,
+		InventoryUpdateResponseData response = InventoryUtil.purchaseItems(storeID,
 				items.values().toArray(t -> new ItemRedemptionInfo[t]), account, save, true);
 
 		// Swap ID if needed
@@ -486,7 +486,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			data = account.getSave(tkn.saveID).getSaveData();
 
 		// Set
-		setResponseContent("text/xml", req.generateXmlValue("CIRS", InventoryUtils.processCommonInventorySet(requests,
+		setResponseContent("text/xml", req.generateXmlValue("CIRS", InventoryUtil.processCommonInventorySet(requests,
 				data, Integer.parseInt(req.payload.get("ContainerId")))));
 	}
 
@@ -1672,7 +1672,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		rReq.quantity = 1;
 
 		// Run request
-		InventoryUpdateResponseData response = InventoryUtils.redeemItems(new ItemRedemptionInfo[] { rReq }, account,
+		InventoryUpdateResponseData response = InventoryUtil.redeemItems(new ItemRedemptionInfo[] { rReq }, account,
 				save, true);
 
 		// Check quantity
@@ -2479,7 +2479,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 						if (itm == null || itm.getQuantity() < crit.amount) {
 							// Attempt purchase
 							PlayerInventoryItem itmF = itm;
-							InventoryUpdateResponseData purchase = InventoryUtils.purchaseItems(request.storeID,
+							InventoryUpdateResponseData purchase = InventoryUtil.purchaseItems(request.storeID,
 									new ItemRedemptionInfo[] { new ItemRedemptionInfo() {
 										{
 											defID = crit.itemID;
@@ -2552,7 +2552,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Apply rewards
 		if (!ExperimentManager.getInstance().isExperimentEnabled(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT))
-			resp.rewards = RewardUtils.giveRewardsTo(save, state.rewards, false, 1);
+			resp.rewards = RewardUtil.giveRewardsTo(save, state.rewards, false, 1);
 		else {
 			if (state.achievementID != 0)
 				resp.rewards = AchievementManager.getInstance().unlockAchievement(save, state.achievementID);

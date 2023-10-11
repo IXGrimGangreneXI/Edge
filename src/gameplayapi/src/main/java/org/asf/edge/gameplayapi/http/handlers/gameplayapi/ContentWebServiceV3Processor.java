@@ -28,11 +28,11 @@ import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
-import org.asf.edge.gameplayapi.util.InventoryUtils;
+import org.asf.edge.common.util.InventoryUtil;
 import org.asf.edge.common.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateResponseData;
-import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
+import org.asf.edge.common.xmls.inventories.SetCommonInventoryRequestData;
 
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -352,7 +352,7 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 		// Handle inventory
 		if (request.commonInventoryRequests != null && request.commonInventoryRequests.length != 0) {
 			// Handle inventory request
-			resp.inventoryUpdate = InventoryUtils.processCommonInventorySet(request.commonInventoryRequests,
+			resp.inventoryUpdate = InventoryUtil.processCommonInventorySet(request.commonInventoryRequests,
 					save.getSaveData(), (request.containerID == -1 ? 1 : request.containerID));
 		}
 

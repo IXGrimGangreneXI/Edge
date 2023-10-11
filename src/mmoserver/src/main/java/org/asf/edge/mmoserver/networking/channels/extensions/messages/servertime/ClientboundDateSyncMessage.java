@@ -24,7 +24,7 @@ public class ClientboundDateSyncMessage implements ISmartfoxExtensionMessage {
 
 	@Override
 	public void build(SmartfoxPayload payload) {
-		payload.setObjectArray("arr", new Object[] { "DT", dateStr });
+		payload.setStringArray("arr", new String[] { "DT", dateStr });
 	}
 
 }

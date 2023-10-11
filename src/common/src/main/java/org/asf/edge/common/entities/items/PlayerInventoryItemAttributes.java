@@ -7,8 +7,6 @@ import java.util.TimeZone;
 import org.asf.edge.common.xmls.data.KeyValuePairData;
 import org.asf.edge.common.xmls.data.KeyValuePairSetData;
 
-import com.google.gson.JsonObject;
-
 /**
  * 
  * Player inventory item attribute data

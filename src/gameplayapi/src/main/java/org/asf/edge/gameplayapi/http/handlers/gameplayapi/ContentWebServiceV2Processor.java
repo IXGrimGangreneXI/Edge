@@ -43,12 +43,12 @@ import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.util.inventory.ItemRedemptionInfo;
 import org.asf.edge.common.xmls.items.inventory.InventoryItemEntryData;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
-import org.asf.edge.gameplayapi.util.InventoryUtils;
-import org.asf.edge.gameplayapi.util.inventory.ItemRedemptionInfo;
+import org.asf.edge.common.util.InventoryUtil;
 import org.asf.edge.gameplayapi.xmls.avatars.SetAvatarResultData;
 import org.asf.edge.gameplayapi.xmls.avatars.SetDisplayNameRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.CreatePetResponseData;
@@ -58,8 +58,8 @@ import org.asf.edge.gameplayapi.xmls.dragons.PetCreateRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateResponseData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryData;
 import org.asf.edge.gameplayapi.xmls.inventories.CommonInventoryRequestData;
-import org.asf.edge.gameplayapi.xmls.inventories.InventoryUpdateResponseData;
-import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
+import org.asf.edge.common.xmls.inventories.InventoryUpdateResponseData;
+import org.asf.edge.common.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.items.ItemPurchaseRequestData;
 import org.asf.edge.gameplayapi.xmls.minigamedata.GameDataSummaryData;
 import org.asf.edge.gameplayapi.xmls.names.DisplayNameUniqueResponseData.SuggestionResultBlock;
@@ -938,7 +938,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		// Handle inventory
 		if (request.commonInventoryRequests != null && request.commonInventoryRequests.length != 0) {
 			// Handle inventory request
-			resp.inventoryUpdate = InventoryUtils.processCommonInventorySet(request.commonInventoryRequests,
+			resp.inventoryUpdate = InventoryUtil.processCommonInventorySet(request.commonInventoryRequests,
 					save.getSaveData(), request.containerID == -1 ? 1 : request.containerID);
 		}
 
@@ -1140,7 +1140,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Run request
-		InventoryUpdateResponseData response = InventoryUtils.purchaseItems(request.storeID,
+		InventoryUpdateResponseData response = InventoryUtil.purchaseItems(request.storeID,
 				items.values().toArray(t -> new ItemRedemptionInfo[t]), account, save, !request.addBoxesAsItem);
 
 		// Swap ID if needed

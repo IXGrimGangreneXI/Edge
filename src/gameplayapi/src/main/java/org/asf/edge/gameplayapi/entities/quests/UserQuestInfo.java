@@ -2,7 +2,7 @@ package org.asf.edge.gameplayapi.entities.quests;
 
 import java.io.IOException;
 
-import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
+import org.asf.edge.common.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 import org.asf.edge.gameplayapi.xmls.quests.SetTaskStateResultData;
 

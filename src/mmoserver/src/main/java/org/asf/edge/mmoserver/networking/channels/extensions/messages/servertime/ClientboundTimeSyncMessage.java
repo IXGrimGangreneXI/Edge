@@ -24,7 +24,7 @@ public class ClientboundTimeSyncMessage implements ISmartfoxExtensionMessage {
 
 	@Override
 	public void build(SmartfoxPayload payload) {
-		payload.setObjectArray("arr", new Object[] { "PNG", Long.toString(timestamp) });
+		payload.setStringArray("arr", new String[] { "PNG", Long.toString(timestamp) });
 	}
 
 }

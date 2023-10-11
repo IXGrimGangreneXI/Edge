@@ -42,11 +42,11 @@ import org.asf.edge.gameplayapi.events.quests.QuestTaskCompletionEvent;
 import org.asf.edge.gameplayapi.events.quests.QuestTaskProgressionEvent;
 import org.asf.edge.gameplayapi.events.quests.QuestUnlockEvent;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
-import org.asf.edge.gameplayapi.util.InventoryUtils;
-import org.asf.edge.gameplayapi.util.RewardUtils;
+import org.asf.edge.common.util.InventoryUtil;
+import org.asf.edge.common.util.RewardUtil;
 import org.asf.edge.common.xmls.achievements.AchievementRewardData;
 import org.asf.edge.common.xmls.dragons.DragonData;
-import org.asf.edge.gameplayapi.xmls.inventories.SetCommonInventoryRequestData;
+import org.asf.edge.common.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData.MissionRulesBlock;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData.TaskBlock;
@@ -1009,7 +1009,7 @@ public class QuestManagerImpl extends QuestManager {
 			// Acceptance rewards
 			if (!ExperimentManager.getInstance().isExperimentEnabled(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)) {
 				try {
-					RewardUtils.addRewards(save, def.acceptanceRewards, isCompleted(), 1);
+					RewardUtil.addRewards(save, def.acceptanceRewards, isCompleted(), 1);
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
@@ -1105,7 +1105,7 @@ public class QuestManagerImpl extends QuestManager {
 
 			// Update inventories
 			if (requests != null && requests.length != 0) {
-				resp.inventoryUpdate = InventoryUtils.processCommonInventorySet(requests, save.getSaveData(),
+				resp.inventoryUpdate = InventoryUtil.processCommonInventorySet(requests, save.getSaveData(),
 						invContainer);
 			}
 			if (invContainer == -1)
@@ -1242,7 +1242,7 @@ public class QuestManagerImpl extends QuestManager {
 					if (!ExperimentManager.getInstance()
 							.isExperimentEnabled(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)) {
 						// Give rewards
-						i.rewards = RewardUtils.giveRewardsTo(save, missionD.rewards, wasCompleted, invContainer);
+						i.rewards = RewardUtil.giveRewardsTo(save, missionD.rewards, wasCompleted, invContainer);
 					} else {
 						// Unlock achievement and give rewards
 						if (missionD.achievementID != 0)

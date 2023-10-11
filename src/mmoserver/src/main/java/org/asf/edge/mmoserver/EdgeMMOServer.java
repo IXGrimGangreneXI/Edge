@@ -51,6 +51,7 @@ import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.common.services.messages.impl.WsMessageServiceImpl;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.util.HttpUpgradeUtil;
+import org.asf.edge.common.util.LogWindow;
 import org.asf.edge.common.util.SimpleBinaryMessageClient;
 import org.asf.edge.mmoserver.config.MMOServerConfig;
 import org.asf.edge.mmoserver.entities.player.PlayerInfo;
@@ -202,6 +203,10 @@ public class EdgeMMOServer implements IBaseServer {
 		server.registerChannel(new ServerTimeChannel());
 		server.registerChannel(new ChatChannel());
 		// TODO
+
+		// Bind command handler
+		logger.info("Binding command handler to GUI terminal...");
+		LogWindow.commandCallback = t -> EdgeServerEnvironment.executeConsoleCommand(t);
 
 		// Select item manager
 		logger.info("Setting up item manager...");
@@ -586,6 +591,8 @@ public class EdgeMMOServer implements IBaseServer {
 					ClientboundSetPositionalVarsMessage.UserVarUpdate u2 = new ClientboundSetPositionalVarsMessage.UserVarUpdate();
 					u2.roomID = room.getRoomID();
 					u2.userID = usr.getUserNumericID();
+					u2.vars.put("ST", System.currentTimeMillis());
+					u2.vars.put("NT", System.currentTimeMillis());
 					u2.vars.put("UID", usr.getUserID());
 					u2.vars.putAll(varCont.positionalVariables);
 					positional.varUpdates.add(u2);

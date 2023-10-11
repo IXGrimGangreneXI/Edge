@@ -29,6 +29,7 @@ import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.common.services.messages.impl.WsMessageServiceImpl;
 import org.asf.edge.common.services.textfilter.TextFilterService;
+import org.asf.edge.common.util.LogWindow;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.achievements.AchievementManager;
@@ -202,6 +203,10 @@ public class EdgeCommonApiServer implements IBaseServer {
 		internalServer.registerProcessor(new AccountManagerAPI(this));
 		internalServer.registerProcessor(new CommonDataManagerAPI(this));
 		internalServer.registerProcessor(new MmoServerUplinkHandler(this));
+
+		// Bind command handler
+		logger.info("Binding command handler to GUI terminal...");
+		LogWindow.commandCallback = t -> EdgeServerEnvironment.executeConsoleCommand(t);
 
 		// Select achievement manager
 		logger.info("Setting up achievement manager...");
