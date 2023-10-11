@@ -10,6 +10,7 @@ import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.services.textfilter.result.FilterResult;
 import org.asf.edge.mmoserver.entities.player.PlayerInfo;
 import org.asf.edge.mmoserver.entities.smartfox.RoomInfo;
+import org.asf.edge.mmoserver.events.chat.PlayerChatMessageSentEvent;
 import org.asf.edge.mmoserver.networking.SmartfoxClient;
 import org.asf.edge.mmoserver.networking.channels.extensions.ChatChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.messages.chat.ClientboundPostChatMessagePacket;
@@ -18,6 +19,7 @@ import org.asf.edge.mmoserver.networking.channels.extensions.messages.chat.Serve
 import org.asf.edge.mmoserver.networking.channels.extensions.messages.chat.moderation.ClientboundChatMutePacket;
 import org.asf.edge.mmoserver.networking.packets.ExtensionMessageChannel;
 import org.asf.edge.mmoserver.networking.packets.IExtensionMessageHandler;
+import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonPrimitive;
 
@@ -151,7 +153,10 @@ public class ChatMessageHandler implements IExtensionMessageHandler<ServerboundS
 			}
 
 			// Dispatch event
-			// TODO: dispatch chat event
+			PlayerChatMessageSentEvent ev = new PlayerChatMessageSentEvent(player, message.message, message.clanID);
+			EventBus.getInstance().dispatchEvent(ev);
+			if (ev.isCancelled())
+				return true;
 
 			// Log to server log
 			if (!message.isClanChat)
