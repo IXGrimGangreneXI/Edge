@@ -1,5 +1,7 @@
 package org.asf.edge.mmoserver.config;
 
+import java.util.LinkedHashMap;
+
 import org.asf.edge.mmoserver.networking.SmartfoxServer;
 
 /**
@@ -51,5 +53,15 @@ public class MMOServerConfig {
 	 * Pre-assigned server instance, if assigned, EDGE will use this instead
 	 */
 	public SmartfoxServer server;
+
+	/**
+	 * Defines the default user limit for each MMO room
+	 */
+	public short roomUserLimit = 30;
+
+	/**
+	 * Defines per-map user limits for MMO rooms
+	 */
+	public LinkedHashMap<String, Short> roomUserLimits = new LinkedHashMap<String, Short>();
 
 }

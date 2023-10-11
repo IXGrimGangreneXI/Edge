@@ -1,5 +1,7 @@
 package org.asf.edge.mmoserver.networking.channels.extensions;
 
+import org.asf.edge.mmoserver.networking.channels.extensions.handlers.rooms.JoinRoomHandler;
+import org.asf.edge.mmoserver.networking.channels.extensions.messages.rooms.JoinRoomMessage;
 import org.asf.edge.mmoserver.networking.packets.ExtensionMessageChannel;
 
 public class RoomChannel extends ExtensionMessageChannel {
@@ -11,14 +13,12 @@ public class RoomChannel extends ExtensionMessageChannel {
 
 	@Override
 	protected void registerMessages() {
-		// TODO Auto-generated method stub
-
+		registerMessage(new JoinRoomMessage());
 	}
 
 	@Override
 	protected void registerMessageHandlers() {
-		// TODO Auto-generated method stub
-
+		registerHandler(new JoinRoomHandler());
 	}
 
 }

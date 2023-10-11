@@ -1,7 +1,15 @@
 package org.asf.edge.mmoserver.entities.smartfox;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.asf.edge.mmoserver.entities.player.PlayerInfo;
+import org.asf.edge.mmoserver.events.players.PlayerRoomJoinEvent;
+import org.asf.edge.mmoserver.events.players.PlayerRoomJoinSpectatorEvent;
+import org.asf.edge.mmoserver.events.players.PlayerRoomLeaveEvent;
+import org.asf.edge.mmoserver.events.players.PlayerRoomLeaveSpectatorEvent;
 import org.asf.edge.mmoserver.events.variables.RoomVariableAddedEvent;
 import org.asf.edge.mmoserver.events.variables.RoomVariableRemovedEvent;
 import org.asf.edge.mmoserver.io.SequenceWriter;
@@ -17,6 +25,8 @@ import org.asf.edge.modules.eventbus.EventBus;
  */
 public class RoomInfo {
 
+	private Logger logger = LogManager.getLogger("ZoneManager");
+
 	private int roomID;
 	private String roomName;
 	private RoomGroup group;
@@ -26,12 +36,12 @@ public class RoomInfo {
 
 	private boolean isPasswordProtected;
 
-	private short userCount;
+	private ArrayList<PlayerInfo> players = new ArrayList<PlayerInfo>();
 	private short maxUsers;
 
 	private HashMap<String, RoomVariable> variables = new HashMap<String, RoomVariable>();
 
-	private short spectatorCount;
+	private ArrayList<PlayerInfo> spectators = new ArrayList<PlayerInfo>();
 	private short maxSpectators;
 
 	private HashMap<String, Object> memory = new HashMap<String, Object>();
@@ -42,21 +52,18 @@ public class RoomInfo {
 	}
 
 	public RoomInfo(int roomID, String name, RoomGroup group, boolean isGame, boolean isHidden,
-			boolean isPasswordProtected, short userCount, short maxUsers, RoomVariable[] variables,
-			short spectatorCount, short maxSpectators) {
+			boolean isPasswordProtected, short maxUsers, RoomVariable[] variables, short maxSpectators) {
 		this.roomID = roomID;
 		this.roomName = name;
 		this.group = group;
 		this.isGame = isGame;
 		this.isHidden = isHidden;
 		this.isPasswordProtected = isPasswordProtected;
-		this.userCount = userCount;
 		this.maxUsers = maxUsers;
 		for (RoomVariable var : variables) {
 			var.room = this;
 			this.variables.put(var.getName(), var);
 		}
-		this.spectatorCount = spectatorCount;
 		this.maxSpectators = maxSpectators;
 	}
 
@@ -235,8 +242,165 @@ public class RoomInfo {
 		}
 	}
 
-	// TODO: players in room
 	// TODO: editing the room and sending said edits to client
+
+	/**
+	 * Retrieves all joined players
+	 * 
+	 * @return Array of PlayerInfo instances
+	 */
+	public PlayerInfo[] getPlayers() {
+		synchronized (players) {
+			return players.toArray(t -> new PlayerInfo[t]);
+		}
+	}
+
+	/**
+	 * Checks if specific players are in the room
+	 * 
+	 * @param player Player to check
+	 * @return True if joined, false otherwise
+	 */
+	public boolean hasPlayer(PlayerInfo player) {
+		return hasPlayer(player.getSave().getSaveID());
+	}
+
+	/**
+	 * Checks if specific players are in the room
+	 * 
+	 * @param playerID Player ID to check
+	 * @return True if joined, false otherwise
+	 */
+	public boolean hasPlayer(String playerID) {
+		synchronized (players) {
+			return players.stream().anyMatch(t -> t.getSave().getSaveID().equals(playerID));
+		}
+	}
+
+	/**
+	 * Retrieves all joined spectating players
+	 * 
+	 * @return Array of PlayerInfo instances
+	 */
+	public PlayerInfo[] getSpectatorPlayers() {
+		synchronized (spectators) {
+			return spectators.toArray(t -> new PlayerInfo[t]);
+		}
+	}
+
+	/**
+	 * Checks if specific spectating players are in the room
+	 * 
+	 * @param player Player to check
+	 * @return True if joined, false otherwise
+	 */
+	public boolean hasSpectatorPlayer(PlayerInfo player) {
+		return hasSpectatorPlayer(player.getSave().getSaveID());
+	}
+
+	/**
+	 * Checks if specific spectating players are in the room
+	 * 
+	 * @param playerID Player ID to check
+	 * @return True if joined, false otherwise
+	 */
+	public boolean hasSpectatorPlayer(String playerID) {
+		synchronized (spectators) {
+			return spectators.stream().anyMatch(t -> t.getSave().getSaveID().equals(playerID));
+		}
+	}
+
+	/**
+	 * Adds players to the room
+	 * 
+	 * @param player Player to add to the room
+	 */
+	public void addPlayer(PlayerInfo player) {
+		synchronized (players) {
+			// Check joined
+			if (players.stream().anyMatch(t -> t.getSave().getSaveID().equals(player.getSave().getSaveID())))
+				return;
+
+			// Subscribe to group
+			if (!getGroup().isPlayerSubscribed(player))
+				player.subscribeToGroup(group);
+
+			// Join
+			logger.info("Player " + player.getSave().getUsername() + " (" + player.getSave().getSaveID()
+					+ ") joined room " + getName());
+			players.add(player);
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new PlayerRoomJoinEvent(player, this));
+		}
+	}
+
+	/**
+	 * Removes players from the room
+	 * 
+	 * @param player Player to remove from the room
+	 */
+	public void removePlayer(PlayerInfo player) {
+		synchronized (players) {
+			// Check joined
+			if (!players.stream().anyMatch(t -> t.getSave().getSaveID().equals(player.getSave().getSaveID())))
+				return;
+
+			// Leave
+			logger.info("Player " + player.getSave().getUsername() + " (" + player.getSave().getSaveID()
+					+ ") left room " + getName());
+			players.remove(player);
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new PlayerRoomLeaveEvent(player, this));
+		}
+	}
+
+	/**
+	 * Adds spectators to the room
+	 * 
+	 * @param player Player to add to the room
+	 */
+	public void addSpectatorPlayer(PlayerInfo player) {
+		synchronized (spectators) {
+			// Check joined
+			if (spectators.stream().anyMatch(t -> t.getSave().getSaveID().equals(player.getSave().getSaveID())))
+				return;
+
+			// Subscribe to group
+			if (!getGroup().isPlayerSubscribed(player))
+				player.subscribeToGroup(group);
+
+			// Join
+			logger.info("Spectating player " + player.getSave().getUsername() + " (" + player.getSave().getSaveID()
+					+ ") joined room " + getName());
+			spectators.add(player);
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new PlayerRoomJoinSpectatorEvent(player, this));
+		}
+	}
+
+	/**
+	 * Removes spectators from the room
+	 * 
+	 * @param player Player to remove from the room
+	 */
+	public void removeSpectatorPlayer(PlayerInfo player) {
+		synchronized (spectators) {
+			// Check joined
+			if (!spectators.stream().anyMatch(t -> t.getSave().getSaveID().equals(player.getSave().getSaveID())))
+				return;
+
+			// Leave
+			logger.info("Spectating player " + player.getSave().getUsername() + " (" + player.getSave().getSaveID()
+					+ ") left room " + getName());
+			spectators.remove(player);
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new PlayerRoomLeaveSpectatorEvent(player, this));
+		}
+	}
 
 	/**
 	 * Retrieves the room spectator count
@@ -244,7 +408,9 @@ public class RoomInfo {
 	 * @return Room spectator count
 	 */
 	public short getSpectatorCount() {
-		return spectatorCount;
+		synchronized (spectators) {
+			return (short) spectators.size();
+		}
 	}
 
 	/**
@@ -262,7 +428,9 @@ public class RoomInfo {
 	 * @return Room user count
 	 */
 	public short getUserCount() {
-		return userCount;
+		synchronized (players) {
+			return (short) players.size();
+		}
 	}
 
 	/**
@@ -346,7 +514,7 @@ public class RoomInfo {
 		writer.writeBoolean(isPasswordProtected);
 
 		// Write users
-		writer.writeShort(userCount);
+		writer.writeShort(getUserCount());
 		writer.writeShort(maxUsers);
 
 		// Write variables
@@ -366,7 +534,7 @@ public class RoomInfo {
 
 		// Write spectators
 		if (isGame) {
-			writer.writeShort(spectatorCount);
+			writer.writeShort(getSpectatorCount());
 			writer.writeShort(maxSpectators);
 		}
 	}

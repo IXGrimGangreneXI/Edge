@@ -5,19 +5,26 @@ import java.util.ArrayList;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.mmoserver.entities.player.PlayerInfo;
+import org.asf.edge.mmoserver.events.players.PlayerRoomGroupDesubscribeEvent;
+import org.asf.edge.mmoserver.events.players.PlayerRoomGroupSubscribeEvent;
+import org.asf.edge.mmoserver.events.players.PlayerRoomJoinEvent;
+import org.asf.edge.mmoserver.events.players.PlayerRoomJoinSpectatorEvent;
+import org.asf.edge.mmoserver.events.players.PlayerRoomLeaveEvent;
+import org.asf.edge.mmoserver.events.players.PlayerRoomLeaveSpectatorEvent;
 import org.asf.edge.mmoserver.events.variables.RoomVariableAddedEvent;
 import org.asf.edge.mmoserver.events.variables.RoomVariableRemovedEvent;
 import org.asf.edge.mmoserver.events.variables.RoomVariableValueUpdateEvent;
 import org.asf.edge.mmoserver.events.zones.RoomCreatedEvent;
 import org.asf.edge.mmoserver.events.zones.RoomDeletedEvent;
-import org.asf.edge.mmoserver.events.zones.RoomGroupCreatedEvent;
-import org.asf.edge.mmoserver.events.zones.RoomGroupDeletedEvent;
-import org.asf.edge.mmoserver.events.zones.ZoneCreatedEvent;
-import org.asf.edge.mmoserver.events.zones.ZoneDeletedEvent;
 import org.asf.edge.mmoserver.networking.channels.smartfox.SystemChannel;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.ClientboundGroupSubscribePacket;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.ClientboundGroupUnsubscribePacket;
 import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.ClientboundRoomCreatePacket;
 import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.ClientboundRoomDeletePacket;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.ClientboundRoomUserCountChangedPacket;
 import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.ClientboundSetRoomVariablePacket;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.sync.ClientboundPlayerLeaveRoomPacket;
 import org.asf.edge.mmoserver.networking.packets.ExtensionMessageChannel;
 import org.asf.edge.mmoserver.networking.packets.PacketChannel;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -44,27 +51,164 @@ public abstract class SmartfoxServer {
 	public class ServerEvents implements IEventReceiver {
 
 		@EventListener
-		public void createdZone(ZoneCreatedEvent ev) {
-			// TODO
-			ev = ev;
+		public void joinedGroup(PlayerRoomGroupSubscribeEvent ev) {
+			// Create packet
+			ClientboundGroupSubscribePacket pkt = new ClientboundGroupSubscribePacket();
+			pkt.groupID = ev.getRoomGroup().getName();
+			pkt.roomList = ev.getRoomGroup().getRooms();
+
+			// Send
+			try {
+				ev.getPlayer().getClient().getChannel(SystemChannel.class).sendPacket(pkt);
+			} catch (IOException e) {
+			}
 		}
 
 		@EventListener
-		public void deletedZone(ZoneDeletedEvent ev) {
-			// TODO
-			ev = ev;
+		public void leftGroup(PlayerRoomGroupDesubscribeEvent ev) {
+			// Create packet
+			ClientboundGroupUnsubscribePacket pkt = new ClientboundGroupUnsubscribePacket();
+			pkt.groupID = ev.getRoomGroup().getName();
+
+			// Send
+			try {
+				ev.getPlayer().getClient().getChannel(SystemChannel.class).sendPacket(pkt);
+			} catch (IOException e) {
+			}
 		}
 
 		@EventListener
-		public void createdGroup(RoomGroupCreatedEvent ev) {
-			// TODO
+		public void joinedRoom(PlayerRoomJoinEvent ev) {
+			// Send player
+			// TODO: send player
 			ev = ev;
+
+			// Create update
+			ClientboundRoomUserCountChangedPacket cU = new ClientboundRoomUserCountChangedPacket();
+			cU.roomID = ev.getRoom().getRoomID();
+			cU.userCount = ev.getRoom().getUserCount();
+			if (ev.getRoom().isGame())
+				cU.spectatorCount = ev.getRoom().getSpectatorCount();
+
+			// Send
+			for (SmartfoxClient cl : getClients()) {
+				try {
+					// Check if subscribed
+					PlayerInfo plr = cl.getObject(PlayerInfo.class);
+					if (plr != null && ((plr.getZone() != null
+							&& plr.getZone().getName().equals(ev.getRoom().getGroup().getZone().getName()))
+							|| ev.getRoom().hasPlayer(plr) || ev.getRoom().hasSpectatorPlayer(plr))) {
+						// Send
+						cl.getChannel(SystemChannel.class).sendPacket(cU);
+					}
+				} catch (IOException e) {
+				}
+			}
 		}
 
 		@EventListener
-		public void deletedGroup(RoomGroupDeletedEvent ev) {
-			// TODO
+		public void leftRoom(PlayerRoomLeaveEvent ev) {
+			// Create packet
+			ClientboundPlayerLeaveRoomPacket pkt = new ClientboundPlayerLeaveRoomPacket();
+			pkt.roomID = ev.getRoom().getRoomID();
+			pkt.userID = ev.getPlayer().getClient().getSessionNumericID();
+
+			// Send
+			for (SmartfoxClient cl : getClients()) {
+				try {
+					cl.getChannel(SystemChannel.class).sendPacket(pkt);
+				} catch (IOException e) {
+				}
+			}
+
+			// Create update
+			ClientboundRoomUserCountChangedPacket cU = new ClientboundRoomUserCountChangedPacket();
+			cU.roomID = ev.getRoom().getRoomID();
+			cU.userCount = ev.getRoom().getUserCount();
+			if (ev.getRoom().isGame())
+				cU.spectatorCount = ev.getRoom().getSpectatorCount();
+
+			// Send
+			for (SmartfoxClient cl : getClients()) {
+				try {
+					// Check if subscribed
+					PlayerInfo plr = cl.getObject(PlayerInfo.class);
+					if (plr != null && ((plr.getZone() != null
+							&& plr.getZone().getName().equals(ev.getRoom().getGroup().getZone().getName()))
+							|| ev.getRoom().hasPlayer(plr) || ev.getRoom().hasSpectatorPlayer(plr))) {
+						// Send
+						cl.getChannel(SystemChannel.class).sendPacket(cU);
+					}
+				} catch (IOException e) {
+				}
+			}
+		}
+
+		@EventListener
+		public void joinedSpectatorRoom(PlayerRoomJoinSpectatorEvent ev) {
+			// Send player
+			// TODO: send player
 			ev = ev;
+
+			// Create update
+			ClientboundRoomUserCountChangedPacket cU = new ClientboundRoomUserCountChangedPacket();
+			cU.roomID = ev.getRoom().getRoomID();
+			cU.userCount = ev.getRoom().getUserCount();
+			if (ev.getRoom().isGame())
+				cU.spectatorCount = ev.getRoom().getSpectatorCount();
+
+			// Send
+			for (SmartfoxClient cl : getClients()) {
+				try {
+					// Check if subscribed
+					PlayerInfo plr = cl.getObject(PlayerInfo.class);
+					if (plr != null && ((plr.getZone() != null
+							&& plr.getZone().getName().equals(ev.getRoom().getGroup().getZone().getName()))
+							|| ev.getRoom().hasPlayer(plr) || ev.getRoom().hasSpectatorPlayer(plr))) {
+						// Send
+						cl.getChannel(SystemChannel.class).sendPacket(cU);
+					}
+				} catch (IOException e) {
+				}
+			}
+		}
+
+		@EventListener
+		public void leftSpectatorRoom(PlayerRoomLeaveSpectatorEvent ev) {
+			// Create packet
+			ClientboundPlayerLeaveRoomPacket pkt = new ClientboundPlayerLeaveRoomPacket();
+			pkt.roomID = ev.getRoom().getRoomID();
+			pkt.userID = ev.getPlayer().getClient().getSessionNumericID();
+
+			// Send
+			for (SmartfoxClient cl : getClients()) {
+				try {
+					cl.getChannel(SystemChannel.class).sendPacket(pkt);
+				} catch (IOException e) {
+				}
+			}
+
+			// Create update
+			ClientboundRoomUserCountChangedPacket cU = new ClientboundRoomUserCountChangedPacket();
+			cU.roomID = ev.getRoom().getRoomID();
+			cU.userCount = ev.getRoom().getUserCount();
+			if (ev.getRoom().isGame())
+				cU.spectatorCount = ev.getRoom().getSpectatorCount();
+
+			// Send
+			for (SmartfoxClient cl : getClients()) {
+				try {
+					// Check if subscribed
+					PlayerInfo plr = cl.getObject(PlayerInfo.class);
+					if (plr != null && ((plr.getZone() != null
+							&& plr.getZone().getName().equals(ev.getRoom().getGroup().getZone().getName()))
+							|| ev.getRoom().hasPlayer(plr) || ev.getRoom().hasSpectatorPlayer(plr))) {
+						// Send
+						cl.getChannel(SystemChannel.class).sendPacket(cU);
+					}
+				} catch (IOException e) {
+				}
+			}
 		}
 
 		@EventListener

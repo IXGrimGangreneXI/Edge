@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.mmoserver.entities.player.PlayerInfo;
 import org.asf.edge.mmoserver.events.zones.RoomGroupCreatedEvent;
 import org.asf.edge.mmoserver.events.zones.RoomGroupDeletedEvent;
 import org.asf.edge.mmoserver.services.ZoneManager;
@@ -23,7 +24,7 @@ public class GameZone {
 	private HashMap<String, RoomGroup> roomGroups = new HashMap<String, RoomGroup>();
 	private Logger logger = LogManager.getLogger("ZoneManager");
 	HashMap<Integer, RoomInfo> rooms = new HashMap<Integer, RoomInfo>();
-	int currentRoomIdGlobal;
+	static int currentRoomIdGlobal;
 
 	public GameZone(String name) {
 		this.zoneName = name;
@@ -145,6 +146,10 @@ public class GameZone {
 			if (roomGroups.containsKey(group.getName())) {
 				// Log
 				logger.info("Removing group " + group.getName() + " from zone " + zoneName + "...");
+
+				// Desub all players
+				for (PlayerInfo player : group.getSubscribedPlayers())
+					group.desubscribePlayer(player);
 
 				// Remove all rooms in group
 				for (RoomInfo room : group.getRooms())

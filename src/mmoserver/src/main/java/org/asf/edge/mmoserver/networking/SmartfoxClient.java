@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.mmoserver.events.clients.ClientConnectedEvent;
@@ -303,71 +304,73 @@ public abstract class SmartfoxClient {
 		getServer().getEventBus().dispatchEvent(new ClientConnectedEvent(getServer(), this));
 
 		// Start packet handler
-		while (true) {
-			// Read packet
-			byte[] packet;
-			try {
-				packet = readSingleRawPacket();
-			} catch (IOException e) {
-				disconnect();
-				return;
-			}
-
-			// Decode
-			SmartfoxPacketData pkt;
-			try {
-				// Decode packet
-				pl = SmartfoxPayload.parseSfsObject(packet);
-
-				// Check debug mode
-				if (EdgeServerEnvironment.isInDebugMode()) {
-					// Log
-					logger.debug("C->S: " + new ObjectMapper().writeValueAsString(pl.toSfsObject()));
+		AsyncTaskManager.runAsync(() -> {
+			while (true) {
+				// Read packet
+				byte[] packet;
+				try {
+					packet = readSingleRawPacket();
+				} catch (IOException e) {
+					disconnect();
+					return;
 				}
 
 				// Decode
-				pkt = SmartfoxPacketData.fromSfsObject(pl);
-			} catch (Exception e) {
-				logger.error("Error occured while decoding packet: " + bytesToHex(packet) + " from client "
-						+ getRemoteAddress() + ", terminating connection!", e);
-				disconnect();
-				return;
-			}
+				SmartfoxPacketData pkt;
+				try {
+					// Decode packet
+					SmartfoxPayload pl2 = SmartfoxPayload.parseSfsObject(packet);
 
-			// Handle
-			try {
-				boolean handled = false;
-
-				// Find channel
-				for (ChannelDat ch : registry) {
-					if (ch.channel.channelID() == pkt.channelID) {
-						// Found channel
-						ch.handler.handle(pkt.channelID, pkt.packetId, pkt);
-						handled = true;
-						break;
+					// Check debug mode
+					if (EdgeServerEnvironment.isInDebugMode()) {
+						// Log
+						logger.debug("C->S: " + new ObjectMapper().writeValueAsString(pl2.toSfsObject()));
 					}
+
+					// Decode
+					pkt = SmartfoxPacketData.fromSfsObject(pl2);
+				} catch (Exception e) {
+					logger.error("Error occured while decoding packet: " + bytesToHex(packet) + " from client "
+							+ getRemoteAddress() + ", terminating connection!", e);
+					disconnect();
+					return;
 				}
 
-				if (!handled) {
-					// Unhandled
+				// Handle
+				try {
+					boolean handled = false;
+
+					// Find channel
+					for (ChannelDat ch : registry) {
+						if (ch.channel.channelID() == pkt.channelID) {
+							// Found channel
+							ch.handler.handle(pkt.channelID, pkt.packetId, pkt);
+							handled = true;
+							break;
+						}
+					}
+
+					if (!handled) {
+						// Unhandled
+						try {
+							logger.warn("Unhandled packet: " + pkt.channelID + ":" + pkt.packetId + ": ["
+									+ new ObjectMapper().writeValueAsString(pkt.payload.toSfsObject()) + "], client: "
+									+ getRemoteAddress());
+						} catch (JsonProcessingException e1) {
+						}
+					}
+				} catch (Exception e) {
 					try {
-						logger.warn("Unhandled packet: " + pkt.channelID + ":" + pkt.packetId + ": ["
-								+ new ObjectMapper().writeValueAsString(pkt.payload.toSfsObject()) + "], client: "
-								+ getRemoteAddress());
+						logger.error("Error occured while handling packet: " + pkt.channelID + ":" + pkt.packetId
+								+ ": [" + new ObjectMapper().writeValueAsString(pkt.payload.toSfsObject())
+								+ "], client " + getRemoteAddress(), e);
 					} catch (JsonProcessingException e1) {
 					}
+					disconnect();
+					return;
 				}
-			} catch (Exception e) {
-				try {
-					logger.error("Error occured while handling packet: " + pkt.channelID + ":" + pkt.packetId + ": ["
-							+ new ObjectMapper().writeValueAsString(pkt.payload.toSfsObject()) + "], client "
-							+ getRemoteAddress(), e);
-				} catch (JsonProcessingException e1) {
-				}
-				disconnect();
-				return;
 			}
-		}
+		});
 	}
 
 	void initRegistry(PacketChannel[] channels, ExtensionMessageChannel[] extensionChannels) {

@@ -1,9 +1,13 @@
 package org.asf.edge.mmoserver.entities.smartfox;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.mmoserver.entities.player.PlayerInfo;
+import org.asf.edge.mmoserver.events.players.PlayerRoomGroupDesubscribeEvent;
+import org.asf.edge.mmoserver.events.players.PlayerRoomGroupSubscribeEvent;
 import org.asf.edge.mmoserver.events.zones.RoomCreatedEvent;
 import org.asf.edge.mmoserver.events.zones.RoomDeletedEvent;
 import org.asf.edge.mmoserver.services.ZoneManager;
@@ -23,6 +27,7 @@ public class RoomGroup {
 	private HashMap<String, RoomInfo> rooms = new HashMap<String, RoomInfo>();
 
 	private Logger logger = LogManager.getLogger("ZoneManager");
+	private ArrayList<PlayerInfo> subscribedPlayers = new ArrayList<PlayerInfo>();
 
 	public RoomGroup(String name, GameZone zone) {
 		this.name = name;
@@ -37,7 +42,7 @@ public class RoomGroup {
 
 			// Create room ID and register
 			synchronized (zone.rooms) {
-				r.update(zone.currentRoomIdGlobal++, this);
+				r.update(GameZone.currentRoomIdGlobal++, this);
 				zone.rooms.put(r.getRoomID(), r);
 			}
 		}
@@ -244,8 +249,8 @@ public class RoomGroup {
 			RoomInfo room;
 			synchronized (zone.rooms) {
 				// Create
-				room = new RoomInfo(zone.currentRoomIdGlobal++, name, this, isGame, isHidden, isPasswordProtected,
-						(short) 0, maxUsers, variables, (short) 0, maxSpectators);
+				room = new RoomInfo(GameZone.currentRoomIdGlobal++, name, this, isGame, isHidden, isPasswordProtected,
+						maxUsers, variables, maxSpectators);
 
 				// Add
 				rooms.put(name, room);
@@ -269,6 +274,91 @@ public class RoomGroup {
 	public RoomInfo getRoom(String name) {
 		synchronized (rooms) {
 			return rooms.get(name);
+		}
+	}
+
+	/**
+	 * Retrieves all subscribed players
+	 * 
+	 * @return Array of PlayerInfo instances
+	 */
+	public PlayerInfo[] getSubscribedPlayers() {
+		synchronized (subscribedPlayers) {
+			return subscribedPlayers.toArray(t -> new PlayerInfo[t]);
+		}
+	}
+
+	/**
+	 * Checks if specific players are subscribed to the room group
+	 * 
+	 * @param player Player to check
+	 * @return True if subscribed, false otherwise
+	 */
+	public boolean isPlayerSubscribed(PlayerInfo player) {
+		return isPlayerSubscribed(player.getSave().getSaveID());
+	}
+
+	/**
+	 * Checks if specific players are subscribed to the room group
+	 * 
+	 * @param playerID Player ID to check
+	 * @return True if subscribed, false otherwise
+	 */
+	public boolean isPlayerSubscribed(String playerID) {
+		synchronized (subscribedPlayers) {
+			return subscribedPlayers.stream().anyMatch(t -> t.getSave().getSaveID().equals(playerID));
+		}
+	}
+
+	/**
+	 * Subscribes players to the room group
+	 * 
+	 * @param player Player to subscribe to the group
+	 */
+	public void subscribePlayer(PlayerInfo player) {
+		synchronized (subscribedPlayers) {
+			// Check subscribed
+			if (subscribedPlayers.stream().anyMatch(t -> t.getSave().getSaveID().equals(player.getSave().getSaveID())))
+				return;
+
+			// Subscribe
+			logger.info("Player " + player.getSave().getUsername() + " (" + player.getSave().getSaveID()
+					+ ") subscribed to room group " + getName());
+			subscribedPlayers.add(player);
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new PlayerRoomGroupSubscribeEvent(player, this));
+		}
+	}
+
+	/**
+	 * De-subscribes players from the room group
+	 * 
+	 * @param player Player to de-subscribe from the group
+	 */
+	public void desubscribePlayer(PlayerInfo player) {
+		synchronized (subscribedPlayers) {
+			// Check subscribed
+			if (!subscribedPlayers.stream().anyMatch(t -> t.getSave().getSaveID().equals(player.getSave().getSaveID())))
+				return;
+
+			// De-subscribe
+			logger.info("Player " + player.getSave().getUsername() + " (" + player.getSave().getSaveID()
+					+ ") desubscribed from room group " + getName());
+			subscribedPlayers.remove(player);
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new PlayerRoomGroupDesubscribeEvent(player, this));
+
+			// Leave all rooms
+			for (RoomInfo room : getRooms()) {
+				if (room.hasPlayer(player)) {
+					room.removePlayer(player);
+				}
+				if (room.hasSpectatorPlayer(player)) {
+					room.removeSpectatorPlayer(player);
+				}
+			}
 		}
 	}
 

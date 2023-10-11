@@ -179,7 +179,12 @@ public class EdgeGlobalServerMain {
 					+ "        \"discoveryRootZone\": \"JumpStart\",\n" // MMO root zone
 					+ "        \"isBackupServer\": false,\n" // is this a backup MMO server?
 					+ "\n" //
-					+ "        \"commonApiUplinkURL\": \"http://127.0.0.1:5324/\"\n" // uplink URL
+					+ "        \"commonApiUplinkURL\": \"http://127.0.0.1:5324/\",\n" // uplink URL
+					+ "\n" //
+					+ "        \"roomUserLimit\": 30,\n" //
+					+ "        \"roomUserLimits\": {\n" //
+					+ "            \"HubSchoolDO\": 40" //
+					+ "        }\n" //
 					+ "    },\n" //
 					+ "\n" //
 					+ "    \"modules\": {\n" //
@@ -318,6 +323,15 @@ public class EdgeGlobalServerMain {
 				mmoSrvConfig.isBackupServer = mmoSrvJson.get("isBackupServer").getAsBoolean();
 			if (mmoSrvJson.has("discoveryRootZone"))
 				mmoSrvConfig.discoveryRootZone = mmoSrvJson.get("discoveryRootZone").getAsString();
+			logger.debug("Loading MMO settings...");
+			if (mmoSrvJson.has("roomUserLimit"))
+				mmoSrvConfig.roomUserLimit = mmoSrvJson.get("roomUserLimit").getAsShort();
+			if (mmoSrvJson.has("roomUserLimits")) {
+				JsonObject limits = mmoSrvJson.get("roomUserLimits").getAsJsonObject();
+				for (String key : limits.keySet())
+					mmoSrvConfig.roomUserLimits.put(key, limits.get(key).getAsShort());
+			}
+
 		}
 
 		// Load module settings

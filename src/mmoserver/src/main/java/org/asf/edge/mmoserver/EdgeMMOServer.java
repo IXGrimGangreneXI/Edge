@@ -16,6 +16,7 @@ import org.asf.edge.mmoserver.events.server.MMOServerSetupEvent;
 import org.asf.edge.mmoserver.events.server.MMOServerStartupEvent;
 import org.asf.edge.mmoserver.events.variables.DynamicRoomVariableSetupEvent;
 import org.asf.edge.mmoserver.networking.SmartfoxServer;
+import org.asf.edge.mmoserver.networking.channels.extensions.RoomChannel;
 import org.asf.edge.mmoserver.networking.impl.BitswarmSmartfoxServer;
 import org.asf.edge.mmoserver.services.ZoneManager;
 import org.asf.edge.mmoserver.services.impl.ZoneManagerImpl;
@@ -176,6 +177,7 @@ public class EdgeMMOServer implements IBaseServer {
 
 		// Register packet handlers
 		logger.debug("Configuring server packet channels...");
+		server.registerChannel(new RoomChannel());
 		// TODO
 
 		// Select item manager

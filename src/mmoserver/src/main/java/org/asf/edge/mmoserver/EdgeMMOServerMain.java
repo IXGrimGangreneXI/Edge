@@ -80,6 +80,11 @@ public class EdgeMMOServerMain {
 					+ "\n" //
 					+ "    \"commonApiUplinkURL\": \"http://127.0.0.1:5324/\",\n" // uplink URL
 					+ "\n" //
+					+ "    \"roomUserLimit\": 30,\n" //
+					+ "    \"roomUserLimits\": {\n" //
+					+ "        \"HubSchoolDO\": 40" //
+					+ "    },\n" //
+					+ "\n" //
 					+ "\n" //
 					+ "    \"modules\": {\n" //
 					+ "    }\n" //
@@ -105,6 +110,16 @@ public class EdgeMMOServerMain {
 			config.isBackupServer = configData.get("isBackupServer").getAsBoolean();
 		if (configData.has("discoveryRootZone"))
 			config.discoveryRootZone = configData.get("discoveryRootZone").getAsString();
+
+		// MMO settings
+		logger.debug("Loading MMO settings...");
+		if (configData.has("roomUserLimit"))
+			config.roomUserLimit = configData.get("roomUserLimit").getAsShort();
+		if (configData.has("roomUserLimits")) {
+			JsonObject limits = configData.get("roomUserLimits").getAsJsonObject();
+			for (String key : limits.keySet())
+				config.roomUserLimits.put(key, limits.get(key).getAsShort());
+		}
 
 		// Load module settings
 		if (configData.has("modules")) {
