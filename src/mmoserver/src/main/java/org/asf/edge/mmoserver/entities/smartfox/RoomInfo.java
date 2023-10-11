@@ -5,11 +5,14 @@ import java.util.HashMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.permissions.PermissionContext;
 import org.asf.edge.mmoserver.entities.player.PlayerInfo;
 import org.asf.edge.mmoserver.events.players.PlayerRoomJoinEvent;
 import org.asf.edge.mmoserver.events.players.PlayerRoomJoinSpectatorEvent;
 import org.asf.edge.mmoserver.events.players.PlayerRoomLeaveEvent;
 import org.asf.edge.mmoserver.events.players.PlayerRoomLeaveSpectatorEvent;
+import org.asf.edge.mmoserver.events.sync.SfsUserCreatedEvent;
+import org.asf.edge.mmoserver.events.sync.SfsUserDeletedEvent;
 import org.asf.edge.mmoserver.events.variables.RoomVariableAddedEvent;
 import org.asf.edge.mmoserver.events.variables.RoomVariableRemovedEvent;
 import org.asf.edge.mmoserver.io.SequenceWriter;
@@ -37,6 +40,7 @@ public class RoomInfo {
 	private boolean isPasswordProtected;
 
 	private ArrayList<PlayerInfo> players = new ArrayList<PlayerInfo>();
+	private HashMap<String, SfsUser> playerSfsObjs = new HashMap<String, SfsUser>();
 	private short maxUsers;
 
 	private HashMap<String, RoomVariable> variables = new HashMap<String, RoomVariable>();
@@ -65,6 +69,70 @@ public class RoomInfo {
 			this.variables.put(var.getName(), var);
 		}
 		this.maxSpectators = maxSpectators;
+	}
+
+	/**
+	 * Retrieves all SFS user objects
+	 * 
+	 * @return Array of SfsUser instances
+	 */
+	public SfsUser[] getSfsUserObjects() {
+		synchronized (playerSfsObjs) {
+			return playerSfsObjs.values().toArray(t -> new SfsUser[t]);
+		}
+	}
+
+	/**
+	 * Retrieves SFS user objects by ID
+	 * 
+	 * @param id User ID
+	 * @return SfsUser instance or null
+	 */
+	public SfsUser getSfsUser(String id) {
+		synchronized (playerSfsObjs) {
+			return playerSfsObjs.get(id);
+		}
+	}
+
+	/**
+	 * Removes SFS user objects by ID
+	 * 
+	 * @param id User ID
+	 */
+	public void removeSfsUser(String id) {
+		synchronized (playerSfsObjs) {
+			if (playerSfsObjs.containsKey(id)) {
+				// Remove
+				SfsUser inst = playerSfsObjs.remove(id);
+
+				// Sync
+				EventBus.getInstance().dispatchEvent(new SfsUserDeletedEvent(inst, this));
+			}
+		}
+	}
+
+	/**
+	 * Adds SFS user objects
+	 * 
+	 * @param user User object to add
+	 */
+	public void addSfsUser(SfsUser user) {
+		synchronized (playerSfsObjs) {
+			if (!playerSfsObjs.containsKey(user.getUserID())) {
+				// Update
+				user.update(this, user.getPlayerIndex());
+
+				// Save
+				playerSfsObjs.put(user.getUserID(), user);
+
+				// Sync
+				EventBus.getInstance().dispatchEvent(new SfsUserCreatedEvent(user, this));
+			} else {
+				// Update settings
+				playerSfsObjs.get(user.getUserID()).update(user.getUserNumericID(), user.getUserID(), this,
+						user.getPrivilegeID(), user.getPlayerIndex());
+			}
+		}
 	}
 
 	/**
@@ -330,6 +398,37 @@ public class RoomInfo {
 					+ ") joined room " + getName());
 			players.add(player);
 
+			// Check permissions
+			short priv = 1;
+			if (player.getAccount().isGuestAccount())
+				priv = 0;
+			switch (PermissionContext.getFor(player.getAccount()).getPermissionLevel()) {
+			case OPERATOR:
+				priv = 3;
+				break;
+			case DEVELOPER:
+				priv = 3;
+				break;
+			case ADMINISTRATOR:
+				priv = 3;
+				break;
+			case MODERATOR:
+				priv = 2;
+				break;
+			case TRIAL_MODERATOR:
+				priv = 2;
+				break;
+			case PLAYER:
+				priv = 1;
+				break;
+			case GUEST:
+				priv = 0;
+				break;
+			}
+
+			// Create SFS user
+			addSfsUser(new SfsUser(player.getClient().getSessionNumericID(), player.getSave().getSaveID(), priv));
+
 			// Dispatch event
 			EventBus.getInstance().dispatchEvent(new PlayerRoomJoinEvent(player, this));
 		}
@@ -350,6 +449,9 @@ public class RoomInfo {
 			logger.info("Player " + player.getSave().getUsername() + " (" + player.getSave().getSaveID()
 					+ ") left room " + getName());
 			players.remove(player);
+
+			// Remove object
+			removeSfsUser(player.getSave().getSaveID());
 
 			// Dispatch event
 			EventBus.getInstance().dispatchEvent(new PlayerRoomLeaveEvent(player, this));
@@ -376,6 +478,37 @@ public class RoomInfo {
 					+ ") joined room " + getName());
 			spectators.add(player);
 
+			// Check permissions
+			short priv = 1;
+			if (player.getAccount().isGuestAccount())
+				priv = 0;
+			switch (PermissionContext.getFor(player.getAccount()).getPermissionLevel()) {
+			case OPERATOR:
+				priv = 3;
+				break;
+			case DEVELOPER:
+				priv = 3;
+				break;
+			case ADMINISTRATOR:
+				priv = 3;
+				break;
+			case MODERATOR:
+				priv = 2;
+				break;
+			case TRIAL_MODERATOR:
+				priv = 2;
+				break;
+			case PLAYER:
+				priv = 1;
+				break;
+			case GUEST:
+				priv = 0;
+				break;
+			}
+
+			// Create SFS user
+			addSfsUser(new SfsUser(player.getClient().getSessionNumericID(), player.getSave().getSaveID(), priv, 0));
+
 			// Dispatch event
 			EventBus.getInstance().dispatchEvent(new PlayerRoomJoinSpectatorEvent(player, this));
 		}
@@ -397,6 +530,9 @@ public class RoomInfo {
 					+ ") left room " + getName());
 			spectators.remove(player);
 
+			// Remove object
+			removeSfsUser(player.getSave().getSaveID());
+
 			// Dispatch event
 			EventBus.getInstance().dispatchEvent(new PlayerRoomLeaveSpectatorEvent(player, this));
 		}
@@ -408,8 +544,8 @@ public class RoomInfo {
 	 * @return Room spectator count
 	 */
 	public short getSpectatorCount() {
-		synchronized (spectators) {
-			return (short) spectators.size();
+		synchronized (playerSfsObjs) {
+			return (short) playerSfsObjs.values().stream().filter(t -> t.getPlayerIndex() <= 0).count();
 		}
 	}
 
@@ -428,8 +564,8 @@ public class RoomInfo {
 	 * @return Room user count
 	 */
 	public short getUserCount() {
-		synchronized (players) {
-			return (short) players.size();
+		synchronized (playerSfsObjs) {
+			return (short) playerSfsObjs.values().stream().filter(t -> t.getPlayerIndex() > 0).count();
 		}
 	}
 

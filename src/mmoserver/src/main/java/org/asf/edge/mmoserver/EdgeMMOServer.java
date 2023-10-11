@@ -17,6 +17,8 @@ import org.asf.edge.mmoserver.events.server.MMOServerStartupEvent;
 import org.asf.edge.mmoserver.events.variables.DynamicRoomVariableSetupEvent;
 import org.asf.edge.mmoserver.networking.SmartfoxServer;
 import org.asf.edge.mmoserver.networking.channels.extensions.RoomChannel;
+import org.asf.edge.mmoserver.networking.channels.extensions.ServerTimeChannel;
+import org.asf.edge.mmoserver.networking.channels.extensions.UserVarsChannel;
 import org.asf.edge.mmoserver.networking.impl.BitswarmSmartfoxServer;
 import org.asf.edge.mmoserver.services.ZoneManager;
 import org.asf.edge.mmoserver.services.impl.ZoneManagerImpl;
@@ -178,6 +180,8 @@ public class EdgeMMOServer implements IBaseServer {
 		// Register packet handlers
 		logger.debug("Configuring server packet channels...");
 		server.registerChannel(new RoomChannel());
+		server.registerChannel(new UserVarsChannel());
+		server.registerChannel(new ServerTimeChannel());
 		// TODO
 
 		// Select item manager
@@ -471,6 +475,13 @@ public class EdgeMMOServer implements IBaseServer {
 
 	private void setupDynamicVar(String dynamicAssignmentKey, RoomVariable variable) {
 		switch (dynamicAssignmentKey) {
+
+		// WE_ScoutAttack_End
+		case "sod.rooms.any.vars.we_scoutattack_end": {
+			// TODO
+			variable = variable;
+			break;
+		}
 
 		// WE_ScoutAttack
 		case "sod.rooms.admin.vars.we_scoutattack": {

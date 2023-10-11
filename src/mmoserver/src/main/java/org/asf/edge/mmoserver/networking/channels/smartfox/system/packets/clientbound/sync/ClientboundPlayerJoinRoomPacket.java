@@ -1,21 +1,23 @@
 package org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.sync;
 
+import org.asf.edge.mmoserver.entities.smartfox.SfsUser;
+import org.asf.edge.mmoserver.io.SequenceWriter;
 import org.asf.edge.mmoserver.networking.packets.ISmartfoxPacket;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPacketData;
 
-public class ClientboundPlayerLeaveRoomPacket implements ISmartfoxPacket {
+public class ClientboundPlayerJoinRoomPacket implements ISmartfoxPacket {
 
 	public int roomID;
-	public int userID;
+	public SfsUser user;
 
 	@Override
 	public ISmartfoxPacket createInstance() {
-		return new ClientboundPlayerLeaveRoomPacket();
+		return new ClientboundPlayerJoinRoomPacket();
 	}
 
 	@Override
 	public short packetID() {
-		return 1004;
+		return 1000;
 	}
 
 	@Override
@@ -24,8 +26,13 @@ public class ClientboundPlayerLeaveRoomPacket implements ISmartfoxPacket {
 
 	@Override
 	public void build(SmartfoxPacketData packet) {
+		// Write room ID
 		packet.payload.setInt("r", roomID);
-		packet.payload.setInt("u", userID);
+
+		// Write user
+		SequenceWriter writer = new SequenceWriter();
+		user.writeTo(writer);
+		packet.payload.setObjectArray("u", writer.toArray());
 	}
 
 }

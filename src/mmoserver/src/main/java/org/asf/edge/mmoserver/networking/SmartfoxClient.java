@@ -260,7 +260,7 @@ public abstract class SmartfoxClient {
 			int uId = rnd.nextInt();
 			while (true) {
 				int idF = uId;
-				if (Stream.of(getServer().getClients()).anyMatch(t -> t.getSessionNumericID() == idF))
+				if (Stream.of(getServer().getClients()).anyMatch(t -> t.getSessionNumericID() == idF) || uId == 0)
 					uId = rnd.nextInt();
 				else
 					break;

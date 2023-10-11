@@ -14,6 +14,7 @@ import org.asf.edge.mmoserver.EdgeMMOServer;
 import org.asf.edge.mmoserver.entities.smartfox.GameZone;
 import org.asf.edge.mmoserver.entities.smartfox.RoomGroup;
 import org.asf.edge.mmoserver.entities.smartfox.RoomInfo;
+import org.asf.edge.mmoserver.entities.smartfox.RoomVariable;
 import org.asf.edge.mmoserver.events.players.*;
 import org.asf.edge.mmoserver.networking.SmartfoxClient;
 import org.asf.edge.mmoserver.services.ZoneManager;
@@ -410,6 +411,113 @@ public class PlayerInfo {
 			if (server.getConfiguration().roomUserLimits.containsKey(roomName))
 				userLimit = server.getConfiguration().roomUserLimits.get(roomName);
 			room = group.addGameRoom(id, false, false, userLimit, (short) 0);
+			room.addDynamicVariable("WE_ScoutAttack_End", "sod.rooms.any.vars.we_scoutattack_end");
+		}
+
+		// Join room
+		joinRoom(room);
+	}
+
+	/**
+	 * Joins MMO rooms
+	 * 
+	 * @param roomName Room name
+	 * @param roomID   Specific room ID to join
+	 */
+	public void joinMmoRoom(String roomName, String roomID) {
+		// Create group if needed
+		RoomGroup group = sodZone.getRoomGroup(roomName);
+		if (group == null)
+			group = sodZone.addRoomGroup(roomName);
+
+		// Find room
+		RoomInfo room = group.getRoom(roomID);
+
+		// Create room if needed
+		EdgeMMOServer server = client.getObject(EdgeMMOServer.class);
+		if (room == null) {
+			// Create room
+			short userLimit = server.getConfiguration().roomUserLimit;
+			if (server.getConfiguration().roomUserLimits.containsKey(roomName))
+				userLimit = server.getConfiguration().roomUserLimits.get(roomName);
+			room = group.addGameRoom(roomID, false, roomID.equalsIgnoreCase("admin")
+					|| roomID.equalsIgnoreCase("moderator") || roomID.equalsIgnoreCase("staff"), userLimit, (short) 0);
+			room.addDynamicVariable("WE_ScoutAttack_End", "sod.rooms.any.vars.we_scoutattack_end");
+		}
+
+		// Check
+		if (room != null && (room.isPasswordProtected() || room.getVariable("EDGE_PermissionLevel_Requirement") != null
+				|| room.getVariable("EDGE_Permission_Requirement") != null)) {
+			// Protected room
+			// Use join key
+
+			// Get perm level
+			String levelName = "moderator";
+			PermissionLevel level = PermissionLevel.MODERATOR;
+			if (roomID.equalsIgnoreCase("admin")) {
+				levelName = "admin";
+				level = PermissionLevel.ADMINISTRATOR;
+			}
+			RoomVariable permVar = room.getVariable("EDGE_PermissionLevel_Requirement");
+			if (permVar != null) {
+				String lv = permVar.getValue().toString();
+				switch (lv) {
+
+				case "guest": {
+					levelName = "guest";
+					level = PermissionLevel.GUEST;
+					break;
+				}
+
+				case "player": {
+					levelName = "player";
+					level = PermissionLevel.PLAYER;
+					break;
+				}
+
+				case "trial_moderator": {
+					levelName = "trialmoderator";
+					level = PermissionLevel.TRIAL_MODERATOR;
+					break;
+				}
+
+				case "admin":
+				case "administrator": {
+					levelName = "admin";
+					level = PermissionLevel.ADMINISTRATOR;
+					break;
+				}
+
+				case "developer": {
+					levelName = "developer";
+					level = PermissionLevel.DEVELOPER;
+					break;
+				}
+
+				case "operator": {
+					levelName = "operator";
+					level = PermissionLevel.OPERATOR;
+					break;
+				}
+
+				}
+			}
+
+			// Permission
+			String perm = "mmo.overrides.moderator." + levelName + "." + roomID;
+			if (room.getVariable("EDGE_Permission_Requirement") != null)
+				perm = room.getVariable("EDGE_Permission_Requirement").getValue().toString();
+
+			// Load permissions
+			PermissionContext perms = PermissionContext.getFor(account);
+
+			// Check perms
+			if (!perms.hasPermission(perm, level)) {
+				// Reject
+				logger.warn("Player " + save.getUsername() + " (" + save.getSaveID()
+						+ ") attempted to join restricted room " + roomID + " (" + roomName + ")");
+				return;
+			}
 		}
 
 		// Join room
