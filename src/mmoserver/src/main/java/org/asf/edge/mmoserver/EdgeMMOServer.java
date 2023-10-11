@@ -18,12 +18,12 @@ import org.asf.edge.mmoserver.events.server.MMOServerSetupEvent;
 import org.asf.edge.mmoserver.events.server.MMOServerStartupEvent;
 import org.asf.edge.mmoserver.events.variables.DynamicRoomVariableSetupEvent;
 import org.asf.edge.mmoserver.networking.SmartfoxServer;
+import org.asf.edge.mmoserver.networking.channels.extensions.ChatChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.RoomChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.ServerTimeChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.UserVarsChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundRefreshUserVarsMessage;
 import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundSetPositionalVarsMessage;
-import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundSetUserVarsMessage;
 import org.asf.edge.mmoserver.networking.impl.BitswarmSmartfoxServer;
 import org.asf.edge.mmoserver.services.ZoneManager;
 import org.asf.edge.mmoserver.services.impl.ZoneManagerImpl;
@@ -51,7 +51,6 @@ import org.asf.edge.mmoserver.entities.positional.PositionalVariableContainer;
 import org.asf.edge.mmoserver.entities.smartfox.RoomInfo;
 import org.asf.edge.mmoserver.entities.smartfox.RoomVariable;
 import org.asf.edge.mmoserver.entities.smartfox.SfsUser;
-import org.asf.edge.mmoserver.entities.smartfox.UserVariable;
 
 /**
  * 
@@ -191,6 +190,7 @@ public class EdgeMMOServer implements IBaseServer {
 		server.registerChannel(new RoomChannel());
 		server.registerChannel(new UserVarsChannel());
 		server.registerChannel(new ServerTimeChannel());
+		server.registerChannel(new ChatChannel());
 		// TODO
 
 		// Select item manager
@@ -220,18 +220,10 @@ public class EdgeMMOServer implements IBaseServer {
 			PlayerInfo plr = ev.getPlayer();
 
 			// Prepare update
-			ClientboundSetUserVarsMessage update = new ClientboundSetUserVarsMessage();
 			ClientboundSetPositionalVarsMessage posUpdate = new ClientboundSetPositionalVarsMessage();
 
 			// Go through users in room
 			for (SfsUser usr : room.getSfsUserObjects()) {
-				ClientboundSetUserVarsMessage.UserVarUpdate u = new ClientboundSetUserVarsMessage.UserVarUpdate();
-				u.userID = usr.getUserNumericID();
-				for (UserVariable var : usr.getVariables()) {
-					u.vars.put(var.getName(), var.getValue());
-				}
-				update.varUpdates.add(u);
-
 				// Positional variables
 				PositionalVariableContainer varCont = usr.getObject(PositionalVariableContainer.class);
 				if (varCont != null) {
@@ -243,10 +235,6 @@ public class EdgeMMOServer implements IBaseServer {
 			}
 
 			// Send update
-			try {
-				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(update);
-			} catch (IOException e) {
-			}
 			try {
 				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(posUpdate);
 			} catch (IOException e) {
@@ -268,19 +256,10 @@ public class EdgeMMOServer implements IBaseServer {
 			PlayerInfo plr = ev.getPlayer();
 
 			// Prepare update
-			ClientboundSetUserVarsMessage update = new ClientboundSetUserVarsMessage();
 			ClientboundSetPositionalVarsMessage posUpdate = new ClientboundSetPositionalVarsMessage();
 
 			// Go through users in room
 			for (SfsUser usr : room.getSfsUserObjects()) {
-				// User vars
-				ClientboundSetUserVarsMessage.UserVarUpdate u = new ClientboundSetUserVarsMessage.UserVarUpdate();
-				u.userID = usr.getUserNumericID();
-				for (UserVariable var : usr.getVariables()) {
-					u.vars.put(var.getName(), var.getValue());
-				}
-				update.varUpdates.add(u);
-
 				// Positional variables
 				PositionalVariableContainer varCont = usr.getObject(PositionalVariableContainer.class);
 				if (varCont != null) {
@@ -292,10 +271,6 @@ public class EdgeMMOServer implements IBaseServer {
 			}
 
 			// Send update
-			try {
-				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(update);
-			} catch (IOException e) {
-			}
 			try {
 				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(posUpdate);
 			} catch (IOException e) {

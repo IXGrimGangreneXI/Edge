@@ -14,6 +14,7 @@ public class ClientboundSetUserVarsMessage implements ISodClientExtensionMessage
 
 	public static class UserVarUpdate {
 		public int userID;
+		public int roomID;
 		public HashMap<String, Object> vars = new HashMap<String, Object>();
 	}
 
@@ -39,6 +40,7 @@ public class ClientboundSetUserVarsMessage implements ISodClientExtensionMessage
 			SmartfoxPayload pl = (SmartfoxPayload) obj;
 			UserVarUpdate update = new UserVarUpdate();
 			update.userID = pl.getInt("MID");
+			update.roomID = pl.getInt("RID");
 			Map<String, Object> data = pl.toSfsObject();
 			data.forEach((key, value) -> {
 				if (key.equals("MID"))
@@ -55,6 +57,7 @@ public class ClientboundSetUserVarsMessage implements ISodClientExtensionMessage
 		for (UserVarUpdate update : varUpdates) {
 			SmartfoxPayload u = new SmartfoxPayload();
 			u.setInt("MID", update.userID);
+			u.setInt("RID", update.roomID);
 			for (String key : update.vars.keySet())
 				u.toSfsObject().put(key, update.vars.get(key));
 			objects.add(u);

@@ -45,6 +45,7 @@ public class SetUserVarsHandler implements IExtensionMessageHandler<ServerboundS
 					message.vars.forEach((key, val) -> {
 						UserVarUpdate u = new UserVarUpdate();
 						u.userID = usr.getUserNumericID();
+						u.roomID = room.getRoomID();
 						u.vars.put(key, val);
 						update.varUpdates.add(u);
 					});
@@ -85,6 +86,7 @@ public class SetUserVarsHandler implements IExtensionMessageHandler<ServerboundS
 					message.vars.forEach((key, val) -> {
 						UserVarUpdate u = new UserVarUpdate();
 						u.userID = usr.getUserNumericID();
+						u.roomID = room.getRoomID();
 						u.vars.put(key, val);
 						update.varUpdates.add(u);
 					});
