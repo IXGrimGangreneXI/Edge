@@ -22,6 +22,7 @@ import org.asf.edge.mmoserver.networking.channels.extensions.RoomChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.ServerTimeChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.UserVarsChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundRefreshUserVarsMessage;
+import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundSetPositionalVarsMessage;
 import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundSetUserVarsMessage;
 import org.asf.edge.mmoserver.networking.impl.BitswarmSmartfoxServer;
 import org.asf.edge.mmoserver.services.ZoneManager;
@@ -46,6 +47,7 @@ import org.asf.edge.common.util.HttpUpgradeUtil;
 import org.asf.edge.common.util.SimpleBinaryMessageClient;
 import org.asf.edge.mmoserver.config.MMOServerConfig;
 import org.asf.edge.mmoserver.entities.player.PlayerInfo;
+import org.asf.edge.mmoserver.entities.positional.PositionalVariableContainer;
 import org.asf.edge.mmoserver.entities.smartfox.RoomInfo;
 import org.asf.edge.mmoserver.entities.smartfox.RoomVariable;
 import org.asf.edge.mmoserver.entities.smartfox.SfsUser;
@@ -219,6 +221,7 @@ public class EdgeMMOServer implements IBaseServer {
 
 			// Prepare update
 			ClientboundSetUserVarsMessage update = new ClientboundSetUserVarsMessage();
+			ClientboundSetPositionalVarsMessage posUpdate = new ClientboundSetPositionalVarsMessage();
 
 			// Go through users in room
 			for (SfsUser usr : room.getSfsUserObjects()) {
@@ -228,11 +231,24 @@ public class EdgeMMOServer implements IBaseServer {
 					u.vars.put(var.getName(), var.getValue());
 				}
 				update.varUpdates.add(u);
+
+				// Positional variables
+				PositionalVariableContainer varCont = usr.getObject(PositionalVariableContainer.class);
+				if (varCont != null) {
+					ClientboundSetPositionalVarsMessage.UserVarUpdate u2 = new ClientboundSetPositionalVarsMessage.UserVarUpdate();
+					u2.userID = usr.getUserNumericID();
+					u2.vars.putAll(varCont.positionalVariables);
+					posUpdate.varUpdates.add(u2);
+				}
 			}
 
 			// Send update
 			try {
 				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(update);
+			} catch (IOException e) {
+			}
+			try {
+				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(posUpdate);
 			} catch (IOException e) {
 			}
 
@@ -253,20 +269,35 @@ public class EdgeMMOServer implements IBaseServer {
 
 			// Prepare update
 			ClientboundSetUserVarsMessage update = new ClientboundSetUserVarsMessage();
+			ClientboundSetPositionalVarsMessage posUpdate = new ClientboundSetPositionalVarsMessage();
 
 			// Go through users in room
 			for (SfsUser usr : room.getSfsUserObjects()) {
+				// User vars
 				ClientboundSetUserVarsMessage.UserVarUpdate u = new ClientboundSetUserVarsMessage.UserVarUpdate();
 				u.userID = usr.getUserNumericID();
 				for (UserVariable var : usr.getVariables()) {
 					u.vars.put(var.getName(), var.getValue());
 				}
 				update.varUpdates.add(u);
+
+				// Positional variables
+				PositionalVariableContainer varCont = usr.getObject(PositionalVariableContainer.class);
+				if (varCont != null) {
+					ClientboundSetPositionalVarsMessage.UserVarUpdate u2 = new ClientboundSetPositionalVarsMessage.UserVarUpdate();
+					u2.userID = usr.getUserNumericID();
+					u2.vars.putAll(varCont.positionalVariables);
+					posUpdate.varUpdates.add(u2);
+				}
 			}
 
 			// Send update
 			try {
 				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(update);
+			} catch (IOException e) {
+			}
+			try {
+				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(posUpdate);
 			} catch (IOException e) {
 			}
 

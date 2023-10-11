@@ -257,11 +257,11 @@ public abstract class SmartfoxClient {
 					break;
 			}
 			sessionID = id;
-			int uId = rnd.nextInt();
+			int uId = rnd.nextInt(0, Integer.MAX_VALUE);
 			while (true) {
 				int idF = uId;
 				if (Stream.of(getServer().getClients()).anyMatch(t -> t.getSessionNumericID() == idF) || uId == 0)
-					uId = rnd.nextInt();
+					uId = rnd.nextInt(0, Integer.MAX_VALUE);
 				else
 					break;
 			}
