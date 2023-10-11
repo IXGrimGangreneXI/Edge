@@ -38,17 +38,19 @@ public class SetUserVarsHandler implements IExtensionMessageHandler<ServerboundS
 							var.setValue(val);
 						else
 							var = usr.addVariable(key, val);
+						message.vars.put(key, var.getValue());
 					});
 
 					// Broadcast update
 					ClientboundSetUserVarsMessage update = new ClientboundSetUserVarsMessage();
+					UserVarUpdate u = new UserVarUpdate();
+					u.userID = usr.getUserNumericID();
+					u.roomID = room.getRoomID();
+					u.vars.put("UID", usr.getUserID());
 					message.vars.forEach((key, val) -> {
-						UserVarUpdate u = new UserVarUpdate();
-						u.userID = usr.getUserNumericID();
-						u.roomID = room.getRoomID();
 						u.vars.put(key, val);
-						update.varUpdates.add(u);
 					});
+					update.varUpdates.add(u);
 					for (PlayerInfo plr : room.getPlayers()) {
 						if (!plr.getSave().getSaveID().equals(player.getSave().getSaveID()))
 							plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(update);
@@ -79,17 +81,19 @@ public class SetUserVarsHandler implements IExtensionMessageHandler<ServerboundS
 							var.setValue(val);
 						else
 							var = usr.addVariable(key, val);
+						message.vars.put(key, var.getValue());
 					});
 
 					// Broadcast update
 					ClientboundSetUserVarsMessage update = new ClientboundSetUserVarsMessage();
+					UserVarUpdate u = new UserVarUpdate();
+					u.userID = usr.getUserNumericID();
+					u.roomID = room.getRoomID();
+					u.vars.put("UID", usr.getUserID());
 					message.vars.forEach((key, val) -> {
-						UserVarUpdate u = new UserVarUpdate();
-						u.userID = usr.getUserNumericID();
-						u.roomID = room.getRoomID();
 						u.vars.put(key, val);
-						update.varUpdates.add(u);
 					});
+					update.varUpdates.add(u);
 					for (PlayerInfo plr : room.getPlayers()) {
 						if (!plr.getSave().getSaveID().equals(player.getSave().getSaveID()))
 							plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(update);

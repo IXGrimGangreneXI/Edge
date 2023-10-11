@@ -2595,6 +2595,17 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		return ok("text/xml", req.generateXmlValue("int", currentC + amount));
 	}
 
+	@SodRequest
+	@SodTokenSecured
+	@TokenRequireSave
+	@TokenRequireCapability("gp")
+	public FunctionResult getBuddyList(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+			AccountObject account, AccountSaveContainer save) throws IOException {
+		// TODO: stubbed/dummied
+		return ok("text/xml", "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+				+ "<ArrayOfBuddy xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://api.jumpstart.com/\" xsi:nil=\"true\" />");
+	}
+
 	private static KeyValuePairData[] appendTo(KeyValuePairData[] arr, KeyValuePairData block) {
 		KeyValuePairData[] newB = new KeyValuePairData[arr.length + 1];
 		for (int i = 0; i < newB.length; i++) {

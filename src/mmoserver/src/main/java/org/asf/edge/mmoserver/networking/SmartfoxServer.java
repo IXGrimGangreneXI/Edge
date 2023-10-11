@@ -111,6 +111,23 @@ public abstract class SmartfoxServer {
 			pkt.roomID = ev.getRoom().getRoomID();
 			pkt.userID = ev.getSfsUser().getUserNumericID();
 
+			// Send
+			for (SmartfoxClient cl : getClients()) {
+				try {
+					// Check if subscribed and not the source player
+					PlayerInfo plr = cl.getObject(PlayerInfo.class);
+					if (plr != null
+							&& ((plr.getZone() != null
+									&& plr.getZone().getName().equals(ev.getRoom().getGroup().getZone().getName()))
+									|| ev.getRoom().hasPlayer(plr) || ev.getRoom().hasSpectatorPlayer(plr))
+							&& !plr.getSave().getSaveID().equals(ev.getSfsUser().getUserID())) {
+						// Send
+						cl.getChannel(SystemChannel.class).sendPacket(pkt);
+					}
+				} catch (IOException e) {
+				}
+			}
+
 			// Create update
 			ClientboundRoomUserCountChangedPacket cU = new ClientboundRoomUserCountChangedPacket();
 			cU.roomID = ev.getRoom().getRoomID();

@@ -240,7 +240,7 @@ public class BitswarmSmartfoxServer extends SmartfoxServer {
 		getLogger().debug("Client disconnected: " + client.getRemoteAddress());
 		try {
 			client.socket.close();
-		} catch (IOException e2) {
+		} catch (Exception e2) {
 		}
 		client.socket = null;
 	}

@@ -46,6 +46,8 @@ public class SetPositionalVarsHandler implements IExtensionMessageHandler<Server
 					ClientboundSetPositionalVarsMessage update = new ClientboundSetPositionalVarsMessage();
 					UserVarUpdate u = new UserVarUpdate();
 					u.userID = usr.getUserNumericID();
+					u.roomID = room.getRoomID();
+					u.vars.put("UID", usr.getUserID());
 					message.vars.forEach((key, val) -> {
 						u.vars.put(key, val);
 					});

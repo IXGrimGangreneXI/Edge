@@ -17,6 +17,8 @@ import org.asf.edge.mmoserver.events.server.MMOServerSetupDiscoveryZonesEvent;
 import org.asf.edge.mmoserver.events.server.MMOServerSetupEvent;
 import org.asf.edge.mmoserver.events.server.MMOServerStartupEvent;
 import org.asf.edge.mmoserver.events.variables.DynamicRoomVariableSetupEvent;
+import org.asf.edge.mmoserver.events.variables.UserVariableAddedEvent;
+import org.asf.edge.mmoserver.events.variables.UserVariableValueUpdateEvent;
 import org.asf.edge.mmoserver.networking.SmartfoxServer;
 import org.asf.edge.mmoserver.networking.channels.extensions.ChatChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.RoomChannel;
@@ -24,11 +26,16 @@ import org.asf.edge.mmoserver.networking.channels.extensions.ServerTimeChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.UserVarsChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundRefreshUserVarsMessage;
 import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundSetPositionalVarsMessage;
+import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundSetUserVarsMessage;
 import org.asf.edge.mmoserver.networking.impl.BitswarmSmartfoxServer;
 import org.asf.edge.mmoserver.services.ZoneManager;
 import org.asf.edge.mmoserver.services.impl.ZoneManagerImpl;
 import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.edge.modules.eventbus.EventListener;
+import org.asf.edge.modules.eventbus.IEventReceiver;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
 import org.asf.edge.common.EdgeServerEnvironment;
@@ -51,6 +58,7 @@ import org.asf.edge.mmoserver.entities.positional.PositionalVariableContainer;
 import org.asf.edge.mmoserver.entities.smartfox.RoomInfo;
 import org.asf.edge.mmoserver.entities.smartfox.RoomVariable;
 import org.asf.edge.mmoserver.entities.smartfox.SfsUser;
+import org.asf.edge.mmoserver.entities.smartfox.UserVariable;
 
 /**
  * 
@@ -69,6 +77,8 @@ public class EdgeMMOServer implements IBaseServer {
 
 	private Socket uplinkSocket;
 	private ArrayList<String> mmoZones = new ArrayList<String>();
+
+	private EventContainer events = new EventContainer();
 
 	@Override
 	public String getVersion() {
@@ -215,77 +225,11 @@ public class EdgeMMOServer implements IBaseServer {
 			// Dynamic variables
 			setupDynamicVar(ev.getDynamicAssignmentKey(), ev.getVariable());
 		});
-		EventBus.getInstance().addEventHandler(PlayerRoomJoinEvent.class, ev -> {
-			RoomInfo room = ev.getRoom();
-			PlayerInfo plr = ev.getPlayer();
-
-			// Prepare update
-			ClientboundSetPositionalVarsMessage posUpdate = new ClientboundSetPositionalVarsMessage();
-
-			// Go through users in room
-			for (SfsUser usr : room.getSfsUserObjects()) {
-				// Positional variables
-				PositionalVariableContainer varCont = usr.getObject(PositionalVariableContainer.class);
-				if (varCont != null) {
-					ClientboundSetPositionalVarsMessage.UserVarUpdate u2 = new ClientboundSetPositionalVarsMessage.UserVarUpdate();
-					u2.userID = usr.getUserNumericID();
-					u2.vars.putAll(varCont.positionalVariables);
-					posUpdate.varUpdates.add(u2);
-				}
-			}
-
-			// Send update
-			try {
-				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(posUpdate);
-			} catch (IOException e) {
-			}
-
-			// Go through users in room
-			for (SfsUser usr : room.getSfsUserObjects()) {
-				// Send refresh
-				try {
-					ClientboundRefreshUserVarsMessage ref = new ClientboundRefreshUserVarsMessage();
-					ref.userID = usr.getUserNumericID();
-					plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(ref);
-				} catch (IOException e) {
-				}
-			}
+		EventBus.getInstance().addEventHandler(UserVariableValueUpdateEvent.class, ev -> {
+			updateVariable(ev.getUser(), ev.getVariable());
 		});
-		EventBus.getInstance().addEventHandler(PlayerRoomJoinSpectatorEvent.class, ev -> {
-			RoomInfo room = ev.getRoom();
-			PlayerInfo plr = ev.getPlayer();
-
-			// Prepare update
-			ClientboundSetPositionalVarsMessage posUpdate = new ClientboundSetPositionalVarsMessage();
-
-			// Go through users in room
-			for (SfsUser usr : room.getSfsUserObjects()) {
-				// Positional variables
-				PositionalVariableContainer varCont = usr.getObject(PositionalVariableContainer.class);
-				if (varCont != null) {
-					ClientboundSetPositionalVarsMessage.UserVarUpdate u2 = new ClientboundSetPositionalVarsMessage.UserVarUpdate();
-					u2.userID = usr.getUserNumericID();
-					u2.vars.putAll(varCont.positionalVariables);
-					posUpdate.varUpdates.add(u2);
-				}
-			}
-
-			// Send update
-			try {
-				plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(posUpdate);
-			} catch (IOException e) {
-			}
-
-			// Go through users in room
-			for (SfsUser usr : room.getSfsUserObjects()) {
-				// Send refresh
-				try {
-					ClientboundRefreshUserVarsMessage ref = new ClientboundRefreshUserVarsMessage();
-					ref.userID = usr.getUserNumericID();
-					plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(ref);
-				} catch (IOException e) {
-				}
-			}
+		EventBus.getInstance().addEventHandler(UserVariableAddedEvent.class, ev -> {
+			updateVariable(ev.getUser(), ev.getVariable());
 		});
 
 		// Select zone manager
@@ -410,6 +354,7 @@ public class EdgeMMOServer implements IBaseServer {
 		// Start server
 		logger.info("Starting the MMO server...");
 		server.start();
+		EventBus.getInstance().addAllEventsFromReceiver(events);
 
 		// Call event
 		EventBus.getInstance().dispatchEvent(new MMOServerStartupEvent(config, this));
@@ -504,6 +449,7 @@ public class EdgeMMOServer implements IBaseServer {
 			server.stop();
 		} catch (IOException e) {
 		}
+		EventBus.getInstance().removeAllEventsFromReceiver(events);
 		logger.info("MMO server stopped successfully!");
 	}
 
@@ -527,6 +473,7 @@ public class EdgeMMOServer implements IBaseServer {
 			server.stopForced();
 		} catch (IOException e) {
 		}
+		EventBus.getInstance().removeAllEventsFromReceiver(events);
 		logger.info("MMO server stopped successfully!");
 	}
 
@@ -578,6 +525,108 @@ public class EdgeMMOServer implements IBaseServer {
 			break;
 		}
 
+		}
+	}
+
+	private void updateVariable(SfsUser user, UserVariable variable) {
+		// Check variable
+		switch (variable.getName()) {
+
+		// Avatar data
+		case "A": {
+			// Parse data
+			JsonObject avi = JsonParser.parseString(variable.getValue().toString()).getAsJsonObject();
+			boolean updated = false;
+
+			// Check ID
+			if (avi.get("Id").isJsonNull()) {
+				// Update
+				avi.addProperty("Id", user.getUserNumericID());
+				updated = true;
+			}
+
+			// Check
+			if (updated) {
+				// Save
+				variable.setValue(avi.toString());
+			}
+
+			// Break
+			break;
+		}
+
+		}
+	}
+
+	private class EventContainer implements IEventReceiver {
+
+		private void joinedRoom(RoomInfo room, PlayerInfo plr) {
+			// Sync other players
+			for (SfsUser usr : room.getSfsUserObjects()) {
+				// Skip self
+				if (usr.getUserID().equals(plr.getSave().getSaveID()))
+					continue;
+
+				// Create packet
+				ClientboundSetUserVarsMessage pkt = new ClientboundSetUserVarsMessage();
+				ClientboundSetPositionalVarsMessage positional = new ClientboundSetPositionalVarsMessage();
+
+				// Populate variable data
+				ClientboundSetUserVarsMessage.UserVarUpdate u = new ClientboundSetUserVarsMessage.UserVarUpdate();
+				u.roomID = room.getRoomID();
+				u.userID = usr.getUserNumericID();
+				u.vars.put("UID", usr.getUserID());
+				for (UserVariable var : usr.getVariables())
+					u.vars.put(var.getName(), var.getValue());
+				pkt.varUpdates.add(u);
+
+				// Populate positional variables
+				PositionalVariableContainer varCont = usr.getObject(PositionalVariableContainer.class);
+				if (varCont != null) {
+					ClientboundSetPositionalVarsMessage.UserVarUpdate u2 = new ClientboundSetPositionalVarsMessage.UserVarUpdate();
+					u2.roomID = room.getRoomID();
+					u2.userID = usr.getUserNumericID();
+					u2.vars.put("UID", usr.getUserID());
+					u2.vars.putAll(varCont.positionalVariables);
+					positional.varUpdates.add(u2);
+				}
+
+				// Send
+				try {
+					plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(positional);
+				} catch (IOException e) {
+				}
+				try {
+					plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(pkt);
+				} catch (IOException e) {
+				}
+
+				// Send refresh
+				try {
+					ClientboundRefreshUserVarsMessage ref = new ClientboundRefreshUserVarsMessage();
+					ref.userID = usr.getUserNumericID();
+					plr.getClient().getExtensionChannel(UserVarsChannel.class).sendMessage(ref);
+				} catch (IOException e) {
+				}
+			}
+		}
+
+		@EventListener
+		public void joinRoom(PlayerRoomJoinEvent ev) {
+			RoomInfo room = ev.getRoom();
+			PlayerInfo plr = ev.getPlayer();
+
+			// Join
+			joinedRoom(room, plr);
+		}
+
+		@EventListener
+		public void joinSpectate(PlayerRoomJoinSpectatorEvent ev) {
+			RoomInfo room = ev.getRoom();
+			PlayerInfo plr = ev.getPlayer();
+
+			// Join
+			joinedRoom(room, plr);
 		}
 	}
 
