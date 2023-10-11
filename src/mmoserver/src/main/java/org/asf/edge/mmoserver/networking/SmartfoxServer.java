@@ -14,11 +14,12 @@ import org.asf.edge.mmoserver.events.zones.RoomGroupCreatedEvent;
 import org.asf.edge.mmoserver.events.zones.RoomGroupDeletedEvent;
 import org.asf.edge.mmoserver.events.zones.ZoneCreatedEvent;
 import org.asf.edge.mmoserver.events.zones.ZoneDeletedEvent;
-import org.asf.edge.mmoserver.networking.channels.SystemChannel;
-import org.asf.edge.mmoserver.networking.channels.system.packets.clientbound.ClientboundRoomCreatePacket;
-import org.asf.edge.mmoserver.networking.channels.system.packets.clientbound.ClientboundRoomDeletePacket;
-import org.asf.edge.mmoserver.networking.channels.system.packets.clientbound.ClientboundSetRoomVariablePacket;
-import org.asf.edge.mmoserver.networking.packets.AbstractPacketChannel;
+import org.asf.edge.mmoserver.networking.channels.smartfox.SystemChannel;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.ClientboundRoomCreatePacket;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.ClientboundRoomDeletePacket;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.ClientboundSetRoomVariablePacket;
+import org.asf.edge.mmoserver.networking.packets.ExtensionMessageChannel;
+import org.asf.edge.mmoserver.networking.packets.PacketChannel;
 import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.modules.eventbus.EventListener;
 import org.asf.edge.modules.eventbus.IEventReceiver;
@@ -35,7 +36,8 @@ public abstract class SmartfoxServer {
 	private Logger logger = LogManager.getLogger("smartfox-server");
 	private EventBus eventBus = EventBus.getInstance().createBus();
 
-	private ArrayList<AbstractPacketChannel> registry = new ArrayList<AbstractPacketChannel>();
+	private ArrayList<PacketChannel> registry = new ArrayList<PacketChannel>();
+	private ArrayList<ExtensionMessageChannel> extensionRegistry = new ArrayList<ExtensionMessageChannel>();
 	private ServerEvents events = new ServerEvents();
 
 	// Important events that need to be attached for the sfs server to work
@@ -147,8 +149,17 @@ public abstract class SmartfoxServer {
 	 * 
 	 * @param channel Channel to register
 	 */
-	public void registerChannel(AbstractPacketChannel channel) {
+	public void registerChannel(PacketChannel channel) {
 		registry.add(channel);
+	}
+
+	/**
+	 * Registers extension message channels
+	 * 
+	 * @param channel Channel to register
+	 */
+	public void registerChannel(ExtensionMessageChannel channel) {
+		extensionRegistry.add(channel);
 	}
 
 	/**
@@ -249,7 +260,8 @@ public abstract class SmartfoxServer {
 	 */
 	protected void onClientAccepted(SmartfoxClient client) {
 		// Start client
-		client.initRegistry(registry.toArray(t -> new AbstractPacketChannel[t]));
+		client.initRegistry(registry.toArray(t -> new PacketChannel[t]),
+				extensionRegistry.toArray(t -> new ExtensionMessageChannel[t]));
 		client.startClient();
 	}
 

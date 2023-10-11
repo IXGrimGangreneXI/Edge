@@ -1,8 +1,9 @@
-package org.asf.edge.mmoserver.networking.channels.system.handlers;
+package org.asf.edge.mmoserver.networking.channels.smartfox.system.handlers;
 
 import java.io.IOException;
-import org.asf.edge.mmoserver.networking.channels.system.packets.serverbound.ServerboundLogoutPacket;
-import org.asf.edge.mmoserver.networking.packets.AbstractPacketChannel;
+
+import org.asf.edge.mmoserver.networking.packets.PacketChannel;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.serverbound.ServerboundLogoutPacket;
 import org.asf.edge.mmoserver.networking.packets.IPacketHandler;
 
 public class LogoutHandler implements IPacketHandler<ServerboundLogoutPacket> {
@@ -13,7 +14,7 @@ public class LogoutHandler implements IPacketHandler<ServerboundLogoutPacket> {
 	}
 
 	@Override
-	public boolean handle(ServerboundLogoutPacket packet, AbstractPacketChannel channel) throws IOException {
+	public boolean handle(ServerboundLogoutPacket packet, PacketChannel channel) throws IOException {
 		channel.getClient().disconnect();
 		return true;
 	}

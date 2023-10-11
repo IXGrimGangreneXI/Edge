@@ -1,4 +1,4 @@
-package org.asf.edge.mmoserver.networking.channels.system.packets.serverbound;
+package org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.serverbound;
 
 import java.util.HashMap;
 import java.util.Map;

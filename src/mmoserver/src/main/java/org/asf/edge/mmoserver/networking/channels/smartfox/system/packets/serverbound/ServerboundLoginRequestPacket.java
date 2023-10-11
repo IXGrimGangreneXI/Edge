@@ -1,4 +1,4 @@
-package org.asf.edge.mmoserver.networking.channels.system.packets.serverbound;
+package org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.serverbound;
 
 import org.asf.edge.mmoserver.networking.packets.ISmartfoxPacket;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPacketData;

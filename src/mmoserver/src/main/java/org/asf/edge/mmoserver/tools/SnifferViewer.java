@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 
 import java.awt.event.ActionListener;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -381,6 +382,7 @@ public class SnifferViewer {
 		lastSniffData = sourceFile;
 
 		// Read data into memory
+		ByteArrayOutputStream packetBuffer = new ByteArrayOutputStream();
 		try {
 			// Read file
 			String buffer = "";
@@ -428,18 +430,92 @@ public class SnifferViewer {
 							|| !obj.has("data")) && (obj.has("type") && !obj.get("type").getAsString().equals("http")))
 						throw new IOException("Invalid file");
 					if (!obj.has("type") || (!obj.get("type").getAsString().equals("bstcp")
+							&& !obj.get("type").getAsString().equals("tcp")
 							&& !obj.get("type").getAsString().equals("udp")))
 						continue;
 
-					// Load object into memory
-					SnifferDataBlock block = new SnifferDataBlock();
-					block.type = obj.get("type").getAsString().equals("udp") ? "UDP" : "TCP";
-					block.host = obj.get("host").getAsString();
-					block.port = obj.get("port").getAsInt();
-					block.side = obj.get("side").getAsString();
-					block.time = obj.get("time").getAsLong();
-					block.data = Base64.getDecoder().decode(obj.get("data").getAsString());
-					sniffData.add(block);
+					// Decode raw TCP bitswarm packets
+					if (obj.get("type").getAsString().equals("tcp")) {
+						// Read bitswarm packets
+						// Read current data
+						byte[] data = Base64.getDecoder().decode(obj.get("data").getAsString());
+
+						// Add buffered data
+						ByteArrayOutputStream bt = new ByteArrayOutputStream();
+						bt.write(packetBuffer.toByteArray());
+						bt.write(data);
+
+						// Clear buffer
+						packetBuffer = new ByteArrayOutputStream();
+
+						// Read as many packets as possible, when there isnt enough data to read a
+						// packet, move the buffer to the next packet and break
+						ByteArrayInputStream bbIn = new ByteArrayInputStream(bt.toByteArray());
+						while (true) {
+							ByteArrayOutputStream buff = new ByteArrayOutputStream();
+							try {
+								// Read header
+								int bH = bbIn.read();
+								if (bH == -1)
+									throw new IOException();
+								buff.write(bH);
+								boolean encrypted = ((bH & 64) > 0);
+								boolean compressed = ((bH & 32) > 0);
+								boolean largeSize = ((bH & 8) > 0);
+
+								// Read length
+								byte[] bD = largeSize ? bbIn.readNBytes(4) : bbIn.readNBytes(2);
+								buff.write(bD);
+								int length = (largeSize ? ByteBuffer.wrap(bD).getInt()
+										: ByteBuffer.wrap(bD).getShort());
+
+								// Read body
+								byte[] payload = bbIn.readNBytes(length);
+								buff.write(payload);
+								if (payload.length != length)
+									throw new IOException();
+
+								// Decompress and decrypt
+								if (encrypted)
+									throw new IllegalArgumentException("Encryption not supported");
+								if (compressed) {
+									ByteArrayInputStream bIn = new ByteArrayInputStream(payload);
+									InflaterInputStream inInf = new InflaterInputStream(bIn);
+									payload = inInf.readAllBytes();
+									inInf.close();
+								}
+
+								// Got a packet
+								buff = new ByteArrayOutputStream();
+
+								// Load object into memory
+								SnifferDataBlock block = new SnifferDataBlock();
+								block.type = obj.get("type").getAsString().equals("udp") ? "UDP" : "TCP";
+								block.host = obj.get("host").getAsString();
+								block.port = obj.get("port").getAsInt();
+								block.side = obj.get("side").getAsString();
+								block.time = obj.get("time").getAsLong();
+								block.data = payload;
+								sniffData.add(block);
+							} catch (IOException e) {
+								// Write to buffer for later
+								packetBuffer.write(buff.toByteArray());
+								break;
+							} catch (IllegalArgumentException e) {
+								break;
+							}
+						}
+					} else {
+						// Load object into memory
+						SnifferDataBlock block = new SnifferDataBlock();
+						block.type = obj.get("type").getAsString().equals("udp") ? "UDP" : "TCP";
+						block.host = obj.get("host").getAsString();
+						block.port = obj.get("port").getAsInt();
+						block.side = obj.get("side").getAsString();
+						block.time = obj.get("time").getAsLong();
+						block.data = Base64.getDecoder().decode(obj.get("data").getAsString());
+						sniffData.add(block);
+					}
 				} else
 					throw new IOException("Invalid file");
 			}

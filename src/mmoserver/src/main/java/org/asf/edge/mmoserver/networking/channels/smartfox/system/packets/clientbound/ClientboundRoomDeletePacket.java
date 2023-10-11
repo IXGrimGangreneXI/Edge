@@ -1,18 +1,20 @@
-package org.asf.edge.mmoserver.networking.channels.system.packets.serverbound;
+package org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound;
 
 import org.asf.edge.mmoserver.networking.packets.ISmartfoxPacket;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPacketData;
 
-public class ServerboundLogoutPacket implements ISmartfoxPacket {
+public class ClientboundRoomDeletePacket implements ISmartfoxPacket {
+
+	public int roomID;
 
 	@Override
 	public ISmartfoxPacket createInstance() {
-		return new ServerboundLogoutPacket();
+		return new ClientboundRoomDeletePacket();
 	}
 
 	@Override
 	public short packetID() {
-		return 26;
+		return 1003;
 	}
 
 	@Override
@@ -21,6 +23,7 @@ public class ServerboundLogoutPacket implements ISmartfoxPacket {
 
 	@Override
 	public void build(SmartfoxPacketData packet) {
+		packet.payload.setInt("r", roomID);
 	}
 
 }

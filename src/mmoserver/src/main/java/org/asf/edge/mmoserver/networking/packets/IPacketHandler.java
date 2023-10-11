@@ -23,7 +23,7 @@ public interface IPacketHandler<T extends ISmartfoxPacket> {
 	 * Checks if a packet can be handled
 	 * 
 	 * @param packet Packet to handle
-	 * @return True if the packet can be handled, false otehrwise
+	 * @return True if the packet can be handled, false otherwise
 	 */
 	public default boolean canHandle(T packet) {
 		return true;
@@ -36,6 +36,6 @@ public interface IPacketHandler<T extends ISmartfoxPacket> {
 	 * @param channel Packet channel
 	 * @return True if handled, false otherwise
 	 */
-	public boolean handle(T packet, AbstractPacketChannel channel) throws IOException;
+	public boolean handle(T packet, PacketChannel channel) throws IOException;
 
 }

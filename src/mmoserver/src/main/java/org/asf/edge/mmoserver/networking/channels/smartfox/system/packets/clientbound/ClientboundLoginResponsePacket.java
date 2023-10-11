@@ -1,4 +1,4 @@
-package org.asf.edge.mmoserver.networking.channels.system.packets.clientbound;
+package org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound;
 
 import org.asf.edge.mmoserver.entities.smartfox.RoomInfo;
 import org.asf.edge.mmoserver.io.SequenceWriter;

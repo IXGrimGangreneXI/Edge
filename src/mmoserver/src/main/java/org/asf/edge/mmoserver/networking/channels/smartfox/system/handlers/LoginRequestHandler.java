@@ -1,4 +1,4 @@
-package org.asf.edge.mmoserver.networking.channels.system.handlers;
+package org.asf.edge.mmoserver.networking.channels.smartfox.system.handlers;
 
 import java.io.IOException;
 import org.apache.logging.log4j.Logger;
@@ -13,9 +13,9 @@ import org.asf.edge.mmoserver.entities.smartfox.GameZone;
 import org.asf.edge.mmoserver.events.players.PlayerAuthenticateEvent;
 import org.asf.edge.mmoserver.events.players.PlayerJoinEvent;
 import org.asf.edge.mmoserver.networking.SmartfoxClient;
-import org.asf.edge.mmoserver.networking.channels.system.packets.clientbound.ClientboundLoginResponsePacket;
-import org.asf.edge.mmoserver.networking.channels.system.packets.serverbound.ServerboundLoginRequestPacket;
-import org.asf.edge.mmoserver.networking.packets.AbstractPacketChannel;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.ClientboundLoginResponsePacket;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.serverbound.ServerboundLoginRequestPacket;
+import org.asf.edge.mmoserver.networking.packets.PacketChannel;
 import org.asf.edge.mmoserver.networking.packets.IPacketHandler;
 import org.asf.edge.mmoserver.networking.sfs.SfsErrorCode;
 import org.asf.edge.mmoserver.services.ZoneManager;
@@ -30,7 +30,7 @@ public class LoginRequestHandler implements IPacketHandler<ServerboundLoginReque
 	}
 
 	@Override
-	public boolean handle(ServerboundLoginRequestPacket packet, AbstractPacketChannel channel) throws IOException {
+	public boolean handle(ServerboundLoginRequestPacket packet, PacketChannel channel) throws IOException {
 		// Retrieve objects
 		SmartfoxClient client = channel.getClient();
 		EdgeMMOServer server = client.getObject(EdgeMMOServer.class);

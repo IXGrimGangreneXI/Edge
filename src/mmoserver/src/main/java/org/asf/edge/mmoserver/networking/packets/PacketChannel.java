@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Sky Swimmer
  *
  */
-public abstract class AbstractPacketChannel {
+public abstract class PacketChannel {
 
 	private SmartfoxClient client;
 	private ArrayList<ISmartfoxPacket> packetReg = new ArrayList<ISmartfoxPacket>();
@@ -44,9 +44,9 @@ public abstract class AbstractPacketChannel {
 	/**
 	 * Called to create a new instance of the channel type
 	 * 
-	 * @return AbstractPacketChannel instance
+	 * @return PacketChannel instance
 	 */
-	public abstract AbstractPacketChannel createInstance();
+	public abstract PacketChannel createInstance();
 
 	/**
 	 * Called to register packets
@@ -86,7 +86,7 @@ public abstract class AbstractPacketChannel {
 	}
 
 	/**
-	 * Registers packet handlers + ", client: " + client.getRemoteAddress()
+	 * Registers packet handlers
 	 * 
 	 * @param handler Packet handler to register
 	 * 
@@ -134,17 +134,13 @@ public abstract class AbstractPacketChannel {
 	 * 
 	 * @param packet              Packet to send
 	 * @param responsePacketClass Response packet class
-	 * @param <T>                 Response packet type
 	 * @param timeout             Timeout length
+	 * @param <T>                 Response packet type
 	 * @throws IOException If sending fails
 	 */
 	@SuppressWarnings("unchecked")
 	public <T extends ISmartfoxPacket> T sendPacketAndWaitForResponse(ISmartfoxPacket packet,
 			Class<ISmartfoxPacket> responsePacketClass, int timeout) throws IOException {
-		// Find
-		if (!packetReg.stream().anyMatch(t -> t.getClass().isAssignableFrom(packet.getClass())))
-			throw new IllegalArgumentException("Packet type is not present in channel");
-
 		// Create handler
 		ResponseContainer resp = new ResponseContainer();
 		synchronized (singleTimeHandlers) {

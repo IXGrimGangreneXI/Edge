@@ -15,11 +15,13 @@ import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.mmoserver.events.clients.ClientConnectedEvent;
 import org.asf.edge.mmoserver.events.clients.ClientDisconnectedEvent;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPayload;
-import org.asf.edge.mmoserver.networking.channels.ExtensionChannel;
-import org.asf.edge.mmoserver.networking.channels.SystemChannel;
-import org.asf.edge.mmoserver.networking.channels.system.packets.clientbound.ClientboundHandshakeStartPacket;
-import org.asf.edge.mmoserver.networking.channels.system.packets.serverbound.ServerboundHandshakeStartPacket;
-import org.asf.edge.mmoserver.networking.packets.AbstractPacketChannel;
+import org.asf.edge.mmoserver.networking.channels.smartfox.ExtensionChannel;
+import org.asf.edge.mmoserver.networking.channels.smartfox.SystemChannel;
+import org.asf.edge.mmoserver.networking.channels.smartfox.extension.packets.serverbound.ServerboundExtensionMessage;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.ClientboundHandshakeStartPacket;
+import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.serverbound.ServerboundHandshakeStartPacket;
+import org.asf.edge.mmoserver.networking.packets.ExtensionMessageChannel;
+import org.asf.edge.mmoserver.networking.packets.PacketChannel;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPacketData;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,14 +38,20 @@ import com.google.gson.JsonObject;
 public abstract class SmartfoxClient {
 
 	private class ChannelDat {
-		public AbstractPacketChannel channel;
+		public PacketChannel channel;
 		public CorePacketHandler handler;
+	}
+
+	private class ExtensionChannelDat {
+		public ExtensionMessageChannel channel;
+		public CoreExtensionHandler handler;
 	}
 
 	private static Random rnd = new Random();
 
 	private HashMap<String, Object> memory = new HashMap<String, Object>();
 	private ArrayList<ChannelDat> registry = new ArrayList<ChannelDat>();
+	private ArrayList<ExtensionChannelDat> extensionRegistry = new ArrayList<ExtensionChannelDat>();
 	private Logger logger = LogManager.getLogger("smartfox-client");
 	private String sessionID;
 	private int userID;
@@ -67,15 +75,31 @@ public abstract class SmartfoxClient {
 	}
 
 	/**
-	 * Retrieves channels by type
+	 * Retrieves packet channels by type
 	 * 
 	 * @param <T>          Channel type
 	 * @param channelClass Channel class
-	 * @return AbstractPacketChannel instance or null
+	 * @return PacketChannel instance or null
 	 */
 	@SuppressWarnings("unchecked")
-	public <T extends AbstractPacketChannel> T getChannel(Class<T> channelClass) {
+	public <T extends PacketChannel> T getChannel(Class<T> channelClass) {
 		for (ChannelDat ch : registry) {
+			if (channelClass.isAssignableFrom(ch.channel.getClass()))
+				return (T) ch.channel;
+		}
+		return null;
+	}
+
+	/**
+	 * Retrieves extension message channels by type
+	 * 
+	 * @param <T>                     Channel type
+	 * @param ExtensionMessageChannel Channel class
+	 * @return PacketChannel instance or null
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends ExtensionMessageChannel> T getExtensionChannel(Class<T> channelClass) {
+		for (ExtensionChannelDat ch : extensionRegistry) {
 			if (channelClass.isAssignableFrom(ch.channel.getClass()))
 				return (T) ch.channel;
 		}
@@ -346,7 +370,7 @@ public abstract class SmartfoxClient {
 		}
 	}
 
-	void initRegistry(AbstractPacketChannel[] channels) {
+	void initRegistry(PacketChannel[] channels, ExtensionMessageChannel[] extensionChannels) {
 		registry.clear();
 
 		// Default channels
@@ -354,7 +378,7 @@ public abstract class SmartfoxClient {
 		registry.add(channelEntry(new ExtensionChannel()));
 
 		// Add channels
-		for (AbstractPacketChannel channel : channels) {
+		for (PacketChannel channel : channels) {
 			// Init
 			channel = channel.createInstance();
 			CorePacketHandler handler = channel.init(this, (ch, packet) -> {
@@ -381,9 +405,22 @@ public abstract class SmartfoxClient {
 			d.handler = handler;
 			registry.add(d);
 		}
+
+		// Add extension message channels
+		for (ExtensionMessageChannel channel : extensionChannels) {
+			// Init
+			channel = channel.createInstance();
+			CoreExtensionHandler handler = channel.init(this);
+
+			// Add
+			ExtensionChannelDat d = new ExtensionChannelDat();
+			d.channel = channel;
+			d.handler = handler;
+			extensionRegistry.add(d);
+		}
 	}
 
-	private ChannelDat channelEntry(AbstractPacketChannel ch) {
+	private ChannelDat channelEntry(PacketChannel ch) {
 		return new ChannelDat() {
 			{
 				channel = ch;
@@ -420,6 +457,25 @@ public abstract class SmartfoxClient {
 			hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
 		}
 		return new String(hexChars);
+	}
+
+	/**
+	 * Handles extension messages
+	 * 
+	 * @param message Extension message packet
+	 * @return True if handled, false otherwise
+	 * @throws IOException If an error occurs while handling the message
+	 */
+	public boolean handleExtension(ServerboundExtensionMessage message) throws IOException {
+		// Find handler
+		boolean handled = false;
+		for (ExtensionChannelDat channel : extensionRegistry) {
+			if (channel.handler.handle(message))
+				handled = true;
+		}
+
+		// Return
+		return handled;
 	}
 
 }
