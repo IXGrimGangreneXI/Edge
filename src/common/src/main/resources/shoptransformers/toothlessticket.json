@@ -1,0 +1,16 @@
+{
+	"id": 92,
+	"mode": "merge",
+	
+	"items": {
+		"8967": {
+			"mode": "remove"
+		},
+		"8963": {
+			"mode": "update",
+			
+			"cost": 0,
+			"currency": "gems"
+		}
+	}
+}

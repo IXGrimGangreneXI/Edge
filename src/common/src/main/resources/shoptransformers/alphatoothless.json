@@ -1,0 +1,13 @@
+{
+	"id": 92,
+	"mode": "merge",
+	
+	"items": {
+		"12989": {
+			"mode": "update",
+			
+			"cost": 120,
+			"currency": "gems"
+		}
+	}
+}

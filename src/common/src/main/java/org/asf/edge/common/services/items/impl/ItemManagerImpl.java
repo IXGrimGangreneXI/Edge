@@ -927,8 +927,11 @@ public class ItemManagerImpl extends ItemManager {
 						newNode.set("ct2", new IntNode(0));
 						if (trans.get("currency").getAsString().equals("coins"))
 							newNode.set("ct", new IntNode(trans.get("cost").getAsInt()));
-						else
+						else {
 							newNode.set("ct2", new IntNode(trans.get("cost").getAsInt()));
+							if (newNode.get("ct2").asInt() == 0)
+								newNode.set("ct", new IntNode(0));
+						}
 					}
 
 					// Create new def
