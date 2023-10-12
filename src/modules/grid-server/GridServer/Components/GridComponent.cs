@@ -1,8 +1,8 @@
 using Phoenix.Server;
 using Phoenix.Server.Players;
 using Phoenix.Common.Tasks;
-using System;
 using Phoenix.Common.Logging;
+using System;
 
 namespace GridServer.Components
 {
@@ -21,7 +21,8 @@ namespace GridServer.Components
         public override void PreInit()
         {
             // Disable player limit
-            ServiceManager.GetService<PlayerManagerService>().EnablePlayerLimit = false;
+            ServiceManager.GetService<PlayerManagerService>().DefaultEnablePlayerLimit = false;
+            ServiceManager.GetService<PlayerManagerService>().DefaultPlayerLimit = 100;
             ServiceManager.GetService<PermissionManagerService>().ShouldGrantOperatorPermissionsToOwner = false;
         }
 
@@ -86,6 +87,10 @@ namespace GridServer.Components
                     }   
                 }
             });
+
+            // Tests
+            // TODO
+
         }
     }
 
