@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.asf.edge.common.entities.messages.defaultmessages.WsGenericMessage;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.messages.PlayerMessenger;
 import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.modules.eventbus.EventListener;
@@ -12,6 +13,7 @@ import org.asf.edge.modules.eventbus.IEventReceiver;
 import org.asf.edge.modules.gridclient.GridClientModule;
 import org.asf.edge.modules.gridclient.grid.events.GridClientConnectFailedEvent;
 import org.asf.edge.modules.gridclient.grid.events.GridClientConnectedEvent;
+import org.asf.edge.modules.gridclient.utils.GridSaveUtil;
 
 public class ConnectionEventHandlers implements IEventReceiver {
 
@@ -35,6 +37,18 @@ public class ConnectionEventHandlers implements IEventReceiver {
 				}
 			}
 			GridClientModule.loginSystemMessage = null;
+		}
+
+		// Update all user saves
+		for (AccountObject account : AccountManager.getInstance().getOnlinePlayers()) {
+			// Get saves
+			for (String svID : account.getSaveIDs()) {
+				AccountSaveContainer save = account.getSave(svID);
+				if (save != null) {
+					// Update
+					GridSaveUtil.updateGridSaveID(save);
+				}
+			}
 		}
 	}
 

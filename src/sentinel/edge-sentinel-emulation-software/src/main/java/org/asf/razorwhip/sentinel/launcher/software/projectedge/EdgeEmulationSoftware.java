@@ -19,6 +19,7 @@ import org.asf.razorwhip.sentinel.launcher.assets.AssetInformation;
 import org.asf.razorwhip.sentinel.launcher.descriptors.data.LauncherController;
 import org.asf.razorwhip.sentinel.launcher.descriptors.data.ServerEndpoints;
 import org.asf.razorwhip.sentinel.launcher.experiments.ExperimentManager;
+import org.asf.razorwhip.sentinel.launcher.software.projectedge.experiments.GridSupportExperiment;
 import org.asf.razorwhip.sentinel.launcher.software.projectedge.windows.LaunchOptionMenu;
 
 import com.google.gson.JsonArray;
@@ -553,9 +554,12 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 //		manager.registerExperiment("EXPERIMENT_DT_ITEM_SUPPORT");
 //		manager.setExperimentName("EXPERIMENT_DT_ITEM_SUPPORT", "Support for Dragon Tactics items");
 
+		manager.registerExperiment("EXPERIMENT_MULTIPLAYER_GRID");
+		manager.setExperimentName("EXPERIMENT_MULTIPLAYER_GRID", "Multiplayer Grid support (EXTREMELY WIP)");
+		manager.registerExperimentInterface("EXPERIMENT_MULTIPLAYER_GRID", new GridSupportExperiment());
+
 		manager.registerExperiment("EXPERIMENT_MMO_SERVER_SUPPORT");
-		manager.setExperimentName("EXPERIMENT_MMO_SERVER_SUPPORT",
-				"Multiplayer server support (EXTREMELY WIP, LAN ONLY AT THE MOMENT)");
+		manager.setExperimentName("EXPERIMENT_MMO_SERVER_SUPPORT", "Multiplayer server support (EXTREMELY WIP)");
 	}
 
 }

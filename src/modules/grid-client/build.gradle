@@ -39,7 +39,7 @@ dependencies {
 	implementation group: 'org.bouncycastle', name: 'bcpkix-jdk14', version: '1.73'
 }
 
-/*task installation () {
+task installation () {
 	doLast {
 		for (def task : project.tasks) {
 			if (task instanceof AbstractArchiveTask) {
@@ -48,7 +48,7 @@ dependencies {
 				copy {
 					from task.getArchiveFile().get()
 					rename task.getArchiveFile().get().getAsFile().getName(), task.getArchiveBaseName().get() + (task.getArchiveClassifier().get() != null && !task.getArchiveClassifier().get().isEmpty() ? "-" + task.getArchiveClassifier().get() : "") + "." + task.getArchiveExtension().get()
-					into "../../../build/pkg-sentinel/expandedserver/modules"
+					into "../../../build/pkg-sentinel/rootdata/multiplayergrid-experiment/modules"
 				}
 			}
 		}
@@ -56,7 +56,7 @@ dependencies {
 }
 
 installation.dependsOn project.tasks.build
-build.finalizedBy installation*/
+build.finalizedBy installation
 
 eclipse {
   jdt {

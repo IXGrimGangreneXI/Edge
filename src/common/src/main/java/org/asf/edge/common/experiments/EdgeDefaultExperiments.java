@@ -30,7 +30,7 @@ public class EdgeDefaultExperiments {
 		manager.setExperimentName(LEGACY_INVENTORY_SUPPORT, "1.x/2.x inventory enhancements");
 		manager.setExperimentName(ACHIEVEMENTSV1_SUPPORT, "Support for V1 achievement system (gameplay rewards)");
 		manager.setExperimentName(DT_ITEM_SUPPORT, "Support for Dragon Tactics items");
-		manager.setExperimentName(MMO_SERVER_SUPPORT, "MMO server support (EXTREMELY WIP, LAN ONLY AT THE MOMENT)");
+		manager.setExperimentName(MMO_SERVER_SUPPORT, "MMO server support (EXTREMELY WIP)");
 	}
 
 }

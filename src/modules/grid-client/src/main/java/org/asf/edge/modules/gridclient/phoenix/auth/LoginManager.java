@@ -158,7 +158,8 @@ public class LoginManager {
 								if ((System.currentTimeMillis() / 1000) + (15 * 60) >= payload.get("exp").getAsLong()) {
 									// Refresh
 									if (!sesData.refresh()) {
-										logout();
+										if (sesData == session)
+											logout();
 										break;
 									}
 								}

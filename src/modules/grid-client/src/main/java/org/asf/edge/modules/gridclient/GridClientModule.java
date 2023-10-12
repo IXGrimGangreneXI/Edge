@@ -78,6 +78,10 @@ public class GridClientModule implements IEdgeModule {
 			}
 		}
 
+		// Attach event handlers
+		EventBus.getInstance().addAllEventsFromReceiver(new ConnectionEventHandlers());
+		EventBus.getInstance().addAllEventsFromReceiver(new SaveSyncEventHandlers());
+
 		// Read config
 		JsonObject defaultConfig = new JsonObject();
 		defaultConfig.addProperty("enabled", true);
@@ -115,12 +119,13 @@ public class GridClientModule implements IEdgeModule {
 			}
 		}
 
-		// Attach event handlers
-		EventBus.getInstance().addAllEventsFromReceiver(new ConnectionEventHandlers());
-		EventBus.getInstance().addAllEventsFromReceiver(new SaveSyncEventHandlers());
-
 		// Contact grid server
 		gridStartup(config, lastSessionRefreshToken, lastUsername);
+	}
+
+	@Override
+	public void postInit() {
+		removePendingSaves(CommonDataManager.getInstance());
 	}
 
 	@EventListener
@@ -983,40 +988,13 @@ public class GridClientModule implements IEdgeModule {
 		}
 
 		// Remove saves that are scheduled for removal
+		CommonDataManager manager = null;
 		try {
-			// Get common data container
-			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("MULTIPLAYERGRID");
-			cont = cont.getChildContainer("GRID_SAVES_TO_REMOVE");
-
-			// Go through saves to remove
-			for (String key : cont.getEntryKeys()) {
-				if (!key.startsWith("SV-"))
-					continue;
-
-				// Remove save
-				String svID = key.substring("SV-".length());
-				try {
-					// Contact API
-					JsonObject payload = new JsonObject();
-					payload.addProperty("saveID", svID);
-					JsonObject response = GridClient.sendGridApiRequest("grid/accounts/getSaveDetails",
-							GridClient.getLoginManager().getSession().getGameSessionToken(), payload, true);
-
-					// Verify response
-					if (!response.has("deleted") || !response.get("deleted").getAsBoolean()) {
-						throw new IOException();
-					}
-
-					// Success
-					// Remove entry
-					cont.deleteEntry(key);
-				} catch (IOException e) {
-					// Deletion failure
-				}
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+			manager = CommonDataManager.getInstance();
+		} catch (Exception e) {
 		}
+		if (manager != null)
+			removePendingSaves(manager);
 
 		// Start grid client
 		logger.info("Initializing Grid client...");
@@ -1070,6 +1048,45 @@ public class GridClientModule implements IEdgeModule {
 					}
 				}
 			});
+		}
+	}
+
+	private void removePendingSaves(CommonDataManager manager) {
+		try {
+			if (GridClient.getLoginManager().isLoggedIn()) {
+				// Get common data container
+				CommonDataContainer cont = manager.getContainer("MULTIPLAYERGRID");
+				cont = cont.getChildContainer("GRID_SAVES_TO_REMOVE");
+
+				// Go through saves to remove
+				for (String key : cont.getEntryKeys()) {
+					if (!key.startsWith("SV-"))
+						continue;
+
+					// Remove save
+					String svID = key.substring("SV-".length());
+					try {
+						// Contact API
+						JsonObject payload = new JsonObject();
+						payload.addProperty("saveID", svID);
+						JsonObject response = GridClient.sendGridApiRequest("grid/accounts/getSaveDetails",
+								GridClient.getLoginManager().getSession().getGameSessionToken(), payload, true);
+
+						// Verify response
+						if (!response.has("deleted") || !response.get("deleted").getAsBoolean()) {
+							throw new IOException();
+						}
+
+						// Success
+						// Remove entry
+						cont.deleteEntry(key);
+					} catch (IOException e) {
+						// Deletion failure
+					}
+				}
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 

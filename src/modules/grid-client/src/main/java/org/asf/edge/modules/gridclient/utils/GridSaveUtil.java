@@ -52,7 +52,7 @@ public class GridSaveUtil {
 		}
 
 		// Verify save
-		if (gridSaveID != null) {
+		if (gridSaveID != null && GridClient.getLoginManager().getSession() != null) {
 			try {
 				// Contact API
 				JsonObject payload = new JsonObject();
@@ -64,6 +64,13 @@ public class GridSaveUtil {
 				if (response.has("error") && response.get("error").getAsString().equals("save_not_found")) {
 					// Save not found
 					gridSaveID = null;
+				} else {
+					// Check username
+					String name = response.get("saveUsername").getAsString();
+					if (!name.equals(save.getUsername())) {
+						// Try update
+						updateGridSaveUsername(save, name);
+					}
 				}
 			} catch (IOException e) {
 			}
@@ -207,6 +214,103 @@ public class GridSaveUtil {
 				}
 			}
 		} catch (IOException e) {
+		}
+	}
+
+	/**
+	 * Updates the grid save username
+	 * 
+	 * @param save        Save container to update in the grid
+	 * @param newUsername New username
+	 */
+	public static void updateGridSaveUsername(AccountSaveContainer save, String newUsername) {
+		// Get save ID
+		String gridSaveID = getGridSaveID(save);
+
+		// Check ID
+		if (gridSaveID != null && GridClient.getLoginManager().getSession() != null) {
+			try {
+				// Contact API
+				JsonObject payload = new JsonObject();
+				payload.addProperty("saveID", gridSaveID);
+				payload.addProperty("saveUsername", newUsername);
+				JsonObject response = GridClient.sendGridApiRequest("grid/accounts/updateSave",
+						GridClient.getLoginManager().getSession().getGameSessionToken(), payload, true);
+
+				// Verify response
+				if (response.has("error")) {
+					// Handle error
+					String error = response.get("error").getAsString();
+					boolean invalidUsername = false;
+					switch (error) {
+
+					// Username invalid
+					case "invalid_username": {
+						invalidUsername = true;
+						break;
+					}
+
+					// Username filtered
+					case "inappropriate_username": {
+						invalidUsername = true;
+						break;
+					}
+
+					// Username in use
+					case "username_in_use": {
+						invalidUsername = true;
+						break;
+					}
+
+					// Server error
+					case "server_error": {
+						break;
+					}
+
+					}
+
+					// Check
+					if (invalidUsername) {
+						// Prepare message
+						String message = "The username of Viking '" + save.getUsername()
+								+ "' could not be synced to the multiplayer grid as its name is invalid or already in use."
+								+ "\n\nPlease change the viking name, when the name of the viking is changed,"
+								+ " the grid will automatically update the username when its possible.";
+
+						// Send message if needed
+						PlayerMessenger messenger = WsMessageService.getInstance().getMessengerFor(save.getAccount(),
+								save);
+
+						// Check messages
+						if (!Stream.of(messenger.getQueuedMessages(false)).anyMatch(t -> {
+							// Check message
+							if (t instanceof WsGenericMessage) {
+								WsGenericMessage genericMsg = (WsGenericMessage) t;
+								if (genericMsg.rawObject.typeID == 3
+										&& genericMsg.rawObject.messageContentMembers != null) {
+									// Check content
+									if (genericMsg.rawObject.messageContentMembers.equals(message))
+										return true;
+								}
+							}
+
+							// No match
+							return false;
+						})) {
+							// Send message
+							WsGenericMessage msg = new WsGenericMessage();
+							msg.rawObject.typeID = 3;
+							msg.rawObject.messageContentMembers = message;
+							msg.rawObject.messageContentNonMembers = msg.rawObject.messageContentMembers;
+							try {
+								messenger.sendSessionMessage(msg);
+							} catch (IOException e) {
+							}
+						}
+					}
+				}
+			} catch (IOException e) {
+			}
 		}
 	}
 
