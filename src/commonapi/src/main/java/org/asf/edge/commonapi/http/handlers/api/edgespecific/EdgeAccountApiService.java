@@ -668,10 +668,10 @@ public class EdgeAccountApiService extends EdgeWebService<EdgeCommonApiServer> {
 			acc.setMultiplayerEnabled(request.get("multiplayerEnabled").getAsBoolean());
 		}
 		if (request.has("chatEnabled")) {
-			acc.setMultiplayerEnabled(request.get("chatEnabled").getAsBoolean());
+			acc.setChatEnabled(request.get("chatEnabled").getAsBoolean());
 		}
 		if (request.has("strictChat")) {
-			acc.setMultiplayerEnabled(request.get("strictChat").getAsBoolean());
+			acc.setStrictChatFilterEnabled(request.get("strictChat").getAsBoolean());
 		}
 
 		// Update
