@@ -44,14 +44,39 @@
             if (!stream.CanSeek)
                 throw new ArgumentException("stream: requires a seek-capable stream");
 
-            // Parse
-            DataReader reader = new DataReader(stream);
+            // Prepare to read
+            DataReader reader = new DataReader(Stream);
             int length = reader.ReadInt();
-            for (int i = 0; i < length; i++ )
+
+            // Read headers
+            EntryHeader header = null;
+            for (int i = 0; i < length; i++)
             {
-                BinaryPackageEntry entry = new BinaryPackageEntry(reader.ReadString(), reader.ReadLong(), reader.ReadLong());
-                Entries[entry.Key] = entry;
+                String path = reader.ReadString();
+                long start = reader.ReadLong();
+                if (header != null)
+                {
+                    header.end = start - 1;
+                    Entries[header.path] = new BinaryPackageEntry(header.path, header.start, header.end);
+                }
+                header = new EntryHeader();
+                header.path = path;
+                header.start = start;
             }
+
+            // Read last entry's length
+            if (header != null)
+            {
+                header.end = reader.ReadLong();
+                Entries[header.path] = new BinaryPackageEntry(header.path, header.start, header.end);
+            }
+        }
+
+        private class EntryHeader
+        {
+            public String path;
+            public long start;
+            public long end;
         }
 
         /// <summary>

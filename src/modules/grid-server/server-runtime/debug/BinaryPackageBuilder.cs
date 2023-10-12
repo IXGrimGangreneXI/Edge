@@ -69,23 +69,27 @@ namespace Phoenix.Debug
                 // 8 bytes: start
                 // 8 bytes: end
                 byte[] key = Encoding.UTF8.GetBytes(ent.Key);
-                int off = 4 + key.Length + 8 + 8;
+                int off = 4 + key.Length + 8;
                 offset += off;
             }
-
+            if (Entries.Count != 0)
+                offset += 8;
             long pos = offset;
 
             // Write headers
             DataWriter wr = new DataWriter(output);
             wr.WriteInt(Entries.Count);
+            PackageEntry last = null;
             foreach (PackageEntry ent in Entries.Values)
             {
                 long length = ent.Data.Length;
                 wr.WriteString(ent.Key);
                 wr.WriteLong(pos);
-                wr.WriteLong(pos + length);
                 pos += length;
+                last = ent;
             }
+            if (last != null)
+                wr.WriteLong(pos + last.Data.Length);
 
             // Write payload
             foreach (PackageEntry ent in Entries.Values)

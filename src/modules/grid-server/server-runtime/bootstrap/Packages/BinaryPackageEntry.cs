@@ -44,5 +44,16 @@
                 return _end;
             }
         }
+
+        /// <summary>
+        /// Retrieves the size of the entry payload
+        /// </summary>
+        public long Size
+        {
+            get
+            {
+                return _end - _start;
+            }
+        }
     }
 }
