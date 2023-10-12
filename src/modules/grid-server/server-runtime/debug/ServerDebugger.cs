@@ -6,6 +6,7 @@ using Phoenix.Debug.DebugServerLib;
 using Phoenix.Server;
 using Phoenix.Server.Bootstrapper.Packages;
 using Phoenix.Server.Components;
+using Phoenix.Server.NetworkServerLib;
 using System.IO.Compression;
 using System.Reflection;
 using System.Text;
@@ -239,6 +240,7 @@ namespace Phoenix.Debug.DebugServerRunner
             foreach (GameServer srv in hooks.GetServers())
             {
                 logger.Info("Adding components to server " + serverID + "...");
+                srv.AddComponent(new NetworkServerComponent());
                 srv.AddComponentPackage(new DebugServerPackage());
                 serverID++;
             }

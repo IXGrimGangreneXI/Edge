@@ -9,12 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Common\Phoenix.Common.Networking\Phoenix.Common.Networking.csproj" />
-    <ProjectReference Include="..\..\Common\Phoenix.Common\Phoenix.Common.csproj" />
-    <ProjectReference Include="..\Phoenix.Server.AssetManager\Phoenix.Server.AssetManager.csproj" />
-    <ProjectReference Include="..\Phoenix.Server.Components.CertificateRefresher\Phoenix.Server.Components.CertificateRefresher.csproj" />
-    <ProjectReference Include="..\Phoenix.Server.NetworkServerLib\Phoenix.Server.NetworkServerLib.csproj" />
-    <ProjectReference Include="..\Phoenix.Server\Phoenix.Server.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Common\Phoenix.Common.Networking\Phoenix.Common.Networking.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Common\Phoenix.Common\Phoenix.Common.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Server\Phoenix.Server.AssetManager\Phoenix.Server.AssetManager.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Server\Phoenix.Server.Components.CertificateRefresher\Phoenix.Server.Components.CertificateRefresher.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Server\Phoenix.Server.NetworkServerLib\Phoenix.Server.NetworkServerLib.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Server\Phoenix.Server\Phoenix.Server.csproj" />
   </ItemGroup>
 
 </Project>

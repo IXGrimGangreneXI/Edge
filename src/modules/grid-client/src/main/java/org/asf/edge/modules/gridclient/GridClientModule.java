@@ -7,6 +7,8 @@ import java.net.URL;
 import java.util.Scanner;
 
 import javax.swing.JOptionPane;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,6 +61,20 @@ public class GridClientModule implements IEdgeModule {
 
 	@Override
 	public void init() {
+		// Select theme
+		if (!GraphicsEnvironment.isHeadless()) {
+			try {
+				try {
+					UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
+				} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+						| UnsupportedLookAndFeelException e1) {
+					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+				}
+			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+					| UnsupportedLookAndFeelException e1) {
+			}
+		}
+
 		// Read config
 		JsonObject defaultConfig = new JsonObject();
 		defaultConfig.addProperty("enabled", true);

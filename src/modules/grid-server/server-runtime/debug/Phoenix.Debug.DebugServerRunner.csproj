@@ -10,14 +10,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Utils\ChartZ\ChartZ.Compiler\ChartZ.Compiler.csproj" />
-    <ProjectReference Include="..\..\Utils\ChartZ\ChartZ.Engine\ChartZ.Engine.csproj" />
-    <ProjectReference Include="..\..\Common\Phoenix.Common\Phoenix.Common.csproj" />
-    <ProjectReference Include="..\..\Server\Phoenix.Server.AssetManager\Phoenix.Server.AssetManager.csproj" />
-    <ProjectReference Include="..\..\Server\Phoenix.Server.Bootstrapper\Phoenix.Server.Bootstrapper.csproj" />
-    <ProjectReference Include="..\..\Server\Phoenix.Server\Phoenix.Server.csproj" />
-    <ProjectReference Include="..\Phoenix.Debug.DebugGameDefLib\Phoenix.Debug.DebugGameDefLib.csproj" />
-    <ProjectReference Include="..\Phoenix.Debug.DebugServerLib\Phoenix.Debug.DebugServerLib.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Utils\ChartZ\ChartZ.Compiler\ChartZ.Compiler.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Utils\ChartZ\ChartZ.Engine\ChartZ.Engine.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Common\Phoenix.Common\Phoenix.Common.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Server\Phoenix.Server.AssetManager\Phoenix.Server.AssetManager.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Server\Phoenix.Server.Bootstrapper\Phoenix.Server.Bootstrapper.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Server\Phoenix.Server\Phoenix.Server.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Debug\Phoenix.Debug.DebugGameDefLib\Phoenix.Debug.DebugGameDefLib.csproj" />
+    <ProjectReference Include="..\..\phoenix-framework\PX Framework\Debug\Phoenix.Debug.DebugServerLib\Phoenix.Debug.DebugServerLib.csproj" />
   </ItemGroup>
 
 </Project>
