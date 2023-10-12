@@ -729,7 +729,7 @@ public class GridClient {
 
 				// Reconnect
 				AsyncTaskManager.runAsync(() -> {
-					while (true) {
+					while (!client.isConnected()) {
 						// Attempt connection
 						try {
 							// Check session
@@ -744,6 +744,7 @@ public class GridClient {
 							else
 								client.connect(inst.getBestAdress(), inst.port,
 										PhoenixCertificate.downloadFromAPI("nexusgrid", inst.serverID));
+
 							break;
 						} catch (IOException | PhoenixConnectException e) {
 							// Check
