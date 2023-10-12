@@ -76,6 +76,8 @@ public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeComm
 		switch (res) {
 
 		case SUCCESS:
+			if (tkn.account != null)
+				tkn.account.ping(true);
 			setResponseContent("text/xml", req.generateXmlValue("ApiTokenStatus", 1));
 			break;
 

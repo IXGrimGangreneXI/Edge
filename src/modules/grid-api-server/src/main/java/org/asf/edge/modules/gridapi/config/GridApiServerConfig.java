@@ -32,6 +32,11 @@ public class GridApiServerConfig {
 	public ConnectiveHttpServer server;
 
 	/**
+	 * Grid software ID
+	 */
+	public String apiSoftwareID = "sod-phoenix-grid";
+
+	/**
 	 * Listen address
 	 */
 	public String listenAddress = "0.0.0.0";

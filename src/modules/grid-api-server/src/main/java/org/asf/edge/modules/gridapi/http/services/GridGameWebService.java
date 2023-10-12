@@ -46,7 +46,7 @@ public class GridGameWebService extends EdgeWebService<EdgeGridApiServer> {
 		}
 
 		// Verify version
-		if (!request.get("clientSoftwareID").getAsString().equals(EdgeGridApiServer.GRID_SOFTWARE_ID))
+		if (!request.get("clientSoftwareID").getAsString().equals(getServerInstance().getConfiguration().apiSoftwareID))
 			return response(409, "Conflict", "application/json", "{\"error\":\"software_id_mismatch\"}");
 		if (!request.get("clientApiVersion").getAsString().equals(EdgeGridApiServer.GRID_API_VERSION))
 			return response(409, "Conflict", "application/json", "{\"error\":\"api_version_mismatch\"}");

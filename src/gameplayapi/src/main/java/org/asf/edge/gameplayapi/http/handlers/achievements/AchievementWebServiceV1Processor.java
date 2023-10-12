@@ -206,6 +206,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	@SodTokenSecured
 	public FunctionResult getPetAchievementsByUserID(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId) throws IOException {
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
+
 		// Find save
 		AccountSaveContainer save = account.getSave(userId);
 		if (save == null) {
@@ -302,6 +305,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	@SodTokenSecured
 	public FunctionResult getAchievementsByUserID(FunctionInfo func, SessionToken tkn, ServiceRequestInfo req,
 			AccountObject account, @SodRequestParam String userId) throws IOException {
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
+
 		// Find save
 		AccountSaveContainer save = account.getSave(userId);
 		if (save == null) {
@@ -345,6 +351,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	@TokenRequireCapability("gp")
 	public FunctionResult getUserAchievements(FunctionInfo func, SessionToken tkn, ServiceRequestInfo req,
 			AccountObject account, AccountSaveContainer save) throws IOException {
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
+
 		// Prepare response
 		AchievementInfoList lst = new AchievementInfoList();
 		ArrayList<AchievementInfoList.AchievementBlock> ranks = new ArrayList<AchievementInfoList.AchievementBlock>();
@@ -375,6 +384,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	@TokenRequireCapability("gp")
 	public FunctionResult getAllRewardTypeMultiplier(FunctionInfo func, SessionToken tkn, ServiceRequestInfo req,
 			AccountObject account, AccountSaveContainer save) throws IOException {
+		if (achievementManager == null)
+			achievementManager = AchievementManager.getInstance();
+
 		// Prepare multiplier list
 		ArrayList<RewardTypeMultiplierData> multipliers = new ArrayList<RewardTypeMultiplierData>();
 

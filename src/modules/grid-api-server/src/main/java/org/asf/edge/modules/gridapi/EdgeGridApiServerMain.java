@@ -79,6 +79,8 @@ public class EdgeGridApiServerMain {
 						+ "    \"tlsKeystore\": null,\n" // keystore file
 						+ "    \"tlsKeystorePassword\": null,\n" // keystore password
 						+ "\n" //
+						+ "    \"apiSoftwareID\": \"sod-phoenix-grid\",\n" //
+						+ "\n" //
 						+ "    \"modules\": {\n" //
 						+ "    }\n" //
 						+ "\n" //
@@ -99,6 +101,8 @@ public class EdgeGridApiServerMain {
 		JsonObject configData = JsonParser.parseString(Files.readString(configFile.toPath())).getAsJsonObject();
 
 		// Load server settings
+		if (configData.has("apiSoftwareID"))
+			config.apiSoftwareID = configData.get("apiSoftwareID").getAsString();
 		if (config.server == null) {
 			logger.debug("Loading listening settings...");
 			config.listenAddress = configData.get("listenAddress").getAsString();

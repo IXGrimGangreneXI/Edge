@@ -17,6 +17,8 @@ import org.asf.edge.common.entities.messages.defaultmessages.WsGenericMessage;
 import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.messages.PlayerMessenger;
 import org.asf.edge.common.services.messages.WsMessageService;
@@ -36,6 +38,7 @@ import org.asf.edge.modules.gridclient.phoenix.events.PhoenixGameInvalidatedEven
 import org.asf.edge.modules.gridclient.phoenix.events.SessionRefreshFailureEvent;
 import org.asf.edge.modules.gridclient.phoenix.serverlist.ServerInstance;
 import org.asf.edge.modules.gridclient.eventhandlers.ConnectionEventHandlers;
+import org.asf.edge.modules.gridclient.eventhandlers.SaveSyncEventHandlers;
 import org.asf.edge.modules.gridclient.grid.GridClient;
 import org.asf.edge.modules.gridclient.grid.SessionLockStatus;
 
@@ -114,6 +117,7 @@ public class GridClientModule implements IEdgeModule {
 
 		// Attach event handlers
 		EventBus.getInstance().addAllEventsFromReceiver(new ConnectionEventHandlers());
+		EventBus.getInstance().addAllEventsFromReceiver(new SaveSyncEventHandlers());
 
 		// Contact grid server
 		gridStartup(config, lastSessionRefreshToken, lastUsername);
@@ -443,9 +447,12 @@ public class GridClientModule implements IEdgeModule {
 		}
 	}
 
+	private LoginManager manager;
+
 	private void authenticateGameSuccess(boolean wasOffline, String lastSessionRefreshToken, String lastUsername) {
 		// Prepare login manager
-		LoginManager manager = new LoginManager();
+		if (manager == null)
+			manager = new LoginManager();
 
 		// Log in
 		if (lastSessionRefreshToken != null) {
@@ -971,6 +978,42 @@ public class GridClientModule implements IEdgeModule {
 		obj.addProperty("lastUsername", session.getDisplayName());
 		try {
 			ConfigProviderService.getInstance().saveConfig("moduleconfigs", "gridsession", obj);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		// Remove saves that are scheduled for removal
+		try {
+			// Get common data container
+			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("MULTIPLAYERGRID");
+			cont = cont.getChildContainer("GRID_SAVES_TO_REMOVE");
+
+			// Go through saves to remove
+			for (String key : cont.getEntryKeys()) {
+				if (!key.startsWith("SV-"))
+					continue;
+
+				// Remove save
+				String svID = key.substring("SV-".length());
+				try {
+					// Contact API
+					JsonObject payload = new JsonObject();
+					payload.addProperty("saveID", svID);
+					JsonObject response = GridClient.sendGridApiRequest("grid/accounts/getSaveDetails",
+							GridClient.getLoginManager().getSession().getGameSessionToken(), payload, true);
+
+					// Verify response
+					if (!response.has("deleted") || !response.get("deleted").getAsBoolean()) {
+						throw new IOException();
+					}
+
+					// Success
+					// Remove entry
+					cont.deleteEntry(key);
+				} catch (IOException e) {
+					// Deletion failure
+				}
+			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
