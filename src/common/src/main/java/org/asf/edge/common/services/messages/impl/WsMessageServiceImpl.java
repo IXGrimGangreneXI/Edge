@@ -8,6 +8,10 @@ import org.asf.edge.common.entities.messages.WsMessage;
 import org.asf.edge.common.entities.messages.defaultmessages.WsGenericMessage;
 import org.asf.edge.common.entities.messages.defaultmessages.WsRankMessage;
 import org.asf.edge.common.events.achievements.RankChangedEvent;
+import org.asf.edge.common.events.messages.SendSessionWebserviceMessageEvent;
+import org.asf.edge.common.events.messages.SendWebserviceMessageEvent;
+import org.asf.edge.common.events.messages.DeleteWebserviceMessageEvent;
+import org.asf.edge.common.events.messages.ReadWebserviceMessageEvent;
 import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -16,6 +20,7 @@ import org.asf.edge.common.services.messages.PlayerMessenger;
 import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.common.xmls.achievements.RewardData;
 import org.asf.edge.common.xmls.messages.MessageInfoData;
+import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.modules.eventbus.EventListener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -157,7 +162,12 @@ public class WsMessageServiceImpl extends WsMessageService {
 				// Load container
 				AccountDataContainer messagesContainer = save.getSaveData().getChildContainer("wsservicemessages");
 				if (messagesContainer.entryExists("msg-" + messageID)) {
+					// Delete
 					messagesContainer.deleteEntry("msg-" + messageID);
+
+					// Dispatch event
+					EventBus.getInstance()
+							.dispatchEvent(new DeleteWebserviceMessageEvent(messageID, this, account, save));
 					return;
 				}
 			}
@@ -170,6 +180,9 @@ public class WsMessageServiceImpl extends WsMessageService {
 			if (messagesContainer.entryExists("msg-" + messageID)) {
 				// Delete
 				messagesContainer.deleteEntry("msg-" + messageID);
+
+				// Dispatch event
+				EventBus.getInstance().dispatchEvent(new DeleteWebserviceMessageEvent(messageID, this, account, save));
 			}
 		}
 
@@ -189,6 +202,10 @@ public class WsMessageServiceImpl extends WsMessageService {
 
 					// Save
 					messagesContainer.setEntry("msg-" + messageID, msgD);
+
+					// Dispatch event
+					EventBus.getInstance()
+							.dispatchEvent(new ReadWebserviceMessageEvent(messageID, this, account, save));
 					return;
 				}
 			}
@@ -198,8 +215,18 @@ public class WsMessageServiceImpl extends WsMessageService {
 
 			// Find message
 			if (messagesContainer.entryExists("msg-" + messageID)) {
-				// Delete
-				deleteMessage(messageID);
+				// Read json
+				JsonObject msgD = messagesContainer.getEntry("msg-" + messageID).getAsJsonObject();
+
+				// Update
+				msgD.addProperty("isRead", true);
+
+				// Save
+				messagesContainer.setEntry("msg-" + messageID, msgD);
+
+				// Dispatch event
+				EventBus.getInstance().dispatchEvent(new ReadWebserviceMessageEvent(messageID, this, account, save));
+				return;
 			}
 		}
 
@@ -230,6 +257,9 @@ public class WsMessageServiceImpl extends WsMessageService {
 
 			// Save
 			messagesContainer.setEntry("msg-" + messageID, msgD);
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new SendWebserviceMessageEvent(message, this, account, save));
 		}
 
 		@Override
@@ -254,6 +284,9 @@ public class WsMessageServiceImpl extends WsMessageService {
 
 			// Save
 			messagesContainer.setEntry("msg-" + messageID, msgD);
+
+			// Dispatch event
+			EventBus.getInstance().dispatchEvent(new SendSessionWebserviceMessageEvent(message, this, account, save));
 		}
 
 	}

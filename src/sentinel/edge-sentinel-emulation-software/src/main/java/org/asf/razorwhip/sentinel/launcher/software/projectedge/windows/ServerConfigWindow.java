@@ -15,8 +15,11 @@ import com.google.gson.JsonParser;
 
 import java.awt.Dimension;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.awt.event.ActionEvent;
@@ -39,6 +42,11 @@ public class ServerConfigWindow extends JDialog {
 	private JTextField textField_8;
 	private JTextField textField_9;
 	private JTextField textField_10;
+	private JTextField textField_11;
+	private JTextField textField_12;
+	private JTextField textField_13;
+	private JTextField textField_14;
+	private JTextField textField_15;
 
 	public boolean showDialog() {
 		setVisible(true);
@@ -61,7 +69,7 @@ public class ServerConfigWindow extends JDialog {
 
 	private void initialize() {
 		setTitle("Server configuration");
-		setBounds(100, 100, 536, 420);
+		setBounds(100, 100, 536, 578);
 		getContentPane().setLayout(new BorderLayout());
 		setModal(true);
 		setLocationRelativeTo(null);
@@ -70,7 +78,7 @@ public class ServerConfigWindow extends JDialog {
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		{
 			JPanel panel = new JPanel();
-			panel.setPreferredSize(new Dimension(520, 370));
+			panel.setPreferredSize(new Dimension(520, 525));
 			contentPanel.add(panel);
 			panel.setLayout(null);
 
@@ -131,32 +139,128 @@ public class ServerConfigWindow extends JDialog {
 			textField_4.setText("0.0.0.0");
 			textField_4.setColumns(10);
 			textField_4.setBounds(12, 187, 375, 21);
+			textField_4.addKeyListener(new KeyAdapter() {
+				@Override
+				public void keyReleased(KeyEvent e) {
+					// Apply
+					textField_11.setText(textField_4.getText().equals("0.0.0.0") ? "localhost" : textField_4.getText());
+				}
+			});
 			panel.add(textField_4);
 
 			textField_5 = new JTextField();
 			textField_5.setText("5323");
 			textField_5.setBounds(394, 187, 114, 21);
+			textField_5.addKeyListener(new KeyAdapter() {
+				@Override
+				public void keyReleased(KeyEvent e) {
+					// Apply
+					textField_12.setText(textField_5.getText());
+				}
+			});
 			panel.add(textField_5);
 			textField_5.setColumns(10);
 
+			JLabel lblSmartfoxDiscovery = new JLabel("Smartfox discovery");
+			lblSmartfoxDiscovery.setBounds(12, 220, 496, 17);
+			panel.add(lblSmartfoxDiscovery);
+
+			textField_11 = new JTextField();
+			textField_11.setText("localhost");
+			textField_11.setColumns(10);
+			textField_11.setBounds(12, 239, 375, 21);
+			panel.add(textField_11);
+
+			textField_12 = new JTextField();
+			textField_12.setText("5323");
+			textField_12.setBounds(394, 239, 114, 21);
+			panel.add(textField_12);
+			textField_12.setColumns(10);
+
+			JLabel lblInternalApi = new JLabel("Internal API server");
+			lblInternalApi.setBounds(12, 272, 496, 17);
+			panel.add(lblInternalApi);
+
+			textField_13 = new JTextField();
+			textField_13.setText("127.0.0.1");
+			textField_13.setColumns(10);
+			textField_13.setBounds(12, 291, 375, 21);
+			textField_13.addKeyListener(new KeyAdapter() {
+				@Override
+				public void keyReleased(KeyEvent e) {
+					String host = "127.0.0.1";
+					if (!textField_13.getText().isBlank())
+						host = textField_13.getText();
+
+					// Apply
+					textField_15.setText(replaceHost(textField_15.getText(), host));
+				}
+
+				private String replaceHost(String url, String host) {
+					try {
+						URL u = new URL(url);
+						return new URL(u.getProtocol(), host, u.getPort(), u.getPath()).toString();
+					} catch (IOException e) {
+					}
+					return url;
+				}
+			});
+			panel.add(textField_13);
+
+			textField_14 = new JTextField();
+			textField_14.setText("5324");
+			textField_14.setBounds(394, 291, 114, 21);
+			textField_14.addKeyListener(new KeyAdapter() {
+				@Override
+				public void keyReleased(KeyEvent e) {
+					int port = 5324;
+					if (!textField_14.getText().isBlank() && textField_14.getText().matches("^[0-9]+$"))
+						port = Integer.parseInt(textField_14.getText());
+
+					// Apply
+					textField_15.setText(replacePort(textField_15.getText(), port));
+				}
+
+				private String replacePort(String url, int port) {
+					try {
+						URL u = new URL(url);
+						return new URL(u.getProtocol(), u.getHost(), port, u.getPath()).toString();
+					} catch (IOException e) {
+					}
+					return url;
+				}
+			});
+			panel.add(textField_14);
+			textField_14.setColumns(10);
+
+			JLabel lblDiscoveryURL = new JLabel("Common API uplink URL");
+			lblDiscoveryURL.setBounds(12, 324, 496, 17);
+			panel.add(lblDiscoveryURL);
+
+			textField_15 = new JTextField();
+			textField_15.setText("http://127.0.0.1:5324/");
+			textField_15.setColumns(10);
+			textField_15.setBounds(12, 343, 496, 21);
+			panel.add(textField_15);
+
 			JLabel lblJvm = new JLabel("Additional JVM arguments");
-			lblJvm.setBounds(12, 220, 496, 17);
+			lblJvm.setBounds(12, 386, 496, 17);
 			panel.add(lblJvm);
 
 			textField_9 = new JTextField();
 			textField_9.setText("");
 			textField_9.setColumns(10);
-			textField_9.setBounds(12, 239, 496, 21);
+			textField_9.setBounds(12, 405, 496, 21);
 			panel.add(textField_9);
 
 			JLabel lblProg = new JLabel("Program arguments");
-			lblProg.setBounds(12, 272, 496, 17);
+			lblProg.setBounds(12, 434, 496, 17);
 			panel.add(lblProg);
 
 			textField_10 = new JTextField();
 			textField_10.setText("");
 			textField_10.setColumns(10);
-			textField_10.setBounds(12, 291, 496, 21);
+			textField_10.setBounds(12, 453, 496, 21);
 			panel.add(textField_10);
 
 			File edgeConfig = new File("server/server.json");
@@ -182,6 +286,16 @@ public class ServerConfigWindow extends JDialog {
 					}
 					if (!textField_5.getText().matches("^[0-9]+$")) {
 						JOptionPane.showMessageDialog(ServerConfigWindow.this, "Smartfox port is not valid",
+								"Invalid port", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+					if (!textField_12.getText().matches("^[0-9]+$")) {
+						JOptionPane.showMessageDialog(ServerConfigWindow.this, "Smartfox discovery port is not valid",
+								"Invalid port", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+					if (!textField_14.getText().matches("^[0-9]+$")) {
+						JOptionPane.showMessageDialog(ServerConfigWindow.this, "Internal API port is not valid",
 								"Invalid port", JOptionPane.ERROR_MESSAGE);
 						return;
 					}
@@ -250,8 +364,15 @@ public class ServerConfigWindow extends JDialog {
 									+ "\n" //
 									+ "        \"discoveryAddress\": \"localhost\",\n" // discovery Address
 									+ "        \"discoveryPort\": 5323,\n" // discovery port
+									+ "        \"discoveryRootZone\": \"JumpStart\",\n" // MMO root zone
+									+ "        \"isBackupServer\": false,\n" // is this a backup MMO server?
 									+ "\n" //
-									+ "        \"commonApiUplinkURL\": \"http://127.0.0.1:5324/\"\n" // uplink URL
+									+ "        \"commonApiUplinkURL\": \"http://127.0.0.1:5324/\",\n" // uplink URL
+									+ "\n" //
+									+ "        \"roomUserLimit\": 30,\n" //
+									+ "        \"roomUserLimits\": {\n" //
+									+ "            \"HubSchoolDO\": 40" //
+									+ "        }\n" //
 									+ "    },\n" //
 									+ "\n" //
 									+ "    \"modules\": {\n" //
@@ -267,10 +388,15 @@ public class ServerConfigWindow extends JDialog {
 						JsonObject sfs = configData.get("mmoServer").getAsJsonObject();
 						gApiJson.addProperty("listenAddress", textField_1.getText());
 						cApiJson.addProperty("listenAddress", textField_2.getText());
+						cApiJson.addProperty("internalListenAddress", textField_13.getText());
 						sfs.addProperty("listenAddress", textField_4.getText());
 						gApiJson.addProperty("listenPort", Integer.parseInt(textField_6.getText()));
 						cApiJson.addProperty("listenPort", Integer.parseInt(textField_7.getText()));
+						cApiJson.addProperty("internalListenPort", Integer.parseInt(textField_14.getText()));
 						sfs.addProperty("listenPort", Integer.parseInt(textField_5.getText()));
+						sfs.addProperty("discoveryAddress", textField_11.getText());
+						sfs.addProperty("discoveryPort", Integer.parseInt(textField_12.getText()));
+						sfs.addProperty("commonApiUplinkURL", textField_15.getText());
 
 						// Social server
 						if (socialSrvJar.exists()) {
@@ -309,7 +435,7 @@ public class ServerConfigWindow extends JDialog {
 					dispose();
 				}
 			});
-			btnNewButton.setBounds(403, 331, 105, 27);
+			btnNewButton.setBounds(403, 486, 105, 27);
 			panel.add(btnNewButton);
 
 			JButton btnCancel = new JButton("Cancel");
@@ -318,7 +444,7 @@ public class ServerConfigWindow extends JDialog {
 					dispose();
 				}
 			});
-			btnCancel.setBounds(282, 331, 105, 27);
+			btnCancel.setBounds(282, 486, 105, 27);
 			panel.add(btnCancel);
 
 			if (edgeConfig.exists()) {
@@ -333,6 +459,8 @@ public class ServerConfigWindow extends JDialog {
 					JsonObject cApiJson = configData.get("commonApiServer").getAsJsonObject();
 					textField_2.setText(cApiJson.get("listenAddress").getAsString());
 					textField_7.setText(Integer.toString(cApiJson.get("listenPort").getAsInt()));
+					textField_13.setText(cApiJson.get("internalListenAddress").getAsString());
+					textField_14.setText(Integer.toString(cApiJson.get("internalListenPort").getAsInt()));
 					if (configData.has("socialApiServer")) {
 						JsonObject sApiJson = configData.get("socialApiServer").getAsJsonObject();
 						textField_3.setText(sApiJson.get("listenAddress").getAsString());
@@ -345,6 +473,9 @@ public class ServerConfigWindow extends JDialog {
 					JsonObject sfs = configData.get("mmoServer").getAsJsonObject();
 					textField_4.setText(sfs.get("listenAddress").getAsString());
 					textField_5.setText(Integer.toString(sfs.get("listenPort").getAsInt()));
+					textField_11.setText(sfs.get("discoveryAddress").getAsString());
+					textField_12.setText(Integer.toString(sfs.get("discoveryPort").getAsInt()));
+					textField_15.setText(sfs.get("commonApiUplinkURL").getAsString());
 				} catch (IOException e1) {
 					throw new RuntimeException(e1);
 				}

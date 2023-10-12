@@ -1,0 +1,73 @@
+package org.asf.edge.common.events.messages;
+
+import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.messages.PlayerMessenger;
+import org.asf.edge.modules.eventbus.EventObject;
+import org.asf.edge.modules.eventbus.EventPath;
+
+/**
+ * 
+ * Webservice message read event - called when messages are marked as read
+ * 
+ * @author Sky Swimmer
+ * 
+ */
+@EventPath("wsmessages.read")
+public class ReadWebserviceMessageEvent extends EventObject {
+
+	private int messageID;
+	private PlayerMessenger messenger;
+	private AccountObject account;
+	private AccountSaveContainer save;
+
+	public ReadWebserviceMessageEvent(int messageID, PlayerMessenger messenger, AccountObject account,
+			AccountSaveContainer save) {
+		this.messageID = messageID;
+		this.messenger = messenger;
+		this.account = account;
+		this.save = save;
+	}
+
+	@Override
+	public String eventPath() {
+		return "wsmessages.read";
+	}
+
+	/**
+	 * Retrieves the message ID
+	 * 
+	 * @return Message ID
+	 */
+	public int getMessageID() {
+		return messageID;
+	}
+
+	/**
+	 * Retrieves the messenger instance
+	 * 
+	 * @return PlayerMessenger instance
+	 */
+	public PlayerMessenger getMessenger() {
+		return messenger;
+	}
+
+	/**
+	 * Retrieves the account instance
+	 * 
+	 * @return AccountObject instance
+	 */
+	public AccountObject getAccount() {
+		return account;
+	}
+
+	/**
+	 * Retrieves the save instance (MAY RETURN NULL)
+	 * 
+	 * @return AccountSaveContainer instance or null
+	 */
+	public AccountSaveContainer getSave() {
+		return save;
+	}
+
+}

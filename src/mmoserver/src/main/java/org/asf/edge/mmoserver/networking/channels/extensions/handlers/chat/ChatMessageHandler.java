@@ -61,7 +61,7 @@ public class ChatMessageHandler implements IExtensionMessageHandler<ServerboundS
 					ClientboundPostChatMessagePacket pkt = new ClientboundPostChatMessagePacket();
 					pkt.message = t;
 					pkt.userID = "";
-					pkt.displayName = "[EDGE] Server";
+					pkt.displayName = "[EDGE]";
 					try {
 						player.getClient().getExtensionChannel(ChatChannel.class).sendMessage(pkt);
 					} catch (IOException e) {

@@ -65,7 +65,7 @@ public class ReloadCommand implements IEdgeServerCommand {
 		cont.setEntry("lastreload", new JsonPrimitive(System.currentTimeMillis()));
 
 		// Completed
-		return "Reload completed";
+		return "Reload is now in progress! It will complete automatically.";
 	}
 
 }
