@@ -2,10 +2,12 @@ package org.asf.edge.modules.gridapi;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.ConnectiveHttpServer;
+import org.asf.connective.RemoteClient;
 import org.asf.edge.common.IBaseServer;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.util.LogWindow;
@@ -15,11 +17,15 @@ import org.asf.edge.modules.gridapi.config.GridApiServerConfig;
 import org.asf.edge.modules.gridapi.events.server.GridApiServerSetupEvent;
 import org.asf.edge.modules.gridapi.events.server.GridApiServerStartupEvent;
 import org.asf.edge.modules.gridapi.http.CaseInsensitiveContentSource;
+import org.asf.edge.modules.gridapi.http.handlers.ApiConnectorHandler;
 import org.asf.edge.modules.gridapi.http.services.*;
 import org.asf.edge.modules.gridapi.http.services.phoenix.PhoenixAuthWebService;
 import org.asf.edge.modules.gridapi.http.services.phoenix.PhoenixIdentityWebService;
 import org.asf.edge.modules.gridapi.http.services.phoenix.PhoenixServersWebService;
 import org.asf.edge.modules.gridapi.http.services.phoenix.PhoenixTokensWebService;
+import org.asf.edge.modules.gridapi.phoenixconnector.IApiConnectorRequestHandler;
+
+import com.google.gson.JsonObject;
 
 public class EdgeGridApiServer implements IBaseServer {
 	public static final String GRID_API_VERSION = "1.0.0.A1";
@@ -28,6 +34,8 @@ public class EdgeGridApiServer implements IBaseServer {
 	private GridApiServerConfig config;
 
 	private ConnectiveHttpServer server;
+
+	private HashMap<String, IApiConnectorRequestHandler> connectorHandlers = new HashMap<String, IApiConnectorRequestHandler>();
 
 	@Override
 	public String getVersion() {
@@ -126,6 +134,11 @@ public class EdgeGridApiServer implements IBaseServer {
 		server.registerProcessor(new GridGameWebService(this));
 		server.registerProcessor(new GridGameWebService(this));
 		server.registerProcessor(new GridGameplayWebService(this));
+		server.registerProcessor(new ApiConnectorHandler(this));
+		// TODO
+
+		// Register connector handlers
+		logger.debug("Configuring Grid API connector request handlers...");
 		// TODO
 
 		// Bind command handler
@@ -141,6 +154,15 @@ public class EdgeGridApiServer implements IBaseServer {
 		// Load filter
 		logger.info("Loading text filter...");
 		TextFilterService.getInstance();
+	}
+
+	/**
+	 * Registers Grid API connector request handlers
+	 * 
+	 * @param handler Handler to register
+	 */
+	public void registerApiConnectorRequestHandler(IApiConnectorRequestHandler handler) {
+		connectorHandlers.put(handler.requestType(), handler);
 	}
 
 	private CommandContext cmdCtx = CommandContext.openSession();
@@ -233,5 +255,19 @@ public class EdgeGridApiServer implements IBaseServer {
 			} catch (InterruptedException e) {
 				break;
 			}
+	}
+
+	/**
+	 * Handles Phoenix API connector requests
+	 * 
+	 * @param type             Request type
+	 * @param payload          Request payload
+	 * @param client           Requesting client
+	 * @param responseCallback Response callback
+	 */
+	public void handlePhoenixApiConnectorRequest(String type, JsonObject payload, RemoteClient client,
+			Consumer<JsonObject> responseCallback) {
+		if (connectorHandlers.containsKey(type))
+			connectorHandlers.get(type).handle(payload, client, responseCallback);
 	}
 }

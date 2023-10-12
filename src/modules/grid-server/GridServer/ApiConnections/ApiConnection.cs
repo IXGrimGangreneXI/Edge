@@ -268,6 +268,7 @@ namespace GridServer
         /// Creates or retrieves API connection objects from the pool
         /// </summary>
         /// <param name="api">Grid API address</param>
+        /// <exception cref="System.IO.IOException">Thrown if connecting to the API fails</exception>
         /// <returns>ApiConnection instance</returns>
         public static ApiConnection Connect(string api)
         {

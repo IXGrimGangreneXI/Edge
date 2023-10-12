@@ -3,6 +3,9 @@ using Phoenix.Server.Players;
 using Phoenix.Common.Tasks;
 using Phoenix.Common.Logging;
 using System;
+using Phoenix.Server.Configuration;
+using Phoenix.Common;
+using System.Collections.Generic;
 
 namespace GridServer.Components
 {
@@ -11,6 +14,8 @@ namespace GridServer.Components
     {
         public override string ID => "grid";
         protected override string ConfigurationKey => "gridserver";
+
+        public string GridApiServer;
 
         protected override void Define()
         {
@@ -28,6 +33,16 @@ namespace GridServer.Components
 
         public override void Init()
         {
+            // Load config
+            AbstractConfigurationSegment conf = Server.GetConfiguration("gridapi");
+            if (!conf.HasEntry("grid-api-server"))
+                conf.SetString("grid-api-server", PhoenixEnvironment.DefaultAPIServer);
+            string? u = conf.GetString("grid-api-server");
+            if (u != null)
+                GridApiServer = u;
+            else
+                GridApiServer = PhoenixEnvironment.DefaultAPIServer;
+
             // Periodic penalty check
             long last = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             ServiceManager.GetService<TaskManager>().Repeat(() =>
@@ -84,14 +99,9 @@ namespace GridServer.Components
                             }
                         }
                         catch { }
-                    }   
+                    }
                 }
             });
-
-            // Tests
-            // TODO
-
         }
     }
-
 }
