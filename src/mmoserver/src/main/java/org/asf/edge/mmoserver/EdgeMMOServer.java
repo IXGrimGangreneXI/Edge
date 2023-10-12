@@ -1,5 +1,6 @@
 package org.asf.edge.mmoserver;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import org.asf.edge.mmoserver.events.server.MMOServerStartupEvent;
 import org.asf.edge.mmoserver.events.variables.DynamicRoomVariableSetupEvent;
 import org.asf.edge.mmoserver.events.variables.UserVariableAddedEvent;
 import org.asf.edge.mmoserver.events.variables.UserVariableValueUpdateEvent;
+import org.asf.edge.mmoserver.networking.SmartfoxClient;
 import org.asf.edge.mmoserver.networking.SmartfoxServer;
 import org.asf.edge.mmoserver.networking.channels.extensions.ChatChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.RoomChannel;
@@ -27,7 +29,10 @@ import org.asf.edge.mmoserver.networking.channels.extensions.UserVarsChannel;
 import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundRefreshUserVarsMessage;
 import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundSetPositionalVarsMessage;
 import org.asf.edge.mmoserver.networking.channels.extensions.messages.uservars.ClientboundSetUserVarsMessage;
+import org.asf.edge.mmoserver.networking.channels.smartfox.ExtensionChannel;
+import org.asf.edge.mmoserver.networking.channels.smartfox.extension.packets.clientbound.ClientboundExtensionMessage;
 import org.asf.edge.mmoserver.networking.impl.BitswarmSmartfoxServer;
+import org.asf.edge.mmoserver.networking.sfs.SmartfoxPayload;
 import org.asf.edge.mmoserver.services.ZoneManager;
 import org.asf.edge.mmoserver.services.impl.ZoneManagerImpl;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -40,6 +45,7 @@ import com.google.gson.JsonPrimitive;
 
 import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.IBaseServer;
+import org.asf.edge.common.io.DataReader;
 import org.asf.edge.common.io.DataWriter;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
@@ -414,6 +420,45 @@ public class EdgeMMOServer implements IBaseServer {
 				// Handle messages
 				try {
 					SimpleBinaryMessageClient client = new SimpleBinaryMessageClient((packet, cl) -> {
+						try {
+							// Handle packet
+							if (packet.data.length > 0) {
+								// Create reader
+								DataReader rd = new DataReader(new ByteArrayInputStream(packet.data));
+								byte type = rd.readRawByte();
+
+								// Handle type
+								switch (type) {
+
+								// Update message queue
+								case 0: {
+									// Read user
+									String userId = rd.readString();
+
+									// Create packet
+									ClientboundExtensionMessage msg = new ClientboundExtensionMessage();
+									msg.command = "SPMN";
+									msg.payload = new SmartfoxPayload();
+									msg.payload.setStringArray("arr", new String[] { "SPMN", "-1" });
+
+									// Find user
+									for (SmartfoxClient c : server.getClients()) {
+										PlayerInfo plr = c.getObject(PlayerInfo.class);
+										if (plr != null && plr.getAccount().getAccountID().equals(userId)) {
+											// Send
+											c.getChannel(ExtensionChannel.class).sendPacket(msg);
+										}
+									}
+
+									break;
+								}
+
+								}
+							}
+						} catch (IOException e) {
+						}
+
+						// Return
 						return true;
 					}, sock.getInputStream(), sock.getOutputStream());
 					client.start();

@@ -10,7 +10,6 @@ import org.asf.edge.mmoserver.entities.player.PlayerInfo;
 import org.asf.edge.mmoserver.events.players.PlayerRoomGroupDesubscribeEvent;
 import org.asf.edge.mmoserver.events.players.PlayerRoomGroupSubscribeEvent;
 import org.asf.edge.mmoserver.events.players.PlayerRoomJoinEvent;
-import org.asf.edge.mmoserver.events.players.PlayerRoomJoinSpectatorEvent;
 import org.asf.edge.mmoserver.events.sync.SfsUserCreatedEvent;
 import org.asf.edge.mmoserver.events.sync.SfsUserDeletedEvent;
 import org.asf.edge.mmoserver.events.variables.RoomVariableAddedEvent;
@@ -239,13 +238,6 @@ public abstract class SmartfoxServer {
 				ev.getPlayer().getClient().getChannel(SystemChannel.class).sendPacket(pkt);
 			} catch (IOException e) {
 			}
-		}
-
-		@EventListener
-		public void joinedSpectatorRoom(PlayerRoomJoinSpectatorEvent ev) {
-			// Send player
-			// TODO: send player
-			ev = ev;
 		}
 
 		@EventListener

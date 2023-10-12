@@ -174,7 +174,7 @@ public class CommonUpdater {
 			EventBus.getInstance().dispatchEvent(new UpdateCancelEvent());
 
 			// Notify everyone
-			AccountManager.getInstance().runForAllAccounts(t -> {
+			for (AccountObject t : AccountManager.getInstance().getOnlinePlayers()) {
 				if (t.isOnline()) {
 					// Send message
 					WsGenericMessage msg = new WsGenericMessage();
@@ -186,8 +186,7 @@ public class CommonUpdater {
 					} catch (IOException e) {
 					}
 				}
-				return true;
-			});
+			}
 			logger.info("Update cancelled.");
 			return true;
 		} else
@@ -220,6 +219,11 @@ public class CommonUpdater {
 						updateShutdown();
 						cancelUpdate = false;
 						return;
+					}
+
+					// Broadcast
+					for (AccountObject t : AccountManager.getInstance().getOnlinePlayers()) {
+						warnPlayerIfUpdating(t);
 					}
 
 					// Wait
@@ -259,7 +263,7 @@ public class CommonUpdater {
 
 		// Warn everyone
 		logger.info("Restarting server...");
-		AccountManager.getInstance().runForAllAccounts(t -> {
+		for (AccountObject t : AccountManager.getInstance().getOnlinePlayers()) {
 			if (t.isOnline()) {
 				// Send message
 				WsGenericMessage msg = new WsGenericMessage();
@@ -271,8 +275,7 @@ public class CommonUpdater {
 				} catch (IOException e) {
 				}
 			}
-			return true;
-		});
+		}
 
 		// Dispatch completion event
 		EventBus.getInstance().dispatchEvent(new ServerUpdateCompletionEvent(nextVersion));
@@ -378,9 +381,6 @@ public class CommonUpdater {
 					WsMessageService.getInstance().getMessengerFor(account).sendSessionMessage(msg);
 				} catch (IOException e) {
 				}
-
-				// Send over MMO server
-				// TODO: mmo support
 			}
 		}
 	}

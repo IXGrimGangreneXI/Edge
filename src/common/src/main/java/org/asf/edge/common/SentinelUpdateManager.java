@@ -140,7 +140,7 @@ public class SentinelUpdateManager {
 			EventBus.getInstance().dispatchEvent(new UpdateCancelEvent());
 
 			// Notify everyone
-			AccountManager.getInstance().runForAllAccounts(t -> {
+			for (AccountObject t : AccountManager.getInstance().getOnlinePlayers()) {
 				if (t.isOnline()) {
 					// Send message
 					WsGenericMessage msg = new WsGenericMessage();
@@ -152,8 +152,7 @@ public class SentinelUpdateManager {
 					} catch (IOException e) {
 					}
 				}
-				return true;
-			});
+			}
 			logger.info("Update cancelled.");
 			return true;
 		} else
@@ -178,6 +177,7 @@ public class SentinelUpdateManager {
 			// Run countdown
 			updateRestartTimestamp = System.currentTimeMillis() + (mins * 60 * 1000);
 			Thread th = new Thread(() -> {
+				int remainingTimeLast = 0;
 				while (!cancelUpdate) {
 					// Update shutdown if countdown reaches zero
 					int remainingTime = (int) ((System.currentTimeMillis() - updateRestartTimestamp) / 1000 / 60);
@@ -185,6 +185,17 @@ public class SentinelUpdateManager {
 						updateShutdown();
 						cancelUpdate = false;
 						return;
+					}
+
+					// Check
+					if (remainingTime != remainingTimeLast) {
+						// Broadcast
+						for (AccountObject t : AccountManager.getInstance().getOnlinePlayers()) {
+							warnPlayerIfUpdating(t);
+						}
+
+						// Assign last time
+						remainingTimeLast = remainingTime;
 					}
 
 					// Wait
@@ -218,7 +229,7 @@ public class SentinelUpdateManager {
 
 		// Warn everyone
 		logger.info("Restarting server via exit code 238 for update...");
-		AccountManager.getInstance().runForAllAccounts(t -> {
+		for (AccountObject t : AccountManager.getInstance().getOnlinePlayers()) {
 			if (t.isOnline()) {
 				// Send message
 				WsGenericMessage msg = new WsGenericMessage();
@@ -230,8 +241,7 @@ public class SentinelUpdateManager {
 				} catch (IOException e) {
 				}
 			}
-			return true;
-		});
+		}
 
 		// Dispatch completion event
 		EventBus.getInstance().dispatchEvent(new ServerUpdateCompletionEvent(nextVersion));
@@ -320,9 +330,6 @@ public class SentinelUpdateManager {
 					WsMessageService.getInstance().getMessengerFor(account).sendSessionMessage(msg);
 				} catch (IOException e) {
 				}
-
-				// Send over MMO server
-				// TODO: mmo support
 			}
 		}
 	}

@@ -1,15 +1,21 @@
 package org.asf.edge.commonapi.http.handlers.internal;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.connective.tasks.AsyncTaskManager;
+import org.asf.edge.common.events.messages.SendSessionWebserviceMessageEvent;
+import org.asf.edge.common.events.messages.SendWebserviceMessageEvent;
 import org.asf.edge.common.io.DataReader;
+import org.asf.edge.common.io.DataWriter;
 import org.asf.edge.common.util.SimpleBinaryMessageClient;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.util.MmoServerEntry;
+import org.asf.edge.modules.eventbus.EventBus;
 
 public class MmoServerUplinkHandler extends HttpPushProcessor {
 
@@ -73,14 +79,53 @@ public class MmoServerUplinkHandler extends HttpPushProcessor {
 					// Add
 					server.addMmoServer(entry);
 
+					// Create event handlers
+					Consumer<SendSessionWebserviceMessageEvent> handlerSesMessages = null;
+					Consumer<SendWebserviceMessageEvent> handlerPersMessages = null;
+
 					// Handle messages
 					try {
+						// Create client
 						SimpleBinaryMessageClient client = new SimpleBinaryMessageClient((packet, cl) -> {
 							return true;
 						}, hCl.getInputStream(), hCl.getOutputStream());
+
+						// Bind events
+						handlerSesMessages = ev -> {
+							// Send packet
+							try {
+								ByteArrayOutputStream data = new ByteArrayOutputStream();
+								DataWriter wr = new DataWriter(data);
+								wr.writeRawByte((byte) 0);
+								wr.writeString(ev.getAccount().getAccountID());
+								client.send(data.toByteArray());
+							} catch (IOException e) {
+							}
+						};
+						handlerPersMessages = ev -> {
+							// Send packet
+							try {
+								ByteArrayOutputStream data = new ByteArrayOutputStream();
+								DataWriter wr = new DataWriter(data);
+								wr.writeRawByte((byte) 0);
+								wr.writeString(ev.getAccount().getAccountID());
+								client.send(data.toByteArray());
+							} catch (IOException e) {
+							}
+						};
+						EventBus.getInstance().addEventHandler(SendSessionWebserviceMessageEvent.class,
+								handlerSesMessages);
+						EventBus.getInstance().addEventHandler(SendWebserviceMessageEvent.class, handlerPersMessages);
+
+						// Start client
 						client.start();
 					} catch (Exception e) {
 					}
+
+					// Detach events
+					EventBus.getInstance().removeEventHandler(SendSessionWebserviceMessageEvent.class,
+							handlerSesMessages);
+					EventBus.getInstance().removeEventHandler(SendWebserviceMessageEvent.class, handlerPersMessages);
 
 					// Remove
 					server.removeMmoServer(entry);
