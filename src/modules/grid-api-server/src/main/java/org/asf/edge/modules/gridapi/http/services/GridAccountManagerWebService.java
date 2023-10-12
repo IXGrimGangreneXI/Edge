@@ -665,10 +665,10 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 			ctx.account.setMultiplayerEnabled(request.get("multiplayerEnabled").getAsBoolean());
 		}
 		if (request.has("chatEnabled")) {
-			ctx.account.setMultiplayerEnabled(request.get("chatEnabled").getAsBoolean());
+			ctx.account.setChatEnabled(request.get("chatEnabled").getAsBoolean());
 		}
 		if (request.has("strictChat")) {
-			ctx.account.setMultiplayerEnabled(request.get("strictChat").getAsBoolean());
+			ctx.account.setStrictChatFilterEnabled(request.get("strictChat").getAsBoolean());
 		}
 
 		// Build response
