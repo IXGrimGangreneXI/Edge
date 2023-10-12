@@ -94,8 +94,8 @@ public abstract class SmartfoxClient {
 	/**
 	 * Retrieves extension message channels by type
 	 * 
-	 * @param <T>                     Channel type
-	 * @param ExtensionMessageChannel Channel class
+	 * @param <T>          Channel type
+	 * @param channelClass Channel class
 	 * @return PacketChannel instance or null
 	 */
 	@SuppressWarnings("unchecked")
