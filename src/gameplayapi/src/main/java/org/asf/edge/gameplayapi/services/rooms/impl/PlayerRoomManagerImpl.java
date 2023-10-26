@@ -7,7 +7,7 @@ import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.entities.coordinates.Vector3D;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.xmls.data.KeyValuePairSetData;
 import org.asf.edge.gameplayapi.entities.rooms.PlayerRoomInfo;
@@ -37,7 +37,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 		ArrayList<PlayerRoomInfo> rooms = new ArrayList<PlayerRoomInfo>();
 		try {
 			// Load data
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 			data = data.getChildContainer("rooms");
 
 			// Go through rooms
@@ -57,7 +57,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 	protected PlayerRoomInfo createRoom(String roomID, int categoryID, AccountSaveContainer save) {
 		try {
 			// Load data
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 			data = data.getChildContainer("rooms");
 
 			// Create room
@@ -80,7 +80,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 	public PlayerRoomInfo getRoom(String roomID, AccountSaveContainer save) {
 		try {
 			// Load data
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 			data = data.getChildContainer("rooms");
 
 			// Create room
@@ -96,7 +96,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 	public boolean roomExists(String roomID, AccountSaveContainer save) {
 		try {
 			// Load data
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 			data = data.getChildContainer("rooms");
 
 			// Check room
@@ -110,7 +110,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 	public boolean roomItemExists(int itemID, AccountSaveContainer save) {
 		try {
 			// Load data
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 			data = data.getChildContainer("roomitems");
 
 			// Check item
@@ -124,7 +124,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 	public void deleteRoomItem(int itemID, AccountSaveContainer save) {
 		try {
 			// Load data
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 			data = data.getChildContainer("roomitems");
 
 			// Check item
@@ -139,7 +139,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 	public RoomItemInfo getRoomItem(int itemID, AccountSaveContainer save) {
 		try {
 			// Load data
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 			data = data.getChildContainer("roomitems");
 
 			// Check item
@@ -212,7 +212,7 @@ public class PlayerRoomManagerImpl extends PlayerRoomManager {
 			rI.add("rotation", rot);
 
 			// Save data
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 			data = data.getChildContainer("roomitems");
 			data.setEntry("item-" + itm.roomItemID, rI);
 		} catch (IOException e) {

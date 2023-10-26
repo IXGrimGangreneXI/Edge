@@ -6,11 +6,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.modules.gridapi.identities.IdentityDef;
 import org.asf.edge.modules.gridapi.identities.PropertyInfo;
@@ -39,7 +39,7 @@ public class IdentityUtils {
 
 		// Check
 		try {
-			if (CommonDataManager.getInstance().getContainer("PHOENIXIDENTITIES").entryExists("id-" + identity))
+			if (CommonDataManager.getInstance().getKeyValueContainer("PHOENIXIDENTITIES").entryExists("id-" + identity))
 				return true;
 			if (AccountManager.getInstance().accountExists(identity))
 				return true;
@@ -65,7 +65,7 @@ public class IdentityUtils {
 
 		// Delete
 		try {
-			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("PHOENIXIDENTITIES");
+			CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("PHOENIXIDENTITIES");
 			if (cont.entryExists("id-" + identity)) {
 				cont.deleteEntry("id-" + identity);
 				return true;
@@ -124,7 +124,7 @@ public class IdentityUtils {
 		try {
 			if (AccountManager.getInstance().accountExists(identity)) {
 				AccountObject acc = AccountManager.getInstance().getAccount(identity);
-				AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
+				AccountKvDataContainer cont = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 				if (properties.containsKey("displayName"))
 					if (!acc.updateUsername(properties.get("displayName")))
 						return false;
@@ -144,7 +144,7 @@ public class IdentityUtils {
 					if (properties.containsKey("displayName"))
 						if (!sv.updateUsername(properties.get("displayName")))
 							return false;
-					AccountDataContainer cont = sv.getSaveData();
+					AccountKvDataContainer cont = sv.getSaveData();
 					cont.setEntry("phoenixidentity", obj);
 					if (llu != id.lastUpdateTime)
 						cont.setEntry("last_update", new JsonPrimitive(id.lastUpdateTime));
@@ -153,7 +153,7 @@ public class IdentityUtils {
 					if (lsfr != id.significantFieldRandom)
 						cont.setEntry("significantFieldRandom", new JsonPrimitive(id.significantFieldRandom));
 				} else {
-					CommonDataContainer cont = CommonDataManager.getInstance().getContainer("PHOENIXIDENTITIES");
+					CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("PHOENIXIDENTITIES");
 					cont.setEntry("id-" + identity, obj);
 				}
 			}
@@ -185,7 +185,7 @@ public class IdentityUtils {
 		try {
 			if (AccountManager.getInstance().accountExists(id.identity)) {
 				AccountObject acc = AccountManager.getInstance().getAccount(id.identity);
-				AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
+				AccountKvDataContainer cont = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 				if (id.properties.containsKey("displayName"))
 					acc.updateUsername(id.properties.get("displayName").value);
 				cont.setEntry("phoenixidentity", obj);
@@ -200,13 +200,13 @@ public class IdentityUtils {
 				if (sv != null) {
 					if (id.properties.containsKey("displayName"))
 						sv.updateUsername(id.properties.get("displayName").value);
-					AccountDataContainer cont = sv.getSaveData();
+					AccountKvDataContainer cont = sv.getSaveData();
 					cont.setEntry("phoenixidentity", obj);
 					cont.setEntry("last_update", new JsonPrimitive(id.lastUpdateTime));
 					cont.setEntry("significantFieldNumber", new JsonPrimitive(id.significantFieldNumber));
 					cont.setEntry("significantFieldRandom", new JsonPrimitive(id.significantFieldRandom));
 				} else {
-					CommonDataContainer cont = CommonDataManager.getInstance().getContainer("PHOENIXIDENTITIES");
+					CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("PHOENIXIDENTITIES");
 					cont.setEntry("id-" + id.identity, obj);
 				}
 			}
@@ -237,7 +237,7 @@ public class IdentityUtils {
 		identity.lastUpdateTime = System.currentTimeMillis();
 
 		// Save
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("PHOENIXIDENTITIES");
+		CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("PHOENIXIDENTITIES");
 		JsonObject obj = new JsonObject();
 		obj.addProperty("lastUpdate", identity.lastUpdateTime);
 		obj.addProperty("sfn", identity.significantFieldNumber);
@@ -274,7 +274,7 @@ public class IdentityUtils {
 		}
 
 		// Find file
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("PHOENIXIDENTITIES");
+		CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("PHOENIXIDENTITIES");
 		try {
 			if (cont.entryExists("id-" + identity)) {
 				// Read identity
@@ -305,7 +305,7 @@ public class IdentityUtils {
 					// Read identity
 					JsonObject obj = null;
 					AccountObject acc = AccountManager.getInstance().getAccount(identity);
-					AccountDataContainer dC = acc.getAccountData().getChildContainer("accountdata");
+					AccountKvDataContainer dC = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 					if (dC.entryExists("phoenixidentity"))
 						obj = dC.getEntry("phoenixidentity").getAsJsonObject();
 					else {
@@ -360,7 +360,7 @@ public class IdentityUtils {
 					JsonObject obj = null;
 					AccountSaveContainer sv = AccountManager.getInstance().getSaveByID(identity);
 					if (sv != null) {
-						AccountDataContainer dC = sv.getSaveData();
+						AccountKvDataContainer dC = sv.getSaveData();
 						if (dC.entryExists("phoenixidentity"))
 							obj = dC.getEntry("phoenixidentity").getAsJsonObject();
 						else {
@@ -429,7 +429,7 @@ public class IdentityUtils {
 	 */
 	public static IdentityDef[] getAll() {
 		ArrayList<IdentityDef> defs = new ArrayList<IdentityDef>();
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("PHOENIXIDENTITIES");
+		CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("PHOENIXIDENTITIES");
 		try {
 			cont.runForEntries((key, value) -> {
 				if (key.startsWith("id-")) {

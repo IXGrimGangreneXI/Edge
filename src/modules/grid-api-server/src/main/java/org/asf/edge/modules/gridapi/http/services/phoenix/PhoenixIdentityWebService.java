@@ -4,8 +4,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.*;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.*;
 import org.asf.edge.modules.gridapi.EdgeGridApiServer;
 import org.asf.edge.modules.gridapi.identities.IdentityDef;
 import org.asf.edge.modules.gridapi.identities.PropertyInfo;

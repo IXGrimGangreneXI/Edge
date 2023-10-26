@@ -40,13 +40,20 @@ public class ConnectionEventHandlers implements IEventReceiver {
 		}
 
 		// Update all user saves
-		for (AccountObject account : AccountManager.getInstance().getOnlinePlayers()) {
-			// Get saves
-			for (String svID : account.getSaveIDs()) {
-				AccountSaveContainer save = account.getSave(svID);
-				if (save != null) {
-					// Update
-					GridSaveUtil.updateGridSaveID(save);
+		AccountManager manager = null;
+		try {
+			manager = AccountManager.getInstance();
+		} catch (Exception e) {
+		}
+		if (manager != null) {
+			for (AccountObject account : manager.getOnlinePlayers()) {
+				// Get saves
+				for (String svID : account.getSaveIDs()) {
+					AccountSaveContainer save = account.getSave(svID);
+					if (save != null) {
+						// Update
+						GridSaveUtil.updateGridSaveID(save);
+					}
 				}
 			}
 		}

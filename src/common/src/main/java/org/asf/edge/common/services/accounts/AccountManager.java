@@ -12,7 +12,6 @@ import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.impl.DefaultDatabaseAccountManager;
 import org.asf.edge.common.services.accounts.impl.PostgresDatabaseAccountManager;
-import org.asf.edge.common.services.accounts.impl.RemoteHttpAccountManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.tokens.TokenParseResult;
 
@@ -40,7 +39,7 @@ public abstract class AccountManager extends AbstractService {
 	/**
 	 * Internal
 	 */
-	public static void initAccountManagerServices(int priorityRemote, int priorityDatabase, int priorityPostgres) {
+	public static void initAccountManagerServices(int priorityDatabase, int priorityPostgres) {
 		if (initedServices)
 			return;
 		initedServices = true;
@@ -58,14 +57,6 @@ public abstract class AccountManager extends AbstractService {
 			accountManagerConfig = new JsonObject();
 		}
 		boolean changed = false;
-		JsonObject remoteManagerConfig = new JsonObject();
-		if (!accountManagerConfig.has("remoteHttpManager")) {
-			remoteManagerConfig.addProperty("priority", priorityRemote);
-			remoteManagerConfig.addProperty("url", "http://127.0.0.1:5324/accountmanager/");
-			accountManagerConfig.add("remoteHttpManager", remoteManagerConfig);
-			changed = true;
-		} else
-			remoteManagerConfig = accountManagerConfig.get("remoteHttpManager").getAsJsonObject();
 		JsonObject databaseManagerConfig = new JsonObject();
 		if (!accountManagerConfig.has("databaseManager")) {
 			databaseManagerConfig.addProperty("priority", priorityDatabase);
@@ -97,8 +88,6 @@ public abstract class AccountManager extends AbstractService {
 		}
 
 		// Register default account managers
-		ServiceManager.registerServiceImplementation(AccountManager.class, new RemoteHttpAccountManager(),
-				remoteManagerConfig.get("priority").getAsInt());
 		ServiceManager.registerServiceImplementation(AccountManager.class, new DefaultDatabaseAccountManager(),
 				databaseManagerConfig.get("priority").getAsInt());
 		ServiceManager.registerServiceImplementation(AccountManager.class, new PostgresDatabaseAccountManager(),

@@ -6,11 +6,11 @@ import java.util.stream.Stream;
 
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.Function;
+import org.asf.edge.common.http.functions.FunctionInfo;
+import org.asf.edge.common.http.functions.FunctionResult;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -216,7 +216,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		}
 
 		// Set data
-		AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
+		AccountKvDataContainer cont = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 		cont.setEntry("sendupdates", new JsonPrimitive(false));
 		cont.setEntry("isunderage", new JsonPrimitive(isUnderageUser));
 		cont.setEntry("last_update", new JsonPrimitive(System.currentTimeMillis()));
@@ -399,7 +399,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 			}
 
 			// Return invalid if the username is on cooldown
-			JsonElement lock = acc.getAccountData().getChildContainer("accountdata").getEntry("lockedsince");
+			JsonElement lock = acc.getAccountKeyValueContainer().getChildContainer("accountdata").getEntry("lockedsince");
 			if (lock != null && (System.currentTimeMillis() - lock.getAsLong()) < 8000) {
 				// Log
 				getServerInstance().getLogger().warn("Grid login from IP " + func.getClient().getRemoteAddress()
@@ -471,7 +471,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		}
 
 		// Success
-		AccountDataContainer data = account.getAccountData().getChildContainer("accountdata");
+		AccountKvDataContainer data = account.getAccountKeyValueContainer().getChildContainer("accountdata");
 		if (!data.entryExists("significantFieldRandom"))
 			data.setEntry("significantFieldRandom", new JsonPrimitive(IdentityUtils.rnd.nextInt()));
 		if (!data.entryExists("significantFieldNumber"))
@@ -514,7 +514,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 
 	private FunctionResult invalidUserCallback(String username, AccountObject account) throws IOException {
 		if (account != null)
-			account.getAccountData().getChildContainer("accountdata").setEntry("lockedsince",
+			account.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("lockedsince",
 					new JsonPrimitive(System.currentTimeMillis()));
 		try {
 			Thread.sleep(8000);
@@ -643,7 +643,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 			// Update
 			if (!ctx.account.updateUsername(username))
 				return response(500, "Internal server error", "text/json", "{\"error\":\"server_error\"}");
-			ctx.account.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+			ctx.account.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("last_update",
 					new JsonPrimitive(System.currentTimeMillis()));
 		}
 		if (request.has("accountPassword")) {
@@ -658,7 +658,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 			// Update
 			if (!ctx.account.updatePassword(password.toCharArray()))
 				return response(500, "Internal server error", "text/json", "{\"error\":\"server_error\"}");
-			ctx.account.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+			ctx.account.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("last_update",
 					new JsonPrimitive(System.currentTimeMillis()));
 		}
 		if (request.has("multiplayerEnabled")) {
@@ -718,7 +718,7 @@ public class GridAccountManagerWebService extends EdgeWebService<EdgeGridApiServ
 		}
 
 		// Reset sessions
-		ctx.account.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+		ctx.account.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("last_update",
 				new JsonPrimitive(System.currentTimeMillis()));
 
 		// Return

@@ -5,9 +5,9 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.LegacyFunction;
+import org.asf.edge.common.http.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.tokens.SessionToken;

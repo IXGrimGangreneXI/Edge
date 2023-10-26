@@ -438,7 +438,7 @@ public class PhoenixClient {
 					// Read packet
 					cId = reader.readInt();
 					pId = reader.readInt();
-				} catch (IOException e) {
+				} catch (Exception e) {
 					disconnect("connection.lost");
 					break;
 				}
@@ -563,6 +563,9 @@ public class PhoenixClient {
 							wr.writeLong(System.currentTimeMillis());
 							writer.writeBytes(bO.toByteArray());
 							lastPacketSent = System.currentTimeMillis();
+
+							// Flush
+							writer.getStream().flush();
 						}
 					} catch (IOException e) {
 						disconnect("connection.lost");
@@ -686,11 +689,11 @@ public class PhoenixClient {
 		// Find channel
 		int chId = 0;
 		for (AbstractPacketChannel c : registry.keySet()) {
-			if (c == channel) {
+			if (channel.getClass().isAssignableFrom(c.getClass())) {
 				int pkId = 0;
 				for (IPhoenixPacket pk : channel.getPacketDefinitions()) {
-					if (packet.getClass().isAssignableFrom(pk.getClass())) {
-						sendPacket(chId, pkId, pk);
+					if (pk.getClass().isAssignableFrom(packet.getClass())) {
+						sendPacket(chId, pkId, packet);
 						break;
 					}
 					pkId++;
@@ -721,10 +724,16 @@ public class PhoenixClient {
 			if (pk.lengthPrefixed()) {
 				ByteArrayOutputStream bO = new ByteArrayOutputStream();
 				DataWriter wr = new DataWriter(bO);
-				pk.build(wr);
-				writer.writeBytes(bO.toByteArray());
+				try {
+					pk.build(wr);
+				} finally {
+					writer.writeBytes(bO.toByteArray());
+				}
 			} else
 				pk.build(writer);
+
+			// Flush
+			writer.getStream().flush();
 		}
 		lastPacketSent = System.currentTimeMillis();
 	}

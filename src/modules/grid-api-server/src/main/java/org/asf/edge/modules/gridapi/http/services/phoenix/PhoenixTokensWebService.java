@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.*;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.*;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.modules.gridapi.EdgeGridApiServer;
 import org.asf.edge.modules.gridapi.identities.IdentityDef;
@@ -70,7 +70,7 @@ public class PhoenixTokensWebService extends EdgeWebService<EdgeGridApiServer> {
 			lastUpdateTime = id.lastUpdateTime;
 		else if (ctx.account != null) {
 			AccountObject acc = ctx.account;
-			AccountDataContainer data = acc.getAccountData().getChildContainer("accountdata");
+			AccountKvDataContainer data = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 			if (!data.entryExists("last_update"))
 				data.setEntry("last_update", new JsonPrimitive(System.currentTimeMillis()));
 			lastUpdateTime = data.getEntry("last_update").getAsLong();
@@ -121,7 +121,7 @@ public class PhoenixTokensWebService extends EdgeWebService<EdgeGridApiServer> {
 				// Identity-based token
 				if (ctx.account != null) {
 					// Load data
-					AccountDataContainer data = ctx.account.getAccountData().getChildContainer("accountdata");
+					AccountKvDataContainer data = ctx.account.getAccountKeyValueContainer().getChildContainer("accountdata");
 					if (!data.entryExists("significantFieldRandom"))
 						return response(401, "Unauthorized");
 					if (!data.entryExists("significantFieldNumber"))

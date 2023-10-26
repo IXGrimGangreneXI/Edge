@@ -5,10 +5,10 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.LegacyFunction;
+import org.asf.edge.common.http.functions.LegacyFunctionInfo;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -84,7 +84,7 @@ public class RegistrationWebServiceV3Processor extends EdgeWebService<EdgeCommon
 		}
 
 		// Check currency
-		AccountDataContainer currencyAccWide = account.getAccountData().getChildContainer("currency");
+		AccountKvDataContainer currencyAccWide = account.getAccountKeyValueContainer().getChildContainer("currency");
 		int current = 0;
 		if (currencyAccWide.entryExists("gems"))
 			current = currencyAccWide.getEntry("gems").getAsInt();
@@ -289,7 +289,7 @@ public class RegistrationWebServiceV3Processor extends EdgeWebService<EdgeCommon
 							+ ", migrated guest account " + guestID + ")");
 
 			// Set data
-			AccountDataContainer cont = guestAcc.getAccountData().getChildContainer("accountdata");
+			AccountKvDataContainer cont = guestAcc.getAccountKeyValueContainer().getChildContainer("accountdata");
 			cont.setEntry("sendupdates", new JsonPrimitive(registration.emailNotification == 1));
 			cont.setEntry("isunderage", new JsonPrimitive(registration.childList[0].age < 13));
 			if (registration.childList[0].age < 13) {
@@ -315,7 +315,7 @@ public class RegistrationWebServiceV3Processor extends EdgeWebService<EdgeCommon
 					+ ": registered " + acc.getAccountID() + " (username: " + acc.getUsername() + ")");
 
 			// Set data
-			AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
+			AccountKvDataContainer cont = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 			cont.setEntry("sendupdates", new JsonPrimitive(registration.emailNotification == 1));
 			cont.setEntry("isunderage", new JsonPrimitive(registration.childList[0].age < 13));
 			if (registration.childList[0].age < 13) {
@@ -330,7 +330,7 @@ public class RegistrationWebServiceV3Processor extends EdgeWebService<EdgeCommon
 		resp.userID = acc.getAccountID();
 
 		// Add gems
-		AccountDataContainer currencyAccWide = acc.getAccountData().getChildContainer("currency");
+		AccountKvDataContainer currencyAccWide = acc.getAccountKeyValueContainer().getChildContainer("currency");
 		int current = 0;
 		if (currencyAccWide.entryExists("gems"))
 			current = currencyAccWide.getEntry("gems").getAsInt();

@@ -7,7 +7,7 @@ import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.commands.CommandContext;
 import org.asf.edge.common.commands.IEdgeServerCommand;
 import org.asf.edge.common.permissions.PermissionLevel;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import com.google.gson.JsonPrimitive;
 
@@ -46,22 +46,22 @@ public class ReloadCommand implements IEdgeServerCommand {
 
 		// Reload ranks
 		logger.info("Scheduling text filter reload...");
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("TEXTFILTER");
+		CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("TEXTFILTER");
 		cont.setEntry("lastreload", new JsonPrimitive(System.currentTimeMillis()));
 
 		// Reload quests
 		logger.info("Scheduling quest manager reload...");
-		cont = CommonDataManager.getInstance().getContainer("QUESTMANAGER");
+		cont = CommonDataManager.getInstance().getKeyValueContainer("QUESTMANAGER");
 		cont.setEntry("lastreload", new JsonPrimitive(System.currentTimeMillis()));
 
 		// Reload items
 		logger.info("Scheduling item and store manager reload...");
-		cont = CommonDataManager.getInstance().getContainer("ITEMMANAGER");
+		cont = CommonDataManager.getInstance().getKeyValueContainer("ITEMMANAGER");
 		cont.setEntry("lastreload", new JsonPrimitive(System.currentTimeMillis()));
 
 		// Reload ranks
 		logger.info("Scheduling achievement and rank manager reload...");
-		cont = CommonDataManager.getInstance().getContainer("ACHIEVEMENTMANAGER");
+		cont = CommonDataManager.getInstance().getKeyValueContainer("ACHIEVEMENTMANAGER");
 		cont.setEntry("lastreload", new JsonPrimitive(System.currentTimeMillis()));
 
 		// Completed

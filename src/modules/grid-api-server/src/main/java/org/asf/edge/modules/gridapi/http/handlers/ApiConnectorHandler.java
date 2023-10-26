@@ -92,20 +92,24 @@ public class ApiConnectorHandler extends HttpPushProcessor {
 					// Handle
 					if (targetID != -1) {
 						// Handle request
-						JsonObject req = JsonParser.parseString(requestPayload).getAsJsonObject();
+						String pl = requestPayload;
+						String tp = requestType;
 						int targetIDF = targetID;
-						server.handlePhoenixApiConnectorRequest(requestType, req, client, t -> {
-							String str = t.toString();
-							try {
-								// Write response
-								synchronized (writeLock) {
-									DataWriter wr = new DataWriter(client.getOutputStream());
-									wr.writeInt(targetIDF);
-									wr.writeString(str);
+						AsyncTaskManager.runAsync(() -> {
+							JsonObject req = JsonParser.parseString(pl).getAsJsonObject();
+							server.handlePhoenixApiConnectorRequest(tp, req, client, t -> {
+								String str = t.toString();
+								try {
+									// Write response
+									synchronized (writeLock) {
+										DataWriter wr = new DataWriter(client.getOutputStream());
+										wr.writeInt(targetIDF);
+										wr.writeString(str);
+									}
+								} catch (IOException e) {
+									client.closeConnection();
 								}
-							} catch (IOException e) {
-								client.closeConnection();
-							}
+							});
 						});
 					}
 				}

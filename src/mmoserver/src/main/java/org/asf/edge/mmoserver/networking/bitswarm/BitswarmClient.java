@@ -9,6 +9,8 @@ import java.nio.ByteBuffer;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
+import org.asf.edge.common.io.IoUtil;
+
 /**
  * 
  * Bitswarm-compatible client implementation
@@ -46,7 +48,7 @@ public class BitswarmClient {
 			int length = (largeSize ? readInt(input) : readShort(input));
 
 			// Read body
-			byte[] payload = input.readNBytes(length);
+			byte[] payload = IoUtil.readNBytes(input, length);
 
 			// Decrypt
 			if (encrypted) {
@@ -121,11 +123,11 @@ public class BitswarmClient {
 	}
 
 	private int readInt(InputStream strm) throws IOException {
-		return ByteBuffer.wrap(strm.readNBytes(4)).getInt();
+		return ByteBuffer.wrap(IoUtil.readNBytes(strm, 4)).getInt();
 	}
 
 	private int readShort(InputStream strm) throws IOException {
-		return ByteBuffer.wrap(strm.readNBytes(2)).getShort();
+		return ByteBuffer.wrap(IoUtil.readNBytes(strm, 2)).getShort();
 	}
 
 	private void writeInt(OutputStream strm, int val) throws IOException {

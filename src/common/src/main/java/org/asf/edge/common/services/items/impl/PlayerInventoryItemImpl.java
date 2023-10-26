@@ -13,7 +13,7 @@ import org.asf.edge.common.entities.items.PlayerInventoryItemAttributes;
 import org.asf.edge.common.events.items.InventoryItemDeleteEvent;
 import org.asf.edge.common.events.items.InventoryItemQuantityUpdateEvent;
 import org.asf.edge.common.events.items.InventoryItemUsesUpdateEvent;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -23,7 +23,7 @@ import com.google.gson.JsonObject;
 
 public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 
-	private AccountDataContainer data;
+	private AccountKvDataContainer data;
 	private AccountObject account;
 	private PlayerInventory inv;
 	private PlayerInventoryContainer cont;
@@ -38,7 +38,7 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 
 	private PlayerInventoryItemAttributes attrCont;
 
-	public PlayerInventoryItemImpl(AccountDataContainer data, int uniqueID, int defID, int quantity, int uses,
+	public PlayerInventoryItemImpl(AccountKvDataContainer data, int uniqueID, int defID, int quantity, int uses,
 			AccountObject account, PlayerInventory inv, PlayerInventoryContainer cont) {
 		this.data = data;
 		this.defID = defID;
@@ -209,7 +209,7 @@ public class PlayerInventoryItemImpl extends PlayerInventoryItem {
 	public void delete() {
 		try {
 			// Remove item
-			AccountDataContainer cont = data.getChildContainer("d-" + defID);
+			AccountKvDataContainer cont = data.getChildContainer("d-" + defID);
 			cont.deleteEntry("u-" + uniqueID);
 			if (Stream.of(cont.getEntryKeys()).filter(t -> t.startsWith("u-")).count() <= 0)
 				cont.deleteContainer();

@@ -17,7 +17,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.events.accounts.*;
 import org.asf.edge.common.events.accounts.saves.*;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.textfilter.TextFilterService;
@@ -42,7 +41,6 @@ public abstract class BasicAccountObject extends AccountObject {
 	private static SecureRandom rnd = new SecureRandom();
 
 	private BasicAccountManager manager;
-	private AccountDataContainer accountData;
 
 	public BasicAccountObject(String id, String username, BasicAccountManager manager) {
 		this.id = id;
@@ -86,18 +84,11 @@ public abstract class BasicAccountObject extends AccountObject {
 	public abstract boolean performUpdatePassword(byte[] cred);
 
 	/**
-	 * Called to retrieve the account data container
-	 * 
-	 * @return AccountDataContainer instance
-	 */
-	public abstract AccountDataContainer retrieveAccountData();
-
-	/**
 	 * Called to retrieve save IDs
 	 * 
 	 * @return Array of save ID strings
 	 */
-	protected abstract String[] retrieveSaveIDs();
+	public abstract String[] retrieveSaveIDs();
 
 	/**
 	 * Called to create saves
@@ -139,7 +130,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public long getLastLoginTime() {
 		try {
-			JsonElement ele = getAccountData().getChildContainer("accountdata").getEntry("lastlogintime");
+			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("lastlogintime");
 			if (ele != null)
 				return ele.getAsLong();
 			return -1;
@@ -151,7 +142,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public long getRegistrationTimestamp() {
 		try {
-			JsonElement ele = getAccountData().getChildContainer("accountdata").getEntry("registrationtimestamp");
+			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("registrationtimestamp");
 			if (ele != null)
 				return ele.getAsLong();
 			return -1;
@@ -163,7 +154,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public boolean isGuestAccount() {
 		try {
-			JsonElement ele = getAccountData().getChildContainer("accountdata").getEntry("isguestaccount");
+			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("isguestaccount");
 			if (ele == null)
 				return false;
 			return ele.getAsBoolean();
@@ -175,7 +166,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public boolean isMultiplayerEnabled() {
 		try {
-			JsonElement ele = getAccountData().getChildContainer("accountdata").getEntry("ismultiplayerenabled");
+			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("ismultiplayerenabled");
 			if (ele == null)
 				return false;
 			return ele.getAsBoolean();
@@ -191,7 +182,7 @@ public abstract class BasicAccountObject extends AccountObject {
 			return false; // Guests cannot chat
 
 		try {
-			JsonElement ele = getAccountData().getChildContainer("accountdata").getEntry("ischatenabled");
+			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("ischatenabled");
 			if (ele == null)
 				return false;
 			return ele.getAsBoolean();
@@ -203,7 +194,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public boolean isStrictChatFilterEnabled() {
 		try {
-			JsonElement ele = getAccountData().getChildContainer("accountdata").getEntry("isstrictchatfilterenabled");
+			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("isstrictchatfilterenabled");
 			if (ele == null)
 				return false;
 			return ele.getAsBoolean();
@@ -278,13 +269,6 @@ public abstract class BasicAccountObject extends AccountObject {
 	}
 
 	@Override
-	public AccountDataContainer getAccountData() {
-		if (accountData == null)
-			accountData = retrieveAccountData();
-		return accountData;
-	}
-
-	@Override
 	public boolean migrateToNormalAccountFromGuest(String newName, String email, char[] password) {
 		// Check guest
 		if (!isGuestAccount())
@@ -325,7 +309,7 @@ public abstract class BasicAccountObject extends AccountObject {
 
 		// Disable guest mode
 		try {
-			getAccountData().getChildContainer("accountdata").setEntry("isguestaccount", new JsonPrimitive(false));
+			getAccountKeyValueContainer("accountdata").setEntry("isguestaccount", new JsonPrimitive(false));
 		} catch (IOException e) {
 			logger.error("Failed to execute database query request while trying to migrate guest account with  ID '"
 					+ id + "' to a normal account", e);
@@ -345,8 +329,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public void setMultiplayerEnabled(boolean state) {
 		try {
-			getAccountData().getChildContainer("accountdata").setEntry("ismultiplayerenabled",
-					new JsonPrimitive(state));
+			getAccountKeyValueContainer("accountdata").setEntry("ismultiplayerenabled", new JsonPrimitive(state));
 			logger.info("Set multiplayer to " + (state ? "enabled" : "disabled") + " for account " + getUsername()
 					+ " (ID " + getAccountID() + ")");
 		} catch (IOException e) {
@@ -358,7 +341,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public void setChatEnabled(boolean state) {
 		try {
-			getAccountData().getChildContainer("accountdata").setEntry("ischatenabled", new JsonPrimitive(state));
+			getAccountKeyValueContainer("accountdata").setEntry("ischatenabled", new JsonPrimitive(state));
 			logger.info("Set chat to " + (state ? "enabled" : "disabled") + " for account " + getUsername() + " (ID "
 					+ getAccountID() + ")");
 		} catch (IOException e) {
@@ -370,8 +353,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public void setStrictChatFilterEnabled(boolean state) {
 		try {
-			getAccountData().getChildContainer("accountdata").setEntry("isstrictchatfilterenabled",
-					new JsonPrimitive(state));
+			getAccountKeyValueContainer("accountdata").setEntry("isstrictchatfilterenabled", new JsonPrimitive(state));
 			logger.info("Set strict-chat to " + (state ? "enabled" : "disabled") + " for account " + getUsername()
 					+ " (ID " + getAccountID() + ")");
 		} catch (IOException e) {
@@ -383,7 +365,7 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public void updateLastLoginTime() {
 		try {
-			getAccountData().getChildContainer("accountdata").setEntry("lastlogintime",
+			getAccountKeyValueContainer("accountdata").setEntry("lastlogintime",
 					new JsonPrimitive((System.currentTimeMillis() / 1000l)));
 		} catch (IOException e) {
 			logger.error(

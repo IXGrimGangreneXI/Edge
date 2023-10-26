@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -16,7 +17,8 @@ import javax.swing.SwingUtilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.events.accounts.AccountManagerLoadEvent;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.io.DataReader;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.BasicAccountManager;
@@ -302,8 +304,8 @@ public class AccountImporterModule implements IEdgeModule {
 					// Import data
 					logger.info("Importing account data...");
 					ProgressWindow.WindowAppender.setLabel("Importing account data...");
-					account.getAccountData().deleteContainer();
-					importData(logger, account.getAccountData(), strm, "/");
+					account.getAccountKeyValueContainer().deleteContainer();
+					importData(logger, account.getAccountKeyValueContainer(), strm, "/");
 
 					// Import saves
 					logger.info("Importing account saves...");
@@ -362,7 +364,7 @@ public class AccountImporterModule implements IEdgeModule {
 		ProgressWindow.WindowAppender.closeWindow();
 	}
 
-	private void importData(Logger logger, AccountDataContainer cont, InputStream input, String pth)
+	private void importData(Logger logger, AccountKvDataContainer cont, InputStream input, String pth)
 			throws IOException {
 		logger.info("Importing data container: " + pth);
 
@@ -431,14 +433,35 @@ public class AccountImporterModule implements IEdgeModule {
 	}
 
 	private int readInt(InputStream strm) throws IOException {
-		return ByteBuffer.wrap(strm.readNBytes(4)).getInt();
+		return ByteBuffer.wrap(readNBytes(strm, 4)).getInt();
 	}
 
 	private long readLong(InputStream strm) throws IOException {
-		return ByteBuffer.wrap(strm.readNBytes(8)).getLong();
+		return ByteBuffer.wrap(readNBytes(strm, 8)).getLong();
 	}
 
 	private byte[] readByteArray(InputStream strm) throws IOException {
-		return strm.readNBytes(readInt(strm));
+		return readNBytes(strm, readInt(strm));
+	}
+
+	private byte[] readNBytes(InputStream input, int num) throws IOException {
+		byte[] res = new byte[num];
+		int c = 0;
+		while (true) {
+			try {
+				int r = input.read(res, c, num);
+				if (r == -1)
+					break;
+				c += r;
+			} catch (Exception e) {
+				int b = input.read();
+				if (b == -1)
+					break;
+				res[c++] = (byte) b;
+			}
+			if (c >= num)
+				break;
+		}
+		return Arrays.copyOfRange(res, 0, c);
 	}
 }

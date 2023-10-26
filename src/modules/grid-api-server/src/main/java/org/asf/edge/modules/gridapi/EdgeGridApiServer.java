@@ -24,6 +24,7 @@ import org.asf.edge.modules.gridapi.http.services.phoenix.PhoenixIdentityWebServ
 import org.asf.edge.modules.gridapi.http.services.phoenix.PhoenixServersWebService;
 import org.asf.edge.modules.gridapi.http.services.phoenix.PhoenixTokensWebService;
 import org.asf.edge.modules.gridapi.phoenixconnector.IApiConnectorRequestHandler;
+import org.asf.edge.modules.gridapi.phoenixconnector.handlers.TextFilterRequestHandler;
 
 import com.google.gson.JsonObject;
 
@@ -139,6 +140,7 @@ public class EdgeGridApiServer implements IBaseServer {
 
 		// Register connector handlers
 		logger.debug("Configuring Grid API connector request handlers...");
+		this.registerApiConnectorRequestHandler(new TextFilterRequestHandler());
 		// TODO
 
 		// Bind command handler
@@ -269,5 +271,8 @@ public class EdgeGridApiServer implements IBaseServer {
 			Consumer<JsonObject> responseCallback) {
 		if (connectorHandlers.containsKey(type))
 			connectorHandlers.get(type).handle(payload, client, responseCallback);
+		else
+			logger.error("Unhandled Grid API connector request: " + type + ": [" + payload + "] (sent by "
+					+ client.getRemoteAddress() + ")");
 	}
 }

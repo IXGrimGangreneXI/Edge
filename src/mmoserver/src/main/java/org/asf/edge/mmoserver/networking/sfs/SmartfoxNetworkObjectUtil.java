@@ -9,6 +9,8 @@ import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.asf.edge.common.io.IoUtil;
+
 /**
  * 
  * Smartfox Network Object Utility
@@ -46,13 +48,13 @@ public class SmartfoxNetworkObjectUtil {
 		LinkedHashMap<String, Object> obj = new LinkedHashMap<String, Object>();
 
 		// Parse
-		short length = ByteBuffer.wrap(data.readNBytes(2)).getShort();
+		short length = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
 		if (length < 0)
 			throw new IOException("Invalid length: " + length + ": negative values are invalid for object length");
 		for (int i = 0; i < length; i++) {
 			// Read string key
-			short l = ByteBuffer.wrap(data.readNBytes(2)).getShort();
-			String key = new String(data.readNBytes(l), "UTF-8");
+			short l = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
+			String key = new String(IoUtil.readNBytes(data, l), "UTF-8");
 
 			// Read type
 			int type = data.read();
@@ -82,33 +84,33 @@ public class SmartfoxNetworkObjectUtil {
 
 		// Short
 		case 3:
-			return ByteBuffer.wrap(data.readNBytes(2)).getShort();
+			return ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
 
 		// Integer
 		case 4:
-			return ByteBuffer.wrap(data.readNBytes(4)).getInt();
+			return ByteBuffer.wrap(IoUtil.readNBytes(data, 4)).getInt();
 
 		// Long
 		case 5:
-			return ByteBuffer.wrap(data.readNBytes(8)).getLong();
+			return ByteBuffer.wrap(IoUtil.readNBytes(data, 8)).getLong();
 
 		// Float
 		case 6:
-			return ByteBuffer.wrap(data.readNBytes(4)).getFloat();
+			return ByteBuffer.wrap(IoUtil.readNBytes(data, 4)).getFloat();
 
 		// Double
 		case 7:
-			return ByteBuffer.wrap(data.readNBytes(8)).getDouble();
+			return ByteBuffer.wrap(IoUtil.readNBytes(data, 8)).getDouble();
 
 		// String
 		case 8: {
-			short l = ByteBuffer.wrap(data.readNBytes(2)).getShort();
-			return new String(data.readNBytes(l), "UTF-8");
+			short l = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
+			return new String(IoUtil.readNBytes(data, l), "UTF-8");
 		}
 
 		// Boolean array
 		case 9: {
-			short l = ByteBuffer.wrap(data.readNBytes(2)).getShort();
+			short l = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
 			boolean[] b = new boolean[l];
 			for (int i2 = 0; i2 < b.length; i2++) {
 				b[i2] = data.read() == 1;
@@ -118,74 +120,74 @@ public class SmartfoxNetworkObjectUtil {
 
 		// Byte array
 		case 10: {
-			int ln = ByteBuffer.wrap(data.readNBytes(4)).getInt();
-			return data.readNBytes(ln);
+			int ln = ByteBuffer.wrap(IoUtil.readNBytes(data, 4)).getInt();
+			return IoUtil.readNBytes(data, ln);
 		}
 
 		// Short array
 		case 11: {
-			short l = ByteBuffer.wrap(data.readNBytes(2)).getShort();
+			short l = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
 			short[] b = new short[l];
 			for (int i2 = 0; i2 < b.length; i2++) {
-				b[i2] = ByteBuffer.wrap(data.readNBytes(2)).getShort();
+				b[i2] = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
 			}
 			return b;
 		}
 
 		// Integer array
 		case 12: {
-			short l = ByteBuffer.wrap(data.readNBytes(2)).getShort();
+			short l = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
 			int[] b = new int[l];
 			for (int i2 = 0; i2 < b.length; i2++) {
-				b[i2] = ByteBuffer.wrap(data.readNBytes(4)).getInt();
+				b[i2] = ByteBuffer.wrap(IoUtil.readNBytes(data, 4)).getInt();
 			}
 			return b;
 		}
 
 		// Long array
 		case 13: {
-			short l = ByteBuffer.wrap(data.readNBytes(2)).getShort();
+			short l = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
 			long[] b = new long[l];
 			for (int i2 = 0; i2 < b.length; i2++) {
-				b[i2] = ByteBuffer.wrap(data.readNBytes(8)).getLong();
+				b[i2] = ByteBuffer.wrap(IoUtil.readNBytes(data, 8)).getLong();
 			}
 			return b;
 		}
 
 		// Float array
 		case 14: {
-			short l = ByteBuffer.wrap(data.readNBytes(2)).getShort();
+			short l = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
 			float[] b = new float[l];
 			for (int i2 = 0; i2 < b.length; i2++) {
-				b[i2] = ByteBuffer.wrap(data.readNBytes(4)).getFloat();
+				b[i2] = ByteBuffer.wrap(IoUtil.readNBytes(data, 4)).getFloat();
 			}
 			return b;
 		}
 
 		// Double array
 		case 15: {
-			short l = ByteBuffer.wrap(data.readNBytes(2)).getShort();
+			short l = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
 			double[] b = new double[l];
 			for (int i2 = 0; i2 < b.length; i2++) {
-				b[i2] = ByteBuffer.wrap(data.readNBytes(8)).getDouble();
+				b[i2] = ByteBuffer.wrap(IoUtil.readNBytes(data, 8)).getDouble();
 			}
 			return b;
 		}
 
 		// String array
 		case 16: {
-			short l = ByteBuffer.wrap(data.readNBytes(2)).getShort();
+			short l = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
 			String[] b = new String[l];
 			for (int i2 = 0; i2 < b.length; i2++) {
-				short l2 = ByteBuffer.wrap(data.readNBytes(2)).getShort();
-				b[i2] = new String(data.readNBytes(l2), "UTF-8");
+				short l2 = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
+				b[i2] = new String(IoUtil.readNBytes(data, l2), "UTF-8");
 			}
 			return b;
 		}
 
 		// Object array
 		case 17: {
-			short l = ByteBuffer.wrap(data.readNBytes(2)).getShort();
+			short l = ByteBuffer.wrap(IoUtil.readNBytes(data, 2)).getShort();
 			Object[] b = new Object[l];
 			for (int i2 = 0; i2 < b.length; i2++) {
 				b[i2] = decodeVal(data.read(), data);

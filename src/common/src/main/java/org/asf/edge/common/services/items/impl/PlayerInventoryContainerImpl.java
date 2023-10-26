@@ -8,7 +8,7 @@ import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.events.items.InventoryItemCreateEvent;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.modules.eventbus.EventBus;
 
@@ -19,12 +19,12 @@ import com.google.gson.JsonPrimitive;
 public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 
 	private static Random rnd = new Random();
-	private AccountDataContainer data;
+	private AccountKvDataContainer data;
 	private PlayerInventory inv;
 	private AccountObject account;
 	private int id;
 
-	public PlayerInventoryContainerImpl(AccountDataContainer data, PlayerInventory inv, AccountObject account, int id) {
+	public PlayerInventoryContainerImpl(AccountKvDataContainer data, PlayerInventory inv, AccountObject account, int id) {
 		this.id = id;
 		this.account = account;
 		this.inv = inv;
@@ -46,7 +46,7 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 
 					// Find items
 					try {
-						AccountDataContainer cont = data.getChildContainer("d-" + defID);
+						AccountKvDataContainer cont = data.getChildContainer("d-" + defID);
 						cont.runForEntries((ent2, value) -> {
 							if (ent2.startsWith("u-")) {
 								// Parse item ID
@@ -99,7 +99,7 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 					int defID = Integer.parseInt(ent.substring(2));
 
 					// Find items
-					AccountDataContainer cont = data.getChildContainer("d-" + defID);
+					AccountKvDataContainer cont = data.getChildContainer("d-" + defID);
 					cont.runForEntries((ent2, value) -> {
 						try {
 							if (ent2.startsWith("u-")) {
@@ -177,7 +177,7 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 	public PlayerInventoryItem createItem(int defID, int quantity, int uses) {
 		try {
 			// Load item list and add to it
-			AccountDataContainer item = data.getChildContainer("d-" + defID);
+			AccountKvDataContainer item = data.getChildContainer("d-" + defID);
 			if (item.getEntryKeys().length >= Integer.MAX_VALUE - 1)
 				throw new IOException("Too many items in inventory");
 
@@ -218,7 +218,7 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 		// Find item
 		try {
 			ArrayList<PlayerInventoryItem> items = new ArrayList<PlayerInventoryItem>();
-			AccountDataContainer item = data.getChildContainer("d-" + defID);
+			AccountKvDataContainer item = data.getChildContainer("d-" + defID);
 			item.runForEntries((itm, value) -> {
 				if (itm.startsWith("u-")) {
 					try {
@@ -257,7 +257,7 @@ public class PlayerInventoryContainerImpl extends PlayerInventoryContainer {
 		// Find item
 		try {
 			ItmRes r = new ItmRes();
-			AccountDataContainer item = data.getChildContainer("d-" + defID);
+			AccountKvDataContainer item = data.getChildContainer("d-" + defID);
 			JsonElement ele = item.findEntry((itm, value) -> {
 				if (itm.startsWith("u-")) {
 					r.uniqueID = Integer.parseInt(itm.substring(2));

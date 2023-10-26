@@ -10,7 +10,7 @@ import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.items.ItemManager;
@@ -102,7 +102,7 @@ public class RewardUtil {
 				// Coins
 				case 2: {
 					// Update inventory
-					AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+					AccountKvDataContainer currency = save.getSaveData().getChildContainer("currency");
 					int currentC = 300;
 					if (currency.entryExists("coins"))
 						currentC = currency.getEntry("coins").getAsInt();
@@ -113,7 +113,7 @@ public class RewardUtil {
 				// Gems
 				case 5: {
 					// Update inventory
-					AccountDataContainer currencyAccWide = save.getAccount().getAccountData()
+					AccountKvDataContainer currencyAccWide = save.getAccount().getAccountKeyValueContainer()
 							.getChildContainer("currency");
 					int currentG = 0;
 					if (currencyAccWide.entryExists("gems"))
@@ -176,7 +176,7 @@ public class RewardUtil {
 			return null;
 		} else if (id == RankTypeID.DRAGON) {
 			// Find active dragon
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 
 			// Pull dragons
 			data = data.getChildContainer("dragons");
@@ -252,7 +252,7 @@ public class RewardUtil {
 				case 2: {
 					// Add coins
 					// Update inventory
-					AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+					AccountKvDataContainer currency = save.getSaveData().getChildContainer("currency");
 					int currentC = 300;
 					if (currency.entryExists("coins"))
 						currentC = currency.getEntry("coins").getAsInt();
@@ -264,7 +264,7 @@ public class RewardUtil {
 				case 5: {
 					// Add gems
 					// Update inventory
-					AccountDataContainer currencyAccWide = save.getAccount().getAccountData()
+					AccountKvDataContainer currencyAccWide = save.getAccount().getAccountKeyValueContainer()
 							.getChildContainer("currency");
 					int currentG = 0;
 					if (currencyAccWide.entryExists("gems"))

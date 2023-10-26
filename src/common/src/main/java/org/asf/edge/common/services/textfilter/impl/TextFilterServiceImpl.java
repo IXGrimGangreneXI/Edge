@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.events.textfilter.TextFilterLoadEvent;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.textfilter.FilterMode;
 import org.asf.edge.common.services.textfilter.FilterSeverity;
@@ -33,7 +33,7 @@ public class TextFilterServiceImpl extends TextFilterService {
 	@Override
 	public void initService() {
 		// Start reload watchdog
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("TEXTFILTER");
+		CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("TEXTFILTER");
 		try {
 			if (!cont.entryExists("lastreload")) {
 				lastReloadTime = System.currentTimeMillis();

@@ -2,10 +2,10 @@ package org.asf.edge.modules.gridapi.http.services;
 
 import java.io.IOException;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.Function;
+import org.asf.edge.common.http.functions.FunctionInfo;
+import org.asf.edge.common.http.functions.FunctionResult;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.services.textfilter.result.FilterResult;
 import org.asf.edge.common.services.textfilter.result.WordMatch;

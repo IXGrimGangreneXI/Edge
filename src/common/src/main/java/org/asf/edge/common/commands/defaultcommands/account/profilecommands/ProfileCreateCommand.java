@@ -10,7 +10,7 @@ import org.asf.edge.common.commands.CommandContext;
 import org.asf.edge.common.commands.IEdgeServerCommand;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.permissions.PermissionLevel;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -126,7 +126,7 @@ public class ProfileCreateCommand implements IEdgeServerCommand {
 		if (account.getAccountID().equalsIgnoreCase(ctx.getAccountObject().getAccountID())) {
 			try {
 				// Check currency
-				AccountDataContainer currencyAccWide = account.getAccountData().getChildContainer("currency");
+				AccountKvDataContainer currencyAccWide = account.getAccountKeyValueContainer().getChildContainer("currency");
 				int current = 0;
 				if (currencyAccWide.entryExists("gems"))
 					current = currencyAccWide.getEntry("gems").getAsInt();

@@ -12,7 +12,7 @@ import org.asf.edge.common.events.messages.SendSessionWebserviceMessageEvent;
 import org.asf.edge.common.events.messages.SendWebserviceMessageEvent;
 import org.asf.edge.common.events.messages.DeleteWebserviceMessageEvent;
 import org.asf.edge.common.events.messages.ReadWebserviceMessageEvent;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
@@ -89,7 +89,7 @@ public class WsMessageServiceImpl extends WsMessageService {
 
 			if (save != null) {
 				// Load container
-				AccountDataContainer messagesContainer = save.getSaveData().getChildContainer("wsservicemessages");
+				AccountKvDataContainer messagesContainer = save.getSaveData().getChildContainer("wsservicemessages");
 
 				// Find messages
 				for (String key : messagesContainer.getEntryKeys()) {
@@ -120,7 +120,7 @@ public class WsMessageServiceImpl extends WsMessageService {
 			}
 
 			// Load container
-			AccountDataContainer messagesContainer = account.getAccountData().getChildContainer("wsservicemessages");
+			AccountKvDataContainer messagesContainer = account.getAccountKeyValueContainer().getChildContainer("wsservicemessages");
 
 			// Find messages
 			for (String key : messagesContainer.getEntryKeys()) {
@@ -160,7 +160,7 @@ public class WsMessageServiceImpl extends WsMessageService {
 		public void deleteMessage(int messageID) throws IOException {
 			if (save != null) {
 				// Load container
-				AccountDataContainer messagesContainer = save.getSaveData().getChildContainer("wsservicemessages");
+				AccountKvDataContainer messagesContainer = save.getSaveData().getChildContainer("wsservicemessages");
 				if (messagesContainer.entryExists("msg-" + messageID)) {
 					// Delete
 					messagesContainer.deleteEntry("msg-" + messageID);
@@ -174,7 +174,7 @@ public class WsMessageServiceImpl extends WsMessageService {
 
 			// Find non-persistent
 			// Load container
-			AccountDataContainer messagesContainer = account.getAccountData().getChildContainer("wsservicemessages");
+			AccountKvDataContainer messagesContainer = account.getAccountKeyValueContainer().getChildContainer("wsservicemessages");
 
 			// Find message
 			if (messagesContainer.entryExists("msg-" + messageID)) {
@@ -190,7 +190,7 @@ public class WsMessageServiceImpl extends WsMessageService {
 		public void markMessageRead(int messageID) throws IOException {
 			if (save != null) {
 				// Load container
-				AccountDataContainer messagesContainer = save.getSaveData().getChildContainer("wsservicemessages");
+				AccountKvDataContainer messagesContainer = save.getSaveData().getChildContainer("wsservicemessages");
 
 				// Find message
 				if (messagesContainer.entryExists("msg-" + messageID)) {
@@ -211,7 +211,7 @@ public class WsMessageServiceImpl extends WsMessageService {
 			}
 
 			// Load container
-			AccountDataContainer messagesContainer = account.getAccountData().getChildContainer("wsservicemessages");
+			AccountKvDataContainer messagesContainer = account.getAccountKeyValueContainer().getChildContainer("wsservicemessages");
 
 			// Find message
 			if (messagesContainer.entryExists("msg-" + messageID)) {
@@ -237,7 +237,7 @@ public class WsMessageServiceImpl extends WsMessageService {
 						"Cannot send persistent messages from getMessengerFor(account), this can only be used from getMessengerFor(account,save)");
 
 			// Load container
-			AccountDataContainer messagesContainer = save.getSaveData().getChildContainer("wsservicemessages");
+			AccountKvDataContainer messagesContainer = save.getSaveData().getChildContainer("wsservicemessages");
 
 			// Create object
 			MessageInfoData msg = new MessageInfoData();
@@ -265,7 +265,7 @@ public class WsMessageServiceImpl extends WsMessageService {
 		@Override
 		public void sendSessionMessage(WsMessage message) throws IOException {
 			// Load container
-			AccountDataContainer messagesContainer = account.getAccountData().getChildContainer("wsservicemessages");
+			AccountKvDataContainer messagesContainer = account.getAccountKeyValueContainer().getChildContainer("wsservicemessages");
 
 			// Create object
 			MessageInfoData msg = new MessageInfoData();

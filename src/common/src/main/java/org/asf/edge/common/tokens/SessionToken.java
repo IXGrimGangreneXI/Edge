@@ -11,7 +11,7 @@ import java.util.Base64;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 
@@ -115,7 +115,7 @@ public class SessionToken {
 				return TokenParseResult.LOGGED_IN_ELSEWHERE;
 
 			// Verify expiry
-			AccountDataContainer accData = acc.getAccountData().getChildContainer("accountdata");
+			AccountKvDataContainer accData = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 			JsonElement tknTime = accData.getEntry("sessiontime");
 			if (tknTime == null)
 				return TokenParseResult.TOKEN_EXPIRED;
@@ -200,7 +200,7 @@ public class SessionToken {
 		AccountObject acc = accMgr.getAccount(accountID);
 		if (acc == null)
 			throw new IOException("Account not found");
-		acc.getAccountData().getChildContainer("accountdata").setEntry("sessiontime",
+		acc.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("sessiontime",
 				new JsonPrimitive(System.currentTimeMillis()));
 	}
 

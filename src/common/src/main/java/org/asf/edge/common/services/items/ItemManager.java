@@ -6,7 +6,7 @@ import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.services.AbstractService;
 import org.asf.edge.common.services.ServiceManager;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -93,7 +93,7 @@ public abstract class ItemManager extends AbstractService {
 	 * 
 	 * @param data Container to retrieve the inventory for
 	 */
-	public abstract PlayerInventory getCommonInventory(AccountDataContainer data);
+	public abstract PlayerInventory getCommonInventory(AccountKvDataContainer data);
 
 	/**
 	 * Registers sales

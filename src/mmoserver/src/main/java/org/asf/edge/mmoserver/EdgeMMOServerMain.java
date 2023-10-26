@@ -71,14 +71,14 @@ public class EdgeMMOServerMain {
 			Files.writeString(configFile.toPath(), "{\n" //
 					+ "\n" //
 					+ "    \"listenAddress\": \"0.0.0.0\",\n" // listen address
-					+ "    \"listenPort\": 5323,\n" // port to listen on
+					+ "    \"listenPort\": 16523,\n" // port to listen on
 					+ "\n" //
 					+ "    \"discoveryAddress\": \"localhost\",\n" // discovery Address
-					+ "    \"discoveryPort\": 5323,\n" // discovery port
+					+ "    \"discoveryPort\": 16523,\n" // discovery port
 					+ "    \"discoveryRootZone\": \"JumpStart\",\n" // MMO root zone
 					+ "    \"isBackupServer\": false,\n" // is this a backup MMO server?
 					+ "\n" //
-					+ "    \"commonApiUplinkURL\": \"http://127.0.0.1:5324/\",\n" // uplink URL
+					+ "    \"commonApiUplinkURL\": \"http://127.0.0.1:16524/\",\n" // uplink URL
 					+ "\n" //
 					+ "    \"roomUserLimit\": 30,\n" //
 					+ "    \"roomUserLimits\": {\n" //

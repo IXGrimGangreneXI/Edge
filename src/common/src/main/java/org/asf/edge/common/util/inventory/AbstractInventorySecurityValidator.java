@@ -3,7 +3,7 @@ package org.asf.edge.common.util.inventory;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.xmls.inventories.SetCommonInventoryRequestData;
 
 /**
@@ -27,7 +27,7 @@ public abstract class AbstractInventorySecurityValidator {
 	 *                           already present this will hold the item instance)
 	 * @return True if valid, false if invalid
 	 */
-	public abstract boolean isValidRequest(SetCommonInventoryRequestData request, AccountDataContainer data,
+	public abstract boolean isValidRequest(SetCommonInventoryRequestData request, AccountKvDataContainer data,
 			PlayerInventory inventory, PlayerInventoryContainer inventoryContainer, PlayerInventoryItem item);
 
 }

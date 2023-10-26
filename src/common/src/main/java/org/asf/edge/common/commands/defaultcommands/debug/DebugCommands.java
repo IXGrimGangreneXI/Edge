@@ -86,21 +86,21 @@ public class DebugCommands extends TaskBasedCommand {
 					public String run(String[] args, CommandContext ctx, Logger logger,
 							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs) {
 						try {
-							CommonDataManager.getInstance().getContainer("test").setEntry("test",
+							CommonDataManager.getInstance().getKeyValueContainer("test").setEntry("test",
 									new JsonPrimitive("abc"));
-							CommonDataManager.getInstance().getContainer("test").getChildContainer("test1")
+							CommonDataManager.getInstance().getKeyValueContainer("test").getChildContainer("test1")
 									.getChildContainer("test2").getChildContainer("test3")
 									.setEntry("abc3", new JsonPrimitive("def"));
-							CommonDataManager.getInstance().getContainer("test").getChildContainer("test3")
+							CommonDataManager.getInstance().getKeyValueContainer("test").getChildContainer("test3")
 									.setEntry("abc3", new JsonPrimitive("def2"));
-							CommonDataManager.getInstance().getContainer("test").getChildContainer("test1")
+							CommonDataManager.getInstance().getKeyValueContainer("test").getChildContainer("test1")
 									.getChildContainer("test2").getChildContainers();
-							CommonDataManager.getInstance().getContainer("test").getChildContainer("test1")
+							CommonDataManager.getInstance().getKeyValueContainer("test").getChildContainer("test1")
 									.getChildContainers();
-							CommonDataManager.getInstance().getContainer("test").getChildContainers();
-							CommonDataManager.getInstance().getContainer("test").getChildContainer("test1")
+							CommonDataManager.getInstance().getKeyValueContainer("test").getChildContainers();
+							CommonDataManager.getInstance().getKeyValueContainer("test").getChildContainer("test1")
 									.getChildContainer("test2").getChildContainer("test3").getEntryKeys();
-							String r = (CommonDataManager.getInstance().getContainer("test").getEntry("test")
+							String r = (CommonDataManager.getInstance().getKeyValueContainer("test").getEntry("test")
 									.getAsString().equals("abc") ? "Test passed" : "Test failed");
 							return r;
 						} catch (Exception e) {
@@ -139,7 +139,7 @@ public class DebugCommands extends TaskBasedCommand {
 					public String run(String[] args, CommandContext ctx, Logger logger,
 							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs) {
 						try {
-							CommonDataManager.getInstance().getContainer("test").deleteContainer();
+							CommonDataManager.getInstance().getKeyValueContainer("test").deleteContainer();
 							return "Test passed";
 						} catch (Exception e) {
 						}
@@ -177,15 +177,15 @@ public class DebugCommands extends TaskBasedCommand {
 					public String run(String[] args, CommandContext ctx, Logger logger,
 							Consumer<String> outputWriteLineCallback, Map<String, String> dataBlobs) {
 						try {
-							CommonDataManager.getInstance().getContainer("test").runForEntries((key, value) -> {
+							CommonDataManager.getInstance().getKeyValueContainer("test").runForEntries((key, value) -> {
 
 								return true;
 							});
-							CommonDataManager.getInstance().getContainer("test").runForChildContainers(name -> {
+							CommonDataManager.getInstance().getKeyValueContainer("test").runForChildContainers(name -> {
 
 								return true;
 							});
-							JsonElement e = CommonDataManager.getInstance().getContainer("test")
+							JsonElement e = CommonDataManager.getInstance().getKeyValueContainer("test")
 									.findEntry((key, value) -> {
 										return true;
 									});

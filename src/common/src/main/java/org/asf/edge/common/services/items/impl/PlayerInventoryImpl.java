@@ -5,18 +5,18 @@ import java.util.ArrayList;
 
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest.DefaultItemBlock;
 
 public class PlayerInventoryImpl extends PlayerInventory {
 
-	private AccountDataContainer data;
+	private AccountKvDataContainer data;
 	private ItemManagerImpl manager;
 
 	private AccountObject account;
 
-	public PlayerInventoryImpl(AccountDataContainer data, AccountObject account, ItemManagerImpl manager) {
+	public PlayerInventoryImpl(AccountKvDataContainer data, AccountObject account, ItemManagerImpl manager) {
 		this.manager = manager;
 		this.account = account;
 		try {

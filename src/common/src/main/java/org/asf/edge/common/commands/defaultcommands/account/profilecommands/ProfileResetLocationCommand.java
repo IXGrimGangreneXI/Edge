@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.commands.CommandContext;
 import org.asf.edge.common.commands.IEdgeServerCommand;
 import org.asf.edge.common.permissions.PermissionLevel;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 
@@ -53,7 +53,7 @@ public class ProfileResetLocationCommand implements IEdgeServerCommand {
 		AccountSaveContainer save = AccountManager.getInstance()
 				.getAccount(ctx.getCommandMemory().get("active_account").toString())
 				.getSave(ctx.getCommandMemory().get("active_profile").toString());
-		AccountDataContainer data = save.getSaveData();
+		AccountKvDataContainer data = save.getSaveData();
 		data = data.getChildContainer("keyvaluedata");
 
 		// Set entries

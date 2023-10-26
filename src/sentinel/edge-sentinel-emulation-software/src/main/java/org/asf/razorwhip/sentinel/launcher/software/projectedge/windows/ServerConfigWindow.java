@@ -93,7 +93,7 @@ public class ServerConfigWindow extends JDialog {
 			panel.add(textField_1);
 
 			textField_6 = new JTextField();
-			textField_6.setText("5320");
+			textField_6.setText("16520");
 			textField_6.setBounds(394, 31, 114, 21);
 			panel.add(textField_6);
 			textField_6.setColumns(10);
@@ -109,7 +109,7 @@ public class ServerConfigWindow extends JDialog {
 			panel.add(textField_2);
 
 			textField_7 = new JTextField();
-			textField_7.setText("5321");
+			textField_7.setText("16521");
 			textField_7.setBounds(394, 83, 114, 21);
 			panel.add(textField_7);
 			textField_7.setColumns(10);
@@ -126,7 +126,7 @@ public class ServerConfigWindow extends JDialog {
 			panel.add(textField_3);
 
 			textField_8 = new JTextField();
-			textField_8.setText("5322");
+			textField_8.setText("16522");
 			textField_8.setBounds(394, 135, 114, 21);
 			panel.add(textField_8);
 			textField_8.setColumns(10);
@@ -149,7 +149,7 @@ public class ServerConfigWindow extends JDialog {
 			panel.add(textField_4);
 
 			textField_5 = new JTextField();
-			textField_5.setText("5323");
+			textField_5.setText("16523");
 			textField_5.setBounds(394, 187, 114, 21);
 			textField_5.addKeyListener(new KeyAdapter() {
 				@Override
@@ -172,7 +172,7 @@ public class ServerConfigWindow extends JDialog {
 			panel.add(textField_11);
 
 			textField_12 = new JTextField();
-			textField_12.setText("5323");
+			textField_12.setText("16523");
 			textField_12.setBounds(394, 239, 114, 21);
 			panel.add(textField_12);
 			textField_12.setColumns(10);
@@ -208,12 +208,12 @@ public class ServerConfigWindow extends JDialog {
 			panel.add(textField_13);
 
 			textField_14 = new JTextField();
-			textField_14.setText("5324");
+			textField_14.setText("16524");
 			textField_14.setBounds(394, 291, 114, 21);
 			textField_14.addKeyListener(new KeyAdapter() {
 				@Override
 				public void keyReleased(KeyEvent e) {
-					int port = 5324;
+					int port = 16524;
 					if (!textField_14.getText().isBlank() && textField_14.getText().matches("^[0-9]+$"))
 						port = Integer.parseInt(textField_14.getText());
 
@@ -238,7 +238,7 @@ public class ServerConfigWindow extends JDialog {
 			panel.add(lblDiscoveryURL);
 
 			textField_15 = new JTextField();
-			textField_15.setText("http://127.0.0.1:5324/");
+			textField_15.setText("http://127.0.0.1:16524/");
 			textField_15.setColumns(10);
 			textField_15.setBounds(12, 343, 496, 21);
 			panel.add(textField_15);
@@ -310,7 +310,7 @@ public class ServerConfigWindow extends JDialog {
 									+ "    \"contentServer\": {\n" //
 									+ "        \"disabled\": false,\n" // defines if the server is disabled
 									+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
-									+ "        \"listenPort\": 5319,\n" // port to listen on
+									+ "        \"listenPort\": 16519,\n" // port to listen on
 									+ "        \"contentRequestListenPath\": \"/\",\n" // URI to listen on
 									+ "        \"contentDataPath\": \"./data/contentserver/asset-data\",\n" // Content
 																											// data path
@@ -331,7 +331,7 @@ public class ServerConfigWindow extends JDialog {
 									+ "    \"gameplayApiServer\": {\n" //
 									+ "        \"disabled\": false,\n" // defines if the server is disabled
 									+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
-									+ "        \"listenPort\": 5320,\n" // port to listen on
+									+ "        \"listenPort\": 16520,\n" // port to listen on
 									+ "        \"apiRequestListenPath\": \"/\",\n" // URI to listen on
 									+ "\n" //
 									+ "        \"https\": false,\n" // use https?
@@ -342,7 +342,7 @@ public class ServerConfigWindow extends JDialog {
 									+ "    \"commonApiServer\": {\n" //
 									+ "        \"disabled\": false,\n" // defines if the server is disabled
 									+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
-									+ "        \"listenPort\": 5321,\n" // port to listen on
+									+ "        \"listenPort\": 16521,\n" // port to listen on
 									+ "        \"apiRequestListenPath\": \"/\",\n" // URI to listen on
 									+ "\n" //
 									+ "        \"https\": false,\n" // use https?
@@ -350,7 +350,7 @@ public class ServerConfigWindow extends JDialog {
 									+ "        \"tlsKeystorePassword\": null,\n" // keystore password
 									+ "\n" //
 									+ "        \"internalListenAddress\": \"127.0.0.1\",\n" // listen address
-									+ "        \"internalListenPort\": 5324,\n" // port to listen on
+									+ "        \"internalListenPort\": 16524,\n" // port to listen on
 									+ "\n" //
 									+ "        \"httpsInternal\": false,\n" // use https?
 									+ "        \"tlsKeystoreInternal\": null,\n" // keystore file
@@ -360,14 +360,14 @@ public class ServerConfigWindow extends JDialog {
 									+ "    \"mmoServer\": {\n" //
 									+ "        \"disabled\": false,\n" // defines if the server is disabled
 									+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
-									+ "        \"listenPort\": 5323,\n" // port to listen on
+									+ "        \"listenPort\": 16523,\n" // port to listen on
 									+ "\n" //
 									+ "        \"discoveryAddress\": \"localhost\",\n" // discovery Address
-									+ "        \"discoveryPort\": 5323,\n" // discovery port
+									+ "        \"discoveryPort\": 16523,\n" // discovery port
 									+ "        \"discoveryRootZone\": \"JumpStart\",\n" // MMO root zone
 									+ "        \"isBackupServer\": false,\n" // is this a backup MMO server?
 									+ "\n" //
-									+ "        \"commonApiUplinkURL\": \"http://127.0.0.1:5324/\",\n" // uplink URL
+									+ "        \"commonApiUplinkURL\": \"http://127.0.0.1:16524/\",\n" // uplink URL
 									+ "\n" //
 									+ "        \"roomUserLimit\": 30,\n" //
 									+ "        \"roomUserLimits\": {\n" //
@@ -405,7 +405,7 @@ public class ServerConfigWindow extends JDialog {
 								JsonObject socialApi = new JsonObject();
 								socialApi.addProperty("disabled", false);
 								socialApi.addProperty("listenAddress", "0.0.0.0");
-								socialApi.addProperty("listenPort", 5322);
+								socialApi.addProperty("listenPort", 16522);
 								socialApi.addProperty("https", false);
 								socialApi.add("tlsKeystore", JsonNull.INSTANCE);
 								socialApi.add("tlsKeystorePassword", JsonNull.INSTANCE);

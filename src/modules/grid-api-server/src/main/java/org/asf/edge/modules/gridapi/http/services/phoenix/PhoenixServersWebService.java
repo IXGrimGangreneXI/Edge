@@ -19,10 +19,11 @@ import java.util.UUID;
 
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.*;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.*;
 import org.asf.edge.common.io.DataWriter;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.io.IoUtil;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.modules.gridapi.EdgeGridApiServer;
@@ -72,7 +73,7 @@ public class PhoenixServersWebService extends EdgeWebService<EdgeGridApiServer> 
 			// Attempt to find account
 			AccountObject acc = AccountManager.getInstance().getAccount(serverDef.properties.get("owner").value);
 			if (acc != null) {
-				AccountDataContainer data = acc.getAccountData().getChildContainer("accountdata");
+				AccountKvDataContainer data = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 				if (data.entryExists("hostBanned") && data.getEntry("hostBanned").getAsBoolean()) {
 					// Banned from hosting
 					return response(401, "Unauthorized");
@@ -184,7 +185,7 @@ public class PhoenixServersWebService extends EdgeWebService<EdgeGridApiServer> 
 			// Attempt to find account
 			AccountObject acc = AccountManager.getInstance().getAccount(serverDef.properties.get("owner").value);
 			if (acc != null) {
-				AccountDataContainer data = acc.getAccountData().getChildContainer("accountdata");
+				AccountKvDataContainer data = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 				if (data.entryExists("hostBanned") && data.getEntry("hostBanned").getAsBoolean()) {
 					// Banned from hosting
 					return response(401, "Unauthorized");
@@ -304,14 +305,12 @@ public class PhoenixServersWebService extends EdgeWebService<EdgeGridApiServer> 
 				sock.getOutputStream().write(0);
 
 				// Read game ID
-				String gameID = new String(
-						sock.getInputStream().readNBytes(ByteBuffer.wrap(sock.getInputStream().readNBytes(4)).getInt()),
-						"UTF-8");
+				String gameID = new String(IoUtil.readNBytes(sock.getInputStream(),
+						ByteBuffer.wrap(sock.getInputStream().readNBytes(4)).getInt()), "UTF-8");
 
 				// Read server ID
-				String serverID = new String(
-						sock.getInputStream().readNBytes(ByteBuffer.wrap(sock.getInputStream().readNBytes(4)).getInt()),
-						"UTF-8");
+				String serverID = new String(IoUtil.readNBytes(sock.getInputStream(),
+						ByteBuffer.wrap(sock.getInputStream().readNBytes(4)).getInt()), "UTF-8");
 
 				// Read encryption status
 				boolean encrypted = sock.getInputStream().read() == 1;
@@ -394,7 +393,7 @@ public class PhoenixServersWebService extends EdgeWebService<EdgeGridApiServer> 
 			// Attempt to find account
 			AccountObject acc = AccountManager.getInstance().getAccount(serverDef.properties.get("owner").value);
 			if (acc != null) {
-				AccountDataContainer data = acc.getAccountData().getChildContainer("accountdata");
+				AccountKvDataContainer data = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 				if (data.entryExists("hostBanned") && data.getEntry("hostBanned").getAsBoolean()) {
 					// Banned from hosting
 					return response(401, "Unauthorized");
@@ -462,7 +461,7 @@ public class PhoenixServersWebService extends EdgeWebService<EdgeGridApiServer> 
 			// Attempt to find account
 			AccountObject acc = AccountManager.getInstance().getAccount(serverDef.properties.get("owner").value);
 			if (acc != null) {
-				AccountDataContainer data = acc.getAccountData().getChildContainer("accountdata");
+				AccountKvDataContainer data = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 				if (data.entryExists("hostBanned") && data.getEntry("hostBanned").getAsBoolean()) {
 					// Banned from hosting
 					return response(401, "Unauthorized");
@@ -561,7 +560,7 @@ public class PhoenixServersWebService extends EdgeWebService<EdgeGridApiServer> 
 			// Attempt to find account
 			AccountObject acc = AccountManager.getInstance().getAccount(serverDef.properties.get("owner").value);
 			if (acc != null) {
-				AccountDataContainer data = acc.getAccountData().getChildContainer("accountdata");
+				AccountKvDataContainer data = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 				if (data.entryExists("hostBanned") && data.getEntry("hostBanned").getAsBoolean()) {
 					// Banned from hosting
 					return response(401, "Unauthorized");
@@ -652,7 +651,7 @@ public class PhoenixServersWebService extends EdgeWebService<EdgeGridApiServer> 
 			// Attempt to find account
 			AccountObject acc = AccountManager.getInstance().getAccount(serverDef.properties.get("owner").value);
 			if (acc != null) {
-				AccountDataContainer data = acc.getAccountData().getChildContainer("accountdata");
+				AccountKvDataContainer data = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 				if (data.entryExists("hostBanned") && data.getEntry("hostBanned").getAsBoolean()) {
 					// Banned from hosting
 					return response(401, "Unauthorized");

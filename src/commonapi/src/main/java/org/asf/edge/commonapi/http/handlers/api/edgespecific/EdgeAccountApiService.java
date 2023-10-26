@@ -11,11 +11,11 @@ import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.Function;
+import org.asf.edge.common.http.functions.FunctionInfo;
+import org.asf.edge.common.http.functions.FunctionResult;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -129,7 +129,7 @@ public class EdgeAccountApiService extends EdgeWebService<EdgeCommonApiServer> {
 		}
 
 		// Set data
-		AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
+		AccountKvDataContainer cont = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 		cont.setEntry("sendupdates", new JsonPrimitive(subscribeEmail));
 		cont.setEntry("isunderage", new JsonPrimitive(isUnderageUser));
 		if (isUnderageUser) {
@@ -138,7 +138,7 @@ public class EdgeAccountApiService extends EdgeWebService<EdgeCommonApiServer> {
 		}
 
 		// Add gems
-		AccountDataContainer currencyAccWide = acc.getAccountData().getChildContainer("currency");
+		AccountKvDataContainer currencyAccWide = acc.getAccountKeyValueContainer().getChildContainer("currency");
 		int current = 0;
 		if (currencyAccWide.entryExists("gems"))
 			current = currencyAccWide.getEntry("gems").getAsInt();
@@ -275,7 +275,7 @@ public class EdgeAccountApiService extends EdgeWebService<EdgeCommonApiServer> {
 		}
 
 		// Return invalid if the username is on cooldown
-		JsonElement lock = acc.getAccountData().getChildContainer("accountdata").getEntry("lockedsince");
+		JsonElement lock = acc.getAccountKeyValueContainer().getChildContainer("accountdata").getEntry("lockedsince");
 		if (lock != null && (System.currentTimeMillis() - lock.getAsLong()) < 8000) {
 			// Log
 			getServerInstance().getLogger().warn("API login from IP " + func.getClient().getRemoteAddress()
@@ -679,21 +679,21 @@ public class EdgeAccountApiService extends EdgeWebService<EdgeCommonApiServer> {
 			// Update
 			if (!acc.updateUsername(newUsername))
 				return response(500, "Internal server error", "text/json", "{\"error\":\"server_error\"}");
-			acc.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+			acc.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("last_update",
 					new JsonPrimitive(System.currentTimeMillis()));
 		}
 		if (newPassword != null) {
 			// Update
 			if (!acc.updatePassword(newPassword.toCharArray()))
 				return response(500, "Internal server error", "text/json", "{\"error\":\"server_error\"}");
-			acc.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+			acc.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("last_update",
 					new JsonPrimitive(System.currentTimeMillis()));
 		}
 		if (newEmail != null) {
 			// Update
 			if (!acc.updateEmail(newEmail))
 				return response(500, "Internal server error", "text/json", "{\"error\":\"server_error\"}");
-			acc.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+			acc.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("last_update",
 					new JsonPrimitive(System.currentTimeMillis()));
 		}
 
@@ -822,7 +822,7 @@ public class EdgeAccountApiService extends EdgeWebService<EdgeCommonApiServer> {
 					// The client should say the server is indexing now
 
 					// Index data
-					long index = indexData(acc.getAccountData());
+					long index = indexData(acc.getAccountKeyValueContainer());
 
 					// Index saves
 					for (String id : ids) {
@@ -837,7 +837,7 @@ public class EdgeAccountApiService extends EdgeWebService<EdgeCommonApiServer> {
 					writeLong(output, index);
 
 					// Send account data
-					writeData(output, acc.getAccountData());
+					writeData(output, acc.getAccountKeyValueContainer());
 
 					// Send saves
 					writeInt(output, ids.length);
@@ -872,7 +872,7 @@ public class EdgeAccountApiService extends EdgeWebService<EdgeCommonApiServer> {
 		return response(101, "Switching Protocols");
 	}
 
-	private void writeData(OutputStream output, AccountDataContainer cont) throws IOException {
+	private void writeData(OutputStream output, AccountKvDataContainer cont) throws IOException {
 		String[] keys = cont.getEntryKeys();
 		String[] conts = cont.getChildContainers();
 
@@ -903,7 +903,7 @@ public class EdgeAccountApiService extends EdgeWebService<EdgeCommonApiServer> {
 		}
 	}
 
-	private long indexData(AccountDataContainer cont) throws IOException {
+	private long indexData(AccountKvDataContainer cont) throws IOException {
 		long i = 0;
 		i += (int) Stream.of(cont.getEntryKeys()).filter(t -> !t.equals("chholder")).count();
 		i += cont.getChildContainers().length;
@@ -915,7 +915,7 @@ public class EdgeAccountApiService extends EdgeWebService<EdgeCommonApiServer> {
 
 	private FunctionResult invalidUserCallback(String username, AccountObject account) throws IOException {
 		if (account != null)
-			account.getAccountData().getChildContainer("accountdata").setEntry("lockedsince",
+			account.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("lockedsince",
 					new JsonPrimitive(System.currentTimeMillis()));
 		try {
 			Thread.sleep(8000);

@@ -6,11 +6,13 @@ import java.sql.SQLException;
 
 import org.asf.edge.common.events.accounts.AccountDeletedEvent;
 import org.asf.edge.common.events.accounts.AccountEmailUpdateEvent;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountDataTableContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.impl.BasicAccountObject;
 import org.asf.edge.common.services.accounts.impl.BasicAccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.DatabaseAccountManager;
 import org.asf.edge.common.services.minigamedata.MinigameDataManager;
+import org.asf.edge.common.services.tabledata.TableRow;
 import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonArray;
@@ -150,12 +152,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 	}
 
 	@Override
-	public AccountDataContainer retrieveAccountData() {
-		return new DatabaseAccountDataContainer(this, getAccountID(), manager);
-	}
-
-	@Override
-	protected String[] retrieveSaveIDs() {
+	public String[] retrieveSaveIDs() {
 		try {
 			DatabaseRequest conn = manager.createRequest();
 			try {
@@ -291,14 +288,45 @@ public class DatabaseAccountObject extends BasicAccountObject {
 		// Dispatch event
 		EventBus.getInstance().dispatchEvent(new AccountDeletedEvent(this, manager));
 
-		// Delete data
-		getAccountData().deleteContainer();
-
 		// Delete account
 		try {
 			DatabaseRequest conn = manager.createRequest();
 			JsonArray saves = null;
 			try {
+				// Delete data
+				// Fetch all table names
+				try {
+					// Create prepared statement
+					var statement = conn.prepareStatement("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS");
+					ResultSet res = statement.executeQuery();
+
+					// Find results
+					while (res.next()) {
+						// Check name
+						// ACCOUNTWIDEPLAYERDATA_V2 = key/value data container named 'LEGACY'
+						// UDC2_<NAME> = key/value data container
+						// UTC2_<NAME> = table-based data container
+						String cont = res.getString("TABLE_NAME");
+						if (cont.equalsIgnoreCase("ACCOUNTWIDEPLAYERDATA_V2") || cont.toLowerCase().startsWith("udc2_")
+								|| cont.toLowerCase().startsWith("utc2_")) {
+							// This is a data container
+							// Remove all player data from it
+							var st2 = conn.prepareStatement("DELETE FROM " + cont + " WHERE "
+									+ (cont.toLowerCase().startsWith("utc2_") ? "CID" : "ACCID") + " = ?");
+							st2.setString(1, getAccountID());
+							st2.execute();
+							st2.close();
+						}
+					}
+					res.close();
+					statement.close();
+				} catch (SQLException e) {
+					getLogger().error("Failed to execute database query request while trying to delete account '"
+							+ getAccountID() + "'", e);
+					throw new IOException("SQL error", e);
+				}
+
+				// Delete from user map
 				try {
 					// Create prepared statement
 					var statement = conn.prepareStatement("DELETE FROM USERMAP_V2 WHERE ID = ?");
@@ -381,6 +409,34 @@ public class DatabaseAccountObject extends BasicAccountObject {
 					e);
 			throw new IOException("SQL error", e);
 		}
+	}
+
+	@Override
+	protected AccountKvDataContainer getKeyValueContainerInternal(String rootNodeName) {
+		// Compute table name
+		String table;
+		rootNodeName = rootNodeName.toUpperCase();
+		if (rootNodeName.equalsIgnoreCase("LEGACY"))
+			table = "ACCOUNTWIDEPLAYERDATA_V2";
+		else
+			table = "UDC2_" + rootNodeName;
+		return new DatabaseAccountKvDataContainer(table, this, getAccountID(), manager);
+	}
+
+	@Override
+	protected void setupKeyValueContainer(String rootNodeName) {
+		manager.prepareAccountKvDataContainer(rootNodeName);
+	}
+
+	@Override
+	protected <T extends TableRow> AccountDataTableContainer<T> getDataTableContainerInternal(String tableName,
+			Class<T> cls) {
+		return new DatabaseDataTableContainer<T>("UTC2_" + tableName, getAccountID(), this, null, manager, cls);
+	}
+
+	@Override
+	protected void setupDataTableContainer(String tableName, AccountDataTableContainer<?> cont) {
+		manager.prepareAccountDataTableContainer(tableName, cont);
 	}
 
 }

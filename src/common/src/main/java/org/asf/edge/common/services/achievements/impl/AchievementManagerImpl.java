@@ -29,10 +29,10 @@ import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.entities.messages.defaultmessages.WsGenericMessage;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.items.ItemManager;
@@ -79,7 +79,7 @@ public class AchievementManagerImpl extends AchievementManager {
 		logger = LogManager.getLogger("AchievementManager");
 
 		// Start reload watchdog
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("ACHIEVEMENTMANAGER");
+		CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("ACHIEVEMENTMANAGER");
 		try {
 			if (!cont.entryExists("lastreload")) {
 				lastReloadTime = System.currentTimeMillis();
@@ -812,7 +812,7 @@ public class AchievementManagerImpl extends AchievementManager {
 		// Read save data
 		ArrayList<RankMultiplierInfo> multipliers = new ArrayList<RankMultiplierInfo>();
 		try {
-			AccountDataContainer rewardMultipliers = save.getSaveData().getChildContainer("reward_multipliers");
+			AccountKvDataContainer rewardMultipliers = save.getSaveData().getChildContainer("reward_multipliers");
 			if (!rewardMultipliers.entryExists("active"))
 				rewardMultipliers.setEntry("active", new JsonArray());
 
@@ -851,7 +851,7 @@ public class AchievementManagerImpl extends AchievementManager {
 	@Override
 	public void addUserRankMultiplier(AccountSaveContainer save, RankMultiplierInfo multiplier) {
 		try {
-			AccountDataContainer rewardMultipliers = save.getSaveData().getChildContainer("reward_multipliers");
+			AccountKvDataContainer rewardMultipliers = save.getSaveData().getChildContainer("reward_multipliers");
 			if (!rewardMultipliers.entryExists("active"))
 				rewardMultipliers.setEntry("active", new JsonArray());
 
@@ -885,7 +885,7 @@ public class AchievementManagerImpl extends AchievementManager {
 	@Override
 	public boolean hasUnlockedAchievement(AccountSaveContainer save, int achievementID) {
 		try {
-			AccountDataContainer data = save.getSaveData().getChildContainer("achievements-v1");
+			AccountKvDataContainer data = save.getSaveData().getChildContainer("achievements-v1");
 			return data.entryExists("unlocked-" + achievementID)
 					&& data.getEntry("unlocked-" + achievementID).getAsBoolean();
 		} catch (IOException e) {
@@ -1016,7 +1016,7 @@ public class AchievementManagerImpl extends AchievementManager {
 				// Coins
 				case 2: {
 					// Update inventory
-					AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+					AccountKvDataContainer currency = save.getSaveData().getChildContainer("currency");
 					int currentC = 300;
 					if (currency.entryExists("coins"))
 						currentC = currency.getEntry("coins").getAsInt();
@@ -1033,7 +1033,7 @@ public class AchievementManagerImpl extends AchievementManager {
 				// Gems
 				case 5: {
 					// Update inventory
-					AccountDataContainer currencyAccWide = save.getAccount().getAccountData()
+					AccountKvDataContainer currencyAccWide = save.getAccount().getAccountKeyValueContainer()
 							.getChildContainer("currency");
 					int currentG = 0;
 					if (currencyAccWide.entryExists("gems"))
@@ -1108,7 +1108,7 @@ public class AchievementManagerImpl extends AchievementManager {
 	@Override
 	protected void unlockAchievement(AccountSaveContainer save, int achievementID) {
 		try {
-			AccountDataContainer data = save.getSaveData().getChildContainer("achievements-v1");
+			AccountKvDataContainer data = save.getSaveData().getChildContainer("achievements-v1");
 			data.setEntry("unlocked-" + achievementID, new JsonPrimitive(true));
 			logger.info("Player " + save.getUsername() + " (ID " + save.getSaveID() + ")" + " unlocked achievement "
 					+ achievementID);
@@ -1125,7 +1125,7 @@ public class AchievementManagerImpl extends AchievementManager {
 			return null;
 		} else if (id == RankTypeID.DRAGON) {
 			// Find active dragon
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 
 			// Pull dragons
 			data = data.getChildContainer("dragons");

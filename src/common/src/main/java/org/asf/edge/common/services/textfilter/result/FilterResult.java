@@ -27,6 +27,12 @@ public class FilterResult {
 		}
 	}
 
+	public FilterResult(WordMatch[] matches, String filteredResult, FilterSeverity resultSeverity) {
+		this.matchedFilters = matches;
+		this.filteredResult = filteredResult;
+		this.resultSeverity = resultSeverity;
+	}
+
 	/**
 	 * Retrieves the filtered text
 	 * 

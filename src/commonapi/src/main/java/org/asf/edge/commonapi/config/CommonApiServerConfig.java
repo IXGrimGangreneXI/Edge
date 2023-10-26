@@ -39,7 +39,7 @@ public class CommonApiServerConfig {
 	/**
 	 * Listen port
 	 */
-	public int listenPort = 5321;
+	public int listenPort = 16521;
 
 	/**
 	 * True to use HTTPS, false to use HTTP
@@ -70,7 +70,7 @@ public class CommonApiServerConfig {
 	/**
 	 * Internal server listen port
 	 */
-	public int internalListenPort = 5324;
+	public int internalListenPort = 16524;
 
 	/**
 	 * Path to register the API request handler on

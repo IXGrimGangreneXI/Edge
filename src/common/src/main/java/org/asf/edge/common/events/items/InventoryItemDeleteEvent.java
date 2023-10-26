@@ -3,7 +3,7 @@ package org.asf.edge.common.events.items;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.modules.eventbus.EventObject;
 import org.asf.edge.modules.eventbus.EventPath;
@@ -20,11 +20,11 @@ public class InventoryItemDeleteEvent extends EventObject {
 
 	private PlayerInventoryItem item;
 	private AccountObject playerAccount;
-	private AccountDataContainer data;
+	private AccountKvDataContainer data;
 	private PlayerInventory inventory;
 	private PlayerInventoryContainer inventoryContainer;
 
-	public InventoryItemDeleteEvent(PlayerInventoryItem item, AccountObject playerAccount, AccountDataContainer data,
+	public InventoryItemDeleteEvent(PlayerInventoryItem item, AccountObject playerAccount, AccountKvDataContainer data,
 			PlayerInventory inventory, PlayerInventoryContainer inventoryContainer) {
 		this.item = item;
 		this.playerAccount = playerAccount;
@@ -63,7 +63,7 @@ public class InventoryItemDeleteEvent extends EventObject {
 	 * 
 	 * @return AccountDataContainer instance
 	 */
-	public AccountDataContainer getSaveData() {
+	public AccountKvDataContainer getSaveData() {
 		return data;
 	}
 

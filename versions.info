@@ -1,6 +1,6 @@
 channel=stable
 
-sentinel=1.0.0.A15
+sentinel=1.0.0.A19
 globalserver=a1.6
 contentserver=a1.6
 commonapi=a1.6

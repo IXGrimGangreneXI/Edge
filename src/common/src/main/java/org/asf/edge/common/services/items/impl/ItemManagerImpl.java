@@ -3,8 +3,8 @@ package org.asf.edge.common.services.items.impl;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.entities.items.*;
 import org.asf.edge.common.events.items.ItemManagerLoadEvent;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.items.ItemManager;
@@ -75,7 +75,7 @@ public class ItemManagerImpl extends ItemManager {
 
 		try {
 			// Start reload watchdog
-			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("ITEMMANAGER");
+			CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("ITEMMANAGER");
 			try {
 				if (!cont.entryExists("lastreload")) {
 					lastReloadTime = System.currentTimeMillis();
@@ -122,7 +122,7 @@ public class ItemManagerImpl extends ItemManager {
 			}
 
 			// Update sales
-			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("ITEMSALES");
+			CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("ITEMSALES");
 			ArrayList<ItemSaleInfo> currentRandomSales = new ArrayList<ItemSaleInfo>();
 			ArrayList<ItemSaleInfo> upcomingRandomSales = new ArrayList<ItemSaleInfo>();
 			ObjectMapper mapper = new ObjectMapper();
@@ -147,8 +147,9 @@ public class ItemManagerImpl extends ItemManager {
 
 		try {
 			// Start random sale selector
-			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("ITEMSALES");
-			CommonDataContainer contPopularItems = CommonDataManager.getInstance().getContainer("POPULARITEMS");
+			CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("ITEMSALES");
+			CommonKvDataContainer contPopularItems = CommonDataManager.getInstance()
+					.getKeyValueContainer("POPULARITEMS");
 			AsyncTaskManager.runAsync(() -> {
 				while (true) {
 					// Check if a update is needed
@@ -316,8 +317,8 @@ public class ItemManagerImpl extends ItemManager {
 
 	}
 
-	private Map<Integer, ItemSaleInfo> generateSales(Date saleStart, Date saleEnd, CommonDataContainer cont,
-			CommonDataContainer contPopularItems, ArrayList<Integer> categoryIds) throws IOException {
+	private Map<Integer, ItemSaleInfo> generateSales(Date saleStart, Date saleEnd, CommonKvDataContainer cont,
+			CommonKvDataContainer contPopularItems, ArrayList<Integer> categoryIds) throws IOException {
 		// Create sales
 		HashMap<Integer, JsonObject> popularItemsData = new HashMap<Integer, JsonObject>();
 		HashMap<Integer, ItemSaleInfo> sales = new HashMap<Integer, ItemSaleInfo>();
@@ -463,9 +464,12 @@ public class ItemManagerImpl extends ItemManager {
 						items[i] = new ItemInfo(store.items[i].id, store.items[i].name, store.items[i].description,
 								store.items[i]);
 						itemDefs.put(items[i].getID(), items[i]);
-						logger.debug("Registered item: " + items[i].getID() + ": " + items[i].getName());
+						logger.debug("Registered item: " + items[i].getID() + ": " + items[i].getName() + " to store "
+								+ store.storeID);
 					} else {
 						items[i] = itemDefs.get(store.items[i].id);
+						logger.debug("Registered item: " + items[i].getID() + ": " + items[i].getName() + " to store "
+								+ store.storeID);
 					}
 				}
 				storeDefs.put(store.storeID,
@@ -989,7 +993,7 @@ public class ItemManagerImpl extends ItemManager {
 	}
 
 	@Override
-	public PlayerInventory getCommonInventory(AccountDataContainer data) {
+	public PlayerInventory getCommonInventory(AccountKvDataContainer data) {
 		return new PlayerInventoryImpl(data, data.getAccount(), this);
 	}
 
@@ -1025,7 +1029,7 @@ public class ItemManagerImpl extends ItemManager {
 		// Trigger a reload on all servers
 		lastReloadTime = System.currentTimeMillis();
 		try {
-			CommonDataManager.getInstance().getContainer("ITEMMANAGER").setEntry("lastreload",
+			CommonDataManager.getInstance().getKeyValueContainer("ITEMMANAGER").setEntry("lastreload",
 					new JsonPrimitive(lastReloadTime));
 		} catch (IOException e) {
 		}

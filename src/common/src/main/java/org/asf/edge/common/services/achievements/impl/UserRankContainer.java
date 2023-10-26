@@ -8,7 +8,7 @@ import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.entities.achivements.RankInfo;
 import org.asf.edge.common.entities.achivements.RankTypeID;
 import org.asf.edge.common.events.achievements.RankChangedEvent;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -17,7 +17,7 @@ import com.google.gson.JsonPrimitive;
 
 public class UserRankContainer extends EntityRankInfo {
 
-	private AccountDataContainer data;
+	private AccountKvDataContainer data;
 	private AccountSaveContainer save;
 	private RankTypeID type;
 

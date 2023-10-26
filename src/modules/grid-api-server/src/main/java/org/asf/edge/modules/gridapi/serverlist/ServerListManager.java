@@ -8,7 +8,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.modules.gridapi.identities.IdentityDef;
@@ -84,7 +84,7 @@ public class ServerListManager {
 				AccountObject acc = AccountManager.getInstance().getAccount(ent.ownerId);
 				if (acc != null) {
 					try {
-						AccountDataContainer data = acc.getAccountData().getChildContainer("accountdata");
+						AccountKvDataContainer data = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 						if (data.entryExists("hostBanned") && data.getEntry("hostBanned").getAsBoolean()) {
 							// Banned from hosting
 							continue;

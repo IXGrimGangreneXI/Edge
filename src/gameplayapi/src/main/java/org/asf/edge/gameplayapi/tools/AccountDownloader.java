@@ -35,7 +35,8 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.EdgeServerEnvironment;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.io.IoUtil;
 import org.asf.edge.common.util.HttpUpgradeUtil;
 
 import com.google.gson.JsonObject;
@@ -763,15 +764,15 @@ public class AccountDownloader {
 	}
 
 	private int readInt(InputStream strm) throws IOException {
-		return ByteBuffer.wrap(strm.readNBytes(4)).getInt();
+		return ByteBuffer.wrap(IoUtil.readNBytes(strm, 4)).getInt();
 	}
 
 	private long readLong(InputStream strm) throws IOException {
-		return ByteBuffer.wrap(strm.readNBytes(8)).getLong();
+		return ByteBuffer.wrap(IoUtil.readNBytes(strm, 8)).getLong();
 	}
 
 	private byte[] readByteArray(InputStream strm) throws IOException {
-		return strm.readNBytes(readInt(strm));
+		return IoUtil.readNBytes(strm, readInt(strm));
 	}
 
 	private void writeInt(OutputStream strm, int val) throws IOException {
@@ -901,7 +902,7 @@ public class AccountDownloader {
 		panel.add(lblNewLabel);
 
 		boxServer = new JTextField();
-		boxServer.setText("http://localhost:5321/API/ProjectEdge/Accounts/");
+		boxServer.setText("http://localhost:16521/API/ProjectEdge/Accounts/");
 		boxServer.setBounds(12, 32, 576, 21);
 		panel.add(boxServer);
 		boxServer.setColumns(10);

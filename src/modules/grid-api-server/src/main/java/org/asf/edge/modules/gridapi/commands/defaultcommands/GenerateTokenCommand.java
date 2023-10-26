@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.modules.gridapi.commands.CommandContext;
@@ -57,7 +57,7 @@ public class GenerateTokenCommand implements IGridServerCommand {
 			// Find account
 			AccountObject acc = AccountManager.getInstance().getAccount(args[0]);
 			if (acc != null) {
-				AccountDataContainer data = acc.getAccountData().getChildContainer("accountdata");
+				AccountKvDataContainer data = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 				if (!data.entryExists("last_update"))
 					data.setEntry("last_update", new JsonPrimitive(System.currentTimeMillis()));
 				lastUpdateTime = data.getEntry("last_update").getAsLong();

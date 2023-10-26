@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
 
+import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.accounts.db.DatabaseAccountObject;
@@ -348,7 +349,7 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 			try {
 				// Create prepared statement
 				var statement = conn.prepareStatement(
-						"SELECT DATA FROM SAVESPECIFICPLAYERDATA_V2 WHERE SVID = ? AND DATAKEY = ? AND PARENT = ? AND PARENTCONTAINER = ?");
+						"SELECT DATA FROM SDC2_SAVEDETAILS WHERE SVID = ? AND DATAKEY = ? AND PARENT = ? AND PARENTCONTAINER = ?");
 				statement.setString(1, id);
 				statement.setString(2, "accountid");
 				statement.setString(3, "");
@@ -461,4 +462,33 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 		return obj;
 	}
 
+	/**
+	 * Called to prepare key/value data containers of accounts
+	 * 
+	 * @param containerName Container name
+	 */
+	public abstract void prepareAccountKvDataContainer(String containerName);
+
+	/**
+	 * Called to prepare key/value data containers of saves
+	 * 
+	 * @param containerName Container name
+	 */
+	public abstract void prepareSaveKvDataContainer(String containerName);
+
+	/**
+	 * Called to prepare table containers of accounts
+	 * 
+	 * @param tableName Container name
+	 * @param cont      Container instance
+	 */
+	public abstract void prepareAccountDataTableContainer(String tableName, AccountDataTableContainer<?> cont);
+
+	/**
+	 * Called to prepare table containers of saves
+	 * 
+	 * @param tableName Container name
+	 * @param cont      Container instance
+	 */
+	public abstract void prepareSaveDataTableContainer(String tableName, AccountDataTableContainer<?> cont);
 }

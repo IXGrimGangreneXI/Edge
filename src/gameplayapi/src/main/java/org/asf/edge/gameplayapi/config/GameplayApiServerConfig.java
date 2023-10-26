@@ -39,7 +39,7 @@ public class GameplayApiServerConfig {
 	/**
 	 * Listen port
 	 */
-	public int listenPort = 5320;
+	public int listenPort = 16520;
 
 	/**
 	 * Path to register the API request handler on

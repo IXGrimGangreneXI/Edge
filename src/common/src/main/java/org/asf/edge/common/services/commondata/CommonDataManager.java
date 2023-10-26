@@ -10,8 +10,8 @@ import org.asf.edge.common.services.AbstractService;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.commondata.impl.DefaultDatabaseCommonDataManager;
 import org.asf.edge.common.services.commondata.impl.PostgresDatabaseCommonDataManager;
-import org.asf.edge.common.services.commondata.impl.http.RemoteHttpCommonDataManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
+import org.asf.edge.common.services.tabledata.TableRow;
 
 import com.google.gson.JsonObject;
 
@@ -24,7 +24,8 @@ import com.google.gson.JsonObject;
  */
 public abstract class CommonDataManager extends AbstractService {
 
-	private HashMap<String, CommonDataContainer> loadedContainers = new HashMap<String, CommonDataContainer>();
+	private HashMap<String, CommonKvDataContainer> loadedKvContainers = new HashMap<String, CommonKvDataContainer>();
+	private HashMap<String, CommonDataTableContainer<?>> loadedTableContainers = new HashMap<String, CommonDataTableContainer<?>>();
 	private static boolean initedServices;
 
 	/**
@@ -39,7 +40,7 @@ public abstract class CommonDataManager extends AbstractService {
 	/**
 	 * Internal
 	 */
-	public static void initCommonDataManagerServices(int priorityRemote, int priorityDatabase, int priorityPostgres) {
+	public static void initCommonDataManagerServices(int priorityDatabase, int priorityPostgres) {
 		if (initedServices)
 			return;
 		initedServices = true;
@@ -57,14 +58,6 @@ public abstract class CommonDataManager extends AbstractService {
 			commonDataManagerConfig = new JsonObject();
 		}
 		boolean changed = false;
-		JsonObject remoteManagerConfig = new JsonObject();
-		if (!commonDataManagerConfig.has("remoteHttpManager")) {
-			remoteManagerConfig.addProperty("priority", priorityRemote);
-			remoteManagerConfig.addProperty("url", "http://127.0.0.1:5324/commondatamanager/");
-			commonDataManagerConfig.add("remoteHttpManager", remoteManagerConfig);
-			changed = true;
-		} else
-			remoteManagerConfig = commonDataManagerConfig.get("remoteHttpManager").getAsJsonObject();
 		JsonObject databaseManagerConfig = new JsonObject();
 		if (!commonDataManagerConfig.has("databaseManager")) {
 			databaseManagerConfig.addProperty("priority", priorityDatabase);
@@ -96,8 +89,6 @@ public abstract class CommonDataManager extends AbstractService {
 		}
 
 		// Register default common data managers
-		ServiceManager.registerServiceImplementation(CommonDataManager.class, new RemoteHttpCommonDataManager(),
-				remoteManagerConfig.get("priority").getAsInt());
 		ServiceManager.registerServiceImplementation(CommonDataManager.class, new DefaultDatabaseCommonDataManager(),
 				databaseManagerConfig.get("priority").getAsInt());
 		ServiceManager.registerServiceImplementation(CommonDataManager.class, new PostgresDatabaseCommonDataManager(),
@@ -108,45 +99,103 @@ public abstract class CommonDataManager extends AbstractService {
 	 * Called to retrieve containers
 	 * 
 	 * @param rootNodeName Root node name
-	 * @return CommonDataContainer instance
+	 * @return CommonKvDataContainer instance
 	 */
-	protected abstract CommonDataContainer getContainerInternal(String rootNodeName);
+	protected abstract CommonKvDataContainer getKeyValueContainerInternal(String rootNodeName);
 
 	/**
 	 * Called to set up containers, called the first time a container is retrieved
 	 * 
 	 * @param rootNodeName Root node name
 	 */
-	protected abstract void setupContainer(String rootNodeName);
+	protected abstract void setupKeyValueContainer(String rootNodeName);
 
 	/**
-	 * Retrieves containers
+	 * Retrieves key/value data containers
 	 * 
 	 * @param rootNodeName Root node name
-	 * @return CommonDataContainer instance
+	 * @return CommonKvDataContainer instance
 	 */
-	public CommonDataContainer getContainer(String rootNodeName) {
-		if (!rootNodeName.matches("^[A-Za-z0-9]+$"))
-			throw new IllegalArgumentException("Root node name can only contain alphanumeric characters");
+	public CommonKvDataContainer getKeyValueContainer(String rootNodeName) {
+		if (!rootNodeName.matches("^[A-Za-z0-9_]+$"))
+			throw new IllegalArgumentException(
+					"Root node name can only contain alphanumeric characters and underscores");
 		rootNodeName = rootNodeName.toUpperCase();
 		while (true) {
 			try {
-				if (loadedContainers.containsKey(rootNodeName))
-					return loadedContainers.get(rootNodeName);
+				if (loadedKvContainers.containsKey(rootNodeName))
+					return loadedKvContainers.get(rootNodeName);
 				break;
 			} catch (ConcurrentModificationException e) {
 			}
 		}
 
 		// Lock
-		synchronized (loadedContainers) {
-			if (loadedContainers.containsKey(rootNodeName))
-				return loadedContainers.get(rootNodeName); // Seems another thread had added it before we got the lock
+		synchronized (loadedKvContainers) {
+			if (loadedKvContainers.containsKey(rootNodeName))
+				return loadedKvContainers.get(rootNodeName); // Seems another thread had added it before we got the lock
 
 			// Add container
-			CommonDataContainer cont = getContainerInternal(rootNodeName);
-			setupContainer(rootNodeName);
-			loadedContainers.put(rootNodeName, cont);
+			CommonKvDataContainer cont = getKeyValueContainerInternal(rootNodeName);
+			setupKeyValueContainer(rootNodeName);
+			loadedKvContainers.put(rootNodeName, cont);
+			return cont;
+		}
+	}
+
+	/**
+	 * Called to retrieve common data containers
+	 * 
+	 * @param <T>       Row object type
+	 * @param tableName Root node name
+	 * @param cls       Row object type
+	 * @return CommonDataTableContainer instance
+	 */
+	protected abstract <T extends TableRow> CommonDataTableContainer<T> getDataTableContainerInternal(String tableName,
+			Class<T> cls);
+
+	/**
+	 * Called to set up common data containers, called the first time a container is
+	 * retrieved
+	 * 
+	 * @param tableName Table name
+	 * @param cont      Container instance
+	 */
+	protected abstract void setupDataTableContainer(String tableName, CommonDataTableContainer<?> cont);
+
+	/**
+	 * Called to retrieve containers
+	 * 
+	 * @param <T>       Row object type
+	 * @param tableName Root container node name
+	 * @param rowType   Row object type
+	 * @return CommonDataTableContainer instance
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends TableRow> CommonDataTableContainer<T> getDataTable(String tableName, Class<T> rowType) {
+		if (!tableName.matches("^[A-Za-z0-9_]+$"))
+			throw new IllegalArgumentException("Table name can only contain alphanumeric characters and underscores");
+		tableName = tableName.toUpperCase();
+		while (true) {
+			try {
+				if (loadedTableContainers.containsKey(tableName))
+					return (CommonDataTableContainer<T>) loadedTableContainers.get(tableName);
+				break;
+			} catch (ConcurrentModificationException e) {
+			}
+		}
+
+		// Lock
+		synchronized (loadedTableContainers) {
+			if (loadedTableContainers.containsKey(tableName)) {
+				// Seems another thread had added it before we got the lock
+				return (CommonDataTableContainer<T>) loadedTableContainers.get(tableName);
+			}
+
+			// Add container
+			CommonDataTableContainer<T> cont = getDataTableContainerInternal(tableName, rowType);
+			setupDataTableContainer(tableName, cont);
+			loadedTableContainers.put(tableName, cont);
 			return cont;
 		}
 	}

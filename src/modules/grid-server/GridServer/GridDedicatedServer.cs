@@ -10,6 +10,7 @@ using Phoenix.Common.SceneReplication;
 using Phoenix.Server;
 using Phoenix.Server.Components;
 using Phoenix.Server.NetworkServerLib;
+using GridServer.Channels;
 
 namespace GridServer
 {
@@ -52,6 +53,9 @@ namespace GridServer
             // Add grid components
             server.AddComponent(new GridLoginComponent());
             server.AddComponent(new GridComponent());
+
+            // Add grid channel
+            registry.Register(new GridTextfilterChannel());
 
             // Add replication channel
             registry.Register(new SceneReplicationChannel());

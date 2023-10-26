@@ -1,10 +1,12 @@
 package org.asf.edge.common.services.accounts;
 
 import java.io.IOException;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.services.tabledata.TableRow;
 
 /**
  * 
@@ -16,6 +18,8 @@ import org.asf.edge.common.services.items.ItemManager;
 public abstract class AccountObject {
 
 	private HashMap<String, Object> sessionMemory = new HashMap<String, Object>();
+	private HashMap<String, AccountKvDataContainer> loadedKvContainers = new HashMap<String, AccountKvDataContainer>();
+	private HashMap<String, AccountDataTableContainer<?>> loadedTableContainers = new HashMap<String, AccountDataTableContainer<?>>();
 
 	/**
 	 * Retrieves session memory objects
@@ -176,13 +180,6 @@ public abstract class AccountObject {
 	public abstract void updateLastLoginTime();
 
 	/**
-	 * Retrieves the account data container
-	 * 
-	 * @return AccountDataContainer instance
-	 */
-	public abstract AccountDataContainer getAccountData();
-
-	/**
 	 * Retrieves all save IDs for this account
 	 * 
 	 * @return Array of save ID strings
@@ -211,7 +208,8 @@ public abstract class AccountObject {
 	 * @return PlayerInventory instance
 	 */
 	public PlayerInventory getInventory() {
-		return ItemManager.getInstance().getCommonInventory(getAccountData());
+		this.sessionMemory = sessionMemory;
+		return ItemManager.getInstance().getCommonInventory(null); // FIXME
 	}
 
 	/**
@@ -237,5 +235,111 @@ public abstract class AccountObject {
 	 */
 	public void ping(boolean addIfNeeded) {
 	}
+
+	/**
+	 * Retrieves account key/value data containers
+	 * 
+	 * @param rootNodeName Root container node name
+	 * @return AccountKvDataContainer instance
+	 */
+	public AccountKvDataContainer getAccountKeyValueContainer(String rootNodeName) {
+		if (!rootNodeName.matches("^[A-Za-z0-9_]+$"))
+			throw new IllegalArgumentException(
+					"Root node name can only contain alphanumeric characters and underscores");
+		rootNodeName = rootNodeName.toUpperCase();
+		while (true) {
+			try {
+				if (loadedKvContainers.containsKey(rootNodeName))
+					return loadedKvContainers.get(rootNodeName);
+				break;
+			} catch (ConcurrentModificationException e) {
+			}
+		}
+
+		// Lock
+		synchronized (loadedKvContainers) {
+			if (loadedKvContainers.containsKey(rootNodeName))
+				return loadedKvContainers.get(rootNodeName); // Seems another thread had added it before we got the lock
+
+			// Add container
+			AccountKvDataContainer cont = getKeyValueContainerInternal(rootNodeName);
+			setupKeyValueContainer(rootNodeName);
+			loadedKvContainers.put(rootNodeName, cont);
+			return cont;
+		}
+	}
+
+	/**
+	 * Called to retrieve account data containers
+	 * 
+	 * @param rootNodeName Root node name
+	 * @return AccountKvDataContainer instance
+	 */
+	protected abstract AccountKvDataContainer getKeyValueContainerInternal(String rootNodeName);
+
+	/**
+	 * Called to set up account data containers, called the first time a container
+	 * is retrieved
+	 * 
+	 * @param rootNodeName Root node name
+	 */
+	protected abstract void setupKeyValueContainer(String rootNodeName);
+
+	/**
+	 * Retrieves account data table containers
+	 * 
+	 * @param <T>       Row object type
+	 * @param tableName Root container node name
+	 * @param rowType   Row object type
+	 * @return AccountDataTableContainer instance
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends TableRow> AccountDataTableContainer<T> getAccountDataTable(String tableName, Class<T> rowType) {
+		if (!tableName.matches("^[A-Za-z0-9_]+$"))
+			throw new IllegalArgumentException("Table name can only contain alphanumeric characters and underscores");
+		tableName = tableName.toUpperCase();
+		while (true) {
+			try {
+				if (loadedTableContainers.containsKey(tableName))
+					return (AccountDataTableContainer<T>) loadedTableContainers.get(tableName);
+				break;
+			} catch (ConcurrentModificationException e) {
+			}
+		}
+
+		// Lock
+		synchronized (loadedTableContainers) {
+			if (loadedTableContainers.containsKey(tableName)) {
+				// Seems another thread had added it before we got the lock
+				return (AccountDataTableContainer<T>) loadedTableContainers.get(tableName);
+			}
+
+			// Add container
+			AccountDataTableContainer<T> cont = getDataTableContainerInternal(tableName, rowType);
+			setupDataTableContainer(tableName, cont);
+			loadedTableContainers.put(tableName, cont);
+			return cont;
+		}
+	}
+
+	/**
+	 * Called to retrieve account data containers
+	 * 
+	 * @param <T>       Row object type
+	 * @param tableName Root node name
+	 * @param cls       Row object type
+	 * @return AccountDataTableContainer instance
+	 */
+	protected abstract <T extends TableRow> AccountDataTableContainer<T> getDataTableContainerInternal(String tableName,
+			Class<T> cls);
+
+	/**
+	 * Called to set up account data containers, called the first time a container
+	 * is retrieved
+	 * 
+	 * @param tableName Table name
+	 * @param cont      Container instance
+	 */
+	protected abstract void setupDataTableContainer(String tableName, AccountDataTableContainer<?> cont);
 
 }

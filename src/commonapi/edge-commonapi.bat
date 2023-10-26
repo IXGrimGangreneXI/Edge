@@ -10,11 +10,11 @@ SET libs=%libs:~1%
 java -cp "%libs%" org.asf.edge.commonapi.EdgeCommonApiServerMain %*
 IF %ERRORLEVEL% EQU 237 goto MAIN
 
-if EXIST commonapiupdater.jar goto UPDATE
+if EXIST updater.jar goto UPDATE
 exit
 
 :UPDATE
-java -cp commonapiupdater.jar org.asf.edge.commonapi.EdgeCommonApiServerUpdater --update
-del commonapiupdater.jar
+java -cp updater.jar org.asf.edge.commonapi.EdgeCommonApiServerUpdater --update
+del updater.jar
 echo.
 goto MAIN

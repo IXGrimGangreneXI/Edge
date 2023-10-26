@@ -11,6 +11,8 @@ import java.util.Map;
 
 import javax.net.ssl.SSLSocketFactory;
 
+import org.asf.edge.common.io.IoUtil;
+
 public class HttpUpgradeUtil {
 
 	/**
@@ -69,7 +71,7 @@ public class HttpUpgradeUtil {
 					}
 					tr = body.available();
 				}
-				conn.getOutputStream().write(body.readNBytes(tr));
+				conn.getOutputStream().write(IoUtil.readNBytes(body, tr));
 			}
 		}
 
@@ -149,7 +151,7 @@ public class HttpUpgradeUtil {
 					}
 					tr = bodyStream.available();
 				}
-				output.write(bodyStream.readNBytes(tr));
+				output.write(IoUtil.readNBytes(bodyStream, tr));
 			}
 		}
 	}

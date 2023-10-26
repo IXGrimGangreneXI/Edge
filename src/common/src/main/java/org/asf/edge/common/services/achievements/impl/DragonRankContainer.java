@@ -8,7 +8,7 @@ import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.entities.achivements.RankInfo;
 import org.asf.edge.common.entities.achivements.RankTypeID;
 import org.asf.edge.common.events.achievements.RankChangedEvent;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -22,7 +22,7 @@ import com.google.gson.JsonPrimitive;
 public class DragonRankContainer extends EntityRankInfo {
 
 	private AccountSaveContainer save;
-	private AccountDataContainer data;
+	private AccountKvDataContainer data;
 	private String dragonEntityID;
 	private String dragonNumericID;
 	private String lastName;
@@ -40,7 +40,7 @@ public class DragonRankContainer extends EntityRankInfo {
 		}
 
 		// Find dragon
-		AccountDataContainer d = save.getSaveData().getChildContainer("dragons");
+		AccountKvDataContainer d = save.getSaveData().getChildContainer("dragons");
 		JsonArray dragonIds;
 		if (d.entryExists("dragonlist"))
 			dragonIds = d.getEntry("dragonlist").getAsJsonArray();
@@ -105,7 +105,7 @@ public class DragonRankContainer extends EntityRankInfo {
 
 			// Log
 			try {
-				AccountDataContainer d = save.getSaveData().getChildContainer("dragons");
+				AccountKvDataContainer d = save.getSaveData().getChildContainer("dragons");
 				if (d.entryExists("dragon-" + dragonNumericID)) {
 					ObjectNode dragon = new XmlMapper().readValue(d.getEntry("dragon-" + dragonNumericID).getAsString(),
 							ObjectNode.class);

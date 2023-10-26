@@ -9,7 +9,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.modules.gridapi.commands.CommandContext;
@@ -174,7 +174,7 @@ public class ServerCommands extends TaskBasedCommand {
 							AccountObject acc = AccountManager.getInstance()
 									.getAccount(serverDef.properties.get("owner").value);
 							if (acc != null) {
-								AccountDataContainer data = acc.getAccountData().getChildContainer("accountdata");
+								AccountKvDataContainer data = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 								if (data.entryExists("hostBanned") && data.getEntry("hostBanned").getAsBoolean()) {
 									// Banned from hosting
 									outputWriteLineCallback.accept("Error: server owner is host-banned");

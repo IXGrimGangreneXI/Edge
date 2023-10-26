@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.modules.gridclient.grid.components.auth.AuthenticatorComponent;
 import org.asf.edge.modules.gridclient.grid.components.auth.GridLoginComponent;
+import org.asf.edge.modules.gridclient.grid.components.channels.GridNetworkingComponent;
 import org.asf.edge.modules.gridclient.grid.components.core.ConnectFailureHandlerComponent;
 import org.asf.edge.modules.gridclient.grid.components.core.DisconnectHandlerComponent;
 import org.asf.edge.modules.gridclient.grid.events.GridClientConnectFailedEvent;
@@ -71,6 +72,7 @@ public class GridClient {
 		registerComponent(new ConnectFailureHandlerComponent());
 		registerComponent(new AuthenticatorComponent(loginManager));
 		registerComponent(new GridLoginComponent(loginManager));
+		registerComponent(new GridNetworkingComponent());
 
 		// Dispatch event
 		client.getEventBus().dispatchEvent(new GridClientSetupEvent(client));

@@ -59,7 +59,7 @@ namespace GridServer
             }
 
             // Write request
-            strm.Write(Encoding.UTF8.GetBytes("POST " + WebUtility.UrlEncode(u.PathAndQuery) + " HTTP/1.1\r\n"));
+            strm.Write(Encoding.UTF8.GetBytes("POST " + u.PathAndQuery + " HTTP/1.1\r\n"));
             strm.Write(Encoding.UTF8.GetBytes("X-Request-ID: " + Guid.NewGuid().ToString() + "\r\n"));
             strm.Write(Encoding.UTF8.GetBytes("X-Request-RNDID: " + Guid.NewGuid().ToString() + "\r\n"));
             strm.Write(Encoding.UTF8.GetBytes("Upgrade: GRIDAPICONNECTOR\r\n"));
@@ -179,7 +179,7 @@ namespace GridServer
                                 lastBusyInterfaces = busyInterfaces;
                                 lastBusyInterfacesChanged = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                             }
-                            else
+                            else if (busyInterfaces == 0)
                             {
                                 // Count down
                                 if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - lastBusyInterfacesChanged >= 30000)
@@ -243,12 +243,7 @@ namespace GridServer
                             if (inter != null)
                             {
                                 // Handle response
-                                try
-                                {
-                                    inter.response = JsonConvert.DeserializeObject<Dictionary<string, object>>(payload);
-                                }
-                                catch
-                                { }
+                                inter.response = payload;
                             }
                         }
                     }
@@ -407,7 +402,7 @@ namespace GridServer
             }
         }
 
-        internal void SendRequest(int interfaceID, string requestType, Dictionary<string, object> payload, int timeout)
+        internal void SendRequest(int interfaceID, string requestType, object payload, int timeout)
         {
             // Write
             lock(sendLock)

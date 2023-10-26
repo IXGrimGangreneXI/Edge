@@ -23,18 +23,18 @@ import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.entities.minigamedata.MinigameData;
 import org.asf.edge.common.entities.minigamedata.MinigameDataRequest;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.SodRequest;
-import org.asf.edge.common.http.apihandlerutils.functions.SodRequestParam;
-import org.asf.edge.common.http.apihandlerutils.functions.SodTokenSecured;
-import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireCapability;
-import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireSave;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.Function;
+import org.asf.edge.common.http.functions.FunctionInfo;
+import org.asf.edge.common.http.functions.FunctionResult;
+import org.asf.edge.common.http.functions.LegacyFunction;
+import org.asf.edge.common.http.functions.LegacyFunctionInfo;
+import org.asf.edge.common.http.functions.SodRequest;
+import org.asf.edge.common.http.functions.SodRequestParam;
+import org.asf.edge.common.http.functions.SodTokenSecured;
+import org.asf.edge.common.http.functions.TokenRequireCapability;
+import org.asf.edge.common.http.functions.TokenRequireSave;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -630,11 +630,11 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Remove cost
-		AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+		AccountKvDataContainer currency = save.getSaveData().getChildContainer("currency");
 		int currentC = 300;
 		if (currency.entryExists("coins"))
 			currentC = currency.getEntry("coins").getAsInt();
-		AccountDataContainer currencyAccWide = save.getAccount().getAccountData().getChildContainer("currency");
+		AccountKvDataContainer currencyAccWide = save.getAccount().getAccountKeyValueContainer().getChildContainer("currency");
 		int currentG = 0;
 		if (currencyAccWide.entryExists("gems"))
 			currentG = currencyAccWide.getEntry("gems").getAsInt();
@@ -856,7 +856,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			itemManager = ItemManager.getInstance();
 
 		// Parse request
-		AccountDataContainer data = save.getSaveData();
+		AccountKvDataContainer data = save.getSaveData();
 
 		// Prepare response
 		CreatePetResponseData resp = new CreatePetResponseData();
@@ -982,7 +982,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 				CommonInventoryRequestData.class);
 
 		// Retrieve container info
-		AccountDataContainer data = account.getAccountData();
+		AccountKvDataContainer data = account.getAccountKeyValueContainer();
 		if (tkn.saveID != null)
 			data = account.getSave(tkn.saveID).getSaveData();
 
@@ -1028,7 +1028,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Retrieve container
 		if (userId.equals(account.getAccountID()) || account.getSave(userId) != null) {
-			AccountDataContainer data = account.getAccountData();
+			AccountKvDataContainer data = account.getAccountKeyValueContainer();
 			if (!userId.equals(account.getAccountID()))
 				data = account.getSave(userId).getSaveData();
 
@@ -1227,7 +1227,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			itemManager = ItemManager.getInstance();
 
 		// Load save data
-		AccountDataContainer data = save.getSaveData();
+		AccountKvDataContainer data = save.getSaveData();
 
 		// Prepare response
 		PetUpdateResponseData resp = new PetUpdateResponseData();

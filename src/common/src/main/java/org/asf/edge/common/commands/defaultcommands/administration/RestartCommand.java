@@ -41,7 +41,7 @@ public class RestartCommand implements IEdgeServerCommand {
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
 			Map<String, String> dataBlobs) throws Exception {
-		CommonDataManager.getInstance().getContainer("EDGECOMMON")
+		CommonDataManager.getInstance().getKeyValueContainer("EDGECOMMON")
 				.setEntry("restart",
 				new JsonPrimitive(System.currentTimeMillis()));
 		return "Servers are restarting, console should be disconnected to prevent errors in the console software.\n"

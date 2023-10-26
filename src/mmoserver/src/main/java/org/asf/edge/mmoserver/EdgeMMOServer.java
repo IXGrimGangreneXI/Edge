@@ -49,7 +49,7 @@ import org.asf.edge.common.io.DataReader;
 import org.asf.edge.common.io.DataWriter;
 import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
@@ -251,7 +251,7 @@ public class EdgeMMOServer implements IBaseServer {
 
 		// Server watchdog
 		logger.info("Starting shutdown and restart watchdog...");
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("EDGECOMMON");
+		CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("EDGECOMMON");
 		try {
 			if (!cont.entryExists("shutdown")) {
 				lastShutdownTime = System.currentTimeMillis();

@@ -25,11 +25,11 @@ import org.asf.edge.common.events.items.InventoryItemDeleteEvent;
 import org.asf.edge.common.events.items.InventoryItemQuantityUpdateEvent;
 import org.asf.edge.common.experiments.EdgeDefaultExperiments;
 import org.asf.edge.common.experiments.ExperimentManager;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
@@ -143,7 +143,7 @@ public class QuestManagerImpl extends QuestManager {
 		itemChanged(event.getAccount(), event.getSaveData(), event.getItem());
 	}
 
-	private void itemChanged(AccountObject account, AccountDataContainer saveData, PlayerInventoryItem item) {
+	private void itemChanged(AccountObject account, AccountKvDataContainer saveData, PlayerInventoryItem item) {
 		if (saveData.getSave() == null)
 			return;
 
@@ -221,7 +221,7 @@ public class QuestManagerImpl extends QuestManager {
 
 		// Start reload watchdog
 		try {
-			CommonDataContainer cont = CommonDataManager.getInstance().getContainer("QUESTMANAGER");
+			CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("QUESTMANAGER");
 			try {
 				if (!cont.entryExists("lastreload")) {
 					lastReloadTime = System.currentTimeMillis();
@@ -627,7 +627,7 @@ public class QuestManagerImpl extends QuestManager {
 	public UserQuestInfo[] getCompletedQuests(AccountSaveContainer save) {
 		try {
 			// Load completed quests
-			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
+			AccountKvDataContainer data = save.getSaveData().getChildContainer("quests");
 			if (!data.entryExists("completedquests"))
 				return new UserQuestInfo[0];
 
@@ -650,7 +650,7 @@ public class QuestManagerImpl extends QuestManager {
 	public UserQuestInfo[] getActiveQuests(AccountSaveContainer save) {
 		try {
 			// Load active quests
-			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
+			AccountKvDataContainer data = save.getSaveData().getChildContainer("quests");
 			if (!data.entryExists("activequests") || !data.entryExists("lastupdate")
 					|| data.getEntry("lastupdate").getAsLong() != lastQuestUpdateTime
 					|| !data.entryExists("lastupdate_serverdata")
@@ -680,7 +680,7 @@ public class QuestManagerImpl extends QuestManager {
 	public UserQuestInfo[] getUpcomingQuests(AccountSaveContainer save) {
 		try {
 			// Load active quests
-			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
+			AccountKvDataContainer data = save.getSaveData().getChildContainer("quests");
 			if (!data.entryExists("activequests") || !data.entryExists("lastupdate")
 					|| data.getEntry("lastupdate").getAsLong() != lastQuestUpdateTime
 					|| !data.entryExists("lastupdate_serverdata")
@@ -709,7 +709,7 @@ public class QuestManagerImpl extends QuestManager {
 	private void recomputeActiveQuests(AccountSaveContainer save) {
 		try {
 			// Load data container and prepare lists
-			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
+			AccountKvDataContainer data = save.getSaveData().getChildContainer("quests");
 			JsonArray active = new JsonArray();
 			JsonArray activeOld = data.entryExists("activequests") ? data.getEntry("activequests").getAsJsonArray()
 					: new JsonArray();
@@ -746,7 +746,7 @@ public class QuestManagerImpl extends QuestManager {
 	private void recomputeUpcomingQuests(AccountSaveContainer save) {
 		try {
 			// Load data container and prepare lists
-			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
+			AccountKvDataContainer data = save.getSaveData().getChildContainer("quests");
 			JsonArray upcoming = new JsonArray();
 
 			// Find upcoming quests
@@ -779,7 +779,7 @@ public class QuestManagerImpl extends QuestManager {
 			// each quest again after that
 
 			// Load data container and prepare lists
-			AccountDataContainer data = save.getSaveData().getChildContainer("quests");
+			AccountKvDataContainer data = save.getSaveData().getChildContainer("quests");
 			JsonArray active = new JsonArray();
 			JsonArray upcoming = new JsonArray();
 			JsonArray activeOld = data.entryExists("activequests") ? data.getEntry("activequests").getAsJsonArray()
@@ -826,7 +826,7 @@ public class QuestManagerImpl extends QuestManager {
 	private class UserQuestInfoImpl extends UserQuestInfo {
 
 		private MissionData def;
-		private AccountDataContainer data;
+		private AccountKvDataContainer data;
 		private AccountSaveContainer save;
 		private JsonObject questInfoData;
 
@@ -1629,7 +1629,7 @@ public class QuestManagerImpl extends QuestManager {
 				return null;
 			} else if (id == RankTypeID.DRAGON) {
 				// Find active dragon
-				AccountDataContainer data = save.getSaveData();
+				AccountKvDataContainer data = save.getSaveData();
 
 				// Pull dragons
 				data = data.getChildContainer("dragons");
@@ -1734,7 +1734,7 @@ public class QuestManagerImpl extends QuestManager {
 		// Trigger a reload on all servers
 		lastReloadTime = System.currentTimeMillis();
 		try {
-			CommonDataManager.getInstance().getContainer("QUESTMANAGER").setEntry("lastreload",
+			CommonDataManager.getInstance().getKeyValueContainer("QUESTMANAGER").setEntry("lastreload",
 					new JsonPrimitive(lastReloadTime));
 		} catch (IOException e) {
 		}

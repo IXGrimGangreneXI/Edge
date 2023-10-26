@@ -21,7 +21,7 @@ public class MMOServerConfig {
 	/**
 	 * Listen port
 	 */
-	public int listenPort = 5323;
+	public int listenPort = 16523;
 
 	/**
 	 * Discovery address (should be the public IP address)
@@ -31,7 +31,7 @@ public class MMOServerConfig {
 	/**
 	 * Discovery port (should be the public port)
 	 */
-	public int discoveryPort = 5323;
+	public int discoveryPort = 16523;
 
 	/**
 	 * Determines if this server should be a backup server in server discovery
@@ -47,7 +47,7 @@ public class MMOServerConfig {
 	 * Common API uplink URL (url to the internal server of the common API, used to
 	 * publish the server)
 	 */
-	public String commonApiUplinkURL = "http://127.0.0.1:5324/";
+	public String commonApiUplinkURL = "http://127.0.0.1:16524/";
 
 	/**
 	 * Pre-assigned server instance, if assigned, EDGE will use this instead

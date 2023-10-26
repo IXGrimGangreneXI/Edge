@@ -128,7 +128,7 @@ public abstract class AbstractPacketChannel {
 	 * @throws IOException If sending fails
 	 */
 	public <T extends IPhoenixPacket> T sendPacketAndWaitForResponse(IPhoenixPacket packet,
-			Class<IPhoenixPacket> responsePacketClass) throws IOException {
+			Class<T> responsePacketClass) throws IOException {
 		return sendPacketAndWaitForResponse(packet, responsePacketClass, 5000);
 	}
 
@@ -143,7 +143,7 @@ public abstract class AbstractPacketChannel {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T extends IPhoenixPacket> T sendPacketAndWaitForResponse(IPhoenixPacket packet,
-			Class<IPhoenixPacket> responsePacketClass, int timeout) throws IOException {
+			Class<T> responsePacketClass, int timeout) throws IOException {
 		// Find
 		if (!packets.stream().anyMatch(t -> t.getClass().isAssignableFrom(packet.getClass())))
 			throw new IllegalArgumentException("Packet type is not present in channel");
@@ -203,8 +203,8 @@ public abstract class AbstractPacketChannel {
 			// Read data into buffer if needed
 			byte[] packetBytes = null;
 			if (pkt.lengthPrefixed()) {
+				packetBytes = reader.readAllBytes();
 				reader = new DataReader(new ByteArrayInputStream(packetBytes));
-				packetBytes = reader.readBytes();
 			}
 
 			// Read
@@ -254,7 +254,7 @@ public abstract class AbstractPacketChannel {
 			sHandlers = singleTimeHandlers.toArray(t -> new Function[t]);
 		}
 		for (Function<IPhoenixPacket, Boolean> handler : sHandlers) {
-			if (handler.apply(pkt)) {
+			if (handler != null && handler.apply(pkt)) {
 				handled = true;
 				singleTimeHandlers.remove(handler);
 				break;

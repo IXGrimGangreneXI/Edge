@@ -3,9 +3,12 @@ package org.asf.edge.common.services.accounts.impl.accounts.db;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+
+import org.asf.edge.common.services.accounts.AccountDataTableContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.impl.BasicAccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.DatabaseAccountManager;
+import org.asf.edge.common.services.tabledata.TableRow;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -21,7 +24,7 @@ public class DatabaseSaveContainer extends BasicAccountSaveContainer {
 			DatabaseAccountObject acc) {
 		super(saveID, time, username, id, manager, acc);
 		this.manager = manager;
-		AccountDataContainer sv = this.getSaveData();
+		AccountKvDataContainer sv = this.getSaveKeyValueContainer("SAVEDETAILS");
 		try {
 			if (!sv.entryExists("accountid")) {
 				sv.setEntry("accountid", new JsonPrimitive(acc.getAccountID()));
@@ -82,11 +85,6 @@ public class DatabaseSaveContainer extends BasicAccountSaveContainer {
 	}
 
 	@Override
-	protected AccountDataContainer retrieveSaveData() {
-		return new DatabaseSaveDataContainer(getAccount(), this, manager);
-	}
-
-	@Override
 	public void doDeleteSave() {
 		try {
 			DatabaseRequest conn = manager.createRequest();
@@ -97,8 +95,38 @@ public class DatabaseSaveContainer extends BasicAccountSaveContainer {
 				statement.execute();
 				statement.close();
 
-				// Delete save data
-				getSaveData().deleteContainer();
+				// Delete data
+				// Fetch all table names
+				try {
+					// Create prepared statement
+					statement = conn.prepareStatement("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS");
+					ResultSet res = statement.executeQuery();
+
+					// Find results
+					while (res.next()) {
+						// Check name
+						// SAVESPECIFICPLAYERDATA_V2 = key/value data container named 'LEGACY'
+						// SDC2_<NAME> = key/value data container
+						// STC2_<NAME> = table-based data container
+						String cont = res.getString("TABLE_NAME");
+						if (cont.equalsIgnoreCase("SAVESPECIFICPLAYERDATA_V2") || cont.toLowerCase().startsWith("sdc2_")
+								|| cont.toLowerCase().startsWith("stc2_")) {
+							// This is a data container
+							// Remove all player data from it
+							var st2 = conn.prepareStatement("DELETE FROM " + cont + " WHERE "
+									+ (cont.toLowerCase().startsWith("utc2_") ? "CID" : "SVID") + " = ?");
+							st2.setString(1, getSaveID());
+							st2.execute();
+							st2.close();
+						}
+					}
+					res.close();
+					statement.close();
+				} catch (SQLException e) {
+					getLogger().error("Failed to execute database query request while trying to delete account '"
+							+ getAccountID() + "'", e);
+					throw new IOException("SQL error", e);
+				}
 
 				// Delete from save list
 				statement = conn.prepareStatement("SELECT SAVES FROM SAVEMAP_V2 WHERE ACCID = ?");
@@ -136,4 +164,31 @@ public class DatabaseSaveContainer extends BasicAccountSaveContainer {
 		}
 	}
 
+	@Override
+	protected AccountKvDataContainer getKeyValueContainerInternal(String rootNodeName) {
+		// Compute table name
+		String table;
+		rootNodeName = rootNodeName.toUpperCase();
+		if (rootNodeName.equalsIgnoreCase("LEGACY"))
+			table = "SAVESPECIFICPLAYERDATA_V2";
+		else
+			table = "SDC2_" + rootNodeName;
+		return new DatabaseSaveKvDataContainer(table, getAccount(), this, manager);
+	}
+
+	@Override
+	protected void setupKeyValueContainer(String rootNodeName) {
+		manager.prepareSaveKvDataContainer(rootNodeName);
+	}
+
+	@Override
+	protected <T extends TableRow> AccountDataTableContainer<T> getDataTableContainerInternal(String tableName,
+			Class<T> cls) {
+		return new DatabaseDataTableContainer<T>("STC2_" + tableName, getAccountID(), getAccount(), this, manager, cls);
+	}
+
+	@Override
+	protected void setupDataTableContainer(String tableName, AccountDataTableContainer<?> cont) {
+		manager.prepareSaveDataTableContainer(tableName, cont);
+	}
 }

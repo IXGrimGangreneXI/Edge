@@ -8,9 +8,9 @@ import java.util.stream.Stream;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.LegacyFunction;
+import org.asf.edge.common.http.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.tokens.SessionToken;
@@ -296,7 +296,7 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 		}
 
 		// Return invalid if the username is on cooldown
-		JsonElement lock = acc.getAccountData().getChildContainer("accountdata").getEntry("lockedsince");
+		JsonElement lock = acc.getAccountKeyValueContainer().getChildContainer("accountdata").getEntry("lockedsince");
 		if (lock != null && (System.currentTimeMillis() - lock.getAsLong()) < 8000) {
 			// Log
 			getServerInstance().getLogger().warn("Account login from IP " + func.getClient().getRemoteAddress()
@@ -366,7 +366,7 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 		resp.status = LoginStatusType.InvalidUserName;
 		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
 		if (account != null)
-			account.getAccountData().getChildContainer("accountdata").setEntry("lockedsince",
+			account.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("lockedsince",
 					new JsonPrimitive(System.currentTimeMillis()));
 		try {
 			Thread.sleep(8000);

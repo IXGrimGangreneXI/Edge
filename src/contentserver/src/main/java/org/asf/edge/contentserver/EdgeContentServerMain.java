@@ -69,7 +69,7 @@ public class EdgeContentServerMain {
 				Files.writeString(configFile.toPath(), "{\n" //
 						+ "\n" //
 						+ "    \"listenAddress\": \"0.0.0.0\",\n" // listen address
-						+ "    \"listenPort\": 5319,\n" // port to listen on
+						+ "    \"listenPort\": 16519,\n" // port to listen on
 						+ "    \"contentRequestListenPath\": \"/\",\n" // URI to listen on
 						+ "    \"contentDataPath\": \"./asset-data\",\n" // Content data path
 						+ "    \"allowIndexingAssets\": true,\n" // Defines if indexing is enabled

@@ -15,10 +15,10 @@ import org.asf.edge.common.entities.achivements.RankInfo;
 import org.asf.edge.common.entities.achivements.RankTypeID;
 import org.asf.edge.common.entities.items.ItemAttributeInfo;
 import org.asf.edge.common.entities.items.ItemInfo;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.LegacyFunction;
+import org.asf.edge.common.http.functions.LegacyFunctionInfo;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -95,7 +95,7 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Find save
 		AccountSaveContainer save = account.getSave(tkn.saveID);
-		AccountDataContainer data = save.getSaveData();
+		AccountKvDataContainer data = save.getSaveData();
 
 		// Prepare response
 		PetUpdateResponseData resp = new PetUpdateResponseData();

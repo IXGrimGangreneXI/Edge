@@ -5,9 +5,10 @@ import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.entities.avatar.AvatarObjectContainer;
 import org.asf.edge.common.events.accounts.saves.AccountSaveDeletedEvent;
 import org.asf.edge.common.events.accounts.saves.AccountSaveUsernameUpdateEvent;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.minigamedata.MinigameDataManager;
@@ -32,8 +33,6 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 	private Logger logger = LogManager.getLogger("AccountManager");
 	private BasicAccountManager manager;
 	private BasicAccountObject acc;
-
-	private AccountDataContainer data;
 
 	public BasicAccountSaveContainer(String saveID, long time, String username, String accID,
 			BasicAccountManager manager, BasicAccountObject acc) {
@@ -89,13 +88,6 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 	 */
 	public abstract boolean performUpdateUsername(String name);
 
-	/**
-	 * Called to retrieve the save data container
-	 * 
-	 * @return AccountDataContainer instance
-	 */
-	protected abstract AccountDataContainer retrieveSaveData();
-
 	@Override
 	public long getCreationTime() {
 		return time;
@@ -134,11 +126,25 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 			AccountObject accF = acc;
 			if (Stream.of(acc.getSaveIDs()).map(t -> accF.getSave(t)).anyMatch(t -> {
 				try {
-					return t.getUsername().equalsIgnoreCase(name) && t.getSaveData().entryExists("avatar");
+					// Check name
+					if (t.getUsername().equalsIgnoreCase(name)) {
+						// This save exists
+						// Check if it already has an avatar
+						AccountDataTableContainer<AvatarObjectContainer> table = t.getSaveDataTable("AVATAR",
+								AvatarObjectContainer.class);
+						if (table.hasRows()) {
+							// Yup, this save has a avatar
+							return true;
+						}
+					}
+
+					// Nope
+					return false;
 				} catch (IOException e) {
 					return false;
 				}
 			})) {
+				// If a save exists with the name and has an avatar it will fail
 				return false;
 			}
 		}
@@ -181,13 +187,6 @@ public abstract class BasicAccountSaveContainer extends AccountSaveContainer {
 		// Log
 		getLogger().info("Deleted save " + getUsername() + " (ID " + getSaveID() + ") of account " + getUsername()
 				+ " (ID " + getAccountID() + ")");
-	}
-
-	@Override
-	public AccountDataContainer getSaveData() {
-		if (data == null)
-			data = retrieveSaveData();
-		return data;
 	}
 
 }

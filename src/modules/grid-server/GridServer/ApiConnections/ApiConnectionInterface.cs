@@ -5,6 +5,7 @@ using Phoenix.Common.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Newtonsoft.Json;
 
 namespace GridServer
 {
@@ -15,7 +16,7 @@ namespace GridServer
     {
         internal int interfaceID;
         internal ApiConnection connection;
-        internal Dictionary<string, object>? response;
+        internal string? response;
         internal bool waitingForResponse;
         private object sendLock = new object();
         private bool closed;
@@ -27,7 +28,7 @@ namespace GridServer
         /// <param name="payload">Request payload</param>
         /// <param name="timeout">Timeout in miliseconds</param>
         /// <returns>Dictionary response or null if timed out</returns>
-        public Dictionary<string, object>? Request(string requestType, Dictionary<string, object> payload, int timeout = 5000)
+        public RT? Request<T, RT>(string requestType, T payload, int timeout = 5000)
         {
             lock (sendLock)
             {
@@ -50,7 +51,10 @@ namespace GridServer
                 waitingForResponse = false;
 
                 // Return
-                return response;
+                if (response != null)
+                    return JsonConvert.DeserializeObject<RT>(response);
+                else
+                    return default(RT);
             }
         }
 

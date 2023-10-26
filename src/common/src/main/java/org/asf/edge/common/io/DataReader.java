@@ -3,6 +3,7 @@ package org.asf.edge.common.io;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * 
@@ -41,7 +42,24 @@ public class DataReader {
 	 * @throws IOException If reading fails
 	 */
 	public byte[] readNBytes(int num) throws IOException {
-		return input.readNBytes(num);
+		byte[] res = new byte[num];
+		int c = 0;
+		while (true) {
+			try {
+				int r = input.read(res, c, num);
+				if (r == -1)
+					break;
+				c += r;
+			} catch (Exception e) {
+				int b = input.read();
+				if (b == -1)
+					break;
+				res[c++] = (byte) b;
+			}
+			if (c >= num)
+				break;
+		}
+		return Arrays.copyOfRange(res, 0, c);
 	}
 
 	/**

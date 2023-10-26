@@ -2,9 +2,16 @@ Fixes in a1.7:
 - Fixed the UpdateAccount Edge API call not using the correct values for multiplayer/chat settings
 - Fixed an issue with the message service deletion messages when it should be marking them as read
 - Fixed rare server error where the achievement manager wasnt loaded when the client calls getPetAchievementsByUserID
+- Fixed startup scripts not correctly updating the servers
 
 Changes in a1.7:
+- CRITICAL REMOVAL: the HTTP-based data system has been deprecated and removed, it was a mess and way too inefficient, multi-server setups should use a shared database server from this version and onwards
+- Changed default ports to 16518-16524 (16518 = sentinel, 16519 = content, 16520 = gameplay, 16521 = common api, 16522 = social, 16523 = mmo, 16524 = internal api)
 - Made it so that if the player is connected to the MMO server, that webservice messages are immediately synced through it
+- Added logging of the store ID to item registration for easily discovering what store items are in
+- Huge refactors to the project were made, bit too complex to document in a changelog
+- Redid save structure again, should be more efficient
 
 Sentinel changes in a1.7:
 - Improved and patched the server configuration window
+- Fixed an issue where asset overrides may not be picked up by modern clients

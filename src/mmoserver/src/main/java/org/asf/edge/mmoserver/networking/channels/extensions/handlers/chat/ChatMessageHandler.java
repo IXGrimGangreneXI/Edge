@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import org.apache.logging.log4j.LogManager;
 import org.asf.edge.common.commands.CommandContext;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.textfilter.FilterSeverity;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.services.textfilter.result.FilterResult;
@@ -88,7 +88,7 @@ public class ChatMessageHandler implements IExtensionMessageHandler<ServerboundS
 			FilterResult res = filter.filter(message.message, player.getAccount().isStrictChatFilterEnabled());
 
 			// Load moderation data
-			AccountDataContainer data = player.getAccount().getAccountData();
+			AccountKvDataContainer data = player.getAccount().getAccountKeyValueContainer();
 			data = data.getChildContainer("moderation");
 
 			// Check result

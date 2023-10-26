@@ -4,11 +4,11 @@ import java.io.IOException;
 import java.util.UUID;
 
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.Function;
+import org.asf.edge.common.http.functions.FunctionInfo;
+import org.asf.edge.common.http.functions.FunctionResult;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.modules.gridapi.EdgeGridApiServer;
 import org.asf.edge.modules.gridapi.utils.PhoenixToken;
 import org.asf.edge.modules.gridapi.utils.TokenUtils;
@@ -50,7 +50,7 @@ public class GridUtilityWebService extends EdgeWebService<EdgeGridApiServer> {
 				// Identity-based token
 				if (ctx.account != null) {
 					// Load data
-					AccountDataContainer data = ctx.account.getAccountData().getChildContainer("accountdata");
+					AccountKvDataContainer data = ctx.account.getAccountKeyValueContainer().getChildContainer("accountdata");
 					if (!data.entryExists("significantFieldRandom"))
 						return ok("text/json", "LOCK_HELD");
 					if (!data.entryExists("significantFieldNumber"))

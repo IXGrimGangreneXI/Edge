@@ -12,7 +12,7 @@ import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.entities.achivements.RankTypeID;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.achievements.AchievementManager;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.leaderboard.Leaderboard;
 
@@ -22,7 +22,7 @@ import com.google.gson.JsonPrimitive;
 public class LeaderboardImpl extends Leaderboard {
 
 	private String name;
-	private CommonDataContainer container;
+	private CommonKvDataContainer container;
 	private Logger logger = LogManager.getLogger("Leaderboards");
 
 	private Object refreshAllTimeLock = new Object();
@@ -33,7 +33,7 @@ public class LeaderboardImpl extends Leaderboard {
 	public LeaderboardImpl(String name) {
 		// Load container
 		this.name = name;
-		container = CommonDataManager.getInstance().getContainer("LEADERBOARD" + name.toUpperCase());
+		container = CommonDataManager.getInstance().getKeyValueContainer("LEADERBOARD" + name.toUpperCase());
 
 		// Refresh
 		refreshLeaderboard();
@@ -88,7 +88,7 @@ public class LeaderboardImpl extends Leaderboard {
 	private void refreshAllTimeScores(HashMap<String, Integer> scores) {
 		// Refresh all times scores
 		try {
-			CommonDataContainer scoresAllTime = container.getChildContainer("alltime");
+			CommonKvDataContainer scoresAllTime = container.getChildContainer("alltime");
 			int addedScores = 0;
 
 			// Read last time
@@ -136,7 +136,7 @@ public class LeaderboardImpl extends Leaderboard {
 	private void refreshDailyScoresIfNeeded(HashMap<String, Integer> scores) {
 		try {
 			Calendar cal = Calendar.getInstance();
-			CommonDataContainer scoresDaily = container.getChildContainer("daily");
+			CommonKvDataContainer scoresDaily = container.getChildContainer("daily");
 
 			// Check last date
 			JsonElement ent = scoresDaily.getEntry("last_day");
@@ -158,8 +158,8 @@ public class LeaderboardImpl extends Leaderboard {
 
 				// Block
 				synchronized (refreshDailyLock) {
-					CommonDataContainer current = scoresDaily.getChildContainer("scores_current");
-					CommonDataContainer last = scoresDaily.getChildContainer("scores_last");
+					CommonKvDataContainer current = scoresDaily.getChildContainer("scores_current");
+					CommonKvDataContainer last = scoresDaily.getChildContainer("scores_last");
 
 					// Load last scores
 					HashMap<String, Integer> lastScores = new HashMap<String, Integer>();
@@ -219,7 +219,7 @@ public class LeaderboardImpl extends Leaderboard {
 	private void refreshWeeklyScoresIfNeeded(HashMap<String, Integer> scores) {
 		try {
 			Calendar cal = Calendar.getInstance();
-			CommonDataContainer scoresWeekly = container.getChildContainer("weekly");
+			CommonKvDataContainer scoresWeekly = container.getChildContainer("weekly");
 
 			// Check last date
 			JsonElement ent = scoresWeekly.getEntry("last_week");
@@ -241,8 +241,8 @@ public class LeaderboardImpl extends Leaderboard {
 
 				// Block
 				synchronized (refreshWeeklyLock) {
-					CommonDataContainer current = scoresWeekly.getChildContainer("scores_current");
-					CommonDataContainer last = scoresWeekly.getChildContainer("scores_last");
+					CommonKvDataContainer current = scoresWeekly.getChildContainer("scores_current");
+					CommonKvDataContainer last = scoresWeekly.getChildContainer("scores_last");
 
 					// Load last scores
 					HashMap<String, Integer> lastScores = new HashMap<String, Integer>();
@@ -302,7 +302,7 @@ public class LeaderboardImpl extends Leaderboard {
 	private void refreshMonthlyScoresIfNeeded(HashMap<String, Integer> scores) {
 		try {
 			Calendar cal = Calendar.getInstance();
-			CommonDataContainer scoresMonthly = container.getChildContainer("monthly");
+			CommonKvDataContainer scoresMonthly = container.getChildContainer("monthly");
 
 			// Check last date
 			JsonElement ent = scoresMonthly.getEntry("last_month");
@@ -324,8 +324,8 @@ public class LeaderboardImpl extends Leaderboard {
 
 				// Block
 				synchronized (refreshMonthlyLock) {
-					CommonDataContainer current = scoresMonthly.getChildContainer("scores_current");
-					CommonDataContainer last = scoresMonthly.getChildContainer("scores_last");
+					CommonKvDataContainer current = scoresMonthly.getChildContainer("scores_current");
+					CommonKvDataContainer last = scoresMonthly.getChildContainer("scores_last");
 
 					// Load last scores
 					HashMap<String, Integer> lastScores = new HashMap<String, Integer>();
@@ -390,7 +390,7 @@ public class LeaderboardImpl extends Leaderboard {
 				HashMap<String, Integer> userScores = new HashMap<String, Integer>();
 
 				// Load container
-				CommonDataContainer scores = container.getChildContainer("weekly");
+				CommonKvDataContainer scores = container.getChildContainer("weekly");
 				scores = scores.getChildContainer("scores_current");
 
 				// Add entries
@@ -424,7 +424,7 @@ public class LeaderboardImpl extends Leaderboard {
 				HashMap<String, Integer> userScores = new HashMap<String, Integer>();
 
 				// Load container
-				CommonDataContainer scores = container.getChildContainer("monthly");
+				CommonKvDataContainer scores = container.getChildContainer("monthly");
 				scores = scores.getChildContainer("scores_current");
 
 				// Add entries
@@ -458,7 +458,7 @@ public class LeaderboardImpl extends Leaderboard {
 				HashMap<String, Integer> userScores = new HashMap<String, Integer>();
 
 				// Load container
-				CommonDataContainer scores = container.getChildContainer("daily");
+				CommonKvDataContainer scores = container.getChildContainer("daily");
 				scores = scores.getChildContainer("scores_current");
 
 				// Add entries
@@ -492,7 +492,7 @@ public class LeaderboardImpl extends Leaderboard {
 				HashMap<String, Integer> userScores = new HashMap<String, Integer>();
 
 				// Load container
-				CommonDataContainer scoresAllTime = container.getChildContainer("alltime");
+				CommonKvDataContainer scoresAllTime = container.getChildContainer("alltime");
 				scoresAllTime = scoresAllTime.getChildContainer("scores");
 
 				// Add entries
@@ -523,7 +523,7 @@ public class LeaderboardImpl extends Leaderboard {
 		try {
 			synchronized (refreshDailyLock) {
 				// Load container
-				CommonDataContainer scores = container.getChildContainer("daily");
+				CommonKvDataContainer scores = container.getChildContainer("daily");
 				scores = scores.getChildContainer("scores_current");
 
 				// Retrieve times
@@ -542,7 +542,7 @@ public class LeaderboardImpl extends Leaderboard {
 		try {
 			synchronized (refreshWeeklyLock) {
 				// Load container
-				CommonDataContainer scores = container.getChildContainer("weekly");
+				CommonKvDataContainer scores = container.getChildContainer("weekly");
 				scores = scores.getChildContainer("scores_current");
 
 				// Retrieve times
@@ -561,7 +561,7 @@ public class LeaderboardImpl extends Leaderboard {
 		try {
 			synchronized (refreshMonthlyLock) {
 				// Load container
-				CommonDataContainer scores = container.getChildContainer("monthly");
+				CommonKvDataContainer scores = container.getChildContainer("monthly");
 				scores = scores.getChildContainer("scores_current");
 
 				// Retrieve times

@@ -124,7 +124,7 @@ public class EdgeGlobalServerMain {
 					+ "    \"contentServer\": {\n" //
 					+ "        \"disabled\": false,\n" // defines if the server is disabled
 					+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
-					+ "        \"listenPort\": 5319,\n" // port to listen on
+					+ "        \"listenPort\": 16519,\n" // port to listen on
 					+ "        \"contentRequestListenPath\": \"/\",\n" // URI to listen on
 					+ "        \"contentDataPath\": \"./data/contentserver/asset-data\",\n" // Content data path
 					+ "        \"allowIndexingAssets\": true,\n" // Defines if indexing is enabled
@@ -143,7 +143,7 @@ public class EdgeGlobalServerMain {
 					+ "    \"gameplayApiServer\": {\n" //
 					+ "        \"disabled\": false,\n" // defines if the server is disabled
 					+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
-					+ "        \"listenPort\": 5320,\n" // port to listen on
+					+ "        \"listenPort\": 16520,\n" // port to listen on
 					+ "        \"apiRequestListenPath\": \"/\",\n" // URI to listen on
 					+ "\n" //
 					+ "        \"https\": false,\n" // use https?
@@ -154,7 +154,7 @@ public class EdgeGlobalServerMain {
 					+ "    \"commonApiServer\": {\n" //
 					+ "        \"disabled\": false,\n" // defines if the server is disabled
 					+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
-					+ "        \"listenPort\": 5321,\n" // port to listen on
+					+ "        \"listenPort\": 16521,\n" // port to listen on
 					+ "        \"apiRequestListenPath\": \"/\",\n" // URI to listen on
 					+ "\n" //
 					+ "        \"https\": false,\n" // use https?
@@ -162,7 +162,7 @@ public class EdgeGlobalServerMain {
 					+ "        \"tlsKeystorePassword\": null,\n" // keystore password
 					+ "\n" //
 					+ "        \"internalListenAddress\": \"127.0.0.1\",\n" // listen address
-					+ "        \"internalListenPort\": 5324,\n" // port to listen on
+					+ "        \"internalListenPort\": 16524,\n" // port to listen on
 					+ "\n" //
 					+ "        \"httpsInternal\": false,\n" // use https?
 					+ "        \"tlsKeystoreInternal\": null,\n" // keystore file
@@ -172,14 +172,14 @@ public class EdgeGlobalServerMain {
 					+ "    \"mmoServer\": {\n" //
 					+ "        \"disabled\": false,\n" // defines if the server is disabled
 					+ "        \"listenAddress\": \"0.0.0.0\",\n" // listen address
-					+ "        \"listenPort\": 5323,\n" // port to listen on
+					+ "        \"listenPort\": 16523,\n" // port to listen on
 					+ "\n" //
 					+ "        \"discoveryAddress\": \"localhost\",\n" // discovery Address
-					+ "        \"discoveryPort\": 5323,\n" // discovery port
+					+ "        \"discoveryPort\": 16523,\n" // discovery port
 					+ "        \"discoveryRootZone\": \"JumpStart\",\n" // MMO root zone
 					+ "        \"isBackupServer\": false,\n" // is this a backup MMO server?
 					+ "\n" //
-					+ "        \"commonApiUplinkURL\": \"http://127.0.0.1:5324/\",\n" // uplink URL
+					+ "        \"commonApiUplinkURL\": \"http://127.0.0.1:16524/\",\n" // uplink URL
 					+ "\n" //
 					+ "        \"roomUserLimit\": 30,\n" //
 					+ "        \"roomUserLimits\": {\n" //

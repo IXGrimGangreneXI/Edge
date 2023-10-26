@@ -65,7 +65,7 @@ public class EdgeGameplayApiServerMain {
 				Files.writeString(configFile.toPath(), "{\n" //
 						+ "\n" //
 						+ "    \"listenAddress\": \"0.0.0.0\",\n" // listen address
-						+ "    \"listenPort\": 5320,\n" // port to listen on
+						+ "    \"listenPort\": 16520,\n" // port to listen on
 						+ "    \"apiRequestListenPath\": \"/\",\n" // URI to listen on
 						+ "\n" //
 						+ "    \"https\": false,\n" // use https?

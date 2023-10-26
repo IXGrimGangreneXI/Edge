@@ -7,10 +7,10 @@ import java.util.HashMap;
 import org.asf.edge.common.entities.minigamedata.MinigameData;
 import org.asf.edge.common.entities.minigamedata.MinigameDataRequest;
 import org.asf.edge.common.entities.minigamedata.MinigameSaveRequest;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 
@@ -19,7 +19,7 @@ import com.google.gson.JsonParser;
 
 public class MinigameDataManagerImpl extends MinigameDataManager {
 
-	private CommonDataContainer globalData;
+	private CommonKvDataContainer globalData;
 
 	public static class MinigameDataContainer {
 		public String userID;
@@ -34,7 +34,7 @@ public class MinigameDataManagerImpl extends MinigameDataManager {
 	@Override
 	public void initService() {
 		// Retrieve container
-		globalData = CommonDataManager.getInstance().getContainer("MINIGAMEDATA");
+		globalData = CommonDataManager.getInstance().getKeyValueContainer("MINIGAMEDATA");
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public class MinigameDataManagerImpl extends MinigameDataManager {
 	public void saveGameData(AccountSaveContainer save, int gameId, MinigameSaveRequest saveRequest) {
 		try {
 			// Retrieve container
-			AccountDataContainer data = save.getSaveData().getChildContainer("minigamedata");
+			AccountKvDataContainer data = save.getSaveData().getChildContainer("minigamedata");
 
 			// Load old data
 			MinigameDataContainer old = null;
@@ -89,7 +89,7 @@ public class MinigameDataManagerImpl extends MinigameDataManager {
 					JsonParser.parseString(mapper.writeValueAsString(old)));
 
 			// Save to global data
-			CommonDataContainer dataG = globalData.getChildContainer("save-" + save.getSaveID());
+			CommonKvDataContainer dataG = globalData.getChildContainer("save-" + save.getSaveID());
 			dataG.setEntry("minigame-" + gameId + "-" + saveRequest.gameLevel,
 					JsonParser.parseString(mapper.writeValueAsString(old)));
 		} catch (IOException e) {
@@ -106,7 +106,7 @@ public class MinigameDataManagerImpl extends MinigameDataManager {
 			res.userID = save.getSaveID();
 
 			// Retrieve container
-			AccountDataContainer data = save.getSaveData().getChildContainer("minigamedata");
+			AccountKvDataContainer data = save.getSaveData().getChildContainer("minigamedata");
 
 			// Load data
 			MinigameDataContainer c = null;
@@ -155,7 +155,7 @@ public class MinigameDataManagerImpl extends MinigameDataManager {
 				try {
 					// Load minigame data
 					if (container.startsWith("save-")) {
-						CommonDataContainer data = globalData.getChildContainer(container);
+						CommonKvDataContainer data = globalData.getChildContainer(container);
 						String saveID = container.substring(5);
 
 						// Create object

@@ -41,7 +41,7 @@ public class ShutdownCommand implements IEdgeServerCommand {
 	@Override
 	public String run(String[] args, CommandContext ctx, Logger logger, Consumer<String> outputWriteLineCallback,
 			Map<String, String> dataBlobs) throws Exception {
-		CommonDataManager.getInstance().getContainer("EDGECOMMON").setEntry("shutdown",
+		CommonDataManager.getInstance().getKeyValueContainer("EDGECOMMON").setEntry("shutdown",
 				new JsonPrimitive(System.currentTimeMillis()));
 		return "Servers are shutting down, console should be disconnected to prevent errors in the console software.\n"
 				+ "Please wait up to 30 seconds, if the console remains open you may need to disconnect from the network manually.";

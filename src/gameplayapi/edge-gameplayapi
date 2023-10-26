@@ -10,9 +10,9 @@ function start() {
 		start
 		return
 	fi
-	if [ "$code" == "0" ] && [ -f gameplayapiupdater.jar ]; then
-		java -cp "gameplayapiupdater.jar" org.asf.edge.gameplayapi.EdgeGameplayApiServerUpdater --update
-		rm gameplayapiupdater.jar
+	if [ "$code" == "0" ] && [ -f updater.jar ]; then
+		java -cp "updater.jar" org.asf.edge.gameplayapi.EdgeGameplayApiServerUpdater --update
+		rm updater.jar
 		echo
 		start
 		return

@@ -10,9 +10,9 @@ function start() {
 		start
 		return
 	fi
-	if [ "$code" == "0" ] && [ -f contentserverupdater.jar ]; then
-		java -cp "contentserverupdater.jar" org.asf.edge.contentserver.EdgeContentServerUpdater --update
-		rm contentserverupdater.jar
+	if [ "$code" == "0" ] && [ -f updater.jar ]; then
+		java -cp "updater.jar" org.asf.edge.contentserver.EdgeContentServerUpdater --update
+		rm updater.jar
 		echo
 		start
 		return

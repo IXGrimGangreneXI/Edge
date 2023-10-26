@@ -31,7 +31,7 @@ import org.asf.edge.common.EdgeServerEnvironment;
 import org.asf.edge.common.events.accounts.AccountManagerLoadEvent;
 import org.asf.edge.common.events.accounts.AccountRegisteredEvent;
 import org.asf.edge.common.events.accounts.GuestAccountRegisteredEvent;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.tokens.SessionToken;
@@ -97,7 +97,7 @@ public abstract class BasicAccountManager extends AccountManager {
 
 				// Set player server ID
 				try {
-					AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
+					AccountKvDataContainer cont = acc.getAccountKeyValueContainer("accountdata");
 					if (!cont.entryExists("server_id")
 							|| !cont.getEntry("server_id").getAsString().equals(EdgeServerEnvironment.getServerID())) {
 						// Set
@@ -325,7 +325,7 @@ public abstract class BasicAccountManager extends AccountManager {
 
 		try {
 			// Set account data
-			AccountDataContainer settings = obj.getAccountData().getChildContainer("accountdata");
+			AccountKvDataContainer settings = obj.getAccountKeyValueContainer("accountdata");
 			settings.setEntry("lastlogintime", new JsonPrimitive(System.currentTimeMillis()));
 			settings.setEntry("registrationtimestamp", new JsonPrimitive(System.currentTimeMillis()));
 			settings.setEntry("isguestaccount", new JsonPrimitive(true));
@@ -384,7 +384,7 @@ public abstract class BasicAccountManager extends AccountManager {
 
 		try {
 			// Set account data
-			AccountDataContainer settings = obj.getAccountData().getChildContainer("accountdata");
+			AccountKvDataContainer settings = obj.getAccountKeyValueContainer("accountdata");
 			settings.setEntry("lastlogintime", new JsonPrimitive(System.currentTimeMillis()));
 			settings.setEntry("registrationtimestamp", new JsonPrimitive(System.currentTimeMillis()));
 			settings.setEntry("isguestaccount", new JsonPrimitive(false));

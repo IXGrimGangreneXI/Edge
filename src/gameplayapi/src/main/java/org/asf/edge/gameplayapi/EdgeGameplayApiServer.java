@@ -26,7 +26,7 @@ import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.achievements.impl.AchievementManagerImpl;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
@@ -232,7 +232,7 @@ public class EdgeGameplayApiServer implements IBaseServer {
 
 		// Server watchdog
 		logger.info("Starting shutdown and restart watchdog...");
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("EDGECOMMON");
+		CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("EDGECOMMON");
 		try {
 			if (!cont.entryExists("shutdown")) {
 				lastShutdownTime = System.currentTimeMillis();

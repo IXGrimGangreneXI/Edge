@@ -61,7 +61,7 @@ public class ContentServerConfig {
 	/**
 	 * Listen port
 	 */
-	public int listenPort = 5319;
+	public int listenPort = 16519;
 
 	/**
 	 * Path to register the asset request handler on

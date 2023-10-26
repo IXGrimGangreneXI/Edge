@@ -10,11 +10,11 @@ SET libs=%libs:~1%
 java -cp "%libs%" org.asf.edge.gameplayapi.EdgeGameplayApiServerMain %*
 IF %ERRORLEVEL% EQU 237 goto MAIN
 
-if EXIST gameplayapiupdater.jar goto UPDATE
+if EXIST updater.jar goto UPDATE
 exit
 
 :UPDATE
-java -cp gameplayapiupdater.jar org.asf.edge.gameplayapi.EdgeGameplayApiServerUpdater --update
-del gameplayapiupdater.jar
+java -cp updater.jar org.asf.edge.gameplayapi.EdgeGameplayApiServerUpdater --update
+del updater.jar
 echo.
 goto MAIN

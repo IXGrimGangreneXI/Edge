@@ -44,11 +44,11 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				launchSettings = new JsonObject();
 				launchSettings.addProperty("launchMode", "normal");
 				JsonObject remoteEndpoints = new JsonObject();
-				remoteEndpoints.addProperty("gameplay", "http://localhost:5320/");
-				remoteEndpoints.addProperty("common", "http://localhost:5321/");
-				remoteEndpoints.addProperty("social", "http://localhost:5322/");
+				remoteEndpoints.addProperty("gameplay", "http://localhost:16520/");
+				remoteEndpoints.addProperty("common", "http://localhost:16521/");
+				remoteEndpoints.addProperty("social", "http://localhost:16522/");
 				remoteEndpoints.addProperty("smartfoxHost", "localhost");
-				remoteEndpoints.addProperty("smartfoxPort", 5323);
+				remoteEndpoints.addProperty("smartfoxPort", 16523);
 				launchSettings.add("remoteEndpoints", remoteEndpoints);
 				Files.writeString(launchSettingsF.toPath(), launchSettings.toString());
 			} else {
@@ -199,8 +199,8 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		} else if (!socialSrvJar.exists()) {
 			// Use common API to work around issues with 1.x when there are no social
 			// services in the current Edge server files
-			endpointsLocal.groupsServiceEndpoint = "http://localhost:5321/";
-			endpointsLocal.messagingServiceEndpoint = "http://localhost:5321/";
+			endpointsLocal.groupsServiceEndpoint = "http://localhost:16521/";
+			endpointsLocal.messagingServiceEndpoint = "http://localhost:16521/";
 		}
 
 		// Log

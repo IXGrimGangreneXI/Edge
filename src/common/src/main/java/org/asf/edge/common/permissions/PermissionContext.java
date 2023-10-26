@@ -107,8 +107,8 @@ public class PermissionContext {
 		try {
 			// Retrieve perms
 			JsonObject perms;
-			if (account.getAccountData().entryExists("permissions"))
-				perms = account.getAccountData().getEntry("permissions").getAsJsonObject();
+			if (account.getAccountKeyValueContainer().entryExists("permissions"))
+				perms = account.getAccountKeyValueContainer().getEntry("permissions").getAsJsonObject();
 			else {
 				perms = new JsonObject();
 				JsonObject nodes = new JsonObject();
@@ -128,7 +128,7 @@ public class PermissionContext {
 			}
 
 			// Save
-			account.getAccountData().setEntry("permissions", perms);
+			account.getAccountKeyValueContainer().setEntry("permissions", perms);
 		} catch (IOException e) {
 			// Database down
 			logger.warn("Failed to modify permission nodes for " + account.getAccountID() + " due to a database error.",
@@ -143,9 +143,9 @@ public class PermissionContext {
 	 */
 	public void removeNode(PermissionNode node) {
 		try {
-			if (account.getAccountData().entryExists("permissions")) {
+			if (account.getAccountKeyValueContainer().entryExists("permissions")) {
 				// Retrieve perms
-				JsonObject perms = account.getAccountData().getEntry("permissions").getAsJsonObject();
+				JsonObject perms = account.getAccountKeyValueContainer().getEntry("permissions").getAsJsonObject();
 				perms = perms.get("permissionNodes").getAsJsonObject();
 				JsonArray allowed = perms.get("allowed").getAsJsonArray();
 				JsonArray denied = perms.get("denied").getAsJsonArray();
@@ -156,7 +156,7 @@ public class PermissionContext {
 						if (ele.getAsString().equals(node.getNode())) {
 							// Save
 							allowed.remove(ele);
-							account.getAccountData().setEntry("permissions", perms);
+							account.getAccountKeyValueContainer().setEntry("permissions", perms);
 							return;
 						}
 					}
@@ -165,7 +165,7 @@ public class PermissionContext {
 						if (ele.getAsString().equals(node.getNode())) {
 							// Save
 							denied.remove(ele);
-							account.getAccountData().setEntry("permissions", perms);
+							account.getAccountKeyValueContainer().setEntry("permissions", perms);
 							return;
 						}
 					}
@@ -185,9 +185,9 @@ public class PermissionContext {
 	 */
 	public PermissionNode[] getNodes() {
 		try {
-			if (account.getAccountData().entryExists("permissions")) {
+			if (account.getAccountKeyValueContainer().entryExists("permissions")) {
 				// Retrieve perms
-				JsonObject perms = account.getAccountData().getEntry("permissions").getAsJsonObject();
+				JsonObject perms = account.getAccountKeyValueContainer().getEntry("permissions").getAsJsonObject();
 				perms = perms.get("permissionNodes").getAsJsonObject();
 				JsonArray allowed = perms.get("allowed").getAsJsonArray();
 				JsonArray denied = perms.get("denied").getAsJsonArray();
@@ -218,8 +218,8 @@ public class PermissionContext {
 	public void setPermissionLevel(PermissionLevel newLevel) {
 		try {
 			JsonObject perms;
-			if (account.getAccountData().entryExists("permissions"))
-				perms = account.getAccountData().getEntry("permissions").getAsJsonObject();
+			if (account.getAccountKeyValueContainer().entryExists("permissions"))
+				perms = account.getAccountKeyValueContainer().getEntry("permissions").getAsJsonObject();
 			else {
 				perms = new JsonObject();
 				JsonObject nodes = new JsonObject();
@@ -232,7 +232,7 @@ public class PermissionContext {
 			perms.addProperty("permissionLevel", newLevel.toString());
 
 			// Save
-			account.getAccountData().setEntry("permissions", perms);
+			account.getAccountKeyValueContainer().setEntry("permissions", perms);
 		} catch (IOException e) {
 			// Database down
 			logger.warn("Failed to save permission level for " + account.getAccountID() + " due to a database error.",
@@ -249,7 +249,7 @@ public class PermissionContext {
 		// Find level
 		JsonElement ele;
 		try {
-			ele = account.getAccountData().getEntry("permissions");
+			ele = account.getAccountKeyValueContainer().getEntry("permissions");
 			if (ele != null) {
 				String level = ele.getAsJsonObject().get("permissionLevel").getAsString();
 				for (PermissionLevel lv : PermissionLevel.values()) {

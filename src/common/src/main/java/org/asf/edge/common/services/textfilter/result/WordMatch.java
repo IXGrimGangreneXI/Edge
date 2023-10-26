@@ -32,6 +32,14 @@ public class WordMatch {
 		this.filter = filter;
 	}
 
+	public WordMatch(PhraseFilter filter, String phrase, String reason, String[] variants, FilterSeverity severity) {
+		this.phrase = phrase;
+		this.variants = variants;
+		this.reason = reason;
+		this.severity = severity;
+		this.filter = filter;
+	}
+
 	/**
 	 * Retrieves the phrase filter
 	 * 

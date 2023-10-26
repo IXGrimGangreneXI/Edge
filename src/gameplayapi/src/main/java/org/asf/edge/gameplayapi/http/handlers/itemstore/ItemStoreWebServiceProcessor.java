@@ -23,12 +23,12 @@ import org.asf.edge.common.entities.items.ItemCategoryInfo;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.ItemSaleInfo;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.LegacyFunction;
+import org.asf.edge.common.http.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.tokens.SessionToken;
@@ -123,7 +123,7 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 		initPopularItemManager();
 
 		// Refresh popular items in the background
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("POPULARITEMS");
+		CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("POPULARITEMS");
 		AsyncTaskManager.runAsync(() -> {
 			while (true) {
 				try {
@@ -201,7 +201,7 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 				ArrayList<ItemStoreResponseObject.PopularItemBlock> items = new ArrayList<ItemStoreResponseObject.PopularItemBlock>();
 
 				// Go through all items in store
-				CommonDataContainer cont = CommonDataManager.getInstance().getContainer("POPULARITEMS");
+				CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("POPULARITEMS");
 				if (cont.entryExists("last-" + storeData.storeID)) {
 					JsonObject popularItems = cont.getEntry("last-" + storeData.storeID).getAsJsonObject();
 					HashMap<Integer, Integer> itms = new HashMap<Integer, Integer>();

@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -117,7 +117,7 @@ public class AccountCommands extends TaskBasedCommand {
 						}
 
 						// Set data
-						AccountDataContainer cont = acc.getAccountData().getChildContainer("accountdata");
+						AccountKvDataContainer cont = acc.getAccountKeyValueContainer().getChildContainer("accountdata");
 						cont.setEntry("sendupdates", new JsonPrimitive(false));
 						cont.setEntry("isunderage", new JsonPrimitive(isUnderageUser));
 						cont.setEntry("last_update", new JsonPrimitive(System.currentTimeMillis()));
@@ -388,7 +388,7 @@ public class AccountCommands extends TaskBasedCommand {
 
 						// Update
 						if (account.updateUsername(newUsername)) {
-							account.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+							account.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("last_update",
 									new JsonPrimitive(System.currentTimeMillis()));
 							return "Account username updated successfully";
 						} else
@@ -460,7 +460,7 @@ public class AccountCommands extends TaskBasedCommand {
 						// Update
 						AccountObject acc = manager.getAccount(id);
 						if (acc.updatePassword(password.toCharArray())) {
-							acc.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+							acc.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("last_update",
 									new JsonPrimitive(System.currentTimeMillis()));
 							return "Account password updated successfully";
 						} else
@@ -519,7 +519,7 @@ public class AccountCommands extends TaskBasedCommand {
 
 						// Load object
 						AccountObject account = manager.getAccount(id);
-						account.getAccountData().getChildContainer("accountdata").setEntry("last_update",
+						account.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("last_update",
 								new JsonPrimitive(System.currentTimeMillis()));
 						return "Successfully invalidated all tokens for this account, note that Phoenix servers will not kick players as they do not keep track of session changes.";
 					}

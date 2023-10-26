@@ -12,10 +12,10 @@ import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.entities.achivements.RankMultiplierInfo;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.LegacyFunction;
+import org.asf.edge.common.http.functions.LegacyFunctionInfo;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -277,7 +277,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 		AccountSaveContainer save = account.getSave(saveID);
-		AccountDataContainer data = save.getSaveData();
+		AccountKvDataContainer data = save.getSaveData();
 
 		// Build profile container
 		ProfileData profile = new ProfileData();
@@ -310,8 +310,8 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 
 		// Load currency
 		if (!minimal) {
-			AccountDataContainer currency = data.getChildContainer("currency");
-			AccountDataContainer currencyAccWide = account.getAccountData().getChildContainer("currency");
+			AccountKvDataContainer currency = data.getChildContainer("currency");
+			AccountKvDataContainer currencyAccWide = account.getAccountKeyValueContainer().getChildContainer("currency");
 			if (!currencyAccWide.entryExists("gems"))
 				currencyAccWide.setEntry("gems", new JsonPrimitive(0));
 			if (!currency.entryExists("coins"))

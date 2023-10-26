@@ -19,7 +19,7 @@ import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
 import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
@@ -70,7 +70,7 @@ public class ServerCommandTerminal {
 				Files.writeString(configFile.toPath(), "{\n" //
 						+ "\n" //
 						+ "    \"listenAddress\": \"0.0.0.0\",\n" // listen address
-						+ "    \"listenPort\": 5320,\n" // port to listen on
+						+ "    \"listenPort\": 16520,\n" // port to listen on
 						+ "    \"apiRequestListenPath\": \"/\",\n" // URI to listen on
 						+ "\n" //
 						+ "    \"https\": false,\n" // use https?
@@ -226,7 +226,7 @@ public class ServerCommandTerminal {
 			}
 
 		});
-		CommonDataContainer cont = CommonDataManager.getInstance().getContainer("EDGECOMMON");
+		CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("EDGECOMMON");
 		try {
 			if (!cont.entryExists("shutdown")) {
 				lastShutdownTime = System.currentTimeMillis();

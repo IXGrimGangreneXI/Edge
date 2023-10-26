@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.util.function.BiFunction;
 
 import org.asf.connective.tasks.AsyncTaskManager;
+import org.asf.edge.common.io.IoUtil;
 
 public class SimpleBinaryMessageClient {
 
@@ -142,13 +143,13 @@ public class SimpleBinaryMessageClient {
 				// Payload
 				default: {
 					// Read
-					byte[] l = input.readNBytes(4);
+					byte[] l = IoUtil.readNBytes(input, 4);
 					int length = ByteBuffer.wrap(l).getInt();
 
 					// Handle
 					Packet pk = new Packet();
 					pk.type = (byte) type;
-					pk.data = input.readNBytes(length);
+					pk.data = IoUtil.readNBytes(input, length);
 					if (!handler.apply(pk, this))
 						stop();
 					break;

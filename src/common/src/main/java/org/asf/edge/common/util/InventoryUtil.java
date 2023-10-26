@@ -16,10 +16,10 @@ import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.util.inventory.AbstractInventorySecurityValidator;
@@ -153,11 +153,11 @@ public class InventoryUtil {
 		}
 
 		// Load currency
-		AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+		AccountKvDataContainer currency = save.getSaveData().getChildContainer("currency");
 		int currentC = 300;
 		if (currency.entryExists("coins"))
 			currentC = currency.getEntry("coins").getAsInt();
-		AccountDataContainer currencyAccWide = save.getAccount().getAccountData().getChildContainer("currency");
+		AccountKvDataContainer currencyAccWide = save.getAccount().getAccountKeyValueContainer().getChildContainer("currency");
 		int currentG = 0;
 		if (currencyAccWide.entryExists("gems"))
 			currentG = currencyAccWide.getEntry("gems").getAsInt();
@@ -247,7 +247,7 @@ public class InventoryUtil {
 	 * @return InventoryUpdateResponseData instance
 	 */
 	public static InventoryUpdateResponseData processCommonInventorySet(SetCommonInventoryRequestData[] requests,
-			AccountDataContainer data, int container) {
+			AccountKvDataContainer data, int container) {
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
 
@@ -433,11 +433,11 @@ public class InventoryUtil {
 			currencyUpdate.userID = save.getSaveID();
 
 			// Load currency
-			AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+			AccountKvDataContainer currency = save.getSaveData().getChildContainer("currency");
 			int currentC = 300;
 			if (currency.entryExists("coins"))
 				currentC = currency.getEntry("coins").getAsInt();
-			AccountDataContainer currencyAccWide = save.getAccount().getAccountData().getChildContainer("currency");
+			AccountKvDataContainer currencyAccWide = save.getAccount().getAccountKeyValueContainer().getChildContainer("currency");
 			int currentG = 0;
 			if (currencyAccWide.entryExists("gems"))
 				currentG = currencyAccWide.getEntry("gems").getAsInt();
@@ -561,8 +561,8 @@ public class InventoryUtil {
 
 							try {
 								// Load popular item data
-								CommonDataContainer contPopularItems = CommonDataManager.getInstance()
-										.getContainer("POPULARITEMS");
+								CommonKvDataContainer contPopularItems = CommonDataManager.getInstance()
+										.getKeyValueContainer("POPULARITEMS");
 								JsonObject popularItems = new JsonObject();
 								if (contPopularItems.entryExists("current-" + store.getID()))
 									popularItems = contPopularItems.getEntry("current-" + store.getID())

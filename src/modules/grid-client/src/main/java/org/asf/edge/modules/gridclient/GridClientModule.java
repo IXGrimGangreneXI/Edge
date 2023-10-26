@@ -17,7 +17,8 @@ import org.asf.edge.common.entities.messages.defaultmessages.WsGenericMessage;
 import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.messages.PlayerMessenger;
@@ -37,6 +38,7 @@ import org.asf.edge.modules.gridclient.phoenix.auth.PhoenixSession;
 import org.asf.edge.modules.gridclient.phoenix.events.PhoenixGameInvalidatedEvent;
 import org.asf.edge.modules.gridclient.phoenix.events.SessionRefreshFailureEvent;
 import org.asf.edge.modules.gridclient.phoenix.serverlist.ServerInstance;
+import org.asf.edge.modules.gridclient.utils.GridSaveUtil;
 import org.asf.edge.modules.gridclient.eventhandlers.ConnectionEventHandlers;
 import org.asf.edge.modules.gridclient.eventhandlers.SaveSyncEventHandlers;
 import org.asf.edge.modules.gridclient.grid.GridClient;
@@ -126,6 +128,17 @@ public class GridClientModule implements IEdgeModule {
 	@Override
 	public void postInit() {
 		removePendingSaves(CommonDataManager.getInstance());
+
+		for (AccountObject account : AccountManager.getInstance().getOnlinePlayers()) {
+			// Get saves
+			for (String svID : account.getSaveIDs()) {
+				AccountSaveContainer save = account.getSave(svID);
+				if (save != null) {
+					// Update
+					GridSaveUtil.updateGridSaveID(save);
+				}
+			}
+		}
 	}
 
 	@EventListener
@@ -1055,7 +1068,7 @@ public class GridClientModule implements IEdgeModule {
 		try {
 			if (GridClient.getLoginManager().isLoggedIn()) {
 				// Get common data container
-				CommonDataContainer cont = manager.getContainer("MULTIPLAYERGRID");
+				CommonKvDataContainer cont = manager.getKeyValueContainer("MULTIPLAYERGRID");
 				cont = cont.getChildContainer("GRID_SAVES_TO_REMOVE");
 
 				// Go through saves to remove

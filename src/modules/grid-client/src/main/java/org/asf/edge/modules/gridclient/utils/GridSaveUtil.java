@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.util.stream.Stream;
 
 import org.asf.edge.common.entities.messages.defaultmessages.WsGenericMessage;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
-import org.asf.edge.common.services.commondata.CommonDataContainer;
+import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.messages.PlayerMessenger;
 import org.asf.edge.common.services.messages.WsMessageService;
@@ -26,7 +26,7 @@ public class GridSaveUtil {
 	public static String getGridSaveID(AccountSaveContainer save) {
 		// Get data
 		try {
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 			if (data.entryExists("gridSaveID"))
 				return data.getEntry("gridSaveID").getAsString();
 		} catch (IOException e) {
@@ -45,7 +45,7 @@ public class GridSaveUtil {
 		String gridSaveID = null;
 		boolean updated = false;
 		try {
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 			if (data.entryExists("gridSaveID"))
 				gridSaveID = data.getEntry("gridSaveID").getAsString();
 		} catch (IOException e) {
@@ -168,7 +168,7 @@ public class GridSaveUtil {
 		// Save
 		if (gridSaveID != null && updated) {
 			try {
-				AccountDataContainer data = save.getSaveData();
+				AccountKvDataContainer data = save.getSaveData();
 				data.setEntry("gridSaveID", new JsonPrimitive(gridSaveID));
 			} catch (IOException e) {
 			}
@@ -185,7 +185,7 @@ public class GridSaveUtil {
 	 */
 	public static void deleteGridSaveOf(AccountSaveContainer save) {
 		try {
-			AccountDataContainer data = save.getSaveData();
+			AccountKvDataContainer data = save.getSaveData();
 			if (data.entryExists("gridSaveID")) {
 				// Delete save
 				String gridSaveID = data.getEntry("gridSaveID").getAsString();
@@ -206,7 +206,7 @@ public class GridSaveUtil {
 
 					// Schedule for future
 					// Get common data container
-					CommonDataContainer cont = CommonDataManager.getInstance().getContainer("MULTIPLAYERGRID");
+					CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("MULTIPLAYERGRID");
 					cont = cont.getChildContainer("GRID_SAVES_TO_REMOVE");
 
 					// Add

@@ -10,9 +10,9 @@ function start() {
 		start
 		return
 	fi
-	if [ "$code" == "0" ] && [ -f commonapiupdater.jar ]; then
-		java -cp "commonapiupdater.jar" org.asf.edge.commonapi.EdgeCommonApiServerUpdater --update
-		rm commonapiupdater.jar
+	if [ "$code" == "0" ] && [ -f updater.jar ]; then
+		java -cp "updater.jar" org.asf.edge.commonapi.EdgeCommonApiServerUpdater --update
+		rm updater.jar
 		echo
 		start
 		return

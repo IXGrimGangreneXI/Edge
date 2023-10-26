@@ -3,7 +3,7 @@ package org.asf.edge.common.events.items;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.modules.eventbus.EventObject;
 import org.asf.edge.modules.eventbus.EventPath;
@@ -20,7 +20,7 @@ public class InventoryItemUsesUpdateEvent extends EventObject {
 
 	private PlayerInventoryItem item;
 	private AccountObject playerAccount;
-	private AccountDataContainer data;
+	private AccountKvDataContainer data;
 	private PlayerInventory inventory;
 	private PlayerInventoryContainer inventoryContainer;
 
@@ -28,7 +28,7 @@ public class InventoryItemUsesUpdateEvent extends EventObject {
 	private int newUses;
 
 	public InventoryItemUsesUpdateEvent(PlayerInventoryItem item, AccountObject playerAccount,
-			AccountDataContainer data, PlayerInventory inventory, PlayerInventoryContainer inventoryContainer,
+			AccountKvDataContainer data, PlayerInventory inventory, PlayerInventoryContainer inventoryContainer,
 			int oldUses, int newUses) {
 		this.item = item;
 		this.playerAccount = playerAccount;
@@ -87,7 +87,7 @@ public class InventoryItemUsesUpdateEvent extends EventObject {
 	 * 
 	 * @return AccountDataContainer instance
 	 */
-	public AccountDataContainer getSaveData() {
+	public AccountKvDataContainer getSaveData() {
 		return data;
 	}
 

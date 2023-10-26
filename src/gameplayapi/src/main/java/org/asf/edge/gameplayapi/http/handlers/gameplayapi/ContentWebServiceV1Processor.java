@@ -28,18 +28,18 @@ import org.asf.edge.common.entities.minigamedata.MinigameDataRequest;
 import org.asf.edge.common.entities.minigamedata.MinigameSaveRequest;
 import org.asf.edge.common.experiments.EdgeDefaultExperiments;
 import org.asf.edge.common.experiments.ExperimentManager;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunction;
-import org.asf.edge.common.http.apihandlerutils.functions.LegacyFunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.SodRequest;
-import org.asf.edge.common.http.apihandlerutils.functions.SodRequestParam;
-import org.asf.edge.common.http.apihandlerutils.functions.SodTokenSecured;
-import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireCapability;
-import org.asf.edge.common.http.apihandlerutils.functions.TokenRequireSave;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.Function;
+import org.asf.edge.common.http.functions.FunctionInfo;
+import org.asf.edge.common.http.functions.FunctionResult;
+import org.asf.edge.common.http.functions.LegacyFunction;
+import org.asf.edge.common.http.functions.LegacyFunctionInfo;
+import org.asf.edge.common.http.functions.SodRequest;
+import org.asf.edge.common.http.functions.SodRequestParam;
+import org.asf.edge.common.http.functions.SodTokenSecured;
+import org.asf.edge.common.http.functions.TokenRequireCapability;
+import org.asf.edge.common.http.functions.TokenRequireSave;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -271,11 +271,11 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Load currency
 		CurrencyUpdateBlock c = new CurrencyUpdateBlock();
-		AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+		AccountKvDataContainer currency = save.getSaveData().getChildContainer("currency");
 		int currentC = 300;
 		if (currency.entryExists("coins"))
 			currentC = currency.getEntry("coins").getAsInt();
-		AccountDataContainer currencyAccWide = save.getAccount().getAccountData().getChildContainer("currency");
+		AccountKvDataContainer currencyAccWide = save.getAccount().getAccountKeyValueContainer().getChildContainer("currency");
 		int currentG = 0;
 		if (currencyAccWide.entryExists("gems"))
 			currentG = currencyAccWide.getEntry("gems").getAsInt();
@@ -360,7 +360,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Retrieve container info
-		AccountDataContainer data = account.getAccountData();
+		AccountKvDataContainer data = account.getAccountKeyValueContainer();
 		int containerID = Integer.parseInt(req.payload.get("ContainerId"));
 
 		// Retrieve container
@@ -428,7 +428,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			itemManager = ItemManager.getInstance();
 
 		// Retrieve container info
-		AccountDataContainer data = account.getAccountData();
+		AccountKvDataContainer data = account.getAccountKeyValueContainer();
 		int containerID = Integer.parseInt(req.payload.getOrDefault("ContainerId", "1"));
 
 		// Load data container
@@ -481,7 +481,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 				SetCommonInventoryRequestData[].class);
 
 		// Retrieve container info
-		AccountDataContainer data = account.getAccountData();
+		AccountKvDataContainer data = account.getAccountKeyValueContainer();
 		if (tkn.saveID != null)
 			data = account.getSave(tkn.saveID).getSaveData();
 
@@ -517,7 +517,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		int pair = Integer.parseInt(req.payload.get("pairId"));
 
 		// Retrieve container info
-		AccountDataContainer data = account.getAccountData();
+		AccountKvDataContainer data = account.getAccountKeyValueContainer();
 		if (tkn.saveID != null)
 			data = account.getSave(tkn.saveID).getSaveData();
 		data = data.getChildContainer("keyvaluedata");
@@ -614,12 +614,12 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Retrieve container info
 		boolean isDragon = false;
-		AccountDataContainer dragonData = null;
+		AccountKvDataContainer dragonData = null;
 		if (!userID.equals(account.getAccountID()) && account.getSave(userID) == null) {
 			// Check save
 			if (tkn.hasCapability("gp")) {
 				// Find dragon
-				AccountDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("dragons");
+				AccountKvDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("dragons");
 				JsonArray dragonIds = new JsonArray();
 				if (data.entryExists("dragonlist"))
 					dragonIds = data.getEntry("dragonlist").getAsJsonArray();
@@ -641,9 +641,9 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			}
 		}
 		if (isDragon || userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
-			AccountDataContainer data = dragonData;
+			AccountKvDataContainer data = dragonData;
 			if (data == null) {
-				data = account.getAccountData();
+				data = account.getAccountKeyValueContainer();
 				if (!userID.equals(account.getAccountID()))
 					data = account.getSave(userID).getSaveData();
 			}
@@ -742,7 +742,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		int pair = Integer.parseInt(req.payload.get("pairId"));
 
 		// Retrieve container info
-		AccountDataContainer data = account.getAccountData();
+		AccountKvDataContainer data = account.getAccountKeyValueContainer();
 		if (tkn.saveID != null)
 			data = account.getSave(tkn.saveID).getSaveData();
 		data = data.getChildContainer("keyvaluedata");
@@ -796,12 +796,12 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Retrieve container info
 		boolean isDragon = false;
-		AccountDataContainer dragonData = null;
+		AccountKvDataContainer dragonData = null;
 		if (!userID.equals(account.getAccountID()) && account.getSave(userID) == null) {
 			// Check save
 			if (tkn.hasCapability("gp")) {
 				// Find dragon
-				AccountDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("dragons");
+				AccountKvDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("dragons");
 				JsonArray dragonIds = new JsonArray();
 				if (data.entryExists("dragonlist"))
 					dragonIds = data.getEntry("dragonlist").getAsJsonArray();
@@ -823,9 +823,9 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			}
 		}
 		if (isDragon || userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
-			AccountDataContainer data = dragonData;
+			AccountKvDataContainer data = dragonData;
 			if (data == null) {
-				data = account.getAccountData();
+				data = account.getAccountKeyValueContainer();
 				if (!userID.equals(account.getAccountID()))
 					data = account.getSave(userID).getSaveData();
 			}
@@ -878,7 +878,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		int pair = Integer.parseInt(req.payload.get("pairId"));
 
 		// Retrieve container info
-		AccountDataContainer data = account.getAccountData();
+		AccountKvDataContainer data = account.getAccountKeyValueContainer();
 		if (tkn.saveID != null)
 			data = account.getSave(tkn.saveID).getSaveData();
 		data = data.getChildContainer("keyvaluedata");
@@ -918,7 +918,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Retrieve container info
 		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
-			AccountDataContainer data = account.getAccountData();
+			AccountKvDataContainer data = account.getAccountKeyValueContainer();
 			if (!userID.equals(account.getAccountID()))
 				data = account.getSave(userID).getSaveData();
 			data = data.getChildContainer("keyvaluedata");
@@ -961,7 +961,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Retrieve container info
 		if (userID.equals(account.getAccountID()) || account.getSave(userID) != null) {
-			AccountDataContainer data = account.getAccountData();
+			AccountKvDataContainer data = account.getAccountKeyValueContainer();
 			if (!userID.equals(account.getAccountID()))
 				data = account.getSave(userID).getSaveData();
 			data = data.getChildContainer("keyvaluedata");
@@ -991,7 +991,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Retrieve container
 		if (userId.equals(account.getAccountID()) || account.getSave(userId) != null) {
-			AccountDataContainer data = account.getAccountData();
+			AccountKvDataContainer data = account.getAccountKeyValueContainer();
 			if (!userId.equals(account.getAccountID()))
 				data = account.getSave(userId).getSaveData();
 
@@ -1064,7 +1064,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			itemManager = ItemManager.getInstance();
 
 		// Retrieve container
-		AccountDataContainer data = save.getSaveData();
+		AccountKvDataContainer data = save.getSaveData();
 
 		// Pull dragons
 		data = data.getChildContainer("dragons");
@@ -1139,7 +1139,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 
 		// Retrieve container
 		if (userId.equals(account.getAccountID()) || account.getSave(userId) != null) {
-			AccountDataContainer data = account.getAccountData();
+			AccountKvDataContainer data = account.getAccountKeyValueContainer();
 			if (!userId.equals(account.getAccountID()))
 				data = account.getSave(userId).getSaveData();
 
@@ -1220,7 +1220,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			}
 
 			// Locate save data
-			AccountDataContainer data = acc.getSave(save).getSaveData().getChildContainer("images");
+			AccountKvDataContainer data = acc.getSave(save).getSaveData().getChildContainer("images");
 			if (!data.entryExists("imagefile-" + slot + "-" + type)) {
 				setResponseStatus(404, "Not found");
 				return;
@@ -1253,7 +1253,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		String type = req.payload.get("ImageType");
 
 		// Retrieve data
-		AccountDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("images");
+		AccountKvDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("images");
 
 		// Not found
 		if (!data.entryExists("imageslotinfo-" + slot + "-" + type)) {
@@ -1304,7 +1304,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 		String type = req.payload.get("ImageType");
 
 		// Retrieve data
-		AccountDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("images");
+		AccountKvDataContainer data = account.getSave(tkn.saveID).getSaveData().getChildContainer("images");
 
 		// Set data
 		ObjectNode imgD = req.parseXmlValue(xml, ObjectNode.class);
@@ -1723,7 +1723,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 			itemManager = ItemManager.getInstance();
 
 		// Retrieve container info
-		AccountDataContainer data = account.getAccountData();
+		AccountKvDataContainer data = account.getAccountKeyValueContainer();
 		if (tkn.saveID != null)
 			data = account.getSave(tkn.saveID).getSaveData();
 
@@ -2581,7 +2581,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	public FunctionResult setGameCurrency(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
 			AccountObject account, AccountSaveContainer save, @SodRequestParam int amount) throws IOException {
 		// Load currency
-		AccountDataContainer currency = save.getSaveData().getChildContainer("currency");
+		AccountKvDataContainer currency = save.getSaveData().getChildContainer("currency");
 
 		// Load coins
 		int currentC = 300;

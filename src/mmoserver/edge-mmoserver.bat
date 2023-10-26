@@ -10,11 +10,11 @@ SET libs=%libs:~1%
 java -cp "%libs%" org.asf.edge.mmoserver.EdgeMMOServerMain %*
 IF %ERRORLEVEL% EQU 237 goto MAIN
 
-if EXIST mmoserverupdater.jar goto UPDATE
+if EXIST updater.jar goto UPDATE
 exit
 
 :UPDATE
-java -cp mmoserverupdater.jar org.asf.edge.mmoserver.EdgeMMOServerUpdater --update
-del mmoserverupdater.jar
+java -cp updater.jar org.asf.edge.mmoserver.EdgeMMOServerUpdater --update
+del updater.jar
 echo.
 goto MAIN

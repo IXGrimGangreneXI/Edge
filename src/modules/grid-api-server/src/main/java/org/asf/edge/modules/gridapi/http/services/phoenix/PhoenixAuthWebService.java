@@ -5,11 +5,11 @@ import java.security.NoSuchAlgorithmException;
 
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
-import org.asf.edge.common.http.apihandlerutils.EdgeWebService;
-import org.asf.edge.common.http.apihandlerutils.functions.Function;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionInfo;
-import org.asf.edge.common.http.apihandlerutils.functions.FunctionResult;
-import org.asf.edge.common.services.accounts.AccountDataContainer;
+import org.asf.edge.common.http.EdgeWebService;
+import org.asf.edge.common.http.functions.Function;
+import org.asf.edge.common.http.functions.FunctionInfo;
+import org.asf.edge.common.http.functions.FunctionResult;
+import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.modules.eventbus.EventBus;
@@ -71,7 +71,7 @@ public class PhoenixAuthWebService extends EdgeWebService<EdgeGridApiServer> {
 			// Check significant fields
 			long isfn = jwt.payload.getAsJsonObject().get("isfn").getAsLong();
 			int isfr = jwt.payload.getAsJsonObject().get("isfr").getAsInt();
-			AccountDataContainer data = playerDef.getAccountData().getChildContainer("accountdata");
+			AccountKvDataContainer data = playerDef.getAccountKeyValueContainer().getChildContainer("accountdata");
 			if (isfn != data.getEntry("significantFieldNumber").getAsLong()
 					|| isfr != data.getEntry("significantFieldRandom").getAsInt())
 				return null;
@@ -100,7 +100,7 @@ public class PhoenixAuthWebService extends EdgeWebService<EdgeGridApiServer> {
 			// Identity-based token
 			if (ctx.account != null) {
 				// Load data
-				AccountDataContainer data = ctx.account.getAccountData().getChildContainer("accountdata");
+				AccountKvDataContainer data = ctx.account.getAccountKeyValueContainer().getChildContainer("accountdata");
 				if (!data.entryExists("significantFieldRandom"))
 					return response(401, "Unauthorized", "application/json", "{\"error\":\"token_invalid\"}");
 				if (!data.entryExists("significantFieldNumber"))
@@ -301,7 +301,7 @@ public class PhoenixAuthWebService extends EdgeWebService<EdgeGridApiServer> {
 			}
 
 			// Return invalid if the username is on cooldown
-			JsonElement lock = acc.getAccountData().getChildContainer("accountdata").getEntry("lockedsince");
+			JsonElement lock = acc.getAccountKeyValueContainer().getChildContainer("accountdata").getEntry("lockedsince");
 			if (lock != null && (System.currentTimeMillis() - lock.getAsLong()) < 8000) {
 				// Log
 				getServerInstance().getLogger().warn("Grid login from IP " + func.getClient().getRemoteAddress()
@@ -373,7 +373,7 @@ public class PhoenixAuthWebService extends EdgeWebService<EdgeGridApiServer> {
 		}
 
 		// Success
-		AccountDataContainer data = account.getAccountData().getChildContainer("accountdata");
+		AccountKvDataContainer data = account.getAccountKeyValueContainer().getChildContainer("accountdata");
 		data.setEntry("significantFieldRandom", new JsonPrimitive(IdentityUtils.rnd.nextInt()));
 		data.setEntry("significantFieldNumber", new JsonPrimitive(System.currentTimeMillis()));
 		if (!data.entryExists("last_update"))
@@ -414,7 +414,7 @@ public class PhoenixAuthWebService extends EdgeWebService<EdgeGridApiServer> {
 
 	private FunctionResult invalidUserCallback(String username, AccountObject account) throws IOException {
 		if (account != null)
-			account.getAccountData().getChildContainer("accountdata").setEntry("lockedsince",
+			account.getAccountKeyValueContainer().getChildContainer("accountdata").setEntry("lockedsince",
 					new JsonPrimitive(System.currentTimeMillis()));
 		try {
 			Thread.sleep(8000);

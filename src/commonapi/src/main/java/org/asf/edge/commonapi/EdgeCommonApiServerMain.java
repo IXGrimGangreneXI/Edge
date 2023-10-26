@@ -71,7 +71,7 @@ public class EdgeCommonApiServerMain {
 			Files.writeString(configFile.toPath(), "{\n" //
 					+ "\n" //
 					+ "    \"listenAddress\": \"0.0.0.0\",\n" // listen address
-					+ "    \"listenPort\": 5321,\n" // port to listen on
+					+ "    \"listenPort\": 16521,\n" // port to listen on
 					+ "    \"apiRequestListenPath\": \"/\",\n" // URI to listen on
 					+ "\n" //
 					+ "    \"https\": false,\n" // use https?
@@ -79,7 +79,7 @@ public class EdgeCommonApiServerMain {
 					+ "    \"tlsKeystorePassword\": null,\n" // keystore password
 					+ "\n" //
 					+ "    \"internalListenAddress\": \"0.0.0.0\",\n" // listen address
-					+ "    \"internalListenPort\": 5324,\n" // port to listen on
+					+ "    \"internalListenPort\": 16524,\n" // port to listen on
 					+ "\n" //
 					+ "    \"httpsInternal\": false,\n" // use https?
 					+ "    \"tlsKeystoreInternal\": null,\n" // keystore file
