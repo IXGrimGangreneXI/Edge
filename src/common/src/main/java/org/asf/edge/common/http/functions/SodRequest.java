@@ -11,9 +11,8 @@ import java.lang.annotation.Target;
  * Marks methods as SoD requests.<br/>
  * <br/>
  * Use a {@link FunctionInfo} parameter to receive the function info object and
- * use a
- * {@link org.asf.edge.common.http.EdgeWebService.ServiceRequestInfo
- * ServiceRequestInfo} parameter to receive the request info. <br/>
+ * use a {@link org.asf.edge.common.http.ServiceRequestInfo ServiceRequestInfo}
+ * parameter to receive the request info. <br/>
  * <br/>
  * Use {@link SodRequestParam} on parameters to load from the request payload.
  * 

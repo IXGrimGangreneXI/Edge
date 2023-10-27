@@ -22,7 +22,8 @@ import org.asf.edge.common.experiments.ExperimentManager;
 import org.asf.edge.common.http.cookies.CookieContext;
 import org.asf.edge.common.http.cookies.CookieManager;
 import org.asf.edge.common.http.exceptions.HttpException;
-import org.asf.edge.common.http.functions.AccountData;
+import org.asf.edge.common.http.functions.AccountKvContainer;
+import org.asf.edge.common.http.functions.AccountTableContainer;
 import org.asf.edge.common.http.functions.AccountInventory;
 import org.asf.edge.common.http.functions.ExperimentalFeature;
 import org.asf.edge.common.http.functions.Function;
@@ -30,7 +31,8 @@ import org.asf.edge.common.http.functions.FunctionInfo;
 import org.asf.edge.common.http.functions.FunctionResult;
 import org.asf.edge.common.http.functions.LegacyFunction;
 import org.asf.edge.common.http.functions.LegacyFunctionInfo;
-import org.asf.edge.common.http.functions.SaveData;
+import org.asf.edge.common.http.functions.SaveKvContainer;
+import org.asf.edge.common.http.functions.SaveTableContainer;
 import org.asf.edge.common.http.functions.SaveInventory;
 import org.asf.edge.common.http.functions.SodEncryptedParam;
 import org.asf.edge.common.http.functions.SodRequest;
@@ -39,6 +41,7 @@ import org.asf.edge.common.http.functions.SodTokenSecured;
 import org.asf.edge.common.http.functions.TokenRequireCapabilities;
 import org.asf.edge.common.http.functions.TokenRequireCapability;
 import org.asf.edge.common.http.functions.TokenRequireSave;
+import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
@@ -432,15 +435,30 @@ public abstract class EdgeWebService<T extends IBaseServer> extends HttpPushProc
 				else
 					args[i] = account.getInventory();
 			} else if (param.getType().isAssignableFrom(AccountKvDataContainer.class)
-					&& param.isAnnotationPresent(AccountData.class)) {
+					&& param.isAnnotationPresent(AccountKvContainer.class)) {
 				if (account != null)
-					args[i] = account.getAccountKeyValueContainer();
+					args[i] = account
+							.getAccountKeyValueContainer(param.getAnnotation(AccountKvContainer.class).value());
 				else
 					pendingException = new HttpException(400, "Bad request");
 			} else if (param.getType().isAssignableFrom(AccountKvDataContainer.class)
-					&& param.isAnnotationPresent(SaveData.class)) {
+					&& param.isAnnotationPresent(SaveKvContainer.class)) {
 				if (save != null)
-					args[i] = save.getSaveData();
+					args[i] = save.getSaveKeyValueContainer(param.getAnnotation(SaveKvContainer.class).value());
+				else
+					pendingException = new HttpException(400, "Bad request");
+			} else if (param.getType().isAssignableFrom(AccountDataTableContainer.class)
+					&& param.isAnnotationPresent(AccountTableContainer.class)) {
+				AccountTableContainer anno = param.getAnnotation(AccountTableContainer.class);
+				if (account != null)
+					args[i] = account.getAccountDataTable(anno.name(), anno.rowType());
+				else
+					pendingException = new HttpException(400, "Bad request");
+			} else if (param.getType().isAssignableFrom(AccountDataTableContainer.class)
+					&& param.isAnnotationPresent(SaveTableContainer.class)) {
+				SaveTableContainer anno = param.getAnnotation(SaveTableContainer.class);
+				if (save != null)
+					args[i] = save.getSaveDataTable(anno.name(), anno.rowType());
 				else
 					pendingException = new HttpException(400, "Bad request");
 			} else if (param.isAnnotationPresent(SodRequestParam.class)) {

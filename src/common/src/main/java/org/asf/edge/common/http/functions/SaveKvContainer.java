@@ -8,12 +8,18 @@ import java.lang.annotation.Target;
 
 /**
  *
- * Assigns the account data container to the parameter value
+ * Assigns the specified save key/value data container to the parameter value
  * 
  * @author Sky Swimmer
  *
  */
 @Retention(RUNTIME)
 @Target(PARAMETER)
-public @interface AccountData {
+public @interface SaveKvContainer {
+
+	/**
+	 * Key/value container name
+	 */
+	public String value();
+
 }
