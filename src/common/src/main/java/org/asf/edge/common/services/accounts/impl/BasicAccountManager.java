@@ -28,17 +28,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.EdgeServerEnvironment;
+import org.asf.edge.common.entities.tables.accounts.AccountPropertiesRow;
 import org.asf.edge.common.events.accounts.AccountManagerLoadEvent;
 import org.asf.edge.common.events.accounts.AccountRegisteredEvent;
 import org.asf.edge.common.events.accounts.GuestAccountRegisteredEvent;
-import org.asf.edge.common.services.accounts.AccountKvDataContainer;
+import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.modules.eventbus.EventBus;
-
-import com.google.gson.JsonPrimitive;
 
 /**
  * 
@@ -97,12 +96,23 @@ public abstract class BasicAccountManager extends AccountManager {
 
 				// Set player server ID
 				try {
-					AccountKvDataContainer cont = acc.getAccountKeyValueContainer("accountdata");
-					if (!cont.entryExists("server_id")
-							|| !cont.getEntry("server_id").getAsString().equals(EdgeServerEnvironment.getServerID())) {
-						// Set
-						cont.setEntry("server_id", new JsonPrimitive(EdgeServerEnvironment.getServerID()));
-					}
+					// Get table
+					AccountDataTableContainer<AccountPropertiesRow> settings = acc.getAccountDataTable("accountdata",
+							AccountPropertiesRow.class);
+
+					// Retrieve properties
+					AccountPropertiesRow props = settings.getFirstRow();
+					if (props == null)
+						props = new AccountPropertiesRow();
+
+					// Set server ID
+					props.currentServerClusterID = EdgeServerEnvironment.getServerID();
+
+					// Set online
+					props.isOnCluster = true;
+
+					// Save
+					settings.setRows(props, true);
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
@@ -219,6 +229,25 @@ public abstract class BasicAccountManager extends AccountManager {
 					if ((System.currentTimeMillis() - obj.lastUpdate) > (3 * 60 * 1000)) {
 						// Expired, remove from memory as this player is no longer online
 						cache.remove(obj.account.getAccountID());
+
+						// Mark offline
+						try {
+							// Get table
+							AccountDataTableContainer<AccountPropertiesRow> settings = obj.account
+									.getAccountDataTable("accountdata", AccountPropertiesRow.class);
+
+							// Retrieve properties
+							AccountPropertiesRow props = settings.getFirstRow();
+							if (props == null)
+								props = new AccountPropertiesRow();
+
+							// Set offline
+							props.isOnCluster = false;
+
+							// Save
+							settings.setRows(props, true);
+						} catch (IOException e) {
+						}
 					}
 				}
 
@@ -325,13 +354,18 @@ public abstract class BasicAccountManager extends AccountManager {
 
 		try {
 			// Set account data
-			AccountKvDataContainer settings = obj.getAccountKeyValueContainer("accountdata");
-			settings.setEntry("lastlogintime", new JsonPrimitive(System.currentTimeMillis()));
-			settings.setEntry("registrationtimestamp", new JsonPrimitive(System.currentTimeMillis()));
-			settings.setEntry("isguestaccount", new JsonPrimitive(true));
-			settings.setEntry("ismultiplayerenabled", new JsonPrimitive(true));
-			settings.setEntry("ischatenabled", new JsonPrimitive(true));
-			settings.setEntry("isstrictchatfilterenabled", new JsonPrimitive(false));
+			AccountDataTableContainer<AccountPropertiesRow> settings = obj.getAccountDataTable("accountdata",
+					AccountPropertiesRow.class);
+			AccountPropertiesRow props = new AccountPropertiesRow();
+			props.accountUsername = "g/" + guestID;
+			props.emailAddress = null;
+			props.lastLoginTime = System.currentTimeMillis();
+			props.registrationTimestamp = System.currentTimeMillis();
+			props.isGuestAccount = true;
+			props.isMultiplayerEnabled = true;
+			props.isChatEnabled = true;
+			props.isStrictChatFilterEnabled = true;
+			settings.setRows(props, true);
 		} catch (IOException e) {
 			logger.error("Failed to execute database query request while trying to update account settings of ID '" + id
 					+ "'", e);
@@ -384,13 +418,18 @@ public abstract class BasicAccountManager extends AccountManager {
 
 		try {
 			// Set account data
-			AccountKvDataContainer settings = obj.getAccountKeyValueContainer("accountdata");
-			settings.setEntry("lastlogintime", new JsonPrimitive(System.currentTimeMillis()));
-			settings.setEntry("registrationtimestamp", new JsonPrimitive(System.currentTimeMillis()));
-			settings.setEntry("isguestaccount", new JsonPrimitive(false));
-			settings.setEntry("ismultiplayerenabled", new JsonPrimitive(true));
-			settings.setEntry("ischatenabled", new JsonPrimitive(true));
-			settings.setEntry("isstrictchatfilterenabled", new JsonPrimitive(false));
+			AccountDataTableContainer<AccountPropertiesRow> settings = obj.getAccountDataTable("accountdata",
+					AccountPropertiesRow.class);
+			AccountPropertiesRow props = new AccountPropertiesRow();
+			props.accountUsername = username;
+			props.emailAddress = email;
+			props.lastLoginTime = System.currentTimeMillis();
+			props.registrationTimestamp = System.currentTimeMillis();
+			props.isGuestAccount = false;
+			props.isMultiplayerEnabled = true;
+			props.isChatEnabled = true;
+			props.isStrictChatFilterEnabled = true;
+			settings.setRows(props, true);
 		} catch (IOException e) {
 			logger.error("Failed to execute database query request while trying to update account settings of ID '" + id
 					+ "'", e);

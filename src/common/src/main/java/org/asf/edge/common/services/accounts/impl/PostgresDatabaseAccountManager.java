@@ -79,10 +79,10 @@ public class PostgresDatabaseAccountManager extends DatabaseAccountManager {
 			Connection conn = DriverManager.getConnection(url, props);
 			try {
 				Statement statement = conn.createStatement();
-				statement.executeUpdate("CREATE TABLE IF NOT EXISTS EMAILMAP_V2 (EMAIL TEXT, ID CHAR(36))");
+				statement.executeUpdate("CREATE TABLE IF NOT EXISTS EMAILMAP_V3 (EMAIL TEXT, ID CHAR(36))");
 				statement.executeUpdate(
-						"CREATE TABLE IF NOT EXISTS USERMAP_V2 (USERNAME TEXT, ID CHAR(36), CREDS bytea)");
-				statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEUSERNAMEMAP_V2 (USERNAME TEXT, ID CHAR(36))");
+						"CREATE TABLE IF NOT EXISTS USERMAP_V3 (USERNAME TEXT, ID CHAR(36), CREDS bytea)");
+				statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEUSERNAMEMAP_V3 (USERNAME TEXT, ID CHAR(36))");
 				statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEMAP_V2 (ACCID CHAR(36), SAVES JSONB)");
 				statement.close();
 			} finally {

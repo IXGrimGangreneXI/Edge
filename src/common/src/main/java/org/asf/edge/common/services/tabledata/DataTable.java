@@ -291,40 +291,120 @@ public abstract class DataTable<T extends TableRow> {
 	protected abstract DataSet[] getAllRowsInternal(DataFilter dataFilter, String... columnNames) throws IOException;
 
 	/**
-	 * Assigns the values of all rows
+	 * Assigns the values of all rows matching the previous values of the given
+	 * object
 	 * 
 	 * @param value Row value
 	 * @throws IOException If the database command fails
 	 */
 	public void setRows(T value) throws IOException {
-		// Populate filter
-		DataFilter filter = new DataFilter(value.getValueCache());
+		setRows(value, false);
+	}
 
-		// Check filter size
-		if (filter.count() == 0) {
-			// Populate with filter fields
-			for (EntryLayout layout : getLayout().getColumns()) {
-				if (layout.field.isAnnotationPresent(UseAsFilter.class)) {
-					try {
-						// Assign if not null
-						Object val = layout.field.get(value);
-						if (val != null) {
-							filter.setValue(layout.columnName, val);
+	/**
+	 * Assigns the values of all rows matching the previous values of the given
+	 * object
+	 * 
+	 * @param value      Row value
+	 * @param replaceAll True to replace all, false to only replace rows matching
+	 *                   the previous and identification values of the given row
+	 * @throws IOException If the database command fails
+	 */
+	public void setRows(T value, boolean replaceAll) throws IOException {
+		// Check mode
+		DataFilter filter;
+		if (!replaceAll) {
+			// Populate filter
+			filter = new DataFilter(value.getValueCache());
+
+			// Check filter size
+			if (filter.count() == 0) {
+				// Populate with filter fields
+				for (EntryLayout layout : getLayout().getColumns()) {
+					if (layout.field.isAnnotationPresent(UseAsFilter.class)) {
+						try {
+							// Assign if not null
+							Object val = layout.field.get(value);
+							if (val != null) {
+								filter.setValue(layout.columnName, val);
+							}
+						} catch (IllegalArgumentException | IllegalAccessException e) {
 						}
-					} catch (IllegalArgumentException | IllegalAccessException e) {
+					}
+				}
+			}
+
+			// Check filter size
+			if (filter.count() == 0) {
+				// Still empty, populate with all values so it will create a new row
+				filter = new DataFilter(objectToDataset(value));
+			}
+		} else
+			filter = new DataFilter();
+
+		// Create update set
+		DataSet set = objectToDataset(value);
+
+		// Remove columns that are unchanged
+		String[] cols = set.getColumnNames();
+		for (String col : cols) {
+			Object ob = value.getValueCache().getValue(col, Object.class);
+			DataType tp = value.getValueCache().getValueType(col);
+			Object v = set.getValue(col, Object.class);
+			if (tp != DataType.NULL) {
+				if (tp != DataType.STRING && tp != DataType.OBJECT && tp != DataType.BYTE_ARRAY) {
+					// Primitives
+					if (ob == v) {
+						// Unchanged, remove
+						set.remove(col);
+					}
+				} else if (tp == DataType.BYTE_ARRAY) {
+					// Check byte array
+					byte[] o = (byte[]) ob;
+					byte[] n = (byte[]) v;
+					if (o == n) {
+						// Initial comparison check done, both are the same initial value, so no null
+						// changes
+						if (n != null) {
+							// New value isnt null
+							if (o.length == n.length) {
+								// Same length
+								// Check content
+								boolean same = true;
+								for (int i = 0; i < o.length; i++) {
+									if (o[i] != n[i]) {
+										same = false;
+										break;
+									}
+								}
+								if (same) {
+									// Unchanged, remove
+									set.remove(col);
+								}
+							}
+						}
+					}
+				} else if (tp == DataType.STRING) {
+					// String
+					// Check strings
+					String o = (String) ob;
+					String n = (String) v;
+					if (o == n) {
+						// Initial comparison check done, both are the same initial value, so no null
+						// changes
+						if (n != null) {
+							// New value isnt null
+							if (n.equals(o)) {
+								// Unchanged, remove
+								set.remove(col);
+							}
+						}
 					}
 				}
 			}
 		}
 
-		// Check filter size
-		if (filter.count() == 0) {
-			// Still empty, populate with all values so it will create a new row
-			filter = new DataFilter(objectToDataset(value));
-		}
-
-		// Call setRows
-		DataSet set = objectToDataset(value);
+		// Update
 		setRows(filter, set);
 
 		// Update value cache

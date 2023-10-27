@@ -15,15 +15,14 @@ import javax.crypto.spec.PBEKeySpec;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.entities.tables.accounts.AccountPropertiesRow;
 import org.asf.edge.common.events.accounts.*;
 import org.asf.edge.common.events.accounts.saves.*;
+import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.modules.eventbus.EventBus;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
 
 /**
  * 
@@ -130,9 +129,10 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public long getLastLoginTime() {
 		try {
-			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("lastlogintime");
-			if (ele != null)
-				return ele.getAsLong();
+			Long val = getAccountDataTable("accountdata", AccountPropertiesRow.class).getFirstRow("lastLoginTime",
+					Long.class);
+			if (val != null)
+				return val;
 			return -1;
 		} catch (IOException e) {
 			return -1;
@@ -142,9 +142,10 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public long getRegistrationTimestamp() {
 		try {
-			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("registrationtimestamp");
-			if (ele != null)
-				return ele.getAsLong();
+			Long val = getAccountDataTable("accountdata", AccountPropertiesRow.class)
+					.getFirstRow("registrationTimestamp", Long.class);
+			if (val != null)
+				return val;
 			return -1;
 		} catch (IOException e) {
 			return -1;
@@ -154,10 +155,11 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public boolean isGuestAccount() {
 		try {
-			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("isguestaccount");
-			if (ele == null)
-				return false;
-			return ele.getAsBoolean();
+			Boolean val = getAccountDataTable("accountdata", AccountPropertiesRow.class).getFirstRow("isGuestAccount",
+					Boolean.class);
+			if (val != null)
+				return val;
+			return false;
 		} catch (IOException e) {
 			return false;
 		}
@@ -166,10 +168,11 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public boolean isMultiplayerEnabled() {
 		try {
-			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("ismultiplayerenabled");
-			if (ele == null)
-				return false;
-			return ele.getAsBoolean();
+			Boolean val = getAccountDataTable("accountdata", AccountPropertiesRow.class)
+					.getFirstRow("isMultiplayerEnabled", Boolean.class);
+			if (val != null)
+				return val;
+			return false;
 		} catch (IOException e) {
 			return false;
 		}
@@ -182,10 +185,11 @@ public abstract class BasicAccountObject extends AccountObject {
 			return false; // Guests cannot chat
 
 		try {
-			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("ischatenabled");
-			if (ele == null)
-				return false;
-			return ele.getAsBoolean();
+			Boolean val = getAccountDataTable("accountdata", AccountPropertiesRow.class).getFirstRow("isChatEnabled",
+					Boolean.class);
+			if (val != null)
+				return val;
+			return false;
 		} catch (IOException e) {
 			return false;
 		}
@@ -194,10 +198,11 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public boolean isStrictChatFilterEnabled() {
 		try {
-			JsonElement ele = getAccountKeyValueContainer("accountdata").getEntry("isstrictchatfilterenabled");
-			if (ele == null)
-				return false;
-			return ele.getAsBoolean();
+			Boolean val = getAccountDataTable("accountdata", AccountPropertiesRow.class)
+					.getFirstRow("isStrictChatFilterEnabled", Boolean.class);
+			if (val != null)
+				return val;
+			return false;
 		} catch (IOException e) {
 			return false;
 		}
@@ -309,7 +314,18 @@ public abstract class BasicAccountObject extends AccountObject {
 
 		// Disable guest mode
 		try {
-			getAccountKeyValueContainer("accountdata").setEntry("isguestaccount", new JsonPrimitive(false));
+			// Retrieve properties
+			AccountDataTableContainer<AccountPropertiesRow> table = getAccountDataTable("accountdata",
+					AccountPropertiesRow.class);
+			AccountPropertiesRow props = table.getFirstRow();
+			if (props == null)
+				props = new AccountPropertiesRow();
+
+			// Update
+			props.isGuestAccount = false;
+
+			// Save
+			table.setRows(props, true);
 		} catch (IOException e) {
 			logger.error("Failed to execute database query request while trying to migrate guest account with  ID '"
 					+ id + "' to a normal account", e);
@@ -329,7 +345,20 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public void setMultiplayerEnabled(boolean state) {
 		try {
-			getAccountKeyValueContainer("accountdata").setEntry("ismultiplayerenabled", new JsonPrimitive(state));
+			// Retrieve properties
+			AccountDataTableContainer<AccountPropertiesRow> table = getAccountDataTable("accountdata",
+					AccountPropertiesRow.class);
+			AccountPropertiesRow props = table.getFirstRow();
+			if (props == null)
+				props = new AccountPropertiesRow();
+
+			// Update
+			props.isMultiplayerEnabled = state;
+
+			// Save
+			table.setRows(props, true);
+
+			// Log
 			logger.info("Set multiplayer to " + (state ? "enabled" : "disabled") + " for account " + getUsername()
 					+ " (ID " + getAccountID() + ")");
 		} catch (IOException e) {
@@ -341,7 +370,20 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public void setChatEnabled(boolean state) {
 		try {
-			getAccountKeyValueContainer("accountdata").setEntry("ischatenabled", new JsonPrimitive(state));
+			// Retrieve properties
+			AccountDataTableContainer<AccountPropertiesRow> table = getAccountDataTable("accountdata",
+					AccountPropertiesRow.class);
+			AccountPropertiesRow props = table.getFirstRow();
+			if (props == null)
+				props = new AccountPropertiesRow();
+
+			// Update
+			props.isChatEnabled = state;
+
+			// Save
+			table.setRows(props, true);
+
+			// Log
 			logger.info("Set chat to " + (state ? "enabled" : "disabled") + " for account " + getUsername() + " (ID "
 					+ getAccountID() + ")");
 		} catch (IOException e) {
@@ -353,7 +395,20 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public void setStrictChatFilterEnabled(boolean state) {
 		try {
-			getAccountKeyValueContainer("accountdata").setEntry("isstrictchatfilterenabled", new JsonPrimitive(state));
+			// Retrieve properties
+			AccountDataTableContainer<AccountPropertiesRow> table = getAccountDataTable("accountdata",
+					AccountPropertiesRow.class);
+			AccountPropertiesRow props = table.getFirstRow();
+			if (props == null)
+				props = new AccountPropertiesRow();
+
+			// Update
+			props.isStrictChatFilterEnabled = state;
+
+			// Save
+			table.setRows(props, true);
+
+			// Log
 			logger.info("Set strict-chat to " + (state ? "enabled" : "disabled") + " for account " + getUsername()
 					+ " (ID " + getAccountID() + ")");
 		} catch (IOException e) {
@@ -365,8 +420,18 @@ public abstract class BasicAccountObject extends AccountObject {
 	@Override
 	public void updateLastLoginTime() {
 		try {
-			getAccountKeyValueContainer("accountdata").setEntry("lastlogintime",
-					new JsonPrimitive((System.currentTimeMillis() / 1000l)));
+			// Retrieve properties
+			AccountDataTableContainer<AccountPropertiesRow> table = getAccountDataTable("accountdata",
+					AccountPropertiesRow.class);
+			AccountPropertiesRow props = table.getFirstRow();
+			if (props == null)
+				props = new AccountPropertiesRow();
+
+			// Update
+			props.lastLoginTime = System.currentTimeMillis();
+
+			// Save
+			table.setRows(props, true);
 		} catch (IOException e) {
 			logger.error(
 					"Failed to execute database query request while trying to update login time of ID '" + id + "'", e);

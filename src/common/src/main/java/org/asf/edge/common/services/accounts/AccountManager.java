@@ -72,7 +72,9 @@ public abstract class AccountManager extends AbstractService {
 			postgresManagerConfig.addProperty("priority", priorityPostgres);
 			postgresManagerConfig.addProperty("url", "jdbc:postgresql://localhost/edge");
 			JsonObject props = new JsonObject();
-			postgresManagerConfig.add("properties", props);
+			props.addProperty("user", "edge");
+			props.addProperty("password", "edgesodserver");
+			databaseManagerConfig.add("properties", props);
 			accountManagerConfig.add("postgreSQL", postgresManagerConfig);
 			changed = true;
 		} else

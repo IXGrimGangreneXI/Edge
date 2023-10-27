@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.asf.edge.common.entities.tables.accounts.AccountPropertiesRow;
 import org.asf.edge.common.events.accounts.AccountDeletedEvent;
 import org.asf.edge.common.events.accounts.AccountEmailUpdateEvent;
 import org.asf.edge.common.services.accounts.AccountDataTableContainer;
@@ -32,25 +33,10 @@ public class DatabaseAccountObject extends BasicAccountObject {
 	@Override
 	public String getAccountEmail() {
 		try {
-			DatabaseRequest conn = manager.createRequest();
-			try {
-				// Create prepared statement
-				var statement = conn.prepareStatement("SELECT EMAIL FROM EMAILMAP_V2 WHERE ID = ?");
-				statement.setString(1, getAccountID());
-				ResultSet res = statement.executeQuery();
-				if (!res.next()) {
-					res.close();
-					statement.close();
-					return null;
-				}
-				String r = res.getString("EMAIL");
-				res.close();
-				statement.close();
-				return r;
-			} finally {
-				conn.close();
-			}
-		} catch (SQLException e) {
+			// Get email
+			return getAccountDataTable("accountdata", AccountPropertiesRow.class).getFirstRow("emailAddress",
+					String.class);
+		} catch (IOException e) {
 			getLogger().error("Failed to execute database query request while trying to pull account email of ID '"
 					+ getAccountID() + "'", e);
 			return null;
@@ -62,17 +48,34 @@ public class DatabaseAccountObject extends BasicAccountObject {
 		try {
 			DatabaseRequest conn = manager.createRequest();
 			try {
-				// Create prepared statement
-				var statement = conn.prepareStatement("UPDATE USERMAP_V2 SET USERNAME = ? WHERE ID = ?");
+				// Update in user map
+				var statement = conn.prepareStatement("UPDATE USERMAP_V3 SET USERNAME = ? WHERE ID = ?");
 				statement.setString(1, name);
 				statement.setString(2, getAccountID());
 				statement.execute();
 				statement.close();
+
+				// Get table
+				AccountDataTableContainer<AccountPropertiesRow> settings = getAccountDataTable("accountdata",
+						AccountPropertiesRow.class);
+
+				// Retrieve properties
+				AccountPropertiesRow props = settings.getFirstRow();
+				if (props == null)
+					props = new AccountPropertiesRow();
+
+				// Update
+				props.accountUsername = name;
+
+				// Save
+				settings.setRows(props, true);
+
+				// Return
 				return true;
 			} finally {
 				conn.close();
 			}
-		} catch (SQLException e) {
+		} catch (SQLException | IOException e) {
 			getLogger().error("Failed to execute database query request while trying to update username of ID '"
 					+ getAccountID() + "'", e);
 			return false;
@@ -82,10 +85,10 @@ public class DatabaseAccountObject extends BasicAccountObject {
 	@Override
 	public boolean performUpdatePassword(byte[] cred) {
 		try {
-			// Create prepared statement
+			// Update user map
 			DatabaseRequest conn = manager.createRequest();
 			try {
-				var statement = conn.prepareStatement("UPDATE USERMAP_V2 SET CREDS = ? WHERE ID = ?");
+				var statement = conn.prepareStatement("UPDATE USERMAP_V3 SET CREDS = ? WHERE ID = ?");
 				statement.setBytes(1, cred);
 				statement.setString(2, getAccountID());
 				statement.execute();
@@ -106,35 +109,68 @@ public class DatabaseAccountObject extends BasicAccountObject {
 		String oldMail = getAccountEmail();
 
 		try {
+			// Check existing email
 			if (getAccountEmail() == null) {
 				// Insert instead
 				DatabaseRequest conn = manager.createRequest();
 				try {
 					// Create prepared statement
-					var statement = conn.prepareStatement("INSERT INTO EMAILMAP_V2 VALUES (?, ?)");
-					statement.setString(1, email);
+					var statement = conn.prepareStatement("INSERT INTO EMAILMAP_V3 VALUES (?, ?)");
+					statement.setString(1, email.toLowerCase());
 					statement.setString(2, getAccountID());
 					statement.execute();
 					statement.close();
+
+					// Get table
+					AccountDataTableContainer<AccountPropertiesRow> settings = getAccountDataTable("accountdata",
+							AccountPropertiesRow.class);
+
+					// Retrieve properties
+					AccountPropertiesRow props = settings.getFirstRow();
+					if (props == null)
+						props = new AccountPropertiesRow();
+
+					// Update
+					props.emailAddress = email;
+
+					// Save
+					settings.setRows(props, true);
+
+					// Return
 					return true;
 				} finally {
 					conn.close();
 				}
 			}
 
-			// Update
+			// Update database
 			DatabaseRequest conn = manager.createRequest();
 			try {
 				// Create prepared statement
-				var statement = conn.prepareStatement("UPDATE EMAILMAP_V2 SET EMAIL = ? WHERE ID = ?");
-				statement.setString(1, email);
+				var statement = conn.prepareStatement("UPDATE EMAILMAP_V3 SET EMAIL = ? WHERE ID = ?");
+				statement.setString(1, email.toLowerCase());
 				statement.setString(2, getAccountID());
 				statement.execute();
 				statement.close();
 			} finally {
 				conn.close();
 			}
-		} catch (SQLException e) {
+
+			// Get table
+			AccountDataTableContainer<AccountPropertiesRow> settings = getAccountDataTable("accountdata",
+					AccountPropertiesRow.class);
+
+			// Retrieve properties
+			AccountPropertiesRow props = settings.getFirstRow();
+			if (props == null)
+				props = new AccountPropertiesRow();
+
+			// Update
+			props.emailAddress = email;
+
+			// Save
+			settings.setRows(props, true);
+		} catch (SQLException | IOException e) {
 			getLogger().error("Failed to execute database query request while trying to update email of ID '"
 					+ getAccountID() + "'", e);
 			return false;
@@ -209,7 +245,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 				statement.close();
 				for (JsonElement ele : saves) {
 					JsonObject saveObj2 = ele.getAsJsonObject();
-					if (saveObj2.get("username").getAsString().equals(username))
+					if (saveObj2.get("username").getAsString().equalsIgnoreCase(username))
 						return null;
 				}
 
@@ -224,8 +260,8 @@ public class DatabaseAccountObject extends BasicAccountObject {
 				statement.close();
 
 				// Write username to db
-				statement = conn.prepareStatement("INSERT INTO SAVEUSERNAMEMAP_V2 VALUES (?, ?)");
-				statement.setString(1, username);
+				statement = conn.prepareStatement("INSERT INTO SAVEUSERNAMEMAP_V3 VALUES (?, ?)");
+				statement.setString(1, username.toLowerCase());
 				statement.setString(2, saveID);
 				statement.execute();
 				statement.close();
@@ -329,7 +365,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 				// Delete from user map
 				try {
 					// Create prepared statement
-					var statement = conn.prepareStatement("DELETE FROM USERMAP_V2 WHERE ID = ?");
+					var statement = conn.prepareStatement("DELETE FROM USERMAP_V3 WHERE ID = ?");
 					statement.setString(1, getAccountID());
 					statement.execute();
 					statement.close();
@@ -342,7 +378,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 				// Delete from email map
 				try {
 					// Create prepared statement
-					var statement = conn.prepareStatement("DELETE FROM EMAILMAP_V2 WHERE ID = ?");
+					var statement = conn.prepareStatement("DELETE FROM EMAILMAP_V3 WHERE ID = ?");
 					statement.setString(1, getAccountID());
 					statement.execute();
 					statement.close();
@@ -372,7 +408,7 @@ public class DatabaseAccountObject extends BasicAccountObject {
 						JsonObject saveObj = saveEle.getAsJsonObject();
 
 						// Delete name lock
-						statement = conn.prepareStatement("DELETE FROM SAVEUSERNAMEMAP_V2 WHERE ID = ?");
+						statement = conn.prepareStatement("DELETE FROM SAVEUSERNAMEMAP_V3 WHERE ID = ?");
 						statement.setString(1, saveObj.get("id").getAsString());
 						statement.execute();
 						statement.close();

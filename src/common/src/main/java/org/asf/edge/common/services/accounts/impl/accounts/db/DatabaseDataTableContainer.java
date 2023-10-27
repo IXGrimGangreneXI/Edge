@@ -36,7 +36,7 @@ public class DatabaseDataTableContainer<T extends TableRow> extends AccountDataT
 
 	private static ObjectMapper mapper = new ObjectMapper();
 
-	protected DatabaseDataTableContainer(String table, String id, AccountObject account, AccountSaveContainer save,
+	public DatabaseDataTableContainer(String table, String id, AccountObject account, AccountSaveContainer save,
 			DatabaseAccountManager manager, Class<T> cls) {
 		super(cls);
 		this.table = table;

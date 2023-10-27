@@ -1,16 +1,18 @@
 package org.asf.edge.common.services.accounts.impl;
 
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
 
+import org.asf.edge.common.entities.tables.accounts.AccountPropertiesRow;
+import org.asf.edge.common.entities.tables.accounts.SaveDetailsRow;
 import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.accounts.db.DatabaseAccountObject;
+import org.asf.edge.common.services.accounts.impl.accounts.db.DatabaseDataTableContainer;
 import org.asf.edge.common.services.accounts.impl.accounts.db.DatabaseRequest;
-
-import com.google.gson.JsonParser;
 
 public abstract class DatabaseAccountManager extends BasicAccountManager {
 
@@ -31,8 +33,8 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 			// Create prepared statement
 			DatabaseRequest conn = createRequest();
 			try {
-				var statement = conn.prepareStatement("SELECT COUNT(ID) FROM USERMAP_V2 WHERE USERNAME = ?");
-				statement.setString(1, username);
+				var statement = conn.prepareStatement("SELECT COUNT(ID) FROM USERMAP_V3 WHERE USERNAME = ?");
+				statement.setString(1, username.toLowerCase());
 				ResultSet res = statement.executeQuery();
 				if (!res.next()) {
 					res.close();
@@ -60,8 +62,8 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 			DatabaseRequest conn = createRequest();
 			try {
 				// Create prepared statement
-				var statement = conn.prepareStatement("SELECT COUNT(ID) FROM SAVEUSERNAMEMAP_V2 WHERE USERNAME = ?");
-				statement.setString(1, username);
+				var statement = conn.prepareStatement("SELECT COUNT(ID) FROM SAVEUSERNAMEMAP_V3 WHERE USERNAME = ?");
+				statement.setString(1, username.toLowerCase());
 				ResultSet res = statement.executeQuery();
 				if (!res.next()) {
 					res.close();
@@ -88,8 +90,8 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 			// Create prepared statement
 			DatabaseRequest conn = createRequest();
 			try {
-				var statement = conn.prepareStatement("SELECT ID FROM USERMAP_V2 WHERE USERNAME = ?");
-				statement.setString(1, username);
+				var statement = conn.prepareStatement("SELECT ID FROM USERMAP_V3 WHERE USERNAME = ?");
+				statement.setString(1, username.toLowerCase());
 				ResultSet res = statement.executeQuery();
 				if (!res.next()) {
 					res.close();
@@ -117,8 +119,8 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 			String id;
 			DatabaseRequest conn = createRequest();
 			try {
-				var statement = conn.prepareStatement("SELECT ID FROM SAVEUSERNAMEMAP_V2 WHERE USERNAME = ?");
-				statement.setString(1, username);
+				var statement = conn.prepareStatement("SELECT ID FROM SAVEUSERNAMEMAP_V3 WHERE USERNAME = ?");
+				statement.setString(1, username.toLowerCase());
 				ResultSet res = statement.executeQuery();
 				if (!res.next()) {
 					res.close();
@@ -150,7 +152,7 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 			// Create prepared statement
 			DatabaseRequest conn = createRequest();
 			try {
-				var statement = conn.prepareStatement("SELECT CREDS FROM USERMAP_V2 WHERE ID = ?");
+				var statement = conn.prepareStatement("SELECT CREDS FROM USERMAP_V3 WHERE ID = ?");
 				statement.setString(1, id);
 				ResultSet res = statement.executeQuery();
 				if (!res.next()) {
@@ -187,7 +189,7 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 			// Create prepared statement
 			DatabaseRequest conn = createRequest();
 			try {
-				var statement = conn.prepareStatement("SELECT ID, USERNAME FROM USERMAP_V2");
+				var statement = conn.prepareStatement("SELECT ID, USERNAME FROM USERMAP_V3");
 				ResultSet res = statement.executeQuery();
 				while (res.next()) {
 					String id = res.getString("ID");
@@ -196,7 +198,17 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 						statement.close();
 						return;
 					}
-					DatabaseAccountObject acc = new DatabaseAccountObject(id, res.getString("USERNAME"), this);
+
+					// Pull name
+					String oName = res.getString("USERNAME");
+					String name = new DatabaseAccountObject(id, oName, this)
+							.getAccountDataTable("accountdata", AccountPropertiesRow.class)
+							.getFirstRow("accountUsername", String.class);
+					if (name == null)
+						name = oName;
+
+					// Pull account
+					DatabaseAccountObject acc = new DatabaseAccountObject(id, name, this);
 
 					// Run function
 					try {
@@ -212,7 +224,7 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 			} finally {
 				conn.close();
 			}
-		} catch (SQLException e) {
+		} catch (SQLException | IOException e) {
 			logger.error("Failed to execute database query request while trying to run a function for all accounts", e);
 		}
 	}
@@ -223,7 +235,7 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 			// Create prepared statement
 			DatabaseRequest conn = createRequest();
 			try {
-				var statement = conn.prepareStatement("SELECT COUNT(USERNAME) FROM USERMAP_V2 WHERE ID = ?");
+				var statement = conn.prepareStatement("SELECT COUNT(USERNAME) FROM USERMAP_V3 WHERE ID = ?");
 				statement.setString(1, id);
 				ResultSet res = statement.executeQuery();
 				if (!res.next()) {
@@ -251,7 +263,7 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 				// Create prepared statement
 				DatabaseRequest conn = createRequest();
 				try {
-					var statement = conn.prepareStatement("SELECT USERNAME FROM USERMAP_V2 WHERE ID = ?");
+					var statement = conn.prepareStatement("SELECT USERNAME FROM USERMAP_V3 WHERE ID = ?");
 					statement.setString(1, aid);
 					ResultSet res = statement.executeQuery();
 					if (!res.next()) {
@@ -267,12 +279,22 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 					}
 					res.close();
 					statement.close();
+
+					// Pull name
+					String oName = username;
+					username = new DatabaseAccountObject(aid, oName, this)
+							.getAccountDataTable("accountdata", AccountPropertiesRow.class)
+							.getFirstRow("accountUsername", String.class);
+					if (username == null)
+						username = oName;
+
+					// Return
 					AccountObject acc = new DatabaseAccountObject(aid, username, this);
 					return acc;
 				} finally {
 					conn.close();
 				}
-			} catch (SQLException e) {
+			} catch (SQLException | IOException e) {
 				logger.error("Failed to execute database query request while trying to pull account object of ID '"
 						+ aid + "'", e);
 				return null;
@@ -282,8 +304,8 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 				// Create prepared statement
 				DatabaseRequest conn = createRequest();
 				try {
-					var statement = conn.prepareStatement("SELECT ID FROM USERMAP_V2 WHERE USERNAME = ?");
-					statement.setString(1, "g/" + aid);
+					var statement = conn.prepareStatement("SELECT ID FROM USERMAP_V3 WHERE USERNAME = ?");
+					statement.setString(1, "g/" + aid.toLowerCase());
 					ResultSet res = statement.executeQuery();
 					if (!res.next()) {
 						res.close();
@@ -319,8 +341,8 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 			// Create prepared statement
 			DatabaseRequest conn = createRequest();
 			try {
-				var statement = conn.prepareStatement("SELECT ID FROM EMAILMAP_V2 WHERE EMAIL = ?");
-				statement.setString(1, email);
+				var statement = conn.prepareStatement("SELECT ID FROM EMAILMAP_V3 WHERE EMAIL = ?");
+				statement.setString(1, email.toLowerCase());
 				ResultSet res = statement.executeQuery();
 				if (!res.next()) {
 					res.close();
@@ -345,42 +367,21 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 	@Override
 	public AccountSaveContainer getSaveByID(String id) {
 		try {
-			DatabaseRequest conn = createRequest();
-			try {
-				// Create prepared statement
-				var statement = conn.prepareStatement(
-						"SELECT DATA FROM SDC2_SAVEDETAILS WHERE SVID = ? AND DATAKEY = ? AND PARENT = ? AND PARENTCONTAINER = ?");
-				statement.setString(1, id);
-				statement.setString(2, "accountid");
-				statement.setString(3, "");
-				statement.setString(4, "");
-				ResultSet res = statement.executeQuery();
-				if (!res.next()) {
-					res.close();
-					statement.close();
-					return null;
-				}
-				String data = res.getString("DATA");
-				if (data == null) {
-					res.close();
-					statement.close();
-					return null;
-				}
+			// Pull details
+			AccountDataTableContainer<SaveDetailsRow> cont = new DatabaseDataTableContainer<SaveDetailsRow>(
+					"STC2_SAVEDETAILS", id, null, null, this, SaveDetailsRow.class);
+			SaveDetailsRow details = cont.getFirstRow();
+			if (details == null)
+				return null;
 
-				// Retrieve account
-				res.close();
-				statement.close();
-				String accID = JsonParser.parseString(data).getAsString();
-				AccountObject acc = getAccount(accID);
-				if (acc == null)
-					return null;
+			// Retrieve account
+			AccountObject acc = getAccount(details.accountID);
+			if (acc == null)
+				return null;
 
-				// Retrieve save
-				return acc.getSave(id);
-			} finally {
-				conn.close();
-			}
-		} catch (SQLException e) {
+			// Retrieve save
+			return acc.getSave(id);
+		} catch (IOException e) {
 			logger.error("Failed to execute database query request while trying to retrieve save '" + id + "'", e);
 			return null;
 		}
@@ -396,8 +397,8 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 				obj = new DatabaseAccountObject(id, "g/" + guestID, this);
 
 				// Insert user
-				var statement = conn.prepareStatement("INSERT INTO USERMAP_V2 VALUES(?, ?, ?)");
-				statement.setString(1, "g/" + guestID);
+				var statement = conn.prepareStatement("INSERT INTO USERMAP_V3 VALUES(?, ?, ?)");
+				statement.setString(1, "g/" + guestID.toLowerCase());
 				statement.setString(2, id);
 				statement.setBytes(3, new byte[0]);
 				statement.execute();
@@ -430,16 +431,16 @@ public abstract class DatabaseAccountManager extends BasicAccountManager {
 
 				// Insert email
 				if (email != null) {
-					var statement = conn.prepareStatement("INSERT INTO EMAILMAP_V2 VALUES(?, ?)");
-					statement.setString(1, email);
+					var statement = conn.prepareStatement("INSERT INTO EMAILMAP_V3 VALUES(?, ?)");
+					statement.setString(1, email.toLowerCase());
 					statement.setString(2, accID);
 					statement.execute();
 					statement.close();
 				}
 
 				// Insert user
-				var statement = conn.prepareStatement("INSERT INTO USERMAP_V2 VALUES(?, ?, ?)");
-				statement.setString(1, username);
+				var statement = conn.prepareStatement("INSERT INTO USERMAP_V3 VALUES(?, ?, ?)");
+				statement.setString(1, username.toLowerCase());
 				statement.setString(2, accID);
 				statement.setBytes(3, cred);
 				statement.execute();

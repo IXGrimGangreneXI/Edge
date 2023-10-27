@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.asf.edge.common.entities.tables.accounts.SaveDetailsRow;
 import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.impl.BasicAccountSaveContainer;
@@ -14,20 +15,29 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 
 public class DatabaseSaveContainer extends BasicAccountSaveContainer {
 
 	private DatabaseAccountManager manager;
+	private SaveDetailsRow details;
 
 	public DatabaseSaveContainer(String saveID, long time, String username, String id, DatabaseAccountManager manager,
 			DatabaseAccountObject acc) {
 		super(saveID, time, username, id, manager, acc);
 		this.manager = manager;
-		AccountKvDataContainer sv = this.getSaveKeyValueContainer("SAVEDETAILS");
+
+		// Load details
 		try {
-			if (!sv.entryExists("accountid")) {
-				sv.setEntry("accountid", new JsonPrimitive(acc.getAccountID()));
+			// Load table and get row
+			AccountDataTableContainer<SaveDetailsRow> table = getSaveDataTable("SAVEDETAILS", SaveDetailsRow.class);
+			details = table.getFirstRow();
+
+			// Check
+			if (details == null) {
+				// Save to database
+				details = new SaveDetailsRow();
+				details.accountID = id;
+				table.setRows(details);
 			}
 		} catch (IOException e) {
 		}
@@ -68,8 +78,8 @@ public class DatabaseSaveContainer extends BasicAccountSaveContainer {
 				}
 
 				// Update user save map
-				statement = conn.prepareStatement("UPDATE SAVEUSERNAMEMAP_V2 SET USERNAME = ? WHERE ID = ?");
-				statement.setString(1, name);
+				statement = conn.prepareStatement("UPDATE SAVEUSERNAMEMAP_V3 SET USERNAME = ? WHERE ID = ?");
+				statement.setString(1, name.toLowerCase());
 				statement.setString(2, getSaveID());
 				statement.execute();
 				statement.close();
@@ -90,7 +100,7 @@ public class DatabaseSaveContainer extends BasicAccountSaveContainer {
 			DatabaseRequest conn = manager.createRequest();
 			try {
 				// Delete name lock
-				var statement = conn.prepareStatement("DELETE FROM SAVEUSERNAMEMAP_V2 WHERE ID = ?");
+				var statement = conn.prepareStatement("DELETE FROM SAVEUSERNAMEMAP_V3 WHERE ID = ?");
 				statement.setString(1, getSaveID());
 				statement.execute();
 				statement.close();

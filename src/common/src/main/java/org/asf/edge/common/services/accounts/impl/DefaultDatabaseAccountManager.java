@@ -81,10 +81,10 @@ public class DefaultDatabaseAccountManager extends DatabaseAccountManager {
 				this.conn = conn;
 			try {
 				Statement statement = conn.createStatement();
-				statement.executeUpdate("CREATE TABLE IF NOT EXISTS EMAILMAP_V2 (EMAIL TEXT, ID CHAR(36))");
+				statement.executeUpdate("CREATE TABLE IF NOT EXISTS EMAILMAP_V3 (EMAIL TEXT, ID CHAR(36))");
 				statement.executeUpdate(
-						"CREATE TABLE IF NOT EXISTS USERMAP_V2 (USERNAME TEXT, ID CHAR(36), CREDS BINARY(48))");
-				statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEUSERNAMEMAP_V2 (USERNAME TEXT, ID CHAR(36))");
+						"CREATE TABLE IF NOT EXISTS USERMAP_V3 (USERNAME TEXT, ID CHAR(36), CREDS BINARY(48))");
+				statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEUSERNAMEMAP_V3 (USERNAME TEXT, ID CHAR(36))");
 				statement.executeUpdate("CREATE TABLE IF NOT EXISTS SAVEMAP_V2 (ACCID CHAR(36), SAVES LONGTEXT)");
 				statement.close();
 			} finally {
