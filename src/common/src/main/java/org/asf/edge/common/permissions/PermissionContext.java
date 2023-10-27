@@ -5,11 +5,9 @@ import java.util.ArrayList;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.asf.edge.common.entities.tables.permissions.PermissionsRow;
+import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 /**
  * 
@@ -106,29 +104,25 @@ public class PermissionContext {
 	public void addNode(PermissionNode node) {
 		try {
 			// Retrieve perms
-			JsonObject perms;
-			if (account.getAccountKeyValueContainer().entryExists("permissions"))
-				perms = account.getAccountKeyValueContainer().getEntry("permissions").getAsJsonObject();
-			else {
-				perms = new JsonObject();
-				JsonObject nodes = new JsonObject();
-				nodes.add("allowed", new JsonArray());
-				nodes.add("denied", new JsonArray());
-				perms.add("permissionNodes", nodes);
+			AccountDataTableContainer<PermissionsRow> table = account.getAccountDataTable("PERMISSIONS",
+					PermissionsRow.class);
+			PermissionsRow perms = table.getFirstRow();
+			if (perms == null) {
+				// Save default
+				perms = new PermissionsRow();
+				perms.level = account.isGuestAccount() ? PermissionLevel.GUEST : PermissionLevel.PLAYER;
+				table.setRows(perms, true);
 			}
-			perms = perms.get("permissionNodes").getAsJsonObject();
-			JsonArray allowed = perms.get("allowed").getAsJsonArray();
-			JsonArray denied = perms.get("denied").getAsJsonArray();
 
 			// Add
 			if (node.getType() == PermissionNodeType.ALLOW) {
-				allowed.add(node.getNode());
+				perms.allowedPermissions.add(node.getNode());
 			} else {
-				denied.add(node.getNode());
+				perms.deniedPermissions.add(node.getNode());
 			}
 
 			// Save
-			account.getAccountKeyValueContainer().setEntry("permissions", perms);
+			table.setRows(perms, true);
 		} catch (IOException e) {
 			// Database down
 			logger.warn("Failed to modify permission nodes for " + account.getAccountID() + " due to a database error.",
@@ -143,31 +137,23 @@ public class PermissionContext {
 	 */
 	public void removeNode(PermissionNode node) {
 		try {
-			if (account.getAccountKeyValueContainer().entryExists("permissions")) {
-				// Retrieve perms
-				JsonObject perms = account.getAccountKeyValueContainer().getEntry("permissions").getAsJsonObject();
-				perms = perms.get("permissionNodes").getAsJsonObject();
-				JsonArray allowed = perms.get("allowed").getAsJsonArray();
-				JsonArray denied = perms.get("denied").getAsJsonArray();
-
+			// Retrieve perms
+			AccountDataTableContainer<PermissionsRow> table = account.getAccountDataTable("PERMISSIONS",
+					PermissionsRow.class);
+			PermissionsRow perms = table.getFirstRow();
+			if (perms != null) {
 				// Remove
 				if (node.getType() == PermissionNodeType.ALLOW) {
-					for (JsonElement ele : allowed) {
-						if (ele.getAsString().equals(node.getNode())) {
-							// Save
-							allowed.remove(ele);
-							account.getAccountKeyValueContainer().setEntry("permissions", perms);
-							return;
-						}
+					if (perms.allowedPermissions.contains(node.getNode())) {
+						// Remove and save
+						perms.allowedPermissions.remove(node.getNode());
+						table.setRows(perms, true);
 					}
 				} else {
-					for (JsonElement ele : denied) {
-						if (ele.getAsString().equals(node.getNode())) {
-							// Save
-							denied.remove(ele);
-							account.getAccountKeyValueContainer().setEntry("permissions", perms);
-							return;
-						}
+					if (perms.deniedPermissions.contains(node.getNode())) {
+						// Remove and save
+						perms.deniedPermissions.remove(node.getNode());
+						table.setRows(perms, true);
 					}
 				}
 			}
@@ -185,19 +171,17 @@ public class PermissionContext {
 	 */
 	public PermissionNode[] getNodes() {
 		try {
-			if (account.getAccountKeyValueContainer().entryExists("permissions")) {
-				// Retrieve perms
-				JsonObject perms = account.getAccountKeyValueContainer().getEntry("permissions").getAsJsonObject();
-				perms = perms.get("permissionNodes").getAsJsonObject();
-				JsonArray allowed = perms.get("allowed").getAsJsonArray();
-				JsonArray denied = perms.get("denied").getAsJsonArray();
-
+			// Retrieve perms
+			AccountDataTableContainer<PermissionsRow> table = account.getAccountDataTable("PERMISSIONS",
+					PermissionsRow.class);
+			PermissionsRow perms = table.getFirstRow();
+			if (perms != null) {
 				// Retrieve nodes
 				ArrayList<PermissionNode> nodes = new ArrayList<PermissionNode>();
-				for (JsonElement node : allowed)
-					nodes.add(new PermissionNode(node.getAsString(), PermissionNodeType.ALLOW));
-				for (JsonElement node : denied)
-					nodes.add(new PermissionNode(node.getAsString(), PermissionNodeType.DENY));
+				for (String node : perms.allowedPermissions)
+					nodes.add(new PermissionNode(node, PermissionNodeType.ALLOW));
+				for (String node : perms.deniedPermissions)
+					nodes.add(new PermissionNode(node, PermissionNodeType.DENY));
 				return nodes.toArray(t -> new PermissionNode[t]);
 			}
 			return new PermissionNode[0];
@@ -217,22 +201,22 @@ public class PermissionContext {
 	 */
 	public void setPermissionLevel(PermissionLevel newLevel) {
 		try {
-			JsonObject perms;
-			if (account.getAccountKeyValueContainer().entryExists("permissions"))
-				perms = account.getAccountKeyValueContainer().getEntry("permissions").getAsJsonObject();
-			else {
-				perms = new JsonObject();
-				JsonObject nodes = new JsonObject();
-				nodes.add("allowed", new JsonArray());
-				nodes.add("denied", new JsonArray());
-				perms.add("permissionNodes", nodes);
+			// Retrieve perms
+			AccountDataTableContainer<PermissionsRow> table = account.getAccountDataTable("PERMISSIONS",
+					PermissionsRow.class);
+			PermissionsRow perms = table.getFirstRow();
+			if (perms == null) {
+				// Save default
+				perms = new PermissionsRow();
+				perms.level = account.isGuestAccount() ? PermissionLevel.GUEST : PermissionLevel.PLAYER;
+				table.setRows(perms, true);
 			}
 
-			// Set level
-			perms.addProperty("permissionLevel", newLevel.toString());
+			// Update
+			perms.level = newLevel;
 
 			// Save
-			account.getAccountKeyValueContainer().setEntry("permissions", perms);
+			table.setRows(perms, true);
 		} catch (IOException e) {
 			// Database down
 			logger.warn("Failed to save permission level for " + account.getAccountID() + " due to a database error.",
@@ -247,24 +231,19 @@ public class PermissionContext {
 	 */
 	public PermissionLevel getPermissionLevel() {
 		// Find level
-		JsonElement ele;
-		try {
-			ele = account.getAccountKeyValueContainer().getEntry("permissions");
-			if (ele != null) {
-				String level = ele.getAsJsonObject().get("permissionLevel").getAsString();
-				for (PermissionLevel lv : PermissionLevel.values()) {
-					if (lv.toString().equalsIgnoreCase(level)) {
-						if (lv == PermissionLevel.GUEST) {
-							// Default
-							if (account.isGuestAccount())
-								return PermissionLevel.GUEST;
-							else
-								return PermissionLevel.PLAYER;
-						}
-						return lv;
-					}
+		try {// Retrieve perms
+			AccountDataTableContainer<PermissionsRow> table = account.getAccountDataTable("PERMISSIONS",
+					PermissionsRow.class);
+			PermissionsRow perms = table.getFirstRow();
+			if (perms != null) {
+				if (perms.level == PermissionLevel.GUEST) {
+					// Default
+					if (account.isGuestAccount())
+						return PermissionLevel.GUEST;
+					else
+						return PermissionLevel.PLAYER;
 				}
-				logger.warn("Unrecognized permission level: " + level + ", using default level.");
+				return perms.level;
 			}
 		} catch (IOException e) {
 			// Database down

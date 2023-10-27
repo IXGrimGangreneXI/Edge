@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.util.function.Function;
 
 import org.asf.edge.common.entities.tables.accounts.AccountPropertiesRow;
-import org.asf.edge.common.entities.tables.accounts.SaveDetailsRow;
+import org.asf.edge.common.entities.tables.saves.SaveDetailsRow;
 import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;

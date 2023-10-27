@@ -1,4 +1,4 @@
-package org.asf.edge.common.entities.tables.accounts;
+package org.asf.edge.common.entities.tables.saves;
 
 import org.asf.edge.common.services.tabledata.TableRow;
 import org.asf.edge.common.services.tabledata.annotations.TableColumn;

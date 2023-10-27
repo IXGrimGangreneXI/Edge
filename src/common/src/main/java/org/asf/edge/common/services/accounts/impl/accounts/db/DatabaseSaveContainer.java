@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.asf.edge.common.entities.tables.accounts.SaveDetailsRow;
+import org.asf.edge.common.entities.tables.saves.SaveDetailsRow;
 import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.impl.BasicAccountSaveContainer;
