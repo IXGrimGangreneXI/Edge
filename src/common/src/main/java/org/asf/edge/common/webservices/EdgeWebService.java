@@ -13,9 +13,14 @@ import org.asf.connective.objects.HttpRequest;
 import org.asf.connective.objects.HttpResponse;
 import org.asf.edge.common.IEdgeBaseServer;
 import org.asf.edge.common.webservices.processors.AccountInventoryParamAnnoProcessor;
+import org.asf.edge.common.webservices.processors.AccountKvContainerAnnoProcessor;
+import org.asf.edge.common.webservices.processors.AccountTableContainerAnnoProcessor;
 import org.asf.edge.common.webservices.processors.InventoryParamProcessor;
 import org.asf.edge.common.webservices.processors.SaveInventoryParamAnnoProcessor;
+import org.asf.edge.common.webservices.processors.SaveKvContainerAnnoProcessor;
+import org.asf.edge.common.webservices.processors.SaveTableContainerAnnoProcessor;
 import org.asf.edge.common.webservices.processors.SessionObjectsParamProcessor;
+import org.asf.edge.common.webservices.processors.SodEncryptedParamAnnoProcessor;
 import org.asf.edge.common.webservices.processors.SodRequestInfoParamProcessor;
 import org.asf.edge.common.webservices.processors.SodTokenSecuredAnnoProcessor;
 import org.asf.nexus.webservices.AbstractWebService;
@@ -243,7 +248,14 @@ public abstract class EdgeWebService<T extends IEdgeBaseServer> extends Abstract
 		AbstractWebService.registerParameterProcessor(new InventoryParamProcessor());
 
 		AbstractWebService.registerAnnotationProcessor(new SodTokenSecuredAnnoProcessor());
+		AbstractWebService.registerAnnotationProcessor(new SodEncryptedParamAnnoProcessor());
+
 		AbstractWebService.registerAnnotationProcessor(new AccountInventoryParamAnnoProcessor());
 		AbstractWebService.registerAnnotationProcessor(new SaveInventoryParamAnnoProcessor());
+
+		AbstractWebService.registerAnnotationProcessor(new AccountKvContainerAnnoProcessor());
+		AbstractWebService.registerAnnotationProcessor(new SaveKvContainerAnnoProcessor());
+		AbstractWebService.registerAnnotationProcessor(new AccountTableContainerAnnoProcessor());
+		AbstractWebService.registerAnnotationProcessor(new SaveTableContainerAnnoProcessor());
 	}
 }
