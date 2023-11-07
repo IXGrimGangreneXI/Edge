@@ -22,7 +22,7 @@ import org.asf.edge.common.webservices.processors.SaveTableContainerAnnoProcesso
 import org.asf.edge.common.webservices.processors.SessionObjectsParamProcessor;
 import org.asf.edge.common.webservices.processors.SodEncryptedParamAnnoProcessor;
 import org.asf.edge.common.webservices.processors.SodRequestInfoParamProcessor;
-import org.asf.edge.common.webservices.processors.SodTokenSecuredAnnoProcessor;
+import org.asf.edge.common.webservices.processors.EdgeTokenSecuredAnnoProcessor;
 import org.asf.nexus.webservices.AbstractWebService;
 import org.asf.nexus.webservices.WebServiceContext;
 import org.bouncycastle.util.encoders.Base32;
@@ -247,7 +247,7 @@ public abstract class EdgeWebService<T extends IEdgeBaseServer> extends Abstract
 		AbstractWebService.registerParameterProcessor(new SessionObjectsParamProcessor());
 		AbstractWebService.registerParameterProcessor(new InventoryParamProcessor());
 
-		AbstractWebService.registerAnnotationProcessor(new SodTokenSecuredAnnoProcessor());
+		AbstractWebService.registerAnnotationProcessor(new EdgeTokenSecuredAnnoProcessor());
 		AbstractWebService.registerAnnotationProcessor(new SodEncryptedParamAnnoProcessor());
 
 		AbstractWebService.registerAnnotationProcessor(new AccountInventoryParamAnnoProcessor());

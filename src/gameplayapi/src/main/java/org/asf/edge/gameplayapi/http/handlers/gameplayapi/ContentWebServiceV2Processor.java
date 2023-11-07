@@ -41,9 +41,9 @@ import org.asf.edge.common.webservices.annotations.LegacyFunction;
 import org.asf.edge.common.webservices.annotations.LegacyFunctionInfo;
 import org.asf.edge.common.webservices.annotations.SodRequest;
 import org.asf.edge.common.webservices.annotations.SodRequestParam;
-import org.asf.edge.common.webservices.annotations.SodTokenSecured;
-import org.asf.edge.common.webservices.annotations.TokenRequireCapability;
-import org.asf.edge.common.webservices.annotations.TokenRequireSave;
+import org.asf.edge.common.webservices.annotations.EdgeTokenSecured;
+import org.asf.edge.common.webservices.annotations.EdgeTokenRequireCapability;
+import org.asf.edge.common.webservices.annotations.EdgeTokenRequireSave;
 import org.asf.edge.common.xmls.items.inventory.InventoryItemEntryData;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
@@ -655,9 +655,9 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	@Function(allowedMethods = { "POST" })
 	public FunctionResult setAvatar(FunctionInfo func, SodRequestInfo req, SessionToken tkn, AccountObject account,
 			AccountSaveContainer save, @SodRequestParam ObjectNode contentXML) throws IOException {
@@ -845,9 +845,9 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult createPet(FunctionInfo func, SodRequestInfo req, SessionToken tkn, AccountObject account,
 			AccountSaveContainer save, @SodRequestParam PetCreateRequestData request) throws IOException {
 		if (manager == null)
@@ -1018,7 +1018,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult getAllActivePetsByuserId(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId) throws IOException {
 		if (manager == null)
@@ -1154,7 +1154,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult getGameDataByGameForDateRange(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId) throws IOException, ParseException {
 		if (manager == null)
@@ -1214,9 +1214,9 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	@Function(allowedMethods = { "POST" })
 	public FunctionResult setRaisedPet(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, AccountSaveContainer save, @SodRequestParam DragonData raisedPetData)

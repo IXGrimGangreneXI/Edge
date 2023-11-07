@@ -8,15 +8,15 @@ import java.lang.annotation.Target;
 
 /**
  *
- * Makes it that the function requires a save container in the token<br/>
- * <br/>
- * Use a {@link org.asf.edge.common.services.accounts.AccountSaveContainer
- * AccountSaveContainer} parameter to receive the save container.
+ * Defines required capabilities for token authentication
  * 
  * @author Sky Swimmer
  *
  */
 @Retention(RUNTIME)
 @Target(METHOD)
-public @interface TokenRequireSave {
+public @interface EdgeTokenRequireCapabilities {
+
+	public EdgeTokenRequireCapability[] value();
+
 }

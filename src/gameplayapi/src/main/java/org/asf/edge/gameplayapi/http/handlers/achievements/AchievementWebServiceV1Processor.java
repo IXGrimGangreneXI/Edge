@@ -127,9 +127,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@ApiHandler
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	@Function("SetUserAchievementAndGetReward")
 	@ExperimentalFeature(value = EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT, isReverse = true)
 	public FunctionResult setUserAchievementAndGetRewardDummy(FunctionInfo func, SodRequestInfo req,
@@ -141,9 +141,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@ApiHandler
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	@Function("SetAchievementAndGetReward")
 	@ExperimentalFeature(value = EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT, isReverse = true)
 	public FunctionResult setAchievementAndGetRewardDummy(FunctionInfo func, SodRequestInfo req,
@@ -152,9 +152,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@ApiHandler
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	@Function("SetAchievementByEntityIDs")
 	@ExperimentalFeature(value = EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT, isReverse = true)
 	public FunctionResult setAchievementByEntityIDsDummy(FunctionInfo func, SodRequestInfo req,
@@ -167,9 +167,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@ApiHandler
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	@ExperimentalFeature(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)
 	public FunctionResult setUserAchievementAndGetReward(FunctionInfo func, SodRequestInfo req,
 			AccountSaveContainer save, @RequestParam int achievementID) throws IOException {
@@ -184,9 +184,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@ApiHandler
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	@ExperimentalFeature(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)
 	public FunctionResult setAchievementAndGetReward(FunctionInfo func, SodRequestInfo req, AccountSaveContainer save,
 			@RequestParam int achievementID) throws IOException {
@@ -194,9 +194,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@ApiHandler
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	@ExperimentalFeature(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)
 	public FunctionResult setAchievementByEntityIDs(FunctionInfo func, SodRequestInfo req, AccountSaveContainer save,
 			@RequestParam int achievementID, @RequestParam String groupID, @RequestParam AchievementDragonIdList petIDs)
@@ -212,7 +212,7 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@ApiHandler
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult getPetAchievementsByUserID(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @RequestParam String userId) throws IOException {
 		if (achievementManager == null)
@@ -311,7 +311,7 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@ApiHandler
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult getAchievementsByUserID(FunctionInfo func, SessionToken tkn, SodRequestInfo req,
 			AccountObject account, @RequestParam String userId) throws IOException {
 		if (achievementManager == null)
@@ -355,9 +355,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@ApiHandler
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult getUserAchievements(FunctionInfo func, SessionToken tkn, SodRequestInfo req,
 			AccountObject account, AccountSaveContainer save) throws IOException {
 		if (achievementManager == null)
@@ -388,9 +388,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@ApiHandler
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult getAllRewardTypeMultiplier(FunctionInfo func, SessionToken tkn, SodRequestInfo req,
 			AccountObject account, AccountSaveContainer save) throws IOException {
 		if (achievementManager == null)
@@ -422,9 +422,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	//
 
 	@ApiHandler
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult setDragonXP(FunctionInfo func, SodRequestInfo req, AccountSaveContainer save,
 			@RequestParam String dragonId, @RequestParam int value) throws IOException {
 		// Retrieve rank
@@ -440,9 +440,9 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@ApiHandler
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult setPlayerXP(AccountSaveContainer save, SodRequestInfo req, @RequestParam int type,
 			@RequestParam int value) throws IOException {
 		// Retrieve rank

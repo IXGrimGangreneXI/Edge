@@ -8,7 +8,8 @@ import java.lang.annotation.Target;
 
 /**
  * 
- * Marks functions as token-secured with SoD-style security.<br/>
+ * Marks functions as token-secured with support for SoD-style security and for
+ * Authorization headers.<br/>
  * <br/>
  * Use a {@link org.asf.edge.common.tokens.SessionToken SessionToken} parameter
  * to receive the session token and a
@@ -20,5 +21,5 @@ import java.lang.annotation.Target;
  */
 @Target(METHOD)
 @Retention(RUNTIME)
-public @interface SodTokenSecured {
+public @interface EdgeTokenSecured {
 }

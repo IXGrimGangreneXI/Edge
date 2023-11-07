@@ -144,9 +144,21 @@ public class SodRequestInfo {
 						function.getResponse());
 
 				// Retrieve key
-				if (!apiRequestParams.has("apiKey"))
-					throw new IOException();
-				String apiKey = apiRequestParams.getString("apiKey");
+				String apiKey;
+				if (!apiRequestParams.has("apiKey")) {
+					// Check headers and Edge params
+					if (apiRequestParams.has("edgeSodApiKey")) {
+						// EDGE parameter
+						apiKey = apiRequestParams.getString("edgeSodApiKey");
+					} else if (function.getRequest().hasHeader("X-API-Key")) {
+						// Header
+						apiKey = function.getRequest().getHeaderValue("X-API-Key");
+					} else {
+						// Default
+						apiKey = "B99F695C-7C6E-4E9B-B0F7-22034D799013";
+					}
+				} else
+					apiKey = apiRequestParams.getString("apiKey");
 				String secret = utils.getSecretFromKey(apiKey, webservice.getServerInstance().getLogger());
 				byte[] key = utils.encodeMD5Key(secret, "UTF-16LE");
 

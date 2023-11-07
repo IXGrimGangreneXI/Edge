@@ -45,9 +45,9 @@ import org.asf.edge.common.webservices.annotations.LegacyFunction;
 import org.asf.edge.common.webservices.annotations.LegacyFunctionInfo;
 import org.asf.edge.common.webservices.annotations.SodRequest;
 import org.asf.edge.common.webservices.annotations.SodRequestParam;
-import org.asf.edge.common.webservices.annotations.SodTokenSecured;
-import org.asf.edge.common.webservices.annotations.TokenRequireCapability;
-import org.asf.edge.common.webservices.annotations.TokenRequireSave;
+import org.asf.edge.common.webservices.annotations.EdgeTokenSecured;
+import org.asf.edge.common.webservices.annotations.EdgeTokenRequireCapability;
+import org.asf.edge.common.webservices.annotations.EdgeTokenRequireSave;
 import org.asf.edge.common.xmls.achievements.AchievementRewardData;
 import org.asf.edge.common.xmls.data.EmptyKeyValuePairSetData;
 import org.asf.edge.common.xmls.data.KeyValuePairData;
@@ -420,7 +420,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult setCommonInventoryAttribute(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam int commonInventoryID,
 			@SodRequestParam("pairxml") KeyValuePairSetData pairXml) throws IOException {
@@ -981,7 +981,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult getSelectedRaisedPet(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId) throws IOException {
 		if (manager == null)
@@ -1052,9 +1052,9 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult setSelectedPet(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, AccountSaveContainer save, @SodRequestParam String raisedPetID,
 			@SodRequestParam boolean unselectOtherPets) throws IOException {
@@ -1125,7 +1125,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult getUnselectedPetByTypes(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId, @SodRequestParam String petTypeIDs)
 			throws IOException {
@@ -1582,7 +1582,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
+	@EdgeTokenSecured
 	@Function(allowedMethods = { "POST" })
 	public FunctionResult setTaskState(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId, @SodRequestParam int missionId,
@@ -1711,9 +1711,9 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult useInventory(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam int userInventoryId, @SodRequestParam int numberOfUses)
 			throws IOException {
@@ -1761,7 +1761,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult getGameDataByUser(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId) throws IOException {
 		if (manager == null)
@@ -1806,7 +1806,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult getGameDataByGame(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId) throws IOException {
 		if (manager == null)
@@ -1856,7 +1856,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult sendRawGameData(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId) throws IOException {
 		if (manager == null)
@@ -1887,7 +1887,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult getUserRoomList(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam RoomListRequestData request) throws IOException {
 		if (manager == null)
@@ -1919,9 +1919,9 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult setUserRoom(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, AccountSaveContainer save, @SodRequestParam RoomListEntryData request)
 			throws IOException {
@@ -1944,7 +1944,7 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
+	@EdgeTokenSecured
 	public FunctionResult getUserRoomItemPositions(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId, @SodRequestParam String roomID) throws IOException {
 		if (manager == null)
@@ -2027,9 +2027,9 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult setUserRoomItemPositions(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, AccountSaveContainer save, @SodRequestParam String roomID,
 			@SodRequestParam RoomItemUpdateRequestData[] createXml,
@@ -2253,9 +2253,9 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult setNextItemState(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, AccountSaveContainer save,
 			@SodRequestParam("setNextItemStateRequest") SetItemStateRequestData request) throws IOException {
@@ -2575,9 +2575,9 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult setGameCurrency(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, AccountSaveContainer save, @SodRequestParam int amount) throws IOException {
 		// Load currency
@@ -2596,9 +2596,9 @@ public class ContentWebServiceV1Processor extends EdgeWebService<EdgeGameplayApi
 	}
 
 	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult getBuddyList(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, AccountSaveContainer save) throws IOException {
 		// TODO: stubbed/dummied

@@ -41,9 +41,9 @@ public class AchievementWebServiceV2Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@SodRequest
-	@SodTokenSecured
-	@TokenRequireSave
-	@TokenRequireCapability("gp")
+	@EdgeTokenSecured
+	@EdgeTokenRequireSave
+	@EdgeTokenRequireCapability("gp")
 	public FunctionResult setUserAchievementTask(FunctionInfo func, SodRequestInfo req, AccountSaveContainer save,
 			@SodEncryptedParam @SodRequestParam AchievementTaskSetRequestList achievementTaskSetRequest)
 			throws IOException {
