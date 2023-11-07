@@ -2,7 +2,7 @@ package org.asf.edge.gameplayapi.events.config;
 
 import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
 import org.asf.edge.gameplayapi.events.GameplayApiServerEvent;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

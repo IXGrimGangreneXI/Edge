@@ -143,7 +143,7 @@ public class ServerConfigWindow extends JDialog {
 				@Override
 				public void keyReleased(KeyEvent e) {
 					// Apply
-					textField_11.setText(textField_4.getText().equals("0.0.0.0") ? "localhost" : textField_4.getText());
+					textField_11.setText(textField_4.getText().equals("0.0.0.0") ? "127.0.0.1" : textField_4.getText());
 				}
 			});
 			panel.add(textField_4);
@@ -166,7 +166,7 @@ public class ServerConfigWindow extends JDialog {
 			panel.add(lblSmartfoxDiscovery);
 
 			textField_11 = new JTextField();
-			textField_11.setText("localhost");
+			textField_11.setText("127.0.0.1");
 			textField_11.setColumns(10);
 			textField_11.setBounds(12, 239, 375, 21);
 			panel.add(textField_11);

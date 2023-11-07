@@ -15,9 +15,6 @@ import org.asf.edge.common.entities.achivements.RankInfo;
 import org.asf.edge.common.entities.achivements.RankTypeID;
 import org.asf.edge.common.entities.items.ItemAttributeInfo;
 import org.asf.edge.common.entities.items.ItemInfo;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.LegacyFunction;
-import org.asf.edge.common.http.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
@@ -29,6 +26,9 @@ import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.common.util.InventoryUtil;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.annotations.LegacyFunction;
+import org.asf.edge.common.webservices.annotations.LegacyFunctionInfo;
 import org.asf.edge.common.xmls.dragons.DragonData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateRequestData;
 import org.asf.edge.gameplayapi.xmls.dragons.PetUpdateResponseData;
@@ -75,7 +75,7 @@ public class ContentWebServiceV3Processor extends EdgeWebService<EdgeGameplayApi
 			itemManager = ItemManager.getInstance();
 
 		// Handle dragon request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());

@@ -5,9 +5,6 @@ import java.util.stream.Stream;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.LegacyFunction;
-import org.asf.edge.common.http.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
@@ -15,6 +12,9 @@ import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.annotations.LegacyFunction;
+import org.asf.edge.common.webservices.annotations.LegacyFunctionInfo;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.xmls.auth.CommonLoginInfo;
 import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
@@ -57,7 +57,7 @@ public class RegistrationWebServiceV3Processor extends EdgeWebService<EdgeCommon
 			manager = AccountManager.getInstance();
 
 		// Handle deletion request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -113,7 +113,7 @@ public class RegistrationWebServiceV3Processor extends EdgeWebService<EdgeCommon
 			manager = AccountManager.getInstance();
 
 		// Handle registration request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 

@@ -1,8 +1,8 @@
 package org.asf.edge.modules.gridapi.events.auth;
 
 import org.asf.edge.common.services.accounts.AccountObject;
-import org.asf.edge.modules.eventbus.EventPath;
 import org.asf.edge.modules.gridapi.events.GridApiServerEvent;
+import org.asf.nexus.events.EventPath;
 
 import com.google.gson.JsonObject;
 

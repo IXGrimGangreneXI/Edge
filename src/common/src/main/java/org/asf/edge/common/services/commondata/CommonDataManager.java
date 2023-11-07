@@ -6,12 +6,12 @@ import java.util.HashMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.services.AbstractService;
-import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.commondata.impl.DefaultDatabaseCommonDataManager;
 import org.asf.edge.common.services.commondata.impl.PostgresDatabaseCommonDataManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.tabledata.TableRow;
+import org.asf.nexus.common.services.AbstractService;
+import org.asf.nexus.common.services.ServiceManager;
 
 import com.google.gson.JsonObject;
 

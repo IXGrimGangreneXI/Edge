@@ -21,7 +21,7 @@ import org.asf.edge.common.events.updates.UpdateCancelEvent;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.messages.WsMessageService;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 /**
  * 

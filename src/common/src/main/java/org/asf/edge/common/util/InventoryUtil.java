@@ -10,8 +10,6 @@ import java.util.function.BiFunction;
 import org.apache.logging.log4j.LogManager;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.ItemInfo.CostInfo;
-import org.asf.edge.common.experiments.EdgeDefaultExperiments;
-import org.asf.edge.common.experiments.ExperimentManager;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.entities.items.PlayerInventoryContainer;
@@ -35,12 +33,14 @@ import org.asf.edge.common.util.inventory.defaultvalidators.BundleSecurityValida
 import org.asf.edge.common.util.inventory.defaultvalidators.MysteryBoxSecurityValidator;
 import org.asf.edge.common.xmls.items.ItemDefData;
 import org.asf.edge.common.xmls.items.relation.ItemRelationData;
+import org.asf.nexus.common.experiments.EdgeDefaultExperiments;
+import org.asf.nexus.common.experiments.ExperimentManager;
+import org.asf.nexus.events.EventBus;
 import org.asf.edge.common.events.items.InventoryUtilsLoadEvent;
 import org.asf.edge.common.xmls.inventories.InventoryUpdateResponseData;
 import org.asf.edge.common.xmls.inventories.SetCommonInventoryRequestData;
 import org.asf.edge.common.xmls.inventories.InventoryUpdateResponseData.CurrencyUpdateBlock;
 import org.asf.edge.common.xmls.inventories.InventoryUpdateResponseData.PrizeItemInfo;
-import org.asf.edge.modules.eventbus.EventBus;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;

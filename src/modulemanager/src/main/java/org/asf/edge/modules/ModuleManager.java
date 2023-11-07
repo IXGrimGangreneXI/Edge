@@ -20,7 +20,7 @@ import org.asf.cyan.fluid.bytecode.FluidClassPool;
 import org.objectweb.asm.tree.ClassNode;
 import org.asf.edge.modules.dependencies.IMavenRepositoryProvider;
 import org.asf.edge.modules.dependencies.IModuleMavenDependencyProvider;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 /**
  * 

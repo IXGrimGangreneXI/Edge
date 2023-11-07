@@ -16,7 +16,7 @@ import org.asf.edge.mmoserver.events.zones.ZoneDeletedEvent;
 import org.asf.edge.mmoserver.events.zones.ZoneManagerLoadEvent;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPayload;
 import org.asf.edge.mmoserver.services.ZoneManager;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

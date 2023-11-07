@@ -1,8 +1,8 @@
 package org.asf.edge.mmoserver.events.chat;
 
 import org.asf.edge.mmoserver.entities.player.PlayerInfo;
-import org.asf.edge.modules.eventbus.EventObject;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventObject;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

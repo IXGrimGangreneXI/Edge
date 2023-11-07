@@ -1,7 +1,7 @@
 package org.asf.edge.modules.gridapi.events;
 
-import org.asf.edge.modules.eventbus.EventPath;
 import org.asf.edge.modules.gridapi.commands.CommandContext;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

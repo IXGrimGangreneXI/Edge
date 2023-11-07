@@ -15,15 +15,15 @@ import org.asf.edge.gameplayapi.services.quests.impl.QuestManagerImpl;
 import org.asf.edge.gameplayapi.services.rooms.PlayerRoomManager;
 import org.asf.edge.gameplayapi.services.rooms.impl.PlayerRoomManagerImpl;
 import org.asf.edge.common.util.InventoryUtil;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.common.services.ServiceImplementationPriorityLevels;
+import org.asf.nexus.common.services.ServiceManager;
+import org.asf.nexus.events.EventBus;
 
 import com.google.gson.JsonPrimitive;
 
 import org.asf.edge.gameplayapi.http.handlers.achievements.*;
 import org.asf.edge.common.EdgeServerEnvironment;
-import org.asf.edge.common.IBaseServer;
-import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
-import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.IEdgeBaseServer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.achievements.impl.AchievementManagerImpl;
 import org.asf.edge.common.services.commondata.CommonKvDataContainer;
@@ -51,7 +51,7 @@ import org.asf.edge.gameplayapi.config.GameplayApiServerConfig;
  * @author Sky Swimmer
  *
  */
-public class EdgeGameplayApiServer implements IBaseServer {
+public class EdgeGameplayApiServer implements IEdgeBaseServer {
 	public static final String GAMEPLAY_API_VERSION = "a1.6";
 
 	private Logger logger;

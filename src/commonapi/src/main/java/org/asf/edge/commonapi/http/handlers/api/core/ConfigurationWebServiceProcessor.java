@@ -9,9 +9,10 @@ import java.util.ArrayList;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.impl.http_1_1.RemoteClientHttp_1_1;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.LegacyFunction;
-import org.asf.edge.common.http.functions.LegacyFunctionInfo;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.SodRequestInfo;
+import org.asf.edge.common.webservices.annotations.LegacyFunction;
+import org.asf.edge.common.webservices.annotations.LegacyFunctionInfo;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.util.MmoServerEntry;
 import org.asf.edge.commonapi.xmls.servers.MMOServerInfoBlock;
@@ -44,7 +45,7 @@ public class ConfigurationWebServiceProcessor extends EdgeWebService<EdgeCommonA
 	@LegacyFunction(allowedMethods = { "POST" })
 	public void getMMOServerInfoWithZone(LegacyFunctionInfo info) throws IOException {
 		// Handle server list request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 
@@ -57,7 +58,7 @@ public class ConfigurationWebServiceProcessor extends EdgeWebService<EdgeCommonA
 			for (String zone : server.zones) {
 				// Determine address
 				String addr = server.address;
-				if (addr.equals("localhost")) {
+				if (addr.equals("localhost") || addr.equals("127.0.0.1")) {
 					// Get local IP
 					String host = "localhost";
 					if (info.getClient() instanceof RemoteClientHttp_1_1) {

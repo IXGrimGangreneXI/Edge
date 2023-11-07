@@ -35,20 +35,20 @@ import org.asf.edge.mmoserver.networking.impl.BitswarmSmartfoxServer;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPayload;
 import org.asf.edge.mmoserver.services.ZoneManager;
 import org.asf.edge.mmoserver.services.impl.ZoneManagerImpl;
-import org.asf.edge.modules.eventbus.EventBus;
-import org.asf.edge.modules.eventbus.EventListener;
-import org.asf.edge.modules.eventbus.IEventReceiver;
+import org.asf.nexus.common.io.DataReader;
+import org.asf.nexus.common.io.DataWriter;
+import org.asf.nexus.common.services.ServiceImplementationPriorityLevels;
+import org.asf.nexus.common.services.ServiceManager;
+import org.asf.nexus.events.EventBus;
+import org.asf.nexus.events.EventListener;
+import org.asf.nexus.events.IEventReceiver;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
 import org.asf.edge.common.EdgeServerEnvironment;
-import org.asf.edge.common.IBaseServer;
-import org.asf.edge.common.io.DataReader;
-import org.asf.edge.common.io.DataWriter;
-import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
-import org.asf.edge.common.services.ServiceManager;
+import org.asf.edge.common.IEdgeBaseServer;
 import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
@@ -74,7 +74,7 @@ import org.asf.edge.mmoserver.entities.smartfox.UserVariable;
  * @author Sky Swimmer
  *
  */
-public class EdgeMMOServer implements IBaseServer {
+public class EdgeMMOServer implements IEdgeBaseServer {
 	public static final String MMO_SERVER_VERSION = "a1.6";
 
 	private Logger logger;

@@ -20,8 +20,8 @@ import org.asf.edge.common.services.messages.PlayerMessenger;
 import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.common.xmls.achievements.RewardData;
 import org.asf.edge.common.xmls.messages.MessageInfoData;
-import org.asf.edge.modules.eventbus.EventBus;
-import org.asf.edge.modules.eventbus.EventListener;
+import org.asf.nexus.events.EventBus;
+import org.asf.nexus.events.EventListener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;

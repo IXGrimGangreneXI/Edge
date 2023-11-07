@@ -21,7 +21,7 @@ import org.asf.edge.common.services.textfilter.PhraseFilterSet;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.services.textfilter.result.FilterResult;
 import org.asf.edge.common.services.textfilter.result.WordMatch;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 import com.google.gson.JsonPrimitive;
 

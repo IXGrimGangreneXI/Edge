@@ -1,9 +1,9 @@
 package org.asf.edge.modules.gridclient.grid.events;
 
-import org.asf.edge.modules.eventbus.EventObject;
-import org.asf.edge.modules.eventbus.EventPath;
 import org.asf.edge.modules.gridclient.phoenix.auth.LoginDeferredMessage;
 import org.asf.edge.modules.gridclient.phoenix.auth.LoginManager;
+import org.asf.nexus.events.EventObject;
+import org.asf.nexus.events.EventPath;
 
 import com.google.gson.JsonObject;
 

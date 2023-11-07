@@ -1,8 +1,8 @@
 package org.asf.edge.common.events.items;
 
 import org.asf.edge.common.services.items.ItemManager;
-import org.asf.edge.modules.eventbus.EventObject;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventObject;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

@@ -119,9 +119,13 @@ public class LaunchOptionMenu extends JDialog {
 			JButton btnNewButton_2 = new JButton("Launch client (remote server)");
 			btnNewButton_2.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					RemoteServerConfigWindow window = new RemoteServerConfigWindow();
-					if (window.showDialog())
-						dispose();
+					try {
+						LaunchProfileWindow window = new LaunchProfileWindow(LaunchOptionMenu.this);
+						if (window.showDialog())
+							dispose();
+					} catch (IOException e1) {
+						throw new RuntimeException(e1);
+					}
 				}
 			});
 			btnNewButton_2.setBounds(12, 118, 296, 27);

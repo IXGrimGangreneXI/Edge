@@ -1,5 +1,7 @@
 Edge requires the following projects:
  - connective-http (2023 rewrite and above): https://github.com/SkySwimmer/connective-http
+ - Razorwhip: https://github.com/SkySwimmer/Razorwhip
+ - Nexus Emulation libraries: https://github.com/SkySwimmer/NexusEmulation
  
 Commands to set up dependencies:
  - Connective:
@@ -8,3 +10,6 @@ Commands to set up dependencies:
  - Razorwhip:
    mkdir deps
    git clone https://github.com/SkySwimmer/Razorwhip deps/razorwhip
+ - Nexus Emulation:
+   mkdir deps
+   git clone https://github.com/SkySwimmer/NexusEmulation deps/nexus-emulation

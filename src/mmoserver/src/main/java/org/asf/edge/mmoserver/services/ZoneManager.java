@@ -1,9 +1,9 @@
 package org.asf.edge.mmoserver.services;
 
-import org.asf.edge.common.services.AbstractService;
-import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.mmoserver.entities.smartfox.GameZone;
 import org.asf.edge.mmoserver.entities.smartfox.RoomGroup;
+import org.asf.nexus.common.services.AbstractService;
+import org.asf.nexus.common.services.ServiceManager;
 
 /**
  * 

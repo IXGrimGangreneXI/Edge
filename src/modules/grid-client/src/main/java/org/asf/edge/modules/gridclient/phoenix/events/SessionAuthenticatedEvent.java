@@ -1,7 +1,7 @@
 package org.asf.edge.modules.gridclient.phoenix.events;
 
-import org.asf.edge.modules.eventbus.EventPath;
 import org.asf.edge.modules.gridclient.phoenix.auth.LoginManager;
+import org.asf.nexus.events.EventPath;
 
 import com.google.gson.JsonObject;
 

@@ -2,7 +2,7 @@ package org.asf.edge.mmoserver.events;
 
 import org.asf.edge.mmoserver.networking.SmartfoxClient;
 import org.asf.edge.mmoserver.networking.SmartfoxServer;
-import org.asf.edge.modules.eventbus.EventObject;
+import org.asf.nexus.events.EventObject;
 
 /**
  * 

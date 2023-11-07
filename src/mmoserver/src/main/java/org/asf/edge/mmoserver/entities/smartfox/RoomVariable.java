@@ -6,7 +6,7 @@ import org.asf.edge.mmoserver.io.SequenceReader;
 import org.asf.edge.mmoserver.io.SequenceWriter;
 import org.asf.edge.mmoserver.networking.sfs.SmartfoxPayload;
 import org.asf.edge.mmoserver.services.ZoneManager;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 public class RoomVariable {
 

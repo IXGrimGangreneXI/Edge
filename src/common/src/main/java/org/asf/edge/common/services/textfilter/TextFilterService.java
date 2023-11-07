@@ -1,10 +1,10 @@
 package org.asf.edge.common.services.textfilter;
 
-import org.asf.edge.common.services.AbstractService;
-import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
-import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.textfilter.impl.TextFilterServiceImpl;
 import org.asf.edge.common.services.textfilter.result.FilterResult;
+import org.asf.nexus.common.services.AbstractService;
+import org.asf.nexus.common.services.ServiceImplementationPriorityLevels;
+import org.asf.nexus.common.services.ServiceManager;
 
 /**
  * 

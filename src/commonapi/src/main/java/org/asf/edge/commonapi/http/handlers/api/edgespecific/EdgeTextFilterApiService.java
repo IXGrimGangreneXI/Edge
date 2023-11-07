@@ -2,13 +2,13 @@ package org.asf.edge.commonapi.http.handlers.api.edgespecific;
 
 import java.io.IOException;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.Function;
-import org.asf.edge.common.http.functions.FunctionInfo;
-import org.asf.edge.common.http.functions.FunctionResult;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.services.textfilter.result.FilterResult;
 import org.asf.edge.common.services.textfilter.result.WordMatch;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.annotations.Function;
+import org.asf.edge.common.webservices.annotations.FunctionInfo;
+import org.asf.edge.common.webservices.annotations.FunctionResult;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 
 import com.google.gson.JsonArray;

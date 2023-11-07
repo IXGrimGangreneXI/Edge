@@ -3,8 +3,8 @@ package org.asf.edge.common.events.accounts.saves;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
-import org.asf.edge.modules.eventbus.EventObject;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventObject;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

@@ -49,6 +49,11 @@ artifacts {
 
 dependencies {
 	implementation project(":deps:connective-http")
+	implementation project(":deps:nexus-emulation:projects:nexus-io")
+	implementation project(":deps:nexus-emulation:projects:nexus-common")
+	implementation project(":deps:nexus-emulation:projects:nexus-events")
+	implementation project(":deps:nexus-emulation:projects:nexus-webservices")
+	
 	implementation name: 'Fluid', version: '1.0.0.A33'
 
 	implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.0'

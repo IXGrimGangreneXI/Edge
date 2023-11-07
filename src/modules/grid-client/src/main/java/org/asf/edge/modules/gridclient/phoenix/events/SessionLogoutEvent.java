@@ -1,8 +1,8 @@
 package org.asf.edge.modules.gridclient.phoenix.events;
 
-import org.asf.edge.modules.eventbus.EventPath;
 import org.asf.edge.modules.gridclient.phoenix.auth.LoginManager;
 import org.asf.edge.modules.gridclient.phoenix.auth.PhoenixSession;
+import org.asf.nexus.events.EventPath;
 
 @EventPath("phoenix.session.logout")
 public class SessionLogoutEvent extends LoginManagerEvent {

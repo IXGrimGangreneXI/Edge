@@ -11,7 +11,7 @@ import org.asf.edge.common.events.achievements.RankChangedEvent;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 import com.google.gson.JsonPrimitive;
 

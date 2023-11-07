@@ -2,8 +2,8 @@ package org.asf.edge.mmoserver.events.sync;
 
 import org.asf.edge.mmoserver.entities.smartfox.RoomInfo;
 import org.asf.edge.mmoserver.entities.smartfox.SfsUser;
-import org.asf.edge.modules.eventbus.EventObject;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventObject;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

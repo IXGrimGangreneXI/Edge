@@ -1,7 +1,7 @@
 package gameplayapi;
 
 import org.asf.edge.modules.IEdgeModule;
-import org.asf.edge.modules.eventbus.EventListener;
+import org.asf.nexus.events.EventListener;
 
 public class TestModule implements IEdgeModule {
 

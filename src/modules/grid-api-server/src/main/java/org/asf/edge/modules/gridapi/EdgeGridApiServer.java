@@ -8,10 +8,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.ConnectiveHttpServer;
 import org.asf.connective.RemoteClient;
-import org.asf.edge.common.IBaseServer;
+import org.asf.edge.common.IEdgeBaseServer;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.util.LogWindow;
-import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.modules.gridapi.commands.CommandContext;
 import org.asf.edge.modules.gridapi.config.GridApiServerConfig;
 import org.asf.edge.modules.gridapi.events.server.GridApiServerSetupEvent;
@@ -25,10 +24,11 @@ import org.asf.edge.modules.gridapi.http.services.phoenix.PhoenixServersWebServi
 import org.asf.edge.modules.gridapi.http.services.phoenix.PhoenixTokensWebService;
 import org.asf.edge.modules.gridapi.phoenixconnector.IApiConnectorRequestHandler;
 import org.asf.edge.modules.gridapi.phoenixconnector.handlers.TextFilterRequestHandler;
+import org.asf.nexus.events.EventBus;
 
 import com.google.gson.JsonObject;
 
-public class EdgeGridApiServer implements IBaseServer {
+public class EdgeGridApiServer implements IEdgeBaseServer {
 	public static final String GRID_API_VERSION = "1.0.0.A1";
 
 	private Logger logger;

@@ -3,7 +3,7 @@ package org.asf.edge.commonapi.events.server;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.config.CommonApiServerConfig;
 import org.asf.edge.commonapi.events.CommonApiServerEvent;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

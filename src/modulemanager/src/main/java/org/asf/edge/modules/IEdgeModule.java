@@ -2,7 +2,7 @@ package org.asf.edge.modules;
 
 import java.util.Map;
 
-import org.asf.edge.modules.eventbus.IEventReceiver;
+import org.asf.nexus.events.IEventReceiver;
 
 /**
  * 

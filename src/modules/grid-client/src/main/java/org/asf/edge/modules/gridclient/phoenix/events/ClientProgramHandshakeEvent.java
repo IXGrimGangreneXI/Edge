@@ -1,9 +1,9 @@
 package org.asf.edge.modules.gridclient.phoenix.events;
 
-import org.asf.edge.modules.eventbus.EventPath;
 import org.asf.edge.modules.gridclient.phoenix.PhoenixClient;
 import org.asf.edge.modules.gridclient.phoenix.networking.DataReader;
 import org.asf.edge.modules.gridclient.phoenix.networking.DataWriter;
+import org.asf.nexus.events.EventPath;
 
 @EventPath("phoenix.client.programhandshake")
 public class ClientProgramHandshakeEvent extends PhoenixEvent {

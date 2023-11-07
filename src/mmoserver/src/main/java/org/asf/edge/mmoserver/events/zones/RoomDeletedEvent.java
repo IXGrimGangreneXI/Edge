@@ -4,8 +4,8 @@ import org.asf.edge.mmoserver.entities.smartfox.GameZone;
 import org.asf.edge.mmoserver.entities.smartfox.RoomGroup;
 import org.asf.edge.mmoserver.entities.smartfox.RoomInfo;
 import org.asf.edge.mmoserver.services.ZoneManager;
-import org.asf.edge.modules.eventbus.EventObject;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventObject;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

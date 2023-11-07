@@ -7,8 +7,8 @@ import java.util.Base64;
 
 import org.apache.logging.log4j.LogManager;
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.modules.gridclient.phoenix.events.PhoenixGameInvalidatedEvent;
+import org.asf.nexus.events.EventBus;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

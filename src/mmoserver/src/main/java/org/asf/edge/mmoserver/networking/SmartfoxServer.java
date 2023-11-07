@@ -33,9 +33,9 @@ import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.client
 import org.asf.edge.mmoserver.networking.channels.smartfox.system.packets.clientbound.sync.ClientboundPlayerLeaveRoomPacket;
 import org.asf.edge.mmoserver.networking.packets.ExtensionMessageChannel;
 import org.asf.edge.mmoserver.networking.packets.PacketChannel;
-import org.asf.edge.modules.eventbus.EventBus;
-import org.asf.edge.modules.eventbus.EventListener;
-import org.asf.edge.modules.eventbus.IEventReceiver;
+import org.asf.nexus.events.EventBus;
+import org.asf.nexus.events.EventListener;
+import org.asf.nexus.events.IEventReceiver;
 
 /**
  * 

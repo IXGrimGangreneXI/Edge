@@ -1,8 +1,8 @@
 package org.asf.edge.common.events.achievements;
 
 import org.asf.edge.common.services.achievements.AchievementManager;
-import org.asf.edge.modules.eventbus.EventObject;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventObject;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

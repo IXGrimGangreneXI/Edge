@@ -7,11 +7,15 @@ Fixes in a1.7:
 Changes in a1.7:
 - CRITICAL REMOVAL: the HTTP-based data system has been deprecated and removed, it was a mess and way too inefficient, multi-server setups should use a shared database server from this version and onwards
 - Changed default ports to 16518-16524 (16518 = sentinel, 16519 = content, 16520 = gameplay, 16521 = common api, 16522 = social, 16523 = mmo, 16524 = internal api)
+- Edge has been split into two parts now: Nexus Libraries (which will also be used by EmuFeral soon in a coming overhaul update) and the Edge server code
+- Huge refactors to the project were made, bit too complex to document in a changelog, this is basically a complete rewrite of the Edge server software
 - Made it so that if the player is connected to the MMO server, that webservice messages are immediately synced through it
 - Added logging of the store ID to item registration for easily discovering what store items are in
-- Huge refactors to the project were made, bit too complex to document in a changelog
 - Redid save structure again, should be more efficient
 
 Sentinel changes in a1.7:
 - Improved and patched the server configuration window
 - Fixed an issue where asset overrides may not be picked up by modern clients
+- Added server profiles, this will allow you to add multiple remote servers to play on
+- Renamed '-DdebugPayloadFiles' to '-DdebugPayloadDirectories' since it only works with directories
+- Implemented payload sync for sentinel-enabled servers, allowing remote servers to send custom content to the client

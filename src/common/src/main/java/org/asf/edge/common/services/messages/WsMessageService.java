@@ -7,11 +7,11 @@ import org.asf.edge.common.entities.messages.WsMessage;
 import org.asf.edge.common.entities.messages.defaultmessages.WsGenericMessage;
 import org.asf.edge.common.entities.messages.defaultmessages.WsPluginMessage;
 import org.asf.edge.common.entities.messages.defaultmessages.WsRankMessage;
-import org.asf.edge.common.services.AbstractService;
-import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.xmls.messages.MessageInfoData;
+import org.asf.nexus.common.services.AbstractService;
+import org.asf.nexus.common.services.ServiceManager;
 
 /**
  * 

@@ -8,12 +8,12 @@ import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.messages.PlayerMessenger;
 import org.asf.edge.common.services.messages.WsMessageService;
-import org.asf.edge.modules.eventbus.EventListener;
-import org.asf.edge.modules.eventbus.IEventReceiver;
 import org.asf.edge.modules.gridclient.GridClientModule;
 import org.asf.edge.modules.gridclient.grid.events.GridClientConnectFailedEvent;
 import org.asf.edge.modules.gridclient.grid.events.GridClientConnectedEvent;
 import org.asf.edge.modules.gridclient.utils.GridSaveUtil;
+import org.asf.nexus.events.EventListener;
+import org.asf.nexus.events.IEventReceiver;
 
 public class ConnectionEventHandlers implements IEventReceiver {
 

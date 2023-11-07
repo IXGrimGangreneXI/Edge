@@ -11,7 +11,7 @@ import java.util.Map;
 
 import javax.net.ssl.SSLSocketFactory;
 
-import org.asf.edge.common.io.IoUtil;
+import org.asf.nexus.common.io.IoUtil;
 
 public class HttpUpgradeUtil {
 

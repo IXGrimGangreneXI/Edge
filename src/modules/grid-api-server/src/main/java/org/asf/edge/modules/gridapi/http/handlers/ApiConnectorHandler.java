@@ -6,9 +6,9 @@ import java.util.UUID;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.common.io.DataReader;
-import org.asf.edge.common.io.DataWriter;
 import org.asf.edge.modules.gridapi.EdgeGridApiServer;
+import org.asf.nexus.common.io.DataReader;
+import org.asf.nexus.common.io.DataWriter;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

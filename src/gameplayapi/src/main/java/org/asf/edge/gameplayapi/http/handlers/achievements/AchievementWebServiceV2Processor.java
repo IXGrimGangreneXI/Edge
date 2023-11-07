@@ -9,12 +9,13 @@ import java.util.TimeZone;
 
 import org.apache.logging.log4j.LogManager;
 import org.asf.connective.processors.HttpPushProcessor;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.*;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.leaderboard.Leaderboard;
 import org.asf.edge.common.services.leaderboard.LeaderboardManager;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.SodRequestInfo;
+import org.asf.edge.common.webservices.annotations.*;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.xmls.achievements.AchievementTaskData;
 import org.asf.edge.gameplayapi.xmls.achievements.AchievementTaskSetRequestList;
@@ -43,7 +44,7 @@ public class AchievementWebServiceV2Processor extends EdgeWebService<EdgeGamepla
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
-	public FunctionResult setUserAchievementTask(FunctionInfo func, ServiceRequestInfo req, AccountSaveContainer save,
+	public FunctionResult setUserAchievementTask(FunctionInfo func, SodRequestInfo req, AccountSaveContainer save,
 			@SodEncryptedParam @SodRequestParam AchievementTaskSetRequestList achievementTaskSetRequest)
 			throws IOException {
 		// Prepare response
@@ -63,7 +64,7 @@ public class AchievementWebServiceV2Processor extends EdgeWebService<EdgeGamepla
 	}
 
 	@SodRequest
-	public FunctionResult getTopAchievementPointUsers(FunctionInfo func, ServiceRequestInfo req,
+	public FunctionResult getTopAchievementPointUsers(FunctionInfo func, SodRequestInfo req,
 			@SodRequestParam UdtLeaderboardRequestData request) throws IOException {
 		// Prepare response
 		UdtLeaderboardResponseData resp = new UdtLeaderboardResponseData();

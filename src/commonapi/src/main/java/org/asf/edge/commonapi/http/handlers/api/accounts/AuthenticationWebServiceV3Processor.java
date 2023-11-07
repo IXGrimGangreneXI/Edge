@@ -8,12 +8,12 @@ import java.util.stream.Stream;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.events.accounts.AccountAuthenticatedEvent;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.LegacyFunction;
-import org.asf.edge.common.http.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.tokens.SessionToken;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.annotations.LegacyFunction;
+import org.asf.edge.common.webservices.annotations.LegacyFunctionInfo;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.xmls.ProductRuleData;
 import org.asf.edge.commonapi.xmls.auth.CommonLoginInfo;
@@ -21,7 +21,7 @@ import org.asf.edge.commonapi.xmls.auth.GuestLoginData;
 import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
 import org.asf.edge.commonapi.xmls.auth.ParentLoginData;
 import org.asf.edge.commonapi.xmls.auth.ParentLoginResponseData;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
@@ -87,7 +87,7 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 	@LegacyFunction(allowedMethods = { "POST" })
 	public void getRules(LegacyFunctionInfo func) throws IOException {
 		// Handle rules request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 
@@ -112,7 +112,7 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 			manager = AccountManager.getInstance();
 
 		// Handle login request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String password = req.getEncryptedValue("password");
@@ -143,7 +143,7 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 			manager = AccountManager.getInstance();
 
 		// Handle login request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 
@@ -245,7 +245,7 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 			manager = AccountManager.getInstance();
 
 		// Handle login request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 
@@ -360,7 +360,7 @@ public class AuthenticationWebServiceV3Processor extends EdgeWebService<EdgeComm
 		setResponseContent("text/xml", req.generateEncryptedResponse(req.generateXmlValue("ParentLoginInfo", resp)));
 	}
 
-	private void invalidUserCallback(String username, AccountObject account, ServiceRequestInfo req)
+	private void invalidUserCallback(String username, AccountObject account, SodRequestInfo req)
 			throws IOException {
 		ParentLoginResponseData resp = new ParentLoginResponseData();
 		resp.status = LoginStatusType.InvalidUserName;

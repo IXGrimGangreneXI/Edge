@@ -5,8 +5,8 @@ import org.asf.edge.common.entities.items.PlayerInventoryContainer;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
-import org.asf.edge.modules.eventbus.EventObject;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventObject;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

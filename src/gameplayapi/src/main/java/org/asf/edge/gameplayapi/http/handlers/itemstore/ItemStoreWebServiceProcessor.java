@@ -23,9 +23,6 @@ import org.asf.edge.common.entities.items.ItemCategoryInfo;
 import org.asf.edge.common.entities.items.ItemInfo;
 import org.asf.edge.common.entities.items.ItemSaleInfo;
 import org.asf.edge.common.entities.items.ItemStoreInfo;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.LegacyFunction;
-import org.asf.edge.common.http.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.commondata.CommonKvDataContainer;
@@ -33,6 +30,9 @@ import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.annotations.LegacyFunction;
+import org.asf.edge.common.webservices.annotations.LegacyFunctionInfo;
 import org.asf.edge.common.xmls.items.ItemDefData;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.xmls.items.GetStoreRequestData;
@@ -49,7 +49,6 @@ import com.google.gson.JsonPrimitive;
 public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApiServer> {
 
 	private static ItemManager itemManager;
-	private static boolean popularItemManagementInited = false;
 
 	public ItemStoreWebServiceProcessor(EdgeGameplayApiServer server) {
 		super(server);
@@ -76,7 +75,7 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 	@LegacyFunction(allowedMethods = { "POST" })
 	public void getRankAttributeData(LegacyFunctionInfo info) throws IOException {
 		// Handle request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 
@@ -90,7 +89,7 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 	@LegacyFunction(allowedMethods = { "POST" })
 	public void getAnnouncementsByUser(LegacyFunctionInfo info) throws IOException {
 		// Handle request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -116,56 +115,6 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 				+ "<Announcements xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" />");
 	}
 
-	private static synchronized void initPopularItemManager() {
-		if (popularItemManagementInited)
-			return;
-		popularItemManagementInited = true;
-		initPopularItemManager();
-
-		// Refresh popular items in the background
-		CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("POPULARITEMS");
-		AsyncTaskManager.runAsync(() -> {
-			while (true) {
-				try {
-					// Check if a refresh should be done, refreshes are weekly
-					boolean requiresRefresh = false;
-					if (!cont.entryExists("lastupdate") || (System.currentTimeMillis()
-							- cont.getEntry("lastupdate").getAsLong()) > (7 * 24 * 60 * 60 * 1000)) {
-						// Refresh needed
-						requiresRefresh = true;
-					}
-
-					if (requiresRefresh) {
-						// Set last update
-						cont.setEntry("lastupdate", new JsonPrimitive(System.currentTimeMillis()));
-
-						// Check for each store
-						int[] storeIDs = ItemManager.getInstance().getStoreIds();
-						for (int store : storeIDs) {
-							// Update store
-							if (cont.entryExists("current-" + store)) {
-								JsonObject current = cont.getEntry("current-" + store).getAsJsonObject();
-								cont.setEntry("last-" + store, current);
-								cont.setEntry("current-" + store, new JsonObject());
-							}
-						}
-					}
-				} catch (IOException e) {
-					// Error
-					LogManager.getLogger("ItemManager")
-							.error("Failed to check if popular items need to be refreshed due to a database error.", e);
-				}
-
-				// Wait 30 seconds
-				try {
-					Thread.sleep(30000);
-				} catch (InterruptedException e) {
-					break;
-				}
-			}
-		});
-	}
-
 	@LegacyFunction(allowedMethods = { "POST" })
 	public void getStore(LegacyFunctionInfo info) throws IOException {
 		if (itemManager == null)
@@ -177,7 +126,7 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 		}
 
 		// Handle store request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 
@@ -323,7 +272,7 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 			itemManager = ItemManager.getInstance();
 
 		// Handle store request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 

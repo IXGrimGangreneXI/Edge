@@ -13,14 +13,14 @@ import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.entities.achivements.RankInfo;
 import org.asf.edge.common.entities.achivements.RankMultiplierInfo;
 import org.asf.edge.common.entities.achivements.RankTypeID;
-import org.asf.edge.common.experiments.EdgeDefaultExperiments;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.*;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.tokens.SessionToken;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.SodRequestInfo;
+import org.asf.edge.common.webservices.annotations.*;
 import org.asf.edge.common.xmls.achievements.AchievementInfoList;
 import org.asf.edge.common.xmls.achievements.UserRankData;
 import org.asf.edge.common.xmls.achievements.UserRankList;
@@ -29,6 +29,14 @@ import org.asf.edge.gameplayapi.xmls.achievements.AchievementDragonIdList;
 import org.asf.edge.gameplayapi.xmls.achievements.AchievementRewardList;
 import org.asf.edge.gameplayapi.xmls.multipliers.RewardTypeMultiplierData;
 import org.asf.edge.gameplayapi.xmls.multipliers.RewardTypeMultiplierListData;
+import org.asf.nexus.webservices.WebServiceContext;
+import org.asf.nexus.webservices.functions.FunctionInfo;
+import org.asf.nexus.webservices.functions.FunctionResult;
+import org.asf.nexus.webservices.functions.annotations.ApiHandler;
+import org.asf.nexus.webservices.functions.annotations.ExperimentalFeature;
+import org.asf.nexus.webservices.functions.annotations.Function;
+import org.asf.nexus.webservices.functions.annotations.RequestParam;
+import org.asf.edge.common.experiments.EdgeDefaultExperiments;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -44,13 +52,13 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 
 	private static AchievementManager achievementManager;
 
-	public AchievementWebServiceV1Processor(EdgeGameplayApiServer server) {
-		super(server);
+	public AchievementWebServiceV1Processor(WebServiceContext<EdgeGameplayApiServer> context) {
+		super(context);
 	}
 
 	@Override
-	public HttpPushProcessor createNewInstance() {
-		return new AchievementWebServiceV1Processor(getServerInstance());
+	public EdgeWebService<EdgeGameplayApiServer> createNewInstance(WebServiceContext<EdgeGameplayApiServer> context) {
+		return new AchievementWebServiceV1Processor(context);
 	}
 
 	@Override
@@ -62,8 +70,8 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	// Vanilla
 	//
 
-	@SodRequest
-	public FunctionResult getAllRanks(FunctionInfo func, ServiceRequestInfo req) throws IOException {
+	@ApiHandler
+	public FunctionResult getAllRanks(FunctionInfo func, SodRequestInfo req) throws IOException {
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
 
@@ -79,13 +87,14 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfUserRank", lst));
 	}
 
-	@SodRequest
-	public FunctionResult getAchievementTaskInfo(FunctionInfo func, ServiceRequestInfo req) throws IOException {
+	@ApiHandler
+	public FunctionResult getAchievementTaskInfo(FunctionInfo func, SodRequestInfo req,
+			@RequestParam int[] achievementTaskIDList) throws IOException {
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
 
 		// Load request
-		int[] ids = req.parseXmlValue(req.payload.get("achievementTaskIDList"), int[].class);
+		int[] ids = achievementTaskIDList;
 
 		// Load XML
 		InputStream strm = getClass().getClassLoader().getResourceAsStream("achievementdata/achievementtasks.xml");
@@ -117,53 +126,53 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 
 	}
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
 	@Function("SetUserAchievementAndGetReward")
 	@ExperimentalFeature(value = EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT, isReverse = true)
-	public FunctionResult setUserAchievementAndGetRewardDummy(FunctionInfo func, ServiceRequestInfo req,
-			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
+	public FunctionResult setUserAchievementAndGetRewardDummy(FunctionInfo func, SodRequestInfo req,
+			AccountSaveContainer save, @RequestParam int achievementID) throws IOException {
 		// Handle task reward request
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
 		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", new AchievementRewardList()));
 	}
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
 	@Function("SetAchievementAndGetReward")
 	@ExperimentalFeature(value = EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT, isReverse = true)
-	public FunctionResult setAchievementAndGetRewardDummy(FunctionInfo func, ServiceRequestInfo req,
-			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
+	public FunctionResult setAchievementAndGetRewardDummy(FunctionInfo func, SodRequestInfo req,
+			AccountSaveContainer save, @RequestParam int achievementID) throws IOException {
 		return setUserAchievementAndGetRewardDummy(func, req, save, achievementID);
 	}
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
 	@Function("SetAchievementByEntityIDs")
 	@ExperimentalFeature(value = EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT, isReverse = true)
-	public FunctionResult setAchievementByEntityIDsDummy(FunctionInfo func, ServiceRequestInfo req,
-			AccountSaveContainer save, @SodRequestParam int achievementID, @SodRequestParam String groupID,
-			@SodRequestParam AchievementDragonIdList petIDs) throws IOException {
+	public FunctionResult setAchievementByEntityIDsDummy(FunctionInfo func, SodRequestInfo req,
+			AccountSaveContainer save, @RequestParam int achievementID, @RequestParam String groupID,
+			@RequestParam AchievementDragonIdList petIDs) throws IOException {
 		// Handle task reward request
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
 		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", new AchievementRewardList()));
 	}
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
 	@ExperimentalFeature(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)
-	public FunctionResult setUserAchievementAndGetReward(FunctionInfo func, ServiceRequestInfo req,
-			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
+	public FunctionResult setUserAchievementAndGetReward(FunctionInfo func, SodRequestInfo req,
+			AccountSaveContainer save, @RequestParam int achievementID) throws IOException {
 		// Handle task reward request
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
@@ -174,24 +183,24 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", lst));
 	}
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
 	@ExperimentalFeature(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)
-	public FunctionResult setAchievementAndGetReward(FunctionInfo func, ServiceRequestInfo req,
-			AccountSaveContainer save, @SodRequestParam int achievementID) throws IOException {
+	public FunctionResult setAchievementAndGetReward(FunctionInfo func, SodRequestInfo req, AccountSaveContainer save,
+			@RequestParam int achievementID) throws IOException {
 		return setUserAchievementAndGetReward(func, req, save, achievementID);
 	}
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
 	@ExperimentalFeature(EdgeDefaultExperiments.ACHIEVEMENTSV1_SUPPORT)
-	public FunctionResult setAchievementByEntityIDs(FunctionInfo func, ServiceRequestInfo req,
-			AccountSaveContainer save, @SodRequestParam int achievementID, @SodRequestParam String groupID,
-			@SodRequestParam AchievementDragonIdList petIDs) throws IOException {
+	public FunctionResult setAchievementByEntityIDs(FunctionInfo func, SodRequestInfo req, AccountSaveContainer save,
+			@RequestParam int achievementID, @RequestParam String groupID, @RequestParam AchievementDragonIdList petIDs)
+			throws IOException {
 		// Handle task reward request
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
@@ -202,10 +211,10 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfAchievementReward", lst));
 	}
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
-	public FunctionResult getPetAchievementsByUserID(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
-			AccountObject account, @SodRequestParam String userId) throws IOException {
+	public FunctionResult getPetAchievementsByUserID(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
+			AccountObject account, @RequestParam String userId) throws IOException {
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
 
@@ -301,10 +310,10 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfUserAchievementInfo", lst));
 	}
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
-	public FunctionResult getAchievementsByUserID(FunctionInfo func, SessionToken tkn, ServiceRequestInfo req,
-			AccountObject account, @SodRequestParam String userId) throws IOException {
+	public FunctionResult getAchievementsByUserID(FunctionInfo func, SessionToken tkn, SodRequestInfo req,
+			AccountObject account, @RequestParam String userId) throws IOException {
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
 
@@ -345,11 +354,11 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfUserAchievementInfo", lst));
 	}
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
-	public FunctionResult getUserAchievements(FunctionInfo func, SessionToken tkn, ServiceRequestInfo req,
+	public FunctionResult getUserAchievements(FunctionInfo func, SessionToken tkn, SodRequestInfo req,
 			AccountObject account, AccountSaveContainer save) throws IOException {
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
@@ -378,11 +387,11 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/xml", req.generateXmlValue("ArrayOfUserAchievementInfo", lst));
 	}
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
-	public FunctionResult getAllRewardTypeMultiplier(FunctionInfo func, SessionToken tkn, ServiceRequestInfo req,
+	public FunctionResult getAllRewardTypeMultiplier(FunctionInfo func, SessionToken tkn, SodRequestInfo req,
 			AccountObject account, AccountSaveContainer save) throws IOException {
 		if (achievementManager == null)
 			achievementManager = AchievementManager.getInstance();
@@ -412,12 +421,12 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 	// Dragonrescue import
 	//
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
-	public FunctionResult setDragonXP(FunctionInfo func, ServiceRequestInfo req, AccountSaveContainer save,
-			@SodRequestParam String dragonId, @SodRequestParam int value) throws IOException {
+	public FunctionResult setDragonXP(FunctionInfo func, SodRequestInfo req, AccountSaveContainer save,
+			@RequestParam String dragonId, @RequestParam int value) throws IOException {
 		// Retrieve rank
 		EntityRankInfo rank = AchievementManager.getInstance().getRank(save, dragonId, RankTypeID.DRAGON);
 		if (rank == null)
@@ -430,12 +439,12 @@ public class AchievementWebServiceV1Processor extends EdgeWebService<EdgeGamepla
 		return ok("text/plain", "OK");
 	}
 
-	@SodRequest
+	@ApiHandler
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
-	public FunctionResult setPlayerXP(AccountSaveContainer save, ServiceRequestInfo req, @SodRequestParam int type,
-			@SodRequestParam int value) throws IOException {
+	public FunctionResult setPlayerXP(AccountSaveContainer save, SodRequestInfo req, @RequestParam int type,
+			@RequestParam int value) throws IOException {
 		// Retrieve rank
 		EntityRankInfo rank = AchievementManager.getInstance().getRank(save, save.getSaveID(),
 				RankTypeID.getByTypeID(type));

@@ -1,5 +1,7 @@
 package org.asf.edge.common.services.tabledata;
 
+import java.util.Date;
+
 public enum DataType {
 
 	NULL,
@@ -24,7 +26,9 @@ public enum DataType {
 
 	BOOLEAN,
 
-	BYTE_ARRAY;
+	BYTE_ARRAY,
+
+	DATE;
 
 	/**
 	 * Finds the DataType of a given object
@@ -82,6 +86,10 @@ public enum DataType {
 			return DataType.STRING;
 		else if (byte[].class.isAssignableFrom(cls))
 			return DataType.BYTE_ARRAY;
+
+		// Handle object types
+		if (Date.class.isAssignableFrom(cls))
+			return DataType.DATE;
 
 		// Handle wrappers
 		if (Boolean.class.isAssignableFrom(cls))

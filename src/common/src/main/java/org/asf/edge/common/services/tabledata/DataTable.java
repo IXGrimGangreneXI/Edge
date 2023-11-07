@@ -8,8 +8,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import org.asf.edge.common.services.tabledata.DataTable.DataTableLayout.EntryLayout;
+import org.asf.edge.common.services.tabledata.annotations.ForceUseFilterFields;
 import org.asf.edge.common.services.tabledata.annotations.TableColumn;
 import org.asf.edge.common.services.tabledata.annotations.UseAsFilter;
 
@@ -311,101 +314,11 @@ public abstract class DataTable<T extends TableRow> {
 	 * @throws IOException If the database command fails
 	 */
 	public void setRows(T value, boolean replaceAll) throws IOException {
-		// Check mode
-		DataFilter filter;
-		if (!replaceAll) {
-			// Populate filter
-			filter = new DataFilter(value.getValueCache());
-
-			// Check filter size
-			if (filter.count() == 0) {
-				// Populate with filter fields
-				for (EntryLayout layout : getLayout().getColumns()) {
-					if (layout.field.isAnnotationPresent(UseAsFilter.class)) {
-						try {
-							// Assign if not null
-							Object val = layout.field.get(value);
-							if (val != null) {
-								filter.setValue(layout.columnName, val);
-							}
-						} catch (IllegalArgumentException | IllegalAccessException e) {
-						}
-					}
-				}
-			}
-
-			// Check filter size
-			if (filter.count() == 0) {
-				// Still empty, populate with all values so it will create a new row
-				filter = new DataFilter(objectToDataset(value));
-			}
-		} else
-			filter = new DataFilter();
-
 		// Create update set
 		DataSet set = objectToDataset(value);
 
-		// Remove columns that are unchanged
-		String[] cols = set.getColumnNames();
-		for (String col : cols) {
-			Object ob = value.getValueCache().getValue(col, Object.class);
-			DataType tp = value.getValueCache().getValueType(col);
-			Object v = set.getValue(col, Object.class);
-			if (tp != DataType.NULL) {
-				if (tp != DataType.STRING && tp != DataType.OBJECT && tp != DataType.BYTE_ARRAY) {
-					// Primitives
-					if (ob == v) {
-						// Unchanged, remove
-						set.remove(col);
-					}
-				} else if (tp == DataType.BYTE_ARRAY) {
-					// Check byte array
-					byte[] o = (byte[]) ob;
-					byte[] n = (byte[]) v;
-					if (o == n) {
-						// Initial comparison check done, both are the same initial value, so no null
-						// changes
-						if (n != null) {
-							// New value isnt null
-							if (o.length == n.length) {
-								// Same length
-								// Check content
-								boolean same = true;
-								for (int i = 0; i < o.length; i++) {
-									if (o[i] != n[i]) {
-										same = false;
-										break;
-									}
-								}
-								if (same) {
-									// Unchanged, remove
-									set.remove(col);
-								}
-							}
-						}
-					}
-				} else if (tp == DataType.STRING) {
-					// String
-					// Check strings
-					String o = (String) ob;
-					String n = (String) v;
-					if (o == n) {
-						// Initial comparison check done, both are the same initial value, so no null
-						// changes
-						if (n != null) {
-							// New value isnt null
-							if (n.equals(o)) {
-								// Unchanged, remove
-								set.remove(col);
-							}
-						}
-					}
-				}
-			}
-		}
-
 		// Update
-		setRows(filter, set);
+		setRows(getFilter(value, set, replaceAll), set);
 
 		// Update value cache
 		updateValueCache(value, set);
@@ -475,7 +388,7 @@ public abstract class DataTable<T extends TableRow> {
 	 * @throws IOException If the database command fails
 	 */
 	public void removeRows(T value) throws IOException {
-		removeRows(new DataFilter(objectToDataset(value)));
+		removeRows(getFilter(value, objectToDataset(value), false));
 	}
 
 	/**
@@ -504,6 +417,105 @@ public abstract class DataTable<T extends TableRow> {
 	 */
 	public DataTableLayout getLayout() {
 		return layout;
+	}
+
+	private DataFilter getFilter(T value, DataSet set, boolean overwiteAll) {
+		// Check mode
+		DataFilter filter;
+		if (!overwiteAll) {
+			// Populate filter
+			if (!getLayout().forceUseFilterFields)
+				filter = new DataFilter(value.getValueCache());
+			else
+				filter = new DataFilter();
+
+			// Check filter size
+			if (filter.count() == 0) {
+				// Populate with filter fields
+				for (EntryLayout layout : getLayout().getColumns()) {
+					if (layout.assignmentField != null
+							&& layout.assignmentField.isAnnotationPresent(UseAsFilter.class)) {
+						try {
+							// Assign if not null
+							Object val = layout.assignmentField.get(value);
+							if (val != null) {
+								filter.setValue(layout.columnName, val);
+							}
+						} catch (IllegalArgumentException | IllegalAccessException e) {
+						}
+					}
+				}
+			}
+
+			// Check filter size
+			if (filter.count() == 0) {
+				// Still empty, populate with all values so it will create a new row
+				filter = new DataFilter(objectToDataset(value));
+			}
+		} else
+			filter = new DataFilter();
+
+		// Remove columns that are unchanged
+		String[] cols = set.getColumnNames();
+		for (String col : cols) {
+			Object ob = value.getValueCache().getValue(col, Object.class);
+			DataType tp = value.getValueCache().getValueType(col);
+			Object v = set.getValue(col, Object.class);
+			if (tp != DataType.NULL) {
+				if (tp != DataType.STRING && tp != DataType.OBJECT && tp != DataType.BYTE_ARRAY) {
+					// Primitives
+					if (ob == v) {
+						// Unchanged, remove
+						set.remove(col);
+					}
+				} else if (tp == DataType.BYTE_ARRAY) {
+					// Check byte array
+					byte[] o = (byte[]) ob;
+					byte[] n = (byte[]) v;
+					if (o == n) {
+						// Initial comparison check done, both are the same initial value, so no null
+						// changes
+						if (n != null) {
+							// New value isnt null
+							if (o.length == n.length) {
+								// Same length
+								// Check content
+								boolean same = true;
+								for (int i = 0; i < o.length; i++) {
+									if (o[i] != n[i]) {
+										same = false;
+										break;
+									}
+								}
+								if (same) {
+									// Unchanged, remove
+									set.remove(col);
+								}
+							}
+						}
+					}
+				} else if (tp == DataType.STRING) {
+					// String
+					// Check strings
+					String o = (String) ob;
+					String n = (String) v;
+					if (o == n) {
+						// Initial comparison check done, both are the same initial value, so no null
+						// changes
+						if (n != null) {
+							// New value isnt null
+							if (n.equals(o)) {
+								// Unchanged, remove
+								set.remove(col);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Return
+		return filter;
 	}
 
 	private void updateValueCache(T value, DataSet assignmentSet) {
@@ -583,14 +595,10 @@ public abstract class DataTable<T extends TableRow> {
 
 		// Populate
 		for (EntryLayout layout : getLayout().getColumns()) {
-			try {
-				Object v = layout.field.get(value);
-				if (v == null || (layout.columnType == DataType.CHAR && (int) (char) v == 0))
-					continue;
-				set.setValue(layout.columnName, v);
-			} catch (IllegalArgumentException | IllegalAccessException e) {
-				throw new IllegalArgumentException("Failed to retrieve the value of " + layout.columnName, e);
-			}
+			Object v = layout.retrievalCall.apply(value);
+			if (v == null || (layout.columnType == DataType.CHAR && (int) (char) v == 0))
+				continue;
+			set.setValue(layout.columnName, v);
 		}
 
 		// Return
@@ -629,13 +637,8 @@ public abstract class DataTable<T extends TableRow> {
 						+ " value but expected a " + column.columnType + " value");
 
 			// Populate value
-			try {
-				column.field.set(val, entry.getValue(Object.class));
-				val.getValueCache().setValue(entry.getColumnName(), entry.getValue(Object.class));
-			} catch (IllegalArgumentException | IllegalAccessException | ClassCastException e) {
-				throw new IllegalArgumentException("Failed to assign field " + column.field.getName() + " (column "
-						+ column.columnName + ") due to an error while changing the value of the field", e);
-			}
+			column.assignmentCall.accept(entry.getValue(Object.class), val);
+			val.getValueCache().setValue(entry.getColumnName(), entry.getValue(Object.class));
 		}
 
 		// Return
@@ -646,16 +649,31 @@ public abstract class DataTable<T extends TableRow> {
 		private HashMap<String, EntryLayout> columns = new HashMap<String, EntryLayout>();
 		private Class<?> tableType;
 		private Constructor<?> constructor;
+		private boolean forceUseFilterFields;
 
 		public DataTableLayout(Constructor<?> constr, Class<?> tableType) {
 			this.tableType = tableType;
 			this.constructor = constr;
+			if (tableType.isAnnotationPresent(ForceUseFilterFields.class))
+				forceUseFilterFields = true;
+		}
+
+		/**
+		 * Checks if unspecified filters should always use filter fields
+		 * 
+		 * @return True if the feature is enabled, false otherwise
+		 */
+		public boolean forceUseFilterFields() {
+			return forceUseFilterFields;
 		}
 
 		public static class EntryLayout {
 			public String columnName;
 			public DataType columnType;
-			public Field field;
+			public Field assignmentField;
+			public Class<?> objectType;
+			public BiConsumer<Object, TableRow> assignmentCall;
+			public Function<TableRow, Object> retrievalCall;
 		}
 
 		/**
@@ -706,20 +724,79 @@ public abstract class DataTable<T extends TableRow> {
 			// Check name length
 			if (name.length() > 52)
 				throw new IllegalArgumentException("Column " + name + " (field " + field.getName() + ", data type "
-						+ type + ") has a name that is too long, max length is 52 characters)");
+						+ type + ") has a name that is too long, max length is 52 characters");
 
 			// Check existence
 			if (columns.containsKey(name.toUpperCase()))
 				throw new IllegalArgumentException("Column " + name + " (field " + field.getName() + ", data type "
-						+ type + ") was already registerd in this table, existing column field: "
-						+ columns.get(name.toUpperCase()).field.getName());
+						+ type + ") was already registerd in this table"
+						+ (columns.get(name.toUpperCase()).assignmentField != null ? ", existing column field: "
+								+ columns.get(name.toUpperCase()).assignmentField.getName() : ""));
 
 			// Create entry
 			EntryLayout layout = new EntryLayout();
 			layout.columnName = name;
 			layout.columnType = type;
-			layout.field = field;
+			layout.assignmentField = field;
+			layout.objectType = field.getType();
+			layout.assignmentCall = (obj, owner) -> {
+				try {
+					field.set(owner, obj);
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					throw new IllegalArgumentException("Failed to assign field " + field.getName() + " (column " + name
+							+ ") due to an error while changing the value of the field", e);
+				}
+			};
+			layout.retrievalCall = (owner) -> {
+				try {
+					return field.get(owner);
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					throw new IllegalArgumentException("Failed to retrieve the value of " + layout.columnName, e);
+				}
+			};
 			field.setAccessible(true);
+			columns.put(name.toUpperCase(), layout);
+		}
+
+		/**
+		 * Adds columns
+		 * 
+		 * @param name             Column name
+		 * @param deserializerCall Consumer called to deserialize values (receives value
+		 *                         from the table)
+		 * @param serializerCall   Function called to serialize values (return value is
+		 *                         saved to the table)
+		 * @param valueType        Value type class
+		 */
+		public void addColumn(String name, BiConsumer<Object, TableRow> deserializerCall,
+				Function<TableRow, Object> serializerCall, Class<?> valueType) {
+			// Get type
+			DataType type = DataType.fromClass(valueType);
+
+			// Check name length
+			if (name.length() > 52)
+				throw new IllegalArgumentException("Column " + name + " (data type " + type
+						+ ") has a name that is too long, max length is 52 characters");
+
+			// Check name
+			if (!name.matches("^[0-9A-Za-z_]+$"))
+				throw new IllegalArgumentException(
+						"Column " + name + " (data type " + type + ") has a name that is not valid for column names");
+
+			// Check existence
+			if (columns.containsKey(name.toUpperCase()))
+				throw new IllegalArgumentException(
+						"Column " + name + " (data type " + type + ") was already registerd in this table"
+								+ (columns.get(name.toUpperCase()).assignmentField != null ? ", existing column field: "
+										+ columns.get(name.toUpperCase()).assignmentField.getName() : ""));
+
+			// Create entry
+			EntryLayout layout = new EntryLayout();
+			layout.columnName = name;
+			layout.columnType = type;
+			layout.assignmentCall = deserializerCall;
+			layout.retrievalCall = serializerCall;
+			layout.objectType = valueType;
 			columns.put(name.toUpperCase(), layout);
 		}
 

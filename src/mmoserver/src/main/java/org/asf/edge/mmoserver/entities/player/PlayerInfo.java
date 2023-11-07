@@ -18,9 +18,9 @@ import org.asf.edge.mmoserver.entities.smartfox.RoomVariable;
 import org.asf.edge.mmoserver.events.players.*;
 import org.asf.edge.mmoserver.networking.SmartfoxClient;
 import org.asf.edge.mmoserver.services.ZoneManager;
-import org.asf.edge.modules.eventbus.EventBus;
-import org.asf.edge.modules.eventbus.EventListener;
-import org.asf.edge.modules.eventbus.IEventReceiver;
+import org.asf.nexus.events.EventBus;
+import org.asf.nexus.events.EventListener;
+import org.asf.nexus.events.IEventReceiver;
 
 /**
  * 

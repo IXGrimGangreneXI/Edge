@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -415,6 +416,12 @@ public class DatabaseCommonDataTableContainer<T extends TableRow> extends Common
 						res.getBoolean(getLayout().getLayout(column).columnType + "_" + column.toUpperCase()));
 				break;
 
+			// Date value
+			case DATE:
+				set.setValue(column,
+						new Date(res.getLong(getLayout().getLayout(column).columnType + "_" + column.toUpperCase())));
+				break;
+
 			// Byte value
 			case BYTE:
 				set.setValue(column,
@@ -463,7 +470,7 @@ public class DatabaseCommonDataTableContainer<T extends TableRow> extends Common
 				DataTable.DataTableLayout.EntryLayout layout = getLayout().getLayout(column);
 				String val = res.getString(layout.columnType + "_" + column.toUpperCase());
 				if (val != null)
-					set.setValue(column, mapper.readValue(val, layout.field.getType()));
+					set.setValue(column, mapper.readValue(val, layout.objectType));
 				else
 					set.setValue(column, null);
 				break;
@@ -509,6 +516,13 @@ public class DatabaseCommonDataTableContainer<T extends TableRow> extends Common
 			case BOOLEAN: {
 				// Add to statement
 				statement.setBoolean(i++, column.getValue(Boolean.class));
+				break;
+			}
+
+			// Date type
+			case DATE: {
+				// Add to statement
+				statement.setLong(i++, column.getValue(Date.class).getTime());
 				break;
 			}
 

@@ -11,7 +11,7 @@ import org.asf.edge.mmoserver.events.players.PlayerRoomGroupSubscribeEvent;
 import org.asf.edge.mmoserver.events.zones.RoomCreatedEvent;
 import org.asf.edge.mmoserver.events.zones.RoomDeletedEvent;
 import org.asf.edge.mmoserver.services.ZoneManager;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 /**
  * 

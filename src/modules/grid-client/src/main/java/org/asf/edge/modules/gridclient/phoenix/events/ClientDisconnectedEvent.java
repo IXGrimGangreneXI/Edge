@@ -1,8 +1,8 @@
 package org.asf.edge.modules.gridclient.phoenix.events;
 
-import org.asf.edge.modules.eventbus.EventPath;
 import org.asf.edge.modules.gridclient.phoenix.DisconnectReason;
 import org.asf.edge.modules.gridclient.phoenix.PhoenixClient;
+import org.asf.nexus.events.EventPath;
 
 @EventPath("phoenix.disconnected")
 public class ClientDisconnectedEvent extends PhoenixEvent {

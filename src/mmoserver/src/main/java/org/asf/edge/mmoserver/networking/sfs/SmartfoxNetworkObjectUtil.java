@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.asf.edge.common.io.IoUtil;
+import org.asf.nexus.common.io.IoUtil;
 
 /**
  * 

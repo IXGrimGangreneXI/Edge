@@ -3,10 +3,10 @@ package org.asf.edge.modules.gridapi.utils;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.asf.edge.common.http.functions.FunctionInfo;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
+import org.asf.edge.common.webservices.annotations.FunctionInfo;
 import org.asf.edge.modules.gridapi.identities.IdentityDef;
 
 import com.google.gson.JsonPrimitive;

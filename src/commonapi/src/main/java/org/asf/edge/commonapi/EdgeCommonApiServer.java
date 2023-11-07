@@ -17,21 +17,21 @@ import org.asf.edge.commonapi.http.handlers.api.avatars.*;
 import org.asf.edge.commonapi.http.handlers.api.messaging.*;
 import org.asf.edge.commonapi.http.handlers.internal.*;
 import org.asf.edge.commonapi.util.MmoServerEntry;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.common.services.ServiceImplementationPriorityLevels;
+import org.asf.nexus.common.services.ServiceManager;
+import org.asf.nexus.events.EventBus;
 import org.asf.edge.commonapi.events.server.*;
 
 import com.google.gson.JsonPrimitive;
 
 import org.asf.edge.common.EdgeServerEnvironment;
-import org.asf.edge.common.IBaseServer;
+import org.asf.edge.common.IEdgeBaseServer;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.common.services.messages.impl.WsMessageServiceImpl;
 import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.util.LogWindow;
-import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
-import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.achievements.AchievementManager;
 import org.asf.edge.common.services.achievements.impl.AchievementManagerImpl;
 import org.asf.edge.common.services.commondata.CommonKvDataContainer;
@@ -45,7 +45,7 @@ import org.asf.edge.commonapi.config.CommonApiServerConfig;
  * @author Sky Swimmer
  *
  */
-public class EdgeCommonApiServer implements IBaseServer {
+public class EdgeCommonApiServer implements IEdgeBaseServer {
 	public static final String COMMON_API_VERSION = "a1.6";
 
 	private Logger logger;

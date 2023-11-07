@@ -6,7 +6,7 @@ import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.events.GameplayApiServerEvent;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

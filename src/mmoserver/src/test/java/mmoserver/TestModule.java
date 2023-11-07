@@ -4,7 +4,7 @@ import org.asf.edge.mmoserver.events.clients.ClientConnectedEvent;
 import org.asf.edge.mmoserver.events.clients.ClientDisconnectedEvent;
 import org.asf.edge.mmoserver.events.server.MMOServerStartupEvent;
 import org.asf.edge.modules.IEdgeModule;
-import org.asf.edge.modules.eventbus.EventListener;
+import org.asf.nexus.events.EventListener;
 
 public class TestModule implements IEdgeModule {
 

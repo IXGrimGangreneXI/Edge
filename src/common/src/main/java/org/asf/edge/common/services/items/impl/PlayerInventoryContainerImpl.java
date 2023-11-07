@@ -10,7 +10,7 @@ import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.events.items.InventoryItemCreateEvent;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;

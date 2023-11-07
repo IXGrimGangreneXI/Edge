@@ -7,7 +7,6 @@ import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.modules.gridapi.commands.defaultcommands.AccountCommands;
 import org.asf.edge.modules.gridapi.commands.defaultcommands.GenerateMasterTokenCommand;
 import org.asf.edge.modules.gridapi.commands.defaultcommands.GenerateTokenCommand;
@@ -15,6 +14,7 @@ import org.asf.edge.modules.gridapi.commands.defaultcommands.HelpCommand;
 import org.asf.edge.modules.gridapi.commands.defaultcommands.IdentityCommands;
 import org.asf.edge.modules.gridapi.commands.defaultcommands.ServerCommands;
 import org.asf.edge.modules.gridapi.events.CommandSetupEvent;
+import org.asf.nexus.events.EventBus;
 
 /**
  * 

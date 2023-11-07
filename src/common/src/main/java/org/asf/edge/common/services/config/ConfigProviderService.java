@@ -2,8 +2,8 @@ package org.asf.edge.common.services.config;
 
 import java.io.IOException;
 
-import org.asf.edge.common.services.AbstractService;
-import org.asf.edge.common.services.ServiceManager;
+import org.asf.nexus.common.services.AbstractService;
+import org.asf.nexus.common.services.ServiceManager;
 
 import com.google.gson.JsonObject;
 

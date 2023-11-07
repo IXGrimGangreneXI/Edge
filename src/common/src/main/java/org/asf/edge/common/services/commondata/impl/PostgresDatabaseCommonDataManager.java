@@ -113,6 +113,10 @@ public class PostgresDatabaseCommonDataManager extends DatabaseCommonDataManager
 		for (EntryLayout layout : cont.getLayout().getColumns()) {
 			switch (layout.columnType) {
 
+			case DATE:
+				columnDataTypes.put(layout.columnType + "_" + layout.columnName.toUpperCase(), "DATE");
+				break;
+
 			case BOOLEAN:
 				columnDataTypes.put(layout.columnType + "_" + layout.columnName.toUpperCase(), "BOOLEAN");
 				break;

@@ -17,7 +17,7 @@ import org.asf.edge.mmoserver.events.variables.RoomVariableAddedEvent;
 import org.asf.edge.mmoserver.events.variables.RoomVariableRemovedEvent;
 import org.asf.edge.mmoserver.io.SequenceWriter;
 import org.asf.edge.mmoserver.services.ZoneManager;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 /**
  * 

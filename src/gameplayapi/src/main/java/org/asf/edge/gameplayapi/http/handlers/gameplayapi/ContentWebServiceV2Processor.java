@@ -23,17 +23,6 @@ import org.asf.edge.common.entities.items.ItemStoreInfo;
 import org.asf.edge.common.entities.items.PlayerInventoryItem;
 import org.asf.edge.common.entities.minigamedata.MinigameData;
 import org.asf.edge.common.entities.minigamedata.MinigameDataRequest;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.Function;
-import org.asf.edge.common.http.functions.FunctionInfo;
-import org.asf.edge.common.http.functions.FunctionResult;
-import org.asf.edge.common.http.functions.LegacyFunction;
-import org.asf.edge.common.http.functions.LegacyFunctionInfo;
-import org.asf.edge.common.http.functions.SodRequest;
-import org.asf.edge.common.http.functions.SodRequestParam;
-import org.asf.edge.common.http.functions.SodTokenSecured;
-import org.asf.edge.common.http.functions.TokenRequireCapability;
-import org.asf.edge.common.http.functions.TokenRequireSave;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
@@ -44,6 +33,17 @@ import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.common.util.inventory.ItemRedemptionInfo;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.annotations.Function;
+import org.asf.edge.common.webservices.annotations.FunctionInfo;
+import org.asf.edge.common.webservices.annotations.FunctionResult;
+import org.asf.edge.common.webservices.annotations.LegacyFunction;
+import org.asf.edge.common.webservices.annotations.LegacyFunctionInfo;
+import org.asf.edge.common.webservices.annotations.SodRequest;
+import org.asf.edge.common.webservices.annotations.SodRequestParam;
+import org.asf.edge.common.webservices.annotations.SodTokenSecured;
+import org.asf.edge.common.webservices.annotations.TokenRequireCapability;
+import org.asf.edge.common.webservices.annotations.TokenRequireSave;
 import org.asf.edge.common.xmls.items.inventory.InventoryItemEntryData;
 import org.asf.edge.gameplayapi.EdgeGameplayApiServer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
@@ -114,7 +114,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 	@LegacyFunction(allowedMethods = { "POST" })
 	public void getGameData(LegacyFunctionInfo func) throws IOException {
 		// Handle game data request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -143,7 +143,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			questManager = QuestManager.getInstance();
 
 		// Handle quest data request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -206,7 +206,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			questManager = QuestManager.getInstance();
 
 		// Handle quest data request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -338,7 +338,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			questManager = QuestManager.getInstance();
 
 		// Handle quest data request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -390,7 +390,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			questManager = QuestManager.getInstance();
 
 		// Handle quest data request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -442,7 +442,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			questManager = QuestManager.getInstance();
 
 		// Handle quest data request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -493,7 +493,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			itemManager = ItemManager.getInstance();
 
 		// Handle avatar name change request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -659,7 +659,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
 	@Function(allowedMethods = { "POST" })
-	public FunctionResult setAvatar(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn, AccountObject account,
+	public FunctionResult setAvatar(FunctionInfo func, SodRequestInfo req, SessionToken tkn, AccountObject account,
 			AccountSaveContainer save, @SodRequestParam ObjectNode contentXML) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -773,7 +773,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 		// for groups im not sure-
 		//
 		// For display names, actual validation happens in SetAvatar
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -848,7 +848,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
-	public FunctionResult createPet(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn, AccountObject account,
+	public FunctionResult createPet(FunctionInfo func, SodRequestInfo req, SessionToken tkn, AccountObject account,
 			AccountSaveContainer save, @SodRequestParam PetCreateRequestData request) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -962,7 +962,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 			itemManager = ItemManager.getInstance();
 
 		// Handle inventory request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -1019,7 +1019,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 
 	@SodRequest
 	@SodTokenSecured
-	public FunctionResult getAllActivePetsByuserId(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+	public FunctionResult getAllActivePetsByuserId(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId) throws IOException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1090,7 +1090,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 	@LegacyFunction(allowedMethods = { "POST" })
 	public void purchaseItems(LegacyFunctionInfo func) throws IOException {
 		// Handle quest data request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -1155,7 +1155,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 
 	@SodRequest
 	@SodTokenSecured
-	public FunctionResult getGameDataByGameForDateRange(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+	public FunctionResult getGameDataByGameForDateRange(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, @SodRequestParam String userId) throws IOException, ParseException {
 		if (manager == null)
 			manager = AccountManager.getInstance();
@@ -1218,7 +1218,7 @@ public class ContentWebServiceV2Processor extends EdgeWebService<EdgeGameplayApi
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
 	@Function(allowedMethods = { "POST" })
-	public FunctionResult setRaisedPet(FunctionInfo func, ServiceRequestInfo req, SessionToken tkn,
+	public FunctionResult setRaisedPet(FunctionInfo func, SodRequestInfo req, SessionToken tkn,
 			AccountObject account, AccountSaveContainer save, @SodRequestParam DragonData raisedPetData)
 			throws IOException {
 		if (manager == null)

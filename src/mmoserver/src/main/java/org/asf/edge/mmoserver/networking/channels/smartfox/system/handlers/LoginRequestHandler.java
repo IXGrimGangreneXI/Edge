@@ -19,7 +19,7 @@ import org.asf.edge.mmoserver.networking.packets.PacketChannel;
 import org.asf.edge.mmoserver.networking.packets.IPacketHandler;
 import org.asf.edge.mmoserver.networking.sfs.SfsErrorCode;
 import org.asf.edge.mmoserver.services.ZoneManager;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 import org.bouncycastle.util.encoders.Base32;
 
 public class LoginRequestHandler implements IPacketHandler<ServerboundLoginRequestPacket> {

@@ -22,7 +22,7 @@ import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.textfilter.TextFilterService;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 /**
  * 

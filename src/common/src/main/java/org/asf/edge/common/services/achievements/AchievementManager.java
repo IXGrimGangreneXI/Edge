@@ -7,11 +7,11 @@ import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.entities.achivements.RankInfo;
 import org.asf.edge.common.entities.achivements.RankMultiplierInfo;
 import org.asf.edge.common.entities.achivements.RankTypeID;
-import org.asf.edge.common.services.AbstractService;
-import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.xmls.achievements.AchievementRewardData;
 import org.asf.edge.common.xmls.achievements.UserRankData;
+import org.asf.nexus.common.services.AbstractService;
+import org.asf.nexus.common.services.ServiceManager;
 
 /**
  * 

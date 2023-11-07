@@ -3,7 +3,7 @@ package org.asf.edge.mmoserver.events.server;
 import org.asf.edge.mmoserver.EdgeMMOServer;
 import org.asf.edge.mmoserver.config.MMOServerConfig;
 import org.asf.edge.mmoserver.events.MMOServerEvent;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

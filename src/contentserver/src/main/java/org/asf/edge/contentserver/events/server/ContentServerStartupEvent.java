@@ -3,7 +3,7 @@ package org.asf.edge.contentserver.events.server;
 import org.asf.edge.contentserver.EdgeContentServer;
 import org.asf.edge.contentserver.config.ContentServerConfig;
 import org.asf.edge.contentserver.events.ContentServerEvent;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

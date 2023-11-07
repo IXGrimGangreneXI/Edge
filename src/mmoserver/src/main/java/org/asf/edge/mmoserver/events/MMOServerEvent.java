@@ -1,7 +1,7 @@
 package org.asf.edge.mmoserver.events;
 
 import org.asf.edge.mmoserver.EdgeMMOServer;
-import org.asf.edge.modules.eventbus.EventObject;
+import org.asf.nexus.events.EventObject;
 
 /**
  * 

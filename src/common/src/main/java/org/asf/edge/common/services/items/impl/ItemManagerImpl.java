@@ -2,12 +2,17 @@ package org.asf.edge.common.services.items.impl;
 
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.entities.items.*;
+import org.asf.edge.common.entities.tables.items.ItemSaleRow;
+import org.asf.edge.common.entities.tables.items.PopularItemRow;
 import org.asf.edge.common.events.items.ItemManagerLoadEvent;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonKvDataContainer;
 import org.asf.edge.common.services.commondata.CommonDataManager;
+import org.asf.edge.common.services.commondata.CommonDataTableContainer;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.items.ItemManager;
+import org.asf.edge.common.services.tabledata.DataFilter;
+import org.asf.edge.common.services.tabledata.DataTable;
 import org.asf.edge.common.util.RandomSelectorUtil;
 import org.asf.edge.common.xmls.items.ItemDefData;
 import org.asf.edge.common.xmls.items.ItemStoreDefinitionData;
@@ -15,9 +20,8 @@ import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest;
 import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest.DefaultItemBlock;
 import org.asf.edge.modules.IEdgeModule;
 import org.asf.edge.modules.ModuleManager;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -122,20 +126,26 @@ public class ItemManagerImpl extends ItemManager {
 			}
 
 			// Update sales
-			CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("ITEMSALES");
+			CommonDataTableContainer<ItemSaleRow> contC = CommonDataManager.getInstance()
+					.getDataTable("ITEMSALES_CURRENT", ItemSaleRow.class);
+			CommonDataTableContainer<ItemSaleRow> contN = CommonDataManager.getInstance().getDataTable("ITEMSALES_NEXT",
+					ItemSaleRow.class);
 			ArrayList<ItemSaleInfo> currentRandomSales = new ArrayList<ItemSaleInfo>();
 			ArrayList<ItemSaleInfo> upcomingRandomSales = new ArrayList<ItemSaleInfo>();
-			ObjectMapper mapper = new ObjectMapper();
 			for (int cat : categoryIds) {
 				// Add to list
-				if (!cont.entryExists("current-" + cat))
-					continue;
-				SaleInfoBlock b = mapper.readValue(cont.getEntry("current-" + cat).toString(), SaleInfoBlock.class);
-				currentRandomSales.add(new ItemSaleInfo(b.name, b.startTime, b.endTime, b.saleModifier, b.categories,
-						b.itemIDs, b.memberOnly));
-				b = mapper.readValue(cont.getEntry("next-" + cat).toString(), SaleInfoBlock.class);
-				upcomingRandomSales.add(new ItemSaleInfo(b.name, b.startTime, b.endTime, b.saleModifier, b.categories,
-						b.itemIDs, b.memberOnly));
+				ItemSaleRow current = contC.getFirstRow(new DataFilter(Map.of("categoryID", cat)));
+				if (current != null) {
+					// Add current
+					currentRandomSales.add(new ItemSaleInfo("RANDOM SALE " + cat, current.startTime.getTime(),
+							current.endTime.getTime(), current.modifier, new int[0], current.itemIDs,
+							current.memberOnly));
+
+					// Load next
+					ItemSaleRow next = contN.getFirstRow(new DataFilter(Map.of("categoryID", cat)));
+					upcomingRandomSales.add(new ItemSaleInfo("RANDOM SALE " + cat, next.startTime.getTime(),
+							next.endTime.getTime(), next.modifier, new int[0], next.itemIDs, next.memberOnly));
+				}
 			}
 
 			// Save sales to memory
@@ -146,10 +156,21 @@ public class ItemManagerImpl extends ItemManager {
 		}
 
 		try {
+			// Container controller
+			CommonKvDataContainer contInfo = CommonDataManager.getInstance()
+					.getKeyValueContainer("ITEMMANAGER_CONTROLLER");
+
+			// Item sales
+			DataTable<ItemSaleRow> contC = CommonDataManager.getInstance().getDataTable("ITEMSALES_CURRENT",
+					ItemSaleRow.class);
+			DataTable<ItemSaleRow> contN = CommonDataManager.getInstance().getDataTable("ITEMSALES_NEXT",
+					ItemSaleRow.class);
+
+			// Popular items
+			CommonDataTableContainer<PopularItemRow> contPopularItemsLast = CommonDataManager.getInstance()
+					.getDataTable("POPULARITEMS_LAST", PopularItemRow.class);
+
 			// Start random sale selector
-			CommonKvDataContainer cont = CommonDataManager.getInstance().getKeyValueContainer("ITEMSALES");
-			CommonKvDataContainer contPopularItems = CommonDataManager.getInstance()
-					.getKeyValueContainer("POPULARITEMS");
 			AsyncTaskManager.runAsync(() -> {
 				while (true) {
 					// Check if a update is needed
@@ -158,10 +179,10 @@ public class ItemManagerImpl extends ItemManager {
 					boolean requiresUpdate = false;
 					try {
 						int val = -1;
-						if (!cont.entryExists("lastupdate")) {
+						if (!contInfo.entryExists("lastupdate_itemsales")) {
 							requiresUpdate = true;
 						} else {
-							val = cont.getEntry("lastupdate").getAsInt();
+							val = contInfo.getEntry("lastupdate_itemsales").getAsInt();
 						}
 
 						// Check interval
@@ -169,7 +190,8 @@ public class ItemManagerImpl extends ItemManager {
 						case DAILY:
 							if (cal.get(Calendar.DAY_OF_WEEK) != val) {
 								requiresUpdate = true;
-								cont.setEntry("lastupdate", new JsonPrimitive(cal.get(Calendar.DAY_OF_WEEK)));
+								contInfo.setEntry("lastupdate_itemsales",
+										new JsonPrimitive(cal.get(Calendar.DAY_OF_WEEK)));
 								cal.set(Calendar.HOUR_OF_DAY, 0);
 								calNext.set(Calendar.HOUR_OF_DAY, 0);
 								calNext.add(Calendar.DAY_OF_WEEK, 1);
@@ -178,7 +200,7 @@ public class ItemManagerImpl extends ItemManager {
 						case MONTHLY:
 							if (cal.get(Calendar.MONTH) != val) {
 								requiresUpdate = true;
-								cont.setEntry("lastupdate", new JsonPrimitive(cal.get(Calendar.MONTH)));
+								contInfo.setEntry("lastupdate_itemsales", new JsonPrimitive(cal.get(Calendar.MONTH)));
 								cal.set(Calendar.DAY_OF_MONTH, 0);
 								calNext.set(Calendar.DAY_OF_MONTH, 0);
 								calNext.add(Calendar.MONTH, 1);
@@ -187,7 +209,8 @@ public class ItemManagerImpl extends ItemManager {
 						case WEEKLY:
 							if (cal.get(Calendar.WEEK_OF_YEAR) != val) {
 								requiresUpdate = true;
-								cont.setEntry("lastupdate", new JsonPrimitive(cal.get(Calendar.WEEK_OF_YEAR)));
+								contInfo.setEntry("lastupdate_itemsales",
+										new JsonPrimitive(cal.get(Calendar.WEEK_OF_YEAR)));
 								cal.set(Calendar.DAY_OF_WEEK, 0);
 								calNext.set(Calendar.DAY_OF_WEEK, 0);
 								calNext.add(Calendar.WEEK_OF_YEAR, 1);
@@ -196,7 +219,7 @@ public class ItemManagerImpl extends ItemManager {
 						case YEARLY:
 							if (cal.get(Calendar.YEAR) != val) {
 								requiresUpdate = true;
-								cont.setEntry("lastupdate", new JsonPrimitive(cal.get(Calendar.YEAR)));
+								contInfo.setEntry("lastupdate_itemsales", new JsonPrimitive(cal.get(Calendar.YEAR)));
 								cal.set(Calendar.MONTH, 0);
 								calNext.set(Calendar.MONTH, 0);
 								calNext.add(Calendar.YEAR, 1);
@@ -232,54 +255,61 @@ public class ItemManagerImpl extends ItemManager {
 							Date saleEndNext = calNext.getTime();
 
 							// Generate sale list
-							Map<Integer, ItemSaleInfo> salesNext = generateSales(saleStartNext, saleEndNext, cont,
-									contPopularItems, categoryIds);
-							Map<Integer, ItemSaleInfo> salesCurrent = null;
+							Map<Integer, ItemSaleRow> salesNext = generateSales(saleStartNext, saleEndNext, contC,
+									contN, contPopularItemsLast, categoryIds);
+							Map<Integer, ItemSaleRow> salesCurrent = null;
 
-							// Save sale information for each category
-							ObjectMapper mapper = new ObjectMapper();
+							// Save sale information for each category and update active sales
+							ArrayList<ItemSaleInfo> currentRandomSales = new ArrayList<ItemSaleInfo>();
+							ArrayList<ItemSaleInfo> upcomingRandomSales = new ArrayList<ItemSaleInfo>();
 							for (int cat : categoryIds) {
 								if (!salesNext.containsKey(cat))
 									continue;
 
 								// Check if current is present
-								if (!cont.entryExists("current-" + cat)) {
+								ItemSaleRow saleNext = contN.getFirstRow(new DataFilter(Map.of("categoryID", cat)));
+								if (saleNext == null) {
 									// Save new sale set
 									if (salesCurrent == null)
-										salesCurrent = generateSales(saleStart, saleEnd, cont, contPopularItems,
-												categoryIds);
+										salesCurrent = generateSales(saleStart, saleEnd, contC, contN,
+												contPopularItemsLast, categoryIds);
 
 									// Save next
-									cont.setEntry("next-" + cat,
-											JsonParser.parseString(mapper.writeValueAsString(salesNext.get(cat))));
+									contN.setRows(salesNext.get(cat));
 
 									// Set current
-									cont.setEntry("current-" + cat,
-											JsonParser.parseString(mapper.writeValueAsString(salesCurrent.get(cat))));
+									contC.setRows(salesCurrent.get(cat));
+
+									// Add to lists
+									ItemSaleRow next = salesNext.get(cat);
+									ItemSaleRow current = salesCurrent.get(cat);
+									currentRandomSales.add(new ItemSaleInfo(
+											"RANDOM SALE " + current.categoryID + " " + current.startTime.getTime(),
+											current.startTime.getTime(), current.endTime.getTime(), current.modifier,
+											new int[0], current.itemIDs, current.memberOnly));
+									upcomingRandomSales.add(new ItemSaleInfo(
+											"RANDOM SALE " + next.categoryID + " " + next.startTime.getTime(),
+											next.startTime.getTime(), next.endTime.getTime(), next.modifier, new int[0],
+											next.itemIDs, next.memberOnly));
 								} else {
 									// Load next into current
-									cont.setEntry("current-" + cat, cont.getEntry("next-" + cat));
+									contC.setRows(saleNext);
 
 									// Save next
-									cont.setEntry("next-" + cat,
-											JsonParser.parseString(mapper.writeValueAsString(salesNext.get(cat))));
-								}
-							}
+									contN.setRows(salesNext.get(cat));
 
-							// Update active sales
-							ArrayList<ItemSaleInfo> currentRandomSales = new ArrayList<ItemSaleInfo>();
-							ArrayList<ItemSaleInfo> upcomingRandomSales = new ArrayList<ItemSaleInfo>();
-							for (int cat : categoryIds) {
-								// Add to list
-								JsonElement ent = cont.getEntry("current-" + cat);
-								if (ent == null)
-									continue;
-								SaleInfoBlock b = mapper.readValue(ent.toString(), SaleInfoBlock.class);
-								currentRandomSales.add(new ItemSaleInfo(b.name, b.startTime, b.endTime, b.saleModifier,
-										b.categories, b.itemIDs, b.memberOnly));
-								b = mapper.readValue(cont.getEntry("next-" + cat).toString(), SaleInfoBlock.class);
-								upcomingRandomSales.add(new ItemSaleInfo(b.name, b.startTime, b.endTime, b.saleModifier,
-										b.categories, b.itemIDs, b.memberOnly));
+									// Add to lists
+									ItemSaleRow next = salesNext.get(cat);
+									ItemSaleRow current = saleNext;
+									currentRandomSales.add(new ItemSaleInfo(
+											"RANDOM SALE " + current.categoryID + " " + current.startTime.getTime(),
+											current.startTime.getTime(), current.endTime.getTime(), current.modifier,
+											new int[0], current.itemIDs, current.memberOnly));
+									upcomingRandomSales.add(new ItemSaleInfo(
+											"RANDOM SALE " + next.categoryID + " " + next.startTime.getTime(),
+											next.startTime.getTime(), next.endTime.getTime(), next.modifier, new int[0],
+											next.itemIDs, next.memberOnly));
+								}
 							}
 
 							// Save sales to memory
@@ -300,44 +330,83 @@ public class ItemManagerImpl extends ItemManager {
 		} catch (IllegalArgumentException e) {
 		}
 
+		// Init popular items
+		logger.info("Initializing popular item manager...");
+		initPopularItemManager();
 	}
 
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	private static class SaleInfoBlock {
+	private void initPopularItemManager() {
+		// Refresh popular items in the background
+		CommonKvDataContainer contInfo = CommonDataManager.getInstance().getKeyValueContainer("ITEMMANAGER_CONTROLLER");
+		CommonDataTableContainer<PopularItemRow> contPopularItemsLast = CommonDataManager.getInstance()
+				.getDataTable("POPULARITEMS_LAST", PopularItemRow.class);
+		CommonDataTableContainer<PopularItemRow> contPopularItemsCurrent = CommonDataManager.getInstance()
+				.getDataTable("POPULARITEMS_CURRENT", PopularItemRow.class);
+		AsyncTaskManager.runAsync(() -> {
+			while (true) {
+				try {
+					// Check if a refresh should be done, refreshes are weekly
+					boolean requiresRefresh = false;
+					if (!contInfo.entryExists("lastupdate_popularitems") || (System.currentTimeMillis()
+							- contInfo.getEntry("lastupdate_popularitems").getAsLong()) > (7 * 24 * 60 * 60 * 1000)) {
+						// Refresh needed
+						requiresRefresh = true;
+					}
 
-		public String name;
-		public long startTime;
-		public long endTime;
+					if (requiresRefresh) {
+						// Set last update
+						contInfo.setEntry("lastupdate_popularitems", new JsonPrimitive(System.currentTimeMillis()));
 
-		public float saleModifier;
-		public int[] categories;
-		public int[] itemIDs;
+						// Create list of known updated items
+						ArrayList<Integer> updatedItems = new ArrayList<Integer>();
 
-		public boolean memberOnly;
+						// Update
+						PopularItemRow[] items = contPopularItemsCurrent.getAllRows();
+						for (PopularItemRow item : items) {
+							// Update or create
+							contPopularItemsLast.setRows(item);
+							updatedItems.add(item.itemID);
+						}
 
+						// Go through last items, remove those that no longer are present
+						PopularItemRow[] lastItems = contPopularItemsLast.getAllRows();
+						for (PopularItemRow item : lastItems) {
+							if (!updatedItems.contains(item.itemID)) {
+								// Remove
+								contPopularItemsLast.removeRows(item);
+							}
+						}
+
+						// Clear
+						contPopularItemsCurrent.removeRows();
+					}
+				} catch (IOException e) {
+					// Error
+					LogManager.getLogger("ItemManager")
+							.error("Failed to check if popular items need to be refreshed due to a database error.", e);
+				}
+
+				// Wait 30 seconds
+				try {
+					Thread.sleep(30000);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+		});
 	}
 
-	private Map<Integer, ItemSaleInfo> generateSales(Date saleStart, Date saleEnd, CommonKvDataContainer cont,
-			CommonKvDataContainer contPopularItems, ArrayList<Integer> categoryIds) throws IOException {
+	private Map<Integer, ItemSaleRow> generateSales(Date saleStart, Date saleEnd, DataTable<ItemSaleRow> contC,
+			DataTable<ItemSaleRow> contN, DataTable<PopularItemRow> contPopularItemsLast,
+			ArrayList<Integer> categoryIds) throws IOException {
 		// Create sales
-		HashMap<Integer, JsonObject> popularItemsData = new HashMap<Integer, JsonObject>();
-		HashMap<Integer, ItemSaleInfo> sales = new HashMap<Integer, ItemSaleInfo>();
+		HashMap<Integer, ItemSaleRow> sales = new HashMap<Integer, ItemSaleRow>();
 		for (int category : categoryIds) {
 			// Load items for category
 			HashMap<Integer, Integer> itemWeights = new HashMap<Integer, Integer>();
 
 			// Select random sales for each store
 			for (ItemStoreInfo store : getAllStores()) {
-				// Load popular items for the store
-				JsonObject popularItems = new JsonObject();
-				if (popularItemsData.containsKey(store.getID()))
-					popularItems = popularItemsData.get(store.getID());
-				else {
-					if (contPopularItems.entryExists("last-" + store.getID()))
-						popularItems = contPopularItems.getEntry("last-" + store.getID()).getAsJsonObject();
-					popularItemsData.put(store.getID(), popularItems);
-				}
-
 				// Load items
 				for (ItemInfo itm : store.getItems()) {
 					// Check category
@@ -346,9 +415,10 @@ public class ItemManagerImpl extends ItemManager {
 
 					// Load popular item info
 					int popularity = 0;
-					if (popularItems.has(Integer.toString(itm.getID()))) {
-						popularity = popularItems.get(Integer.toString(itm.getID())).getAsInt();
-					}
+					PopularItemRow popularItem = contPopularItemsLast
+							.getFirstRow(new DataFilter(Map.of("itemID", itm.getID())));
+					if (popularItem != null)
+						popularity = popularItem.popularity;
 
 					// Add item
 					int weight = 50 - (popularity / 50);
@@ -389,8 +459,13 @@ public class ItemManagerImpl extends ItemManager {
 				int[] itemIdArr = new int[itemIDs.size()];
 				for (int i = 0; i < itemIdArr.length; i++)
 					itemIdArr[i] = itemIDs.get(i);
-				ItemSaleInfo sale = new ItemSaleInfo("Random sale " + category, saleStart.getTime(), saleEnd.getTime(),
-						modifier, new int[0], itemIdArr, false);
+				ItemSaleRow sale = new ItemSaleRow();
+				sale.categoryID = category;
+				sale.startTime = saleStart;
+				sale.endTime = saleEnd;
+				sale.modifier = modifier;
+				sale.memberOnly = false;
+				sale.itemIDs = itemIdArr;
 				sales.put(category, sale);
 			}
 		}
@@ -398,6 +473,9 @@ public class ItemManagerImpl extends ItemManager {
 	}
 
 	private void loadData() {
+		// TODO: overhaul from here
+		logger = logger;
+
 		// Prepare
 		HashMap<Integer, ItemInfo> itemDefs = new HashMap<Integer, ItemInfo>();
 		HashMap<Integer, ItemStoreInfo> storeDefs = new HashMap<Integer, ItemStoreInfo>();

@@ -1,6 +1,6 @@
 package org.asf.edge.gameplayapi.events;
 
-import org.asf.edge.modules.eventbus.EventObject;
+import org.asf.nexus.events.EventObject;
 
 /**
  * 

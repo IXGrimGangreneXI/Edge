@@ -7,14 +7,14 @@ import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.common.SentinelUpdateManager;
 import org.asf.edge.common.entities.messages.WsMessage;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.*;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.messages.PlayerMessenger;
 import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.annotations.*;
 import org.asf.edge.common.xmls.messages.MessageInfoData;
 import org.asf.edge.common.xmls.messages.MessageInfoList;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
@@ -47,7 +47,7 @@ public class MessagingWebServiceProcessor extends EdgeWebService<EdgeCommonApiSe
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
-	public FunctionResult getUserMessageQueue(ServiceRequestInfo req, AccountObject account, AccountSaveContainer save)
+	public FunctionResult getUserMessageQueue(SodRequestInfo req, AccountObject account, AccountSaveContainer save)
 			throws IOException {
 		// Get messenger
 		SentinelUpdateManager.warnPlayerIfUpdating(account);
@@ -84,7 +84,7 @@ public class MessagingWebServiceProcessor extends EdgeWebService<EdgeCommonApiSe
 	@SodTokenSecured
 	@TokenRequireSave
 	@TokenRequireCapability("gp")
-	public FunctionResult saveMessage(ServiceRequestInfo req, AccountObject account, AccountSaveContainer save,
+	public FunctionResult saveMessage(SodRequestInfo req, AccountObject account, AccountSaveContainer save,
 			@SodRequestParam int userMessageQueueID, @SodRequestParam boolean isDeleted) throws IOException {
 		// Get messenger
 		PlayerMessenger messenger = WsMessageService.getInstance().getMessengerFor(account, save);

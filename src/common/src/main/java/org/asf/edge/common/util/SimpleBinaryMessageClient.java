@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 import java.util.function.BiFunction;
 
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.common.io.IoUtil;
+import org.asf.nexus.common.io.IoUtil;
 
 public class SimpleBinaryMessageClient {
 

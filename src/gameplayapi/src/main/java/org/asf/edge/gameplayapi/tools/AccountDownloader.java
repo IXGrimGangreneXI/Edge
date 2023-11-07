@@ -35,9 +35,9 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.asf.connective.tasks.AsyncTaskManager;
 import org.asf.edge.common.EdgeServerEnvironment;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.io.IoUtil;
 import org.asf.edge.common.util.HttpUpgradeUtil;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.nexus.common.io.IoUtil;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

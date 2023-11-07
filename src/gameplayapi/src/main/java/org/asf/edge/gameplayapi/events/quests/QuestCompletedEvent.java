@@ -5,7 +5,7 @@ import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.gameplayapi.entities.quests.UserQuestInfo;
 import org.asf.edge.gameplayapi.events.GameplayApiServerEvent;
 import org.asf.edge.gameplayapi.services.quests.QuestManager;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

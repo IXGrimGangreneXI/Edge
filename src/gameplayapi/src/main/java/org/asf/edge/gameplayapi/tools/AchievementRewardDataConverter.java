@@ -16,8 +16,6 @@ import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 
 import org.asf.edge.common.entities.items.ItemInfo;
-import org.asf.edge.common.services.ServiceImplementationPriorityLevels;
-import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.items.ItemManager;
 import org.asf.edge.common.services.items.impl.ItemManagerImpl;
 import org.asf.edge.common.xmls.achievements.AchievementRewardData;
@@ -32,6 +30,8 @@ import org.asf.edge.gameplayapi.xmls.achievements.StableQuestData;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestDragonAchievementBlock;
 import org.asf.edge.gameplayapi.xmls.achievements.StableQuestRewardBlock;
 import org.asf.edge.gameplayapi.xmls.quests.MissionData;
+import org.asf.nexus.common.services.ServiceImplementationPriorityLevels;
+import org.asf.nexus.common.services.ServiceManager;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;

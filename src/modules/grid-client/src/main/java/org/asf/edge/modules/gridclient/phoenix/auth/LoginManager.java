@@ -7,11 +7,11 @@ import java.util.Base64;
 import java.util.function.Consumer;
 
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.modules.gridclient.phoenix.PhoenixEnvironment;
 import org.asf.edge.modules.gridclient.phoenix.events.SessionAuthenticatedEvent;
 import org.asf.edge.modules.gridclient.phoenix.events.SessionLogoutEvent;
 import org.asf.edge.modules.gridclient.phoenix.events.SessionRefreshFailureEvent;
+import org.asf.nexus.events.EventBus;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

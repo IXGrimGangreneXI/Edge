@@ -3,9 +3,9 @@ package org.asf.edge.common.services.minigamedata;
 import org.asf.edge.common.entities.minigamedata.MinigameData;
 import org.asf.edge.common.entities.minigamedata.MinigameDataRequest;
 import org.asf.edge.common.entities.minigamedata.MinigameSaveRequest;
-import org.asf.edge.common.services.AbstractService;
-import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
+import org.asf.nexus.common.services.AbstractService;
+import org.asf.nexus.common.services.ServiceManager;
 
 /**
  * 

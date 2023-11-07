@@ -11,8 +11,8 @@ import org.asf.edge.contentserver.http.*;
 import org.asf.edge.contentserver.http.ContentServerRequestHandler.IPreProcessor;
 import org.asf.edge.contentserver.http.postprocessors.ApplicationManifestPreProcessor;
 import org.asf.edge.contentserver.http.postprocessors.ServerDownPreprocessor;
-import org.asf.edge.modules.eventbus.EventBus;
-import org.asf.edge.common.IBaseServer;
+import org.asf.nexus.events.EventBus;
+import org.asf.edge.common.IEdgeBaseServer;
 import org.asf.edge.contentserver.events.server.ContentServerSetupEvent;
 import org.asf.edge.contentserver.events.server.ContentServerStartupEvent;
 import org.asf.edge.contentserver.config.ContentServerConfig;
@@ -24,7 +24,7 @@ import org.asf.edge.contentserver.config.ContentServerConfig;
  * @author Sky Swimmer
  *
  */
-public class EdgeContentServer implements IBaseServer {
+public class EdgeContentServer implements IEdgeBaseServer {
 	public static final String CONTENT_SERVER_VERSION = "a1.6";
 
 	private Logger logger;

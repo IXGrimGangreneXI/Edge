@@ -8,17 +8,17 @@ import java.util.TimeZone;
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.events.accounts.saves.AccountSaveAuthenticatedEvent;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.*;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.annotations.*;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.xmls.auth.LoginStatusType;
 import org.asf.edge.commonapi.xmls.auth.UserInfoData;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeCommonApiServer> {
 
@@ -49,7 +49,7 @@ public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeComm
 	@SodRequest
 	@SodTokenSecured
 	@Function(value = "DeleteAccountNotification")
-	public FunctionResult deleteAccount(ServiceRequestInfo req, AccountObject account) throws IOException {
+	public FunctionResult deleteAccount(SodRequestInfo req, AccountObject account) throws IOException {
 		// Delete account
 		account.deleteAccount();
 
@@ -63,7 +63,7 @@ public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeComm
 			manager = AccountManager.getInstance();
 
 		// Handle token verification
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -104,7 +104,7 @@ public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeComm
 			manager = AccountManager.getInstance();
 
 		// Handle login request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("parentApiToken").toUpperCase());
@@ -155,7 +155,7 @@ public class AuthenticationWebServiceV1Processor extends EdgeWebService<EdgeComm
 			manager = AccountManager.getInstance();
 
 		// Handle user profile request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());

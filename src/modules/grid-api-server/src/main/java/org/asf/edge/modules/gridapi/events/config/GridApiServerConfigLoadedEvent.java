@@ -2,7 +2,7 @@ package org.asf.edge.modules.gridapi.events.config;
 
 import org.asf.edge.modules.gridapi.config.GridApiServerConfig;
 import org.asf.edge.modules.gridapi.events.GridApiServerEvent;
-import org.asf.edge.modules.eventbus.EventPath;
+import org.asf.nexus.events.EventPath;
 
 /**
  * 

@@ -19,7 +19,6 @@ import javax.crypto.spec.IvParameterSpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.connective.tasks.AsyncTaskManager;
-import org.asf.edge.modules.eventbus.EventBus;
 import org.asf.edge.modules.gridclient.phoenix.certificate.PhoenixCertificate;
 import org.asf.edge.modules.gridclient.phoenix.certificate.ServerCertificatePayload;
 import org.asf.edge.modules.gridclient.phoenix.events.ClientClosedEvent;
@@ -33,6 +32,7 @@ import org.asf.edge.modules.gridclient.phoenix.networking.DataReader;
 import org.asf.edge.modules.gridclient.phoenix.networking.DataWriter;
 import org.asf.edge.modules.gridclient.phoenix.networking.channels.AbstractPacketChannel;
 import org.asf.edge.modules.gridclient.phoenix.networking.packets.IPhoenixPacket;
+import org.asf.nexus.events.EventBus;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class PhoenixClient {

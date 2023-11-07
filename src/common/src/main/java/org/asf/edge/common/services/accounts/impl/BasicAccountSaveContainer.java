@@ -5,7 +5,7 @@ import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.common.entities.avatar.AvatarObjectContainer;
+import org.asf.edge.common.entities.tables.avatar.AvatarObjectContainer;
 import org.asf.edge.common.events.accounts.saves.AccountSaveDeletedEvent;
 import org.asf.edge.common.events.accounts.saves.AccountSaveUsernameUpdateEvent;
 import org.asf.edge.common.services.accounts.AccountDataTableContainer;
@@ -13,7 +13,7 @@ import org.asf.edge.common.services.accounts.AccountObject;
 import org.asf.edge.common.services.accounts.AccountSaveContainer;
 import org.asf.edge.common.services.minigamedata.MinigameDataManager;
 import org.asf.edge.common.services.textfilter.TextFilterService;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.events.EventBus;
 
 /**
  * 

@@ -6,7 +6,6 @@ import java.net.URL;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asf.edge.modules.eventbus.IEventReceiver;
 import org.asf.edge.modules.gridclient.grid.events.GridClientConnectFailedEvent;
 import org.asf.edge.modules.gridclient.grid.events.GridClientDisconnectedEvent;
 import org.asf.edge.modules.gridclient.phoenix.PhoenixClient;
@@ -15,6 +14,7 @@ import org.asf.edge.modules.gridclient.phoenix.auth.LoginManager;
 import org.asf.edge.modules.gridclient.phoenix.certificate.PhoenixCertificate;
 import org.asf.edge.modules.gridclient.phoenix.events.ClientProgramHandshakeEvent;
 import org.asf.edge.modules.gridclient.phoenix.events.ClientProgramLateHandshakeEvent;
+import org.asf.nexus.events.IEventReceiver;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

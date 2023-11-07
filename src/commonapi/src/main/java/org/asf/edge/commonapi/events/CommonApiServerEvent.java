@@ -1,6 +1,6 @@
 package org.asf.edge.commonapi.events;
 
-import org.asf.edge.modules.eventbus.EventObject;
+import org.asf.nexus.events.EventObject;
 
 /**
  * 

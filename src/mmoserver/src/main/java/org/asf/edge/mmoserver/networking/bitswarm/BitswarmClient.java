@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
-import org.asf.edge.common.io.IoUtil;
+import org.asf.nexus.common.io.IoUtil;
 
 /**
  * 

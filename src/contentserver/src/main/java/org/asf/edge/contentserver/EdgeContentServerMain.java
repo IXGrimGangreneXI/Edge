@@ -10,13 +10,13 @@ import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.EdgeServerEnvironment;
-import org.asf.edge.common.experiments.ExperimentManager;
-import org.asf.edge.common.services.ServiceManager;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.config.impl.ConfigProviderServiceImpl;
 import org.asf.edge.common.CommonUpdater;
 import org.asf.edge.modules.ModuleManager;
-import org.asf.edge.modules.eventbus.EventBus;
+import org.asf.nexus.common.experiments.ExperimentManager;
+import org.asf.nexus.common.services.ServiceManager;
+import org.asf.nexus.events.EventBus;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

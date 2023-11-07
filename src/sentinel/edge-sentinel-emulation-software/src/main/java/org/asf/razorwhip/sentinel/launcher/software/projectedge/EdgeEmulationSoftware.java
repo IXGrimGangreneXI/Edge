@@ -21,7 +21,7 @@ import org.asf.razorwhip.sentinel.launcher.descriptors.data.ServerEndpoints;
 import org.asf.razorwhip.sentinel.launcher.experiments.ExperimentManager;
 import org.asf.razorwhip.sentinel.launcher.software.projectedge.experiments.GridSupportExperiment;
 import org.asf.razorwhip.sentinel.launcher.software.projectedge.windows.LaunchOptionMenu;
-
+import org.asf.razorwhip.sentinel.launcher.software.projectedge.windows.LaunchProfileWindow;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -43,13 +43,8 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				// Create
 				launchSettings = new JsonObject();
 				launchSettings.addProperty("launchMode", "normal");
-				JsonObject remoteEndpoints = new JsonObject();
-				remoteEndpoints.addProperty("gameplay", "http://localhost:16520/");
-				remoteEndpoints.addProperty("common", "http://localhost:16521/");
-				remoteEndpoints.addProperty("social", "http://localhost:16522/");
-				remoteEndpoints.addProperty("smartfoxHost", "localhost");
-				remoteEndpoints.addProperty("smartfoxPort", 16523);
-				launchSettings.add("remoteEndpoints", remoteEndpoints);
+				JsonObject profiles = new JsonObject();
+				launchSettings.add("launchProfiles", profiles);
 				Files.writeString(launchSettingsF.toPath(), launchSettings.toString());
 			} else {
 				// Load
@@ -81,6 +76,80 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 	}
 
 	@Override
+	public void onPreloadPayloadManager() {
+		// Prepare url
+		String url = null;
+
+		// Load remote endpoints
+		boolean remoteValid = false;
+		if (launchSettings.has("launchProfiles") && launchSettings.has("activeProfile")) {
+			String id = launchSettings.get("activeProfile").getAsString();
+			JsonObject profiles = launchSettings.get("launchProfiles").getAsJsonObject();
+			if (profiles.has(id)) {
+				// Load url
+				JsonObject remoteEndpoints = profiles.get(id).getAsJsonObject();
+				url = remoteEndpoints.get("gameplay").getAsString();
+				if (!url.endsWith("/"))
+					url += "/";
+
+				// Mark as valid
+				remoteValid = true;
+			}
+		}
+
+		// Check launch mode
+		String launchMode = launchSettings.get("launchMode").getAsString();
+		if (launchMode.equals("remote-client")) {
+			// Check if valid
+			if (!remoteValid) {
+				// Invalid remote settings
+				try {
+					// Open window
+					LaunchProfileWindow win = new LaunchProfileWindow(LauncherUtils.getLauncherWindow());
+					if (!win.showDialog()) {
+						// Exit
+						System.exit(0);
+					}
+
+					// Reload
+					init();
+				} catch (Exception e) {
+				}
+
+				// Revalidate
+				remoteValid = false;
+				if (launchSettings.has("launchProfiles") && launchSettings.has("activeProfile")) {
+					String id = launchSettings.get("activeProfile").getAsString();
+					JsonObject profiles = launchSettings.get("launchProfiles").getAsJsonObject();
+					if (profiles.has(id)) {
+						// Load url
+						JsonObject remoteEndpoints = profiles.get(id).getAsJsonObject();
+						url = remoteEndpoints.get("gameplay").getAsString();
+						if (!url.endsWith("/"))
+							url += "/";
+
+						// Mark as valid
+						remoteValid = true;
+					}
+				}
+
+				// Check
+				if (!remoteValid)
+					System.exit(0);
+			}
+		}
+
+		// Add to url
+		if (url != null) {
+			// Add function call
+			url += "ContentWebService.asmx/GetSentinelPayloadList";
+
+			// Set tag
+			LauncherUtils.addTag("SENTINEL_PAYLOADSYNC_URL").setValue(String.class, url);
+		}
+	}
+
+	@Override
 	public void prepareLaunchWithStreamingAssets(String assetArchiveURL, AssetInformation[] collectedAssets,
 			AssetInformation[] allAssets, File assetModifications, ActiveArchiveInformation archive,
 			JsonObject archiveDef, JsonObject descriptorDef, String clientVersion, File clientDir,
@@ -104,24 +173,43 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		}
 
 		// Load remote endpoints
-		JsonObject remoteEndpoints = launchSettings.get("remoteEndpoints").getAsJsonObject();
+		boolean remoteValid = false;
+		File socialSrvJar = new File("server/libs/socialserver.jar");
 		ServerEndpoints endpointsRemote = new ServerEndpoints();
-		endpointsRemote.achievementServiceEndpoint = remoteEndpoints.get("gameplay").getAsString();
-		endpointsRemote.commonServiceEndpoint = remoteEndpoints.get("common").getAsString();
-		endpointsRemote.contentserverServiceEndpoint = remoteEndpoints.get("gameplay").getAsString();
-		endpointsRemote.groupsServiceEndpoint = remoteEndpoints.get("social").getAsString();
-		endpointsRemote.itemstoremissionServiceEndpoint = remoteEndpoints.get("gameplay").getAsString();
-		endpointsRemote.messagingServiceEndpoint = remoteEndpoints.get("social").getAsString();
-		endpointsRemote.userServiceEndpoint = remoteEndpoints.get("common").getAsString();
-		endpointsRemote.smartFoxHost = remoteEndpoints.get("smartfoxHost").getAsString();
-		endpointsRemote.smartFoxPort = remoteEndpoints.get("smartfoxPort").getAsInt();
+		if (launchSettings.has("launchProfiles") && launchSettings.has("activeProfile")) {
+			String id = launchSettings.get("activeProfile").getAsString();
+			JsonObject profiles = launchSettings.get("launchProfiles").getAsJsonObject();
+			if (profiles.has(id)) {
+				// Load profiles
+				JsonObject remoteEndpoints = profiles.get(id).getAsJsonObject();
+				endpointsRemote.achievementServiceEndpoint = remoteEndpoints.get("gameplay").getAsString();
+				endpointsRemote.commonServiceEndpoint = remoteEndpoints.get("common").getAsString();
+				endpointsRemote.contentserverServiceEndpoint = remoteEndpoints.get("gameplay").getAsString();
+				endpointsRemote.groupsServiceEndpoint = remoteEndpoints.get("social").getAsString();
+				endpointsRemote.itemstoremissionServiceEndpoint = remoteEndpoints.get("gameplay").getAsString();
+				endpointsRemote.messagingServiceEndpoint = remoteEndpoints.get("social").getAsString();
+				endpointsRemote.userServiceEndpoint = remoteEndpoints.get("common").getAsString();
+				endpointsRemote.smartFoxHost = remoteEndpoints.get("smartfoxHost").getAsString();
+				endpointsRemote.smartFoxPort = remoteEndpoints.get("smartfoxPort").getAsInt();
+
+				// Social service workaround
+				if (!socialSrvJar.exists()) {
+					// Use common API to work around issues with 1.x when there are no social
+					// services in the current Edge server files
+					endpointsRemote.groupsServiceEndpoint = endpointsRemote.commonServiceEndpoint;
+					endpointsRemote.messagingServiceEndpoint = endpointsRemote.commonServiceEndpoint;
+				}
+
+				// Mark as valid
+				remoteValid = true;
+			}
+		}
 
 		// Load local endpoints
 		ServerEndpoints endpointsLocal = new ServerEndpoints();
 
 		// Load edge config
 		File edgeConfig = new File("server/server.json");
-		File socialSrvJar = new File("server/libs/socialserver.jar");
 		if (edgeConfig.exists()) {
 			try {
 				JsonObject configData = JsonParser.parseString(Files.readString(edgeConfig.toPath())).getAsJsonObject();
@@ -131,7 +219,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				String commonURL = (cApiJson.get("https").getAsBoolean() ? "https://" : "http://");
 				String ip = cApiJson.get("listenAddress").getAsString();
 				if (ip.equals("0.0.0.0"))
-					ip = "localhost";
+					ip = "127.0.0.1";
 				if (ip.contains(":"))
 					commonURL += "[";
 				commonURL += ip;
@@ -145,7 +233,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				String gpURL = (gpApiJson.get("https").getAsBoolean() ? "https://" : "http://");
 				ip = gpApiJson.get("listenAddress").getAsString();
 				if (ip.equals("0.0.0.0"))
-					ip = "localhost";
+					ip = "127.0.0.1";
 				if (ip.contains(":"))
 					gpURL += "[";
 				gpURL += ip;
@@ -160,7 +248,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 					String sURL = (sApiJson.get("https").getAsBoolean() ? "https://" : "http://");
 					ip = sApiJson.get("listenAddress").getAsString();
 					if (ip.equals("0.0.0.0"))
-						ip = "localhost";
+						ip = "127.0.0.1";
 					if (ip.contains(":"))
 						sURL += "[";
 					sURL += ip;
@@ -190,7 +278,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				JsonObject mmoSrvJson = configData.get("mmoServer").getAsJsonObject();
 				ip = mmoSrvJson.get("listenAddress").getAsString();
 				if (ip.equals("0.0.0.0"))
-					ip = "localhost";
+					ip = "127.0.0.1";
 				endpointsLocal.smartFoxHost = ip;
 				endpointsLocal.smartFoxPort = mmoSrvJson.get("listenPort").getAsInt();
 			} catch (Exception e) {
@@ -199,8 +287,8 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		} else if (!socialSrvJar.exists()) {
 			// Use common API to work around issues with 1.x when there are no social
 			// services in the current Edge server files
-			endpointsLocal.groupsServiceEndpoint = "http://localhost:16521/";
-			endpointsLocal.messagingServiceEndpoint = "http://localhost:16521/";
+			endpointsLocal.groupsServiceEndpoint = "http://127.0.0.1:16521/";
+			endpointsLocal.messagingServiceEndpoint = "http://127.0.0.1:16521/";
 		}
 
 		// Log
@@ -221,6 +309,58 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 
 		// Check connection
 		if (launchMode.equals("remote-client")) {
+			// Check if valid
+			if (!remoteValid) {
+				// Invalid remote settings
+				try {
+					// Open window
+					LaunchProfileWindow win = new LaunchProfileWindow(LauncherUtils.getLauncherWindow());
+					if (!win.showDialog()) {
+						// Exit
+						System.exit(0);
+					}
+
+					// Reload
+					init();
+				} catch (Exception e) {
+				}
+
+				// Revalidate
+				remoteValid = false;
+				if (launchSettings.has("launchProfiles") && launchSettings.has("activeProfile")) {
+					String id = launchSettings.get("activeProfile").getAsString();
+					JsonObject profiles = launchSettings.get("launchProfiles").getAsJsonObject();
+					if (profiles.has(id)) {
+						// Load profiles
+						JsonObject remoteEndpoints = profiles.get(id).getAsJsonObject();
+						endpointsRemote.achievementServiceEndpoint = remoteEndpoints.get("gameplay").getAsString();
+						endpointsRemote.commonServiceEndpoint = remoteEndpoints.get("common").getAsString();
+						endpointsRemote.contentserverServiceEndpoint = remoteEndpoints.get("gameplay").getAsString();
+						endpointsRemote.groupsServiceEndpoint = remoteEndpoints.get("social").getAsString();
+						endpointsRemote.itemstoremissionServiceEndpoint = remoteEndpoints.get("gameplay").getAsString();
+						endpointsRemote.messagingServiceEndpoint = remoteEndpoints.get("social").getAsString();
+						endpointsRemote.userServiceEndpoint = remoteEndpoints.get("common").getAsString();
+						endpointsRemote.smartFoxHost = remoteEndpoints.get("smartfoxHost").getAsString();
+						endpointsRemote.smartFoxPort = remoteEndpoints.get("smartfoxPort").getAsInt();
+
+						// Social service workaround
+						if (!socialSrvJar.exists()) {
+							// Use common API to work around issues with 1.x when there are no social
+							// services in the current Edge server files
+							endpointsRemote.groupsServiceEndpoint = endpointsRemote.commonServiceEndpoint;
+							endpointsRemote.messagingServiceEndpoint = endpointsRemote.commonServiceEndpoint;
+						}
+
+						// Mark as valid
+						remoteValid = true;
+					}
+				}
+
+				// Check
+				if (!remoteValid)
+					System.exit(0);
+			}
+
 			try {
 				// Open URL connection
 				HttpURLConnection conn = (HttpURLConnection) new URL(endpointsRemote.commonServiceEndpoint

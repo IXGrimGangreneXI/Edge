@@ -24,8 +24,6 @@ import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.messages.PlayerMessenger;
 import org.asf.edge.common.services.messages.WsMessageService;
 import org.asf.edge.modules.IEdgeModule;
-import org.asf.edge.modules.eventbus.EventBus;
-import org.asf.edge.modules.eventbus.EventListener;
 import org.asf.edge.modules.gridclient.grid.events.GridClientAuthenticationDeferredEvent;
 import org.asf.edge.modules.gridclient.grid.events.GridClientAuthenticationFailureEvent;
 import org.asf.edge.modules.gridclient.grid.events.GridClientAuthenticationSuccessEvent;
@@ -39,6 +37,8 @@ import org.asf.edge.modules.gridclient.phoenix.events.PhoenixGameInvalidatedEven
 import org.asf.edge.modules.gridclient.phoenix.events.SessionRefreshFailureEvent;
 import org.asf.edge.modules.gridclient.phoenix.serverlist.ServerInstance;
 import org.asf.edge.modules.gridclient.utils.GridSaveUtil;
+import org.asf.nexus.events.EventBus;
+import org.asf.nexus.events.EventListener;
 import org.asf.edge.modules.gridclient.eventhandlers.ConnectionEventHandlers;
 import org.asf.edge.modules.gridclient.eventhandlers.SaveSyncEventHandlers;
 import org.asf.edge.modules.gridclient.grid.GridClient;

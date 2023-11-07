@@ -12,9 +12,6 @@ import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
 import org.asf.edge.common.entities.achivements.EntityRankInfo;
 import org.asf.edge.common.entities.achivements.RankMultiplierInfo;
-import org.asf.edge.common.http.EdgeWebService;
-import org.asf.edge.common.http.functions.LegacyFunction;
-import org.asf.edge.common.http.functions.LegacyFunctionInfo;
 import org.asf.edge.common.services.accounts.AccountKvDataContainer;
 import org.asf.edge.common.services.accounts.AccountManager;
 import org.asf.edge.common.services.accounts.AccountObject;
@@ -24,6 +21,9 @@ import org.asf.edge.common.services.textfilter.TextFilterService;
 import org.asf.edge.common.tokens.SessionToken;
 import org.asf.edge.common.tokens.TokenParseResult;
 import org.asf.edge.common.util.AvatarDowngraderUtil;
+import org.asf.edge.common.webservices.EdgeWebService;
+import org.asf.edge.common.webservices.annotations.LegacyFunction;
+import org.asf.edge.common.webservices.annotations.LegacyFunctionInfo;
 import org.asf.edge.commonapi.EdgeCommonApiServer;
 import org.asf.edge.commonapi.xmls.auth.UserInfoData;
 import org.asf.edge.commonapi.xmls.data.ProfileData;
@@ -72,7 +72,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 			manager = AccountManager.getInstance();
 
 		// Handle profile tag request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 
@@ -86,7 +86,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 			manager = AccountManager.getInstance();
 
 		// Handle user profile request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -130,7 +130,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 			manager = AccountManager.getInstance();
 
 		// Handle user profile request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -172,7 +172,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 			manager = AccountManager.getInstance();
 
 		// Handle user profile request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("apiToken").toUpperCase());
@@ -235,7 +235,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 			manager = AccountManager.getInstance();
 
 		// Handle user profile request
-		ServiceRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
+		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)
 			return;
 		String apiToken = getUtilities().decodeToken(req.payload.get("parentApiToken").toUpperCase());
@@ -272,7 +272,7 @@ public class ProfileWebServiceProcessor extends EdgeWebService<EdgeCommonApiServ
 			setResponseContent("text/xml", req.generateXmlValue("ArrayOfUserProfileDisplayData", null));
 	}
 
-	private ProfileData getProfile(String saveID, AccountObject account, ServiceRequestInfo req, boolean minimal)
+	private ProfileData getProfile(String saveID, AccountObject account, SodRequestInfo req, boolean minimal)
 			throws IOException {
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ssXXX");
 		fmt.setTimeZone(TimeZone.getTimeZone("UTC"));

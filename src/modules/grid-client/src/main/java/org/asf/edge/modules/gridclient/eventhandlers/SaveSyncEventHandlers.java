@@ -4,9 +4,9 @@ import org.asf.edge.common.events.accounts.saves.AccountSaveAuthenticatedEvent;
 import org.asf.edge.common.events.accounts.saves.AccountSaveCreatedEvent;
 import org.asf.edge.common.events.accounts.saves.AccountSaveDeletedEvent;
 import org.asf.edge.common.events.accounts.saves.AccountSaveUsernameUpdateEvent;
-import org.asf.edge.modules.eventbus.EventListener;
-import org.asf.edge.modules.eventbus.IEventReceiver;
 import org.asf.edge.modules.gridclient.utils.GridSaveUtil;
+import org.asf.nexus.events.EventListener;
+import org.asf.nexus.events.IEventReceiver;
 
 public class SaveSyncEventHandlers implements IEventReceiver {
 
