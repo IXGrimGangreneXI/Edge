@@ -138,42 +138,38 @@ public class SodRequestInfo {
 		// Retrieve or create
 		SodRequestInfo info = function.getProcessorMemoryObject(SodRequestInfo.class);
 		if (info == null) {
-			try {
-				// Retrieve utilities
-				EdgeWebService.Utilities utils = new EdgeWebService.Utilities(function.getRequest(),
-						function.getResponse());
+			// Retrieve utilities
+			EdgeWebService.Utilities utils = new EdgeWebService.Utilities(function.getRequest(),
+					function.getResponse());
 
-				// Retrieve key
-				String apiKey;
-				if (!apiRequestParams.has("apiKey")) {
-					// Check headers and Edge params
-					if (apiRequestParams.has("edgeSodApiKey")) {
-						// EDGE parameter
-						apiKey = apiRequestParams.getString("edgeSodApiKey");
-					} else if (function.getRequest().hasHeader("X-API-Key")) {
-						// Header
-						apiKey = function.getRequest().getHeaderValue("X-API-Key");
-					} else {
-						// Default
-						apiKey = "B99F695C-7C6E-4E9B-B0F7-22034D799013";
-					}
-				} else
-					apiKey = apiRequestParams.getString("apiKey");
-				String secret = utils.getSecretFromKey(apiKey, webservice.getServerInstance().getLogger());
-				byte[] key = utils.encodeMD5Key(secret, "UTF-16LE");
+			// Retrieve key
+			String apiKey;
+			if (!apiRequestParams.has("apiKey")) {
+				// Check headers and Edge params
+				if (apiRequestParams.has("edgeSodApiKey")) {
+					// EDGE parameter
+					apiKey = apiRequestParams.getString("edgeSodApiKey");
+				} else if (function.getRequest().hasHeader("X-API-Key")) {
+					// Header
+					apiKey = function.getRequest().getHeaderValue("X-API-Key");
+				} else {
+					// Default
+					apiKey = "B99F695C-7C6E-4E9B-B0F7-22034D799013";
+				}
+			} else
+				apiKey = apiRequestParams.getString("apiKey");
+			String secret = utils.getSecretFromKey(apiKey, webservice.getServerInstance().getLogger());
+			byte[] key = utils.encodeMD5Key(secret, "UTF-16LE");
 
-				// Create request info
-				info = new SodRequestInfo();
-				info.apiKey = apiKey;
-				info.apiSecret = secret;
-				info.desKey = key;
-				info.payload = apiRequestParams;
+			// Create request info
+			info = new SodRequestInfo();
+			info.apiKey = apiKey;
+			info.apiSecret = secret;
+			info.desKey = key;
+			info.payload = apiRequestParams;
 
-				// Save
-				function.setProcessorMemoryObject(SodRequestInfo.class, info);
-			} catch (IOException e) {
-				throw new HttpException(400, "Bad Request");
-			}
+			// Save
+			function.setProcessorMemoryObject(SodRequestInfo.class, info);
 		}
 
 		// Return
