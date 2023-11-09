@@ -1,7 +1,7 @@
 package org.asf.edge.common.services.commondata;
 
-import org.asf.edge.common.services.tabledata.DataTable;
-import org.asf.edge.common.services.tabledata.TableRow;
+import org.asf.nexus.tables.DataTable;
+import org.asf.nexus.tables.TableRow;
 
 /**
  * 

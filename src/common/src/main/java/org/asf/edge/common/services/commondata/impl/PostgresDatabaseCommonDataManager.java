@@ -18,7 +18,7 @@ import org.asf.edge.common.services.commondata.CommonDataTableContainer;
 import org.asf.edge.common.services.commondata.impl.db.DatabaseCommonDataManager;
 import org.asf.edge.common.services.commondata.impl.db.DatabaseRequest;
 import org.asf.edge.common.services.config.ConfigProviderService;
-import org.asf.edge.common.services.tabledata.DataTable.DataTableLayout.EntryLayout;
+import org.asf.nexus.tables.DataTable.DataTableLayout.EntryLayout;
 import org.postgresql.util.PGobject;
 
 import com.google.gson.JsonObject;

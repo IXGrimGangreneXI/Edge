@@ -11,8 +11,6 @@ import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.commondata.CommonDataTableContainer;
 import org.asf.edge.common.services.config.ConfigProviderService;
 import org.asf.edge.common.services.items.ItemManager;
-import org.asf.edge.common.services.tabledata.DataFilter;
-import org.asf.edge.common.services.tabledata.DataTable;
 import org.asf.edge.common.util.RandomSelectorUtil;
 import org.asf.edge.common.xmls.items.ItemDefData;
 import org.asf.edge.common.xmls.items.ItemStoreDefinitionData;
@@ -21,6 +19,8 @@ import org.asf.edge.common.xmls.items.edgespecific.ItemRegistryManifest.DefaultI
 import org.asf.edge.modules.IEdgeModule;
 import org.asf.edge.modules.ModuleManager;
 import org.asf.nexus.events.EventBus;
+import org.asf.nexus.tables.DataFilter;
+import org.asf.nexus.tables.DataTable;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;

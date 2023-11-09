@@ -3,7 +3,7 @@ package org.asf.edge.common.services.commondata.impl.db;
 import java.sql.SQLException;
 
 import org.asf.edge.common.services.commondata.CommonKvDataContainer;
-import org.asf.edge.common.services.tabledata.TableRow;
+import org.asf.nexus.tables.TableRow;
 import org.asf.edge.common.services.commondata.CommonDataManager;
 import org.asf.edge.common.services.commondata.CommonDataTableContainer;
 

@@ -53,6 +53,7 @@ dependencies {
 	implementation project(":deps:nexus-emulation:projects:nexus-common")
 	implementation project(":deps:nexus-emulation:projects:nexus-events")
 	implementation project(":deps:nexus-emulation:projects:nexus-webservices")
+	implementation project(":deps:nexus-emulation:projects:nexus-datatables")
 	
 	implementation name: 'Fluid', version: '1.0.0.A33'
 

@@ -1,7 +1,7 @@
 package org.asf.edge.common.entities.tables.accounts;
 
-import org.asf.edge.common.services.tabledata.TableRow;
-import org.asf.edge.common.services.tabledata.annotations.TableColumn;
+import org.asf.nexus.tables.TableRow;
+import org.asf.nexus.tables.annotations.TableColumn;
 
 public class AccountPropertiesRow extends TableRow {
 

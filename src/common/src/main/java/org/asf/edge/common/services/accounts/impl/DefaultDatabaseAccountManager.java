@@ -15,7 +15,7 @@ import java.util.Properties;
 import org.asf.edge.common.services.accounts.AccountDataTableContainer;
 import org.asf.edge.common.services.accounts.impl.accounts.db.DatabaseRequest;
 import org.asf.edge.common.services.config.ConfigProviderService;
-import org.asf.edge.common.services.tabledata.DataTable.DataTableLayout.EntryLayout;
+import org.asf.nexus.tables.DataTable.DataTableLayout.EntryLayout;
 
 import com.google.gson.JsonObject;
 

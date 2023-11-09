@@ -10,12 +10,12 @@ import java.util.Date;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asf.edge.common.services.commondata.CommonDataTableContainer;
-import org.asf.edge.common.services.tabledata.DataEntry;
-import org.asf.edge.common.services.tabledata.DataFilter;
-import org.asf.edge.common.services.tabledata.DataSet;
-import org.asf.edge.common.services.tabledata.DataTable;
-import org.asf.edge.common.services.tabledata.DataType;
-import org.asf.edge.common.services.tabledata.TableRow;
+import org.asf.nexus.tables.DataEntry;
+import org.asf.nexus.tables.DataFilter;
+import org.asf.nexus.tables.DataSet;
+import org.asf.nexus.tables.DataTable;
+import org.asf.nexus.tables.DataType;
+import org.asf.nexus.tables.TableRow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;

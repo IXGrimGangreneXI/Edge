@@ -3,8 +3,8 @@ package org.asf.edge.common.entities.tables.permissions;
 import java.util.ArrayList;
 
 import org.asf.edge.common.permissions.PermissionLevel;
-import org.asf.edge.common.services.tabledata.TableRow;
-import org.asf.edge.common.services.tabledata.annotations.TableColumn;
+import org.asf.nexus.tables.TableRow;
+import org.asf.nexus.tables.annotations.TableColumn;
 
 public class PermissionsRow extends TableRow {
 

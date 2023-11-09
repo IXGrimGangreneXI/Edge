@@ -13,8 +13,8 @@ import org.asf.edge.common.services.accounts.impl.BasicAccountObject;
 import org.asf.edge.common.services.accounts.impl.BasicAccountSaveContainer;
 import org.asf.edge.common.services.accounts.impl.DatabaseAccountManager;
 import org.asf.edge.common.services.minigamedata.MinigameDataManager;
-import org.asf.edge.common.services.tabledata.TableRow;
 import org.asf.nexus.events.EventBus;
+import org.asf.nexus.tables.TableRow;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

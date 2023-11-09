@@ -6,7 +6,7 @@ import java.util.HashMap;
 
 import org.asf.edge.common.entities.items.PlayerInventory;
 import org.asf.edge.common.services.items.ItemManager;
-import org.asf.edge.common.services.tabledata.TableRow;
+import org.asf.nexus.tables.TableRow;
 
 /**
  * 
