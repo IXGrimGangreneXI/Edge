@@ -16,6 +16,7 @@ public class PhraseFilterSet {
 	private String filterReason;
 
 	private ArrayList<PhraseFilter> phrases = new ArrayList<PhraseFilter>();
+	private ArrayList<String> tags = new ArrayList<String>();
 
 	public PhraseFilterSet(String name, String description, String reason) {
 		this.setName = name;
@@ -59,6 +60,27 @@ public class PhraseFilterSet {
 	 */
 	public PhraseFilter[] getFilteredPhrases() {
 		return phrases.toArray(t -> new PhraseFilter[t]);
+	}
+
+
+	/**
+	 * Adds tags, when tags are added, this filter will only be used when the
+	 * request tags contains any tag of this set
+	 * 
+	 * @param tag Tag to add
+	 */
+	public void addTag(String tag) {
+		tags.add(tag);
+	}
+
+	/**
+	 * Retrieves filter set tags, if there are tags present, this filter will only
+	 * be used when the request tags contains any tag of this set
+	 * 
+	 * @return Array of of tag strings
+	 */
+	public String[] getSetTags() {
+		return tags.toArray(t -> new String[t]);
 	}
 
 	/**

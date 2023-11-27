@@ -29,32 +29,36 @@ public abstract class TextFilterService extends AbstractService {
 		return ServiceManager.getService(TextFilterService.class);
 	}
 
+
 	/**
 	 * Checks if a string is filtered
 	 * 
 	 * @param text       String to check
 	 * @param strictMode True for strict-mode filtering, false otherwise
+	 * @param tags       Tags to use for selecting filter sets
 	 * @return True if filtered, false otherwise
 	 */
-	public abstract boolean isFiltered(String text, boolean strictMode);
+	public abstract boolean isFiltered(String text, boolean strictMode, String... tags);
 
 	/**
 	 * Checks if a string results in a mute
 	 * 
 	 * @param text String to check
+	 * @param tags Tags to use for selecting filter sets
 	 * @return True if severely filtered, false otherwise
 	 */
-	public abstract boolean shouldFilterMute(String text);
+	public abstract boolean shouldFilterMute(String text, String... tags);
 
 	/**
 	 * Filters strings
 	 * 
 	 * @param text       String to filter
 	 * @param strictMode True for strict-mode filtering, false otherwise
+	 * @param tags       Tags to use for selecting filter sets
 	 * @return Result string
 	 */
-	public String filterString(String text, boolean strictMode) {
-		return filter(text, strictMode).getFilterResult();
+	public String filterString(String text, boolean strictMode, String... tags) {
+		return filter(text, strictMode, tags).getFilterResult();
 	}
 
 	/**
@@ -62,9 +66,10 @@ public abstract class TextFilterService extends AbstractService {
 	 * 
 	 * @param text       String to filter
 	 * @param strictMode True for strict-mode filtering, false otherwise
+	 * @param tags       Tags to use for selecting filter sets
 	 * @return FilterResult value
 	 */
-	public abstract FilterResult filter(String text, boolean strictMode);
+	public abstract FilterResult filter(String text, boolean strictMode, String... tags);
 
 	/**
 	 * Retrieves all filter sets

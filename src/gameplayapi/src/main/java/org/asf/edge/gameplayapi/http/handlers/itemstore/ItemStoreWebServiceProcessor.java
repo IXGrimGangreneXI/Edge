@@ -120,11 +120,6 @@ public class ItemStoreWebServiceProcessor extends EdgeWebService<EdgeGameplayApi
 		if (itemManager == null)
 			itemManager = ItemManager.getInstance();
 
-		// Init if needed
-		if (!popularItemManagementInited) {
-			initPopularItemManager();
-		}
-
 		// Handle store request
 		SodRequestInfo req = getUtilities().getServiceRequestPayload(getServerInstance().getLogger());
 		if (req == null)

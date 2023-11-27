@@ -152,7 +152,7 @@ public class LoginRequestHandler implements IPacketHandler<ServerboundLoginReque
 			priv = 1;
 			break;
 		case GUEST:
-			priv = 0;
+			priv = 1;
 			break;
 
 		}

@@ -422,7 +422,7 @@ public class RoomInfo {
 				priv = 1;
 				break;
 			case GUEST:
-				priv = 0;
+				priv = 1;
 				break;
 			}
 
@@ -506,7 +506,7 @@ public class RoomInfo {
 				priv = 1;
 				break;
 			case GUEST:
-				priv = 0;
+				priv = 1;
 				break;
 			}
 

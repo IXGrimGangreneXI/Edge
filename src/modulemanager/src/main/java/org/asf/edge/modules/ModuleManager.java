@@ -39,7 +39,7 @@ public class ModuleManager {
 	private static ArrayList<IEdgeModule> modules = new ArrayList<IEdgeModule>();
 
 	/**
-	 * Initializes the module manager (internal) *
+	 * Initializes the module manager (internal)
 	 */
 	public static void init() {
 		if (inited)

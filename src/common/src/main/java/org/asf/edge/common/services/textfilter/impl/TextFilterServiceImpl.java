@@ -160,6 +160,15 @@ public class TextFilterServiceImpl extends TextFilterService {
 						break;
 					}
 
+					// Tags
+					case "add-tag": {
+						// Create set if needed
+						if (set == null)
+							set = new PhraseFilterSet(name, desc, reason);
+						set.addTag(args);
+						break;
+					}
+
 					// Set description
 					case "description": {
 						desc = args;
@@ -425,9 +434,16 @@ public class TextFilterServiceImpl extends TextFilterService {
 	}
 
 	@Override
-	public boolean isFiltered(String text, boolean strictMode) {
+	public boolean isFiltered(String text, boolean strictMode, String... tags) {
 		// Check filter
-		if (filters.values().stream().anyMatch(t -> Stream.of(t.getFilteredPhrases()).anyMatch(filter -> {
+		if (filters.values().stream().filter(set -> {
+			// Check set tags
+			String[] setTags = set.getSetTags();
+			if (setTags.length != 0
+					&& !Stream.of(setTags).anyMatch(t -> Stream.of(tags).anyMatch(tag -> tag.equalsIgnoreCase(t))))
+				return false;
+			return true;
+		}).anyMatch(t -> Stream.of(t.getFilteredPhrases()).anyMatch(filter -> {
 			// Check filter
 			if (strictMode || (filter.getSeverity() != FilterSeverity.USER_STRICT_MODE)) {
 				for (FilterMode mode : filter.getModes()) {
@@ -455,7 +471,14 @@ public class TextFilterServiceImpl extends TextFilterService {
 		for (String word : text.split(" ")) {
 			// Check filters
 			String filterWord = word.replaceAll("[^A-Za-z0-9]", "").toLowerCase();
-			if (filters.values().stream().anyMatch(t -> Stream.of(t.getFilteredPhrases()).anyMatch(filter -> {
+			if (filters.values().stream().filter(set -> {
+				// Check set tags
+				String[] setTags = set.getSetTags();
+				if (setTags.length != 0
+						&& !Stream.of(setTags).anyMatch(t -> Stream.of(tags).anyMatch(tag -> tag.equalsIgnoreCase(t))))
+					return false;
+				return true;
+			}).anyMatch(t -> Stream.of(t.getFilteredPhrases()).anyMatch(filter -> {
 				// Check filter
 				if (strictMode || (filter.getSeverity() != FilterSeverity.USER_STRICT_MODE)) {
 					for (FilterMode mode : filter.getModes()) {
@@ -484,9 +507,16 @@ public class TextFilterServiceImpl extends TextFilterService {
 	}
 
 	@Override
-	public boolean shouldFilterMute(String text) {
+	public boolean shouldFilterMute(String text, String... tags) {
 		// Check filter
-		if (filters.values().stream().anyMatch(t -> Stream.of(t.getFilteredPhrases()).anyMatch(filter -> {
+		if (filters.values().stream().filter(set -> {
+			// Check set tags
+			String[] setTags = set.getSetTags();
+			if (setTags.length != 0
+					&& !Stream.of(setTags).anyMatch(t -> Stream.of(tags).anyMatch(tag -> tag.equalsIgnoreCase(t))))
+				return false;
+			return true;
+		}).anyMatch(t -> Stream.of(t.getFilteredPhrases()).anyMatch(filter -> {
 			// Check filter
 			if (filter.getSeverity() == FilterSeverity.INSTAMUTE) {
 				for (FilterMode mode : filter.getModes()) {
@@ -514,7 +544,14 @@ public class TextFilterServiceImpl extends TextFilterService {
 		for (String word : text.split(" ")) {
 			// Check filters
 			String filterWord = word.replaceAll("[^A-Za-z0-9]", "").toLowerCase();
-			if (filters.values().stream().anyMatch(t -> Stream.of(t.getFilteredPhrases()).anyMatch(filter -> {
+			if (filters.values().stream().filter(set -> {
+				// Check set tags
+				String[] setTags = set.getSetTags();
+				if (setTags.length != 0
+						&& !Stream.of(setTags).anyMatch(t -> Stream.of(tags).anyMatch(tag -> tag.equalsIgnoreCase(t))))
+					return false;
+				return true;
+			}).anyMatch(t -> Stream.of(t.getFilteredPhrases()).anyMatch(filter -> {
 				// Check filter
 				if (filter.getSeverity() == FilterSeverity.INSTAMUTE) {
 					for (FilterMode mode : filter.getModes()) {
@@ -543,12 +580,19 @@ public class TextFilterServiceImpl extends TextFilterService {
 	}
 
 	@Override
-	public FilterResult filter(String text, boolean strictMode) {
+	public FilterResult filter(String text, boolean strictMode, String... tags) {
 		ArrayList<WordMatch> matches = new ArrayList<WordMatch>();
 		ArrayList<String> matchedPhrases = new ArrayList<String>();
 
 		// Handle word contains filters
 		for (PhraseFilterSet set : filters.values()) {
+			// Check set tags
+			String[] setTags = set.getSetTags();
+			if (setTags.length != 0
+					&& !Stream.of(setTags).anyMatch(t -> Stream.of(tags).anyMatch(tag -> tag.equalsIgnoreCase(t))))
+				continue;
+
+			// Check filter
 			for (PhraseFilter filter : set.getFilteredPhrases()) {
 				// Check mode
 				if (!strictMode && filter.getSeverity() == FilterSeverity.USER_STRICT_MODE)

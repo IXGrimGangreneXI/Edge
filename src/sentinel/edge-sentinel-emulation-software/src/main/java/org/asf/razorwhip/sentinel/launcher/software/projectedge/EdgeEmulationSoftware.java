@@ -298,13 +298,13 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		// Prepare client startup
 		if (launchMode.equals("server") || (updating && launchMode.equals("normal"))) {
 			LauncherUtils.addTag("no_launch_client");
+		}
+
+		// Select endpoints
+		if (launchMode.equals("remote-client")) {
+			LauncherUtils.addTag("server_endpoints").setValue(ServerEndpoints.class, endpointsRemote);
 		} else {
-			// Select endpoints
-			if (launchMode.equals("remote-client")) {
-				LauncherUtils.addTag("server_endpoints").setValue(ServerEndpoints.class, endpointsRemote);
-			} else {
-				LauncherUtils.addTag("server_endpoints").setValue(ServerEndpoints.class, endpointsLocal);
-			}
+			LauncherUtils.addTag("server_endpoints").setValue(ServerEndpoints.class, endpointsLocal);
 		}
 
 		// Check connection

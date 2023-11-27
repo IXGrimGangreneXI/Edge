@@ -69,12 +69,12 @@ public class ConfigurationWebServiceProcessor extends EdgeWebService<EdgeCommonA
 						SocketAddress ad = sock.getLocalSocketAddress();
 						if (ad instanceof InetSocketAddress) {
 							InetSocketAddress iA = (InetSocketAddress) ad;
-							host = iA.getAddress().getCanonicalHostName();
+							host = iA.getAddress().getHostAddress();
 							addr = host;
 						}
 					}
 					if (host.equals("localhost"))
-						host = "127.0.0.1";
+						addr = "127.0.0.1";
 				}
 
 				// Create block

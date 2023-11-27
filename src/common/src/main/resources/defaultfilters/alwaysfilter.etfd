@@ -75,6 +75,11 @@ Phrase wank
 	Variant w4nk
 Endphrase
 
+Phrase porn
+	Mode WHOLE_PHRASE  
+	Variant p0rn
+Endphrase
+
 Phrase whore
 	Mode WORD_CONTAINS  
 	Variant wh0re  
@@ -187,6 +192,13 @@ Endphrase
 Phrase clit
 	Mode WHOLE_PHRASE
 	Variant cl1t
+Endphrase
+
+Phrase nude
+	Mode WHOLE_PHRASE
+	Variant nudes
+	Variant nud3s
+	Variant nud3
 Endphrase
 
 Phrase ballsack
