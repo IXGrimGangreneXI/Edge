@@ -5,7 +5,6 @@ import java.awt.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
-import com.sun.security.auth.module.UnixSystem;
 import org.asf.razorwhip.sentinel.launcher.AssetManager;
 import org.asf.razorwhip.sentinel.launcher.PayloadManager;
 import org.asf.razorwhip.sentinel.launcher.experiments.SentinelExperimentManager;
@@ -127,7 +126,7 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 						if (System.getProperty("os.name").toLowerCase().contains("windows"))
 							Desktop.getDesktop().open(new File(System.getenv("APPDATA") +"/../LocalLow/JumpStart/SoD/Player.log"));
 						else
-							Desktop.getDesktop().open(new File("wineprefix/drive_c/users/" + new UnixSystem().getUsername() + "/AppData/LocalLow/JumpStart/SoD/Player.log"));
+							Desktop.getDesktop().open(new File("wineprefix/drive_c/users/" + System.getProperty("user.name") + "/AppData/LocalLow/JumpStart/SoD/Player.log"));
 					} catch (IOException ex) {
 						JOptionPane.showMessageDialog(panel,
 								"Player.log could not be opened.",
