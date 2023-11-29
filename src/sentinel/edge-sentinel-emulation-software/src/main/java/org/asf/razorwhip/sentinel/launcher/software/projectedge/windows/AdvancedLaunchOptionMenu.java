@@ -1,19 +1,16 @@
 package org.asf.razorwhip.sentinel.launcher.software.projectedge.windows;
 
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
+import java.awt.*;
 
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 import org.asf.razorwhip.sentinel.launcher.AssetManager;
 import org.asf.razorwhip.sentinel.launcher.PayloadManager;
 import org.asf.razorwhip.sentinel.launcher.experiments.SentinelExperimentManager;
 
-import java.awt.Dimension;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.IOException;
 import java.awt.event.ActionEvent;
 
@@ -46,7 +43,7 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 	}
 
 	private void initialize() {
-		setBounds(100, 100, 340, 373);
+		setBounds(100, 100, 340, 408);
 		getContentPane().setLayout(new BorderLayout());
 		setModal(true);
 		setLocationRelativeTo(null);
@@ -55,7 +52,7 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		{
 			JPanel panel = new JPanel();
-			panel.setPreferredSize(new Dimension(320, 325));
+			panel.setPreferredSize(new Dimension(320, 360));
 			contentPanel.add(panel);
 			panel.setLayout(null);
 
@@ -120,13 +117,33 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 			btnNewButton_3_3.setBounds(12, 223, 296, 27);
 			panel.add(btnNewButton_3_3);
 
+			JButton btnOpenPlayerLog = new JButton("Open Player.log");
+			btnOpenPlayerLog.setBounds(12, 258, 296, 27);
+			btnOpenPlayerLog.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					try {
+						if (System.getProperty("os.name").toLowerCase().contains("windows"))
+							Desktop.getDesktop().open(new File(System.getenv("APPDATA") +"/../LocalLow/JumpStart/SoD/Player.log"));
+						else
+							Desktop.getDesktop().open(new File("wineprefix/drive_c/users/" + System.getProperty("user.name") + "/AppData/LocalLow/JumpStart/SoD/Player.log"));
+					} catch (IOException ex) {
+						JOptionPane.showMessageDialog(panel,
+								"Player.log could not be opened.",
+								"Error",
+								JOptionPane.ERROR_MESSAGE);
+					}
+				}
+			});
+			panel.add(btnOpenPlayerLog);
+
 			JButton btnNewButton_3_1_1 = new JButton("Back");
 			btnNewButton_3_1_1.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					dispose();
 				}
 			});
-			btnNewButton_3_1_1.setBounds(12, 286, 296, 27);
+			btnNewButton_3_1_1.setBounds(12, 321, 296, 27);
 			panel.add(btnNewButton_3_1_1);
 		}
 	}
