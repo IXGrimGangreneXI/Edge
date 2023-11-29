@@ -125,7 +125,7 @@ public class AdvancedLaunchOptionMenu extends JDialog {
 				public void actionPerformed(ActionEvent e) {
 					try {
 						if (System.getProperty("os.name").toLowerCase().contains("windows"))
-							Desktop.getDesktop().open(new File(System.getenv("APPDATA") +"\\..\\LocalLow\\JumpStart\\SoD\\Player.log"));
+							Desktop.getDesktop().open(new File(System.getenv("APPDATA") +"/../LocalLow/JumpStart/SoD/Player.log"));
 						else
 							Desktop.getDesktop().open(new File("wineprefix/drive_c/users/" + new UnixSystem().getUsername() + "/AppData/LocalLow/JumpStart/SoD/Player.log"));
 					} catch (IOException ex) {
