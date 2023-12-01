@@ -3,6 +3,7 @@ package org.asf.razorwhip.sentinel.launcher.software.projectedge;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -185,13 +186,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		// Check connection
 		if (launchMode.equals("remote-client")) {
 			try {
-				// Open URL connection
-				HttpURLConnection conn = (HttpURLConnection) new URL(endpointsRemote.commonServiceEndpoint
-						+ (endpointsRemote.commonServiceEndpoint.endsWith("/") ? "" : "/") + "testconnection")
-						.openConnection();
-				int code = conn.getResponseCode();
-				if (code != 200 && code != 404)
-					throw new IOException(); // Down
+                testConnection(endpointsRemote);
 			} catch (Exception e) {
 				// Error
 				errorCallback.accept("Remote server is not online.");
@@ -199,13 +194,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 			}
 		} else if (launchMode.equals("local-client")) {
 			try {
-				// Open URL connection
-				HttpURLConnection conn = (HttpURLConnection) new URL(endpointsLocal.commonServiceEndpoint
-						+ (endpointsLocal.commonServiceEndpoint.endsWith("/") ? "" : "/") + "testconnection")
-						.openConnection();
-				int code = conn.getResponseCode();
-				if (code != 200 && code != 404)
-					throw new IOException(); // Down
+				testConnection(endpointsLocal);
 			} catch (Exception e) {
 				// Error
 				errorCallback.accept("Local server is not online.");
@@ -220,14 +209,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 			boolean alreadyActive = false;
 			if (!launchMode.equals("server")) {
 				try {
-					// Open URL connection
-					HttpURLConnection conn = (HttpURLConnection) new URL(endpointsLocal.commonServiceEndpoint
-							+ (endpointsLocal.commonServiceEndpoint.endsWith("/") ? "" : "/") + "testconnection")
-							.openConnection();
-					int code = conn.getResponseCode();
-					if (code != 200 && code != 404)
-						throw new IOException(); // Down
-
+					testConnection(endpointsLocal);
 					// Success
 					alreadyActive = true;
 				} catch (Exception e) {
@@ -358,14 +340,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 
 					// Test connection
 					try {
-						// Open URL connection
-						HttpURLConnection conn = (HttpURLConnection) new URL(endpointsLocal.commonServiceEndpoint
-								+ (endpointsLocal.commonServiceEndpoint.endsWith("/") ? "" : "/") + "testconnection")
-								.openConnection();
-						int code = conn.getResponseCode();
-						if (code != 200 && code != 404)
-							throw new IOException(); // Down
-
+						testConnection(endpointsLocal);
 						// Success
 						break;
 					} catch (Exception e) {
@@ -535,5 +510,14 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		manager.setExperimentName("EXPERIMENT_MMO_SERVER_SUPPORT",
 				"Multiplayer server support (EXTREMELY WIP, LAN ONLY AT THE MOMENT)");
 	}
+
+    private void testConnection(ServerEndpoints endpoints) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) new URL(endpoints.commonServiceEndpoint
+                + (endpoints.commonServiceEndpoint.endsWith("/") ? "" : "/") + "testconnection")
+                .openConnection();
+        int code = conn.getResponseCode();
+        if (code != 200 && code != 404)
+            throw new IOException(); // Down
+    }
 
 }
