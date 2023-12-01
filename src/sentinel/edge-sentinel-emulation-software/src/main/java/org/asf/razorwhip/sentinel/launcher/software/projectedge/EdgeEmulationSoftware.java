@@ -3,6 +3,7 @@ package org.asf.razorwhip.sentinel.launcher.software.projectedge;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -126,47 +127,14 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				JsonObject configData = JsonParser.parseString(Files.readString(edgeConfig.toPath())).getAsJsonObject();
 
 				// Load common server configuration
-				JsonObject cApiJson = configData.get("commonApiServer").getAsJsonObject();
-				String commonURL = (cApiJson.get("https").getAsBoolean() ? "https://" : "http://");
-				String ip = cApiJson.get("listenAddress").getAsString();
-				if (ip.equals("0.0.0.0"))
-					ip = "localhost";
-				if (ip.contains(":"))
-					commonURL += "[";
-				commonURL += ip;
-				if (ip.contains(":"))
-					commonURL += "]";
-				commonURL += ":";
-				commonURL += cApiJson.get("listenPort").getAsInt();
+				String commonURL = buildURL(configData.get("commonApiServer").getAsJsonObject());
 
 				// Load gameplay server configuration
-				JsonObject gpApiJson = configData.get("gameplayApiServer").getAsJsonObject();
-				String gpURL = (gpApiJson.get("https").getAsBoolean() ? "https://" : "http://");
-				ip = gpApiJson.get("listenAddress").getAsString();
-				if (ip.equals("0.0.0.0"))
-					ip = "localhost";
-				if (ip.contains(":"))
-					gpURL += "[";
-				gpURL += ip;
-				if (ip.contains(":"))
-					gpURL += "]";
-				gpURL += ":";
-				gpURL += gpApiJson.get("listenPort").getAsInt();
+				String gpURL = buildURL(configData.get("gameplayApiServer").getAsJsonObject());
 
 				// Load social server configuration
 				if (configData.has("socialApiServer") && socialSrvJar.exists()) {
-					JsonObject sApiJson = configData.get("socialApiServer").getAsJsonObject();
-					String sURL = (sApiJson.get("https").getAsBoolean() ? "https://" : "http://");
-					ip = sApiJson.get("listenAddress").getAsString();
-					if (ip.equals("0.0.0.0"))
-						ip = "localhost";
-					if (ip.contains(":"))
-						sURL += "[";
-					sURL += ip;
-					if (ip.contains(":"))
-						sURL += "]";
-					sURL += ":";
-					sURL += sApiJson.get("listenPort").getAsInt();
+					String sURL = buildURL(configData.get("socialApiServer").getAsJsonObject());
 
 					// Apply
 					endpointsLocal.groupsServiceEndpoint = sURL;
@@ -187,7 +155,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 
 				// Load smartfox server config
 				JsonObject mmoSrvJson = configData.get("mmoServer").getAsJsonObject();
-				ip = mmoSrvJson.get("listenAddress").getAsString();
+				String ip = mmoSrvJson.get("listenAddress").getAsString();
 				if (ip.equals("0.0.0.0"))
 					ip = "localhost";
 				endpointsLocal.smartFoxHost = ip;
@@ -211,23 +179,14 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 			LauncherUtils.addTag("no_launch_client");
 		} else {
 			// Select endpoints
-			if (launchMode.equals("remote-client")) {
-				LauncherUtils.addTag("server_endpoints").setValue(ServerEndpoints.class, endpointsRemote);
-			} else {
-				LauncherUtils.addTag("server_endpoints").setValue(ServerEndpoints.class, endpointsLocal);
-			}
+            LauncherUtils.addTag("server_endpoints").setValue(ServerEndpoints.class,
+                    launchMode.equals("remote-client") ? endpointsLocal : endpointsRemote);
 		}
 
 		// Check connection
 		if (launchMode.equals("remote-client")) {
 			try {
-				// Open URL connection
-				HttpURLConnection conn = (HttpURLConnection) new URL(endpointsRemote.commonServiceEndpoint
-						+ (endpointsRemote.commonServiceEndpoint.endsWith("/") ? "" : "/") + "testconnection")
-						.openConnection();
-				int code = conn.getResponseCode();
-				if (code != 200 && code != 404)
-					throw new IOException(); // Down
+                testConnection(endpointsRemote);
 			} catch (Exception e) {
 				// Error
 				errorCallback.accept("Remote server is not online.");
@@ -235,13 +194,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 			}
 		} else if (launchMode.equals("local-client")) {
 			try {
-				// Open URL connection
-				HttpURLConnection conn = (HttpURLConnection) new URL(endpointsLocal.commonServiceEndpoint
-						+ (endpointsLocal.commonServiceEndpoint.endsWith("/") ? "" : "/") + "testconnection")
-						.openConnection();
-				int code = conn.getResponseCode();
-				if (code != 200 && code != 404)
-					throw new IOException(); // Down
+				testConnection(endpointsLocal);
 			} catch (Exception e) {
 				// Error
 				errorCallback.accept("Local server is not online.");
@@ -256,14 +209,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 			boolean alreadyActive = false;
 			if (!launchMode.equals("server")) {
 				try {
-					// Open URL connection
-					HttpURLConnection conn = (HttpURLConnection) new URL(endpointsLocal.commonServiceEndpoint
-							+ (endpointsLocal.commonServiceEndpoint.endsWith("/") ? "" : "/") + "testconnection")
-							.openConnection();
-					int code = conn.getResponseCode();
-					if (code != 200 && code != 404)
-						throw new IOException(); // Down
-
+					testConnection(endpointsLocal);
 					// Success
 					alreadyActive = true;
 				} catch (Exception e) {
@@ -303,67 +249,40 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				// Create builder
 				ProcessBuilder builder;
 				ArrayList<String> args = new ArrayList<String>();
-				if (!serverLog && !showLog) {
-					// Add classpath arguments
+
+				// Add classpath arguments
+				if (serverLog || showLog)
+					args.addAll(List.of(jvm, "-cp", libs, "-DopenGuiLog=true"));
+				else
 					args.addAll(List.of(jvm, "-cp", libs));
 
-					// Add JVM extra arguments
-					if (!jvmArgsExtra.isBlank())
-						args.addAll(parseArguments(jvmArgsExtra));
+				// Add JVM extra arguments
+				if (!jvmArgsExtra.isBlank())
+					args.addAll(parseArguments(jvmArgsExtra));
 
-					// Load sentinel update settings
-					Map<String, String> descriptor;
-					try {
-						descriptor = LauncherUtils.parseProperties(
-								LauncherUtils.downloadString(LauncherUtils.urlBaseSoftwareFile + "softwareinfo"));
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-					String listURL = descriptor.get("Update-List-URL");
-					if (listURL != null) {
-						// Add sentinel update settings
-						args.add("-DenableSentinelLauncherUpdateManager=true");
-						args.add("-DsentinelLauncherEdgeSoftwareUpdateList=" + listURL);
-						args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
-					}
-					args.add("-DdisableContentServer=true");
-					if (System.getProperty("enableAllExperiments") != null)
-						args.add("-DenableAllExperiments");
-					args.add("-DdisableMmoUnlessExperimentEnabled");
-
-					// Add main class
-					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
-				} else {
-					// Add classpath and log arguments
-					args.addAll(List.of(jvm, "-cp", libs, "-DopenGuiLog=true"));
-
-					// Add JVM extra arguments
-					if (!jvmArgsExtra.isBlank())
-						args.addAll(parseArguments(jvmArgsExtra));
-
-					// Load sentinel update settings
-					Map<String, String> descriptor;
-					try {
-						descriptor = LauncherUtils.parseProperties(
-								LauncherUtils.downloadString(LauncherUtils.urlBaseSoftwareFile + "softwareinfo"));
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-					String listURL = descriptor.get("Update-List-URL");
-					if (listURL != null) {
-						// Add sentinel update settings
-						args.add("-DenableSentinelLauncherUpdateManager=true");
-						args.add("-DsentinelLauncherEdgeSoftwareUpdateList=" + listURL);
-						args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
-					}
-					args.add("-DdisableContentServer=true");
-					if (System.getProperty("enableAllExperiments") != null)
-						args.add("-DenableAllExperiments");
-					args.add("-DdisableMmoUnlessExperimentEnabled");
-
-					// Add main class
-					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
+				// Load sentinel update settings
+				Map<String, String> descriptor;
+				try {
+					descriptor = LauncherUtils.parseProperties(
+							LauncherUtils.downloadString(LauncherUtils.urlBaseSoftwareFile + "softwareinfo"));
+				} catch (IOException e) {
+					throw new RuntimeException(e);
 				}
+				String listURL = descriptor.get("Update-List-URL");
+				if (listURL != null) {
+					// Add sentinel update settings
+					args.add("-DenableSentinelLauncherUpdateManager=true");
+					args.add("-DsentinelLauncherEdgeSoftwareUpdateList=" + listURL);
+					args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
+				}
+				args.add("-DdisableContentServer=true");
+				if (System.getProperty("enableAllExperiments") != null)
+					args.add("-DenableAllExperiments");
+				args.add("-DdisableMmoUnlessExperimentEnabled");
+
+				// Add main class
+				args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
+
 				if (!progArgsExtra.isBlank())
 					args.addAll(parseArguments(progArgsExtra));
 				builder = new ProcessBuilder(args.toArray(t -> new String[t]));
@@ -394,14 +313,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 
 					// Test connection
 					try {
-						// Open URL connection
-						HttpURLConnection conn = (HttpURLConnection) new URL(endpointsLocal.commonServiceEndpoint
-								+ (endpointsLocal.commonServiceEndpoint.endsWith("/") ? "" : "/") + "testconnection")
-								.openConnection();
-						int code = conn.getResponseCode();
-						if (code != 200 && code != 404)
-							throw new IOException(); // Down
-
+						testConnection(endpointsLocal);
 						// Success
 						break;
 					} catch (Exception e) {
@@ -418,6 +330,20 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		// Call success
 		successCallback.run();
 	}
+
+    private String buildURL(JsonObject apiJson) {
+        StringBuilder urlBuilder = new StringBuilder(apiJson.get("https").getAsBoolean() ? "https://" : "http://");
+        String ip = apiJson.get("listenAddress").getAsString();
+        if (ip.equals("0.0.0.0"))
+            ip = "localhost";
+        if (ip.contains(":"))
+            urlBuilder.append("[");
+        urlBuilder.append(ip);
+        if (ip.contains(":"))
+            urlBuilder.append("]");
+        urlBuilder.append(":").append(apiJson.get("listenPort").getAsInt());
+        return urlBuilder.toString();
+    }
 
 	// Argument parser
 	private ArrayList<String> parseArguments(String args) {
@@ -557,5 +483,14 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		manager.setExperimentName("EXPERIMENT_MMO_SERVER_SUPPORT",
 				"Multiplayer server support (EXTREMELY WIP, LAN ONLY AT THE MOMENT)");
 	}
+
+    private void testConnection(ServerEndpoints endpoints) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) new URL(endpoints.commonServiceEndpoint
+                + (endpoints.commonServiceEndpoint.endsWith("/") ? "" : "/") + "testconnection")
+                .openConnection();
+        int code = conn.getResponseCode();
+        if (code != 200 && code != 404)
+            throw new IOException(); // Down
+    }
 
 }
