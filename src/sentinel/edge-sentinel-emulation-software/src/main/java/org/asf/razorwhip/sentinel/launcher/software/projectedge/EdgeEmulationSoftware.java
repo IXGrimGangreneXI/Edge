@@ -249,67 +249,40 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				// Create builder
 				ProcessBuilder builder;
 				ArrayList<String> args = new ArrayList<String>();
-				if (!serverLog && !showLog) {
-					// Add classpath arguments
+
+				// Add classpath arguments
+				if (serverLog || showLog)
+					args.addAll(List.of(jvm, "-cp", libs, "-DopenGuiLog=true"));
+				else
 					args.addAll(List.of(jvm, "-cp", libs));
 
-					// Add JVM extra arguments
-					if (!jvmArgsExtra.isBlank())
-						args.addAll(parseArguments(jvmArgsExtra));
+				// Add JVM extra arguments
+				if (!jvmArgsExtra.isBlank())
+					args.addAll(parseArguments(jvmArgsExtra));
 
-					// Load sentinel update settings
-					Map<String, String> descriptor;
-					try {
-						descriptor = LauncherUtils.parseProperties(
-								LauncherUtils.downloadString(LauncherUtils.urlBaseSoftwareFile + "softwareinfo"));
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-					String listURL = descriptor.get("Update-List-URL");
-					if (listURL != null) {
-						// Add sentinel update settings
-						args.add("-DenableSentinelLauncherUpdateManager=true");
-						args.add("-DsentinelLauncherEdgeSoftwareUpdateList=" + listURL);
-						args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
-					}
-					args.add("-DdisableContentServer=true");
-					if (System.getProperty("enableAllExperiments") != null)
-						args.add("-DenableAllExperiments");
-					args.add("-DdisableMmoUnlessExperimentEnabled");
-
-					// Add main class
-					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
-				} else {
-					// Add classpath and log arguments
-					args.addAll(List.of(jvm, "-cp", libs, "-DopenGuiLog=true"));
-
-					// Add JVM extra arguments
-					if (!jvmArgsExtra.isBlank())
-						args.addAll(parseArguments(jvmArgsExtra));
-
-					// Load sentinel update settings
-					Map<String, String> descriptor;
-					try {
-						descriptor = LauncherUtils.parseProperties(
-								LauncherUtils.downloadString(LauncherUtils.urlBaseSoftwareFile + "softwareinfo"));
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-					String listURL = descriptor.get("Update-List-URL");
-					if (listURL != null) {
-						// Add sentinel update settings
-						args.add("-DenableSentinelLauncherUpdateManager=true");
-						args.add("-DsentinelLauncherEdgeSoftwareUpdateList=" + listURL);
-						args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
-					}
-					args.add("-DdisableContentServer=true");
-					if (System.getProperty("enableAllExperiments") != null)
-						args.add("-DenableAllExperiments");
-					args.add("-DdisableMmoUnlessExperimentEnabled");
-
-					// Add main class
-					args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
+				// Load sentinel update settings
+				Map<String, String> descriptor;
+				try {
+					descriptor = LauncherUtils.parseProperties(
+							LauncherUtils.downloadString(LauncherUtils.urlBaseSoftwareFile + "softwareinfo"));
+				} catch (IOException e) {
+					throw new RuntimeException(e);
 				}
+				String listURL = descriptor.get("Update-List-URL");
+				if (listURL != null) {
+					// Add sentinel update settings
+					args.add("-DenableSentinelLauncherUpdateManager=true");
+					args.add("-DsentinelLauncherEdgeSoftwareUpdateList=" + listURL);
+					args.add("-DsentinelLauncherEdgeSoftwareVersion=" + LauncherUtils.getSoftwareVersion());
+				}
+				args.add("-DdisableContentServer=true");
+				if (System.getProperty("enableAllExperiments") != null)
+					args.add("-DenableAllExperiments");
+				args.add("-DdisableMmoUnlessExperimentEnabled");
+
+				// Add main class
+				args.add("org.asf.edge.globalserver.EdgeGlobalServerMain");
+
 				if (!progArgsExtra.isBlank())
 					args.addAll(parseArguments(progArgsExtra));
 				builder = new ProcessBuilder(args.toArray(t -> new String[t]));
