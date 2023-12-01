@@ -126,47 +126,14 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 				JsonObject configData = JsonParser.parseString(Files.readString(edgeConfig.toPath())).getAsJsonObject();
 
 				// Load common server configuration
-				JsonObject cApiJson = configData.get("commonApiServer").getAsJsonObject();
-				String commonURL = (cApiJson.get("https").getAsBoolean() ? "https://" : "http://");
-				String ip = cApiJson.get("listenAddress").getAsString();
-				if (ip.equals("0.0.0.0"))
-					ip = "localhost";
-				if (ip.contains(":"))
-					commonURL += "[";
-				commonURL += ip;
-				if (ip.contains(":"))
-					commonURL += "]";
-				commonURL += ":";
-				commonURL += cApiJson.get("listenPort").getAsInt();
+				String commonURL = buildURL(configData.get("commonApiServer").getAsJsonObject());
 
 				// Load gameplay server configuration
-				JsonObject gpApiJson = configData.get("gameplayApiServer").getAsJsonObject();
-				String gpURL = (gpApiJson.get("https").getAsBoolean() ? "https://" : "http://");
-				ip = gpApiJson.get("listenAddress").getAsString();
-				if (ip.equals("0.0.0.0"))
-					ip = "localhost";
-				if (ip.contains(":"))
-					gpURL += "[";
-				gpURL += ip;
-				if (ip.contains(":"))
-					gpURL += "]";
-				gpURL += ":";
-				gpURL += gpApiJson.get("listenPort").getAsInt();
+				String gpURL = buildURL(configData.get("gameplayApiServer").getAsJsonObject());
 
 				// Load social server configuration
 				if (configData.has("socialApiServer") && socialSrvJar.exists()) {
-					JsonObject sApiJson = configData.get("socialApiServer").getAsJsonObject();
-					String sURL = (sApiJson.get("https").getAsBoolean() ? "https://" : "http://");
-					ip = sApiJson.get("listenAddress").getAsString();
-					if (ip.equals("0.0.0.0"))
-						ip = "localhost";
-					if (ip.contains(":"))
-						sURL += "[";
-					sURL += ip;
-					if (ip.contains(":"))
-						sURL += "]";
-					sURL += ":";
-					sURL += sApiJson.get("listenPort").getAsInt();
+					String sURL = buildURL(configData.get("socialApiServer").getAsJsonObject());
 
 					// Apply
 					endpointsLocal.groupsServiceEndpoint = sURL;
@@ -187,7 +154,7 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 
 				// Load smartfox server config
 				JsonObject mmoSrvJson = configData.get("mmoServer").getAsJsonObject();
-				ip = mmoSrvJson.get("listenAddress").getAsString();
+				String ip = mmoSrvJson.get("listenAddress").getAsString();
 				if (ip.equals("0.0.0.0"))
 					ip = "localhost";
 				endpointsLocal.smartFoxHost = ip;
@@ -211,11 +178,8 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 			LauncherUtils.addTag("no_launch_client");
 		} else {
 			// Select endpoints
-			if (launchMode.equals("remote-client")) {
-				LauncherUtils.addTag("server_endpoints").setValue(ServerEndpoints.class, endpointsRemote);
-			} else {
-				LauncherUtils.addTag("server_endpoints").setValue(ServerEndpoints.class, endpointsLocal);
-			}
+            LauncherUtils.addTag("server_endpoints").setValue(ServerEndpoints.class,
+                    launchMode.equals("remote-client") ? endpointsLocal : endpointsRemote);
 		}
 
 		// Check connection
@@ -418,6 +382,20 @@ public class EdgeEmulationSoftware implements IEmulationSoftwareProvider {
 		// Call success
 		successCallback.run();
 	}
+
+    private String buildURL(JsonObject apiJson) {
+        StringBuilder urlBuilder = new StringBuilder(apiJson.get("https").getAsBoolean() ? "https://" : "http://");
+        String ip = apiJson.get("listenAddress").getAsString();
+        if (ip.equals("0.0.0.0"))
+            ip = "localhost";
+        if (ip.contains(":"))
+            urlBuilder.append("[");
+        urlBuilder.append(ip);
+        if (ip.contains(":"))
+            urlBuilder.append("]");
+        urlBuilder.append(":").append(apiJson.get("listenPort").getAsInt());
+        return urlBuilder.toString();
+    }
 
 	// Argument parser
 	private ArrayList<String> parseArguments(String args) {
