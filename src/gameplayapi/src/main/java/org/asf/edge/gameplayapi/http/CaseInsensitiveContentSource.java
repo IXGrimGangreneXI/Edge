@@ -1,8 +1,6 @@
 package org.asf.edge.gameplayapi.http;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 import org.asf.connective.ConnectiveHttpServer;
 import org.asf.connective.ContentSource;
@@ -32,21 +30,16 @@ public class CaseInsensitiveContentSource extends ContentSource {
 	public boolean process(String path, HttpRequest request, HttpResponse response, RemoteClient client,
 			ConnectiveHttpServer server) throws IOException {
 		// Load handlers
-		ArrayList<HttpRequestProcessor> reqProcessors = new ArrayList<HttpRequestProcessor>(
-				Arrays.asList(server.getRequestProcessors()));
-		ArrayList<HttpPushProcessor> pushProcessors = new ArrayList<HttpPushProcessor>(
-				Arrays.asList(server.getPushProcessors()));
 		boolean compatible = false;
-		for (HttpPushProcessor proc : pushProcessors) {
-			if (proc.supportsNonPush()) {
-				reqProcessors.add(proc);
-			}
-		}
+		HttpRequestProcessor[] processors = server.getAllRequestProcessors();
 
 		// Find handler
 		if (request.hasRequestBody()) {
 			HttpPushProcessor impl = null;
-			for (HttpPushProcessor proc : pushProcessors) {
+			for (HttpRequestProcessor p : processors) {
+				if (!(p instanceof HttpPushProcessor))
+					continue;
+				HttpPushProcessor proc = (HttpPushProcessor) p;
 				if (!proc.supportsChildPaths()) {
 					String url = request.getRequestPath();
 					if (!url.endsWith("/"))
@@ -64,11 +57,10 @@ public class CaseInsensitiveContentSource extends ContentSource {
 				}
 			}
 			if (!compatible) {
-				pushProcessors.sort((t1, t2) -> {
-					return -Integer.compare(sanitizePath(t1.path()).split("/").length,
-							sanitizePath(t2.path()).split("/").length);
-				});
-				for (HttpPushProcessor proc : pushProcessors) {
+				for (HttpRequestProcessor p : processors) {
+					if (!(p instanceof HttpPushProcessor))
+						continue;
+					HttpPushProcessor proc = (HttpPushProcessor) p;
 					if (proc.supportsChildPaths()) {
 						String url = request.getRequestPath();
 						if (!url.endsWith("/"))
@@ -92,7 +84,9 @@ public class CaseInsensitiveContentSource extends ContentSource {
 			}
 		} else {
 			HttpRequestProcessor impl = null;
-			for (HttpRequestProcessor proc : reqProcessors) {
+			for (HttpRequestProcessor proc : processors) {
+				if (proc instanceof HttpPushProcessor && !((HttpPushProcessor) proc).supportsNonPush())
+					continue;
 				if (!proc.supportsChildPaths()) {
 					String url = request.getRequestPath();
 					if (!url.endsWith("/"))
@@ -110,11 +104,9 @@ public class CaseInsensitiveContentSource extends ContentSource {
 				}
 			}
 			if (!compatible) {
-				reqProcessors.sort((t1, t2) -> {
-					return -Integer.compare(sanitizePath(t1.path()).split("/").length,
-							sanitizePath(t2.path()).split("/").length);
-				});
-				for (HttpRequestProcessor proc : reqProcessors) {
+				for (HttpRequestProcessor proc : processors) {
+					if (proc instanceof HttpPushProcessor && !((HttpPushProcessor) proc).supportsNonPush())
+						continue;
 					if (proc.supportsChildPaths()) {
 						String url = request.getRequestPath();
 						if (!url.endsWith("/"))

@@ -2,7 +2,6 @@ package org.asf.edge.contentserver.events.config;
 
 import org.asf.edge.contentserver.config.ContentServerConfig;
 import org.asf.edge.contentserver.events.ContentServerEvent;
-import org.asf.nexus.events.EventPath;
 
 /**
  * 
@@ -12,7 +11,6 @@ import org.asf.nexus.events.EventPath;
  * @author Sky Swimmer
  *
  */
-@EventPath("contentserver.config.presetup")
 public class ContentServerConfigPresetupEvent extends ContentServerEvent {
 	private ContentServerConfig config;
 
@@ -27,11 +25,6 @@ public class ContentServerConfigPresetupEvent extends ContentServerEvent {
 	 */
 	public ContentServerConfig getConfig() {
 		return config;
-	}
-
-	@Override
-	public String eventPath() {
-		return "contentserver.config.presetup";
 	}
 
 }
